@@ -3,7 +3,15 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { createEmbed } = require('../utils/embeds');
+const { createEmbed } = require('../../utils/embeds');
+
+const {
+    isSelf,
+    isBot,
+    isOwner,
+    hasHigherRole,
+    canBotModerate
+} = require('../../utils/moderation/permissions');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -34,7 +42,6 @@ module.exports = {
         const reason =
             interaction.options.getString('reason') || 'No reason provided.';
 
-        // Member exists
         if (!member) {
             return interaction.reply({
                 content: '❌ Member not found.',
@@ -42,26 +49,44 @@ module.exports = {
             });
         }
 
-        // Self Ban Protection
-        if (member.id === interaction.user.id) {
+        if (isSelf(interaction.member, member)) {
             return interaction.reply({
                 content: '❌ You cannot ban yourself.',
                 ephemeral: true
             });
         }
 
-        // Bot hierarchy check
-        if (!member.bannable) {
+        if (isBot(interaction.client, member)) {
             return interaction.reply({
-                content: '❌ I cannot ban this member. Check my role position and permissions.',
+                content: '❌ You cannot ban the bot.',
                 ephemeral: true
             });
         }
 
-        // Ban member
-        await member.ban({
-            reason
-        });
+        if (isOwner(member)) {
+            return interaction.reply({
+                content: '❌ You cannot ban the server owner.',
+                ephemeral: true
+            });
+        }
+
+        if (hasHigherRole(interaction.member, member)) {
+            return interaction.reply({
+                content: '❌ This member has an equal or higher role than you.',
+                ephemeral: true
+            });
+        }
+
+        const botMember = interaction.guild.members.me;
+
+        if (!canBotModerate(botMember, member)) {
+            return interaction.reply({
+                content: '❌ I cannot ban this member. My role must be higher than the target member.',
+                ephemeral: true
+            });
+        }
+
+        await member.ban({ reason });
 
         const embed = createEmbed(interaction)
             .setAuthor({
@@ -72,7 +97,7 @@ module.exports = {
             .addFields(
                 {
                     name: '👤 User',
-                    value: `${member.user.tag}`,
+                    value: member.user.tag,
                     inline: true
                 },
                 {
@@ -90,6 +115,5 @@ module.exports = {
         await interaction.reply({
             embeds: [embed]
         });
-
     }
 };

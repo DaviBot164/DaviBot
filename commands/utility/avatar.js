@@ -1,10 +1,3 @@
-/**
- * Empire Bot
- * Command: /userinfo
- * Version: 1.0.0
- * Status: Empire Standard
- */
-
 const {
     SlashCommandBuilder,
     ActionRowBuilder,
@@ -12,12 +5,12 @@ const {
     ButtonStyle
 } = require('discord.js');
 
-const { createEmbed } = require('../utils/embeds');
+const { createEmbed } = require('../../utils/embeds');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('userinfo')
-        .setDescription('View information about a user.')
+        .setName('avatar')
+        .setDescription('View a user avatar.')
         .addUserOption(option =>
             option
                 .setName('user')
@@ -27,48 +20,69 @@ module.exports = {
 
     async execute(interaction) {
 
-        const member =
-            interaction.options.getMember('user') ||
-            interaction.member;
+        const selectedUser = interaction.options.getUser('user') || interaction.user;
 
-        const user = await member.user.fetch(true);
+        const user = await selectedUser.fetch(true);
+        const member = await interaction.guild.members.fetch(user.id);
 
         const avatarURL = user.displayAvatarURL({
             size: 4096,
             forceStatic: false
         });
 
+        const bannerURL = user.bannerURL({
+            size: 4096,
+            forceStatic: false
+        });
+
         const embed = createEmbed(interaction)
             .setAuthor({
-                name: `${user.username}'s Information`,
+                name: `${user.username}'s Avatar`,
                 iconURL: avatarURL
             })
             .setThumbnail(avatarURL)
+            .setImage(avatarURL)
             .addFields(
                 {
-                    name: '👤 User Information',
+                    name: '👤 USER INFORMATION',
                     value:
                         `**Username:** ${user.username}\n` +
                         `**Display Name:** ${member.displayName}\n` +
-                        `**Mention:** ${user}\n` +
-                        `**Account Type:** ${user.bot ? 'Bot' : 'Human'}\n` +
                         `**User ID:** \`${user.id}\``
                 },
                 {
-                    name: '📅 Account Information',
+                    name: '🖼️ AVATAR INFORMATION',
                     value:
-                        `**Account Created:** <t:${Math.floor(user.createdTimestamp / 1000)}:F>\n` +
-                        `**Joined Server:** <t:${Math.floor(member.joinedTimestamp / 1000)}:F>`
+                        `**Animated:** ${avatarURL.includes('.gif') ? 'Yes' : 'No'}\n` +
+                        `**Banner:** ${bannerURL ? 'Available' : 'Not Available'}\n` +
+                        `**Created:** <t:${Math.floor(user.createdTimestamp / 1000)}:F>`
                 }
             );
 
-        const row = new ActionRowBuilder().addComponents(
+        const buttons = [];
+
+        buttons.push(
             new ButtonBuilder()
                 .setLabel('Open Avatar')
                 .setEmoji('🖼️')
                 .setStyle(ButtonStyle.Link)
                 .setURL(avatarURL)
         );
+
+        if (bannerURL) {
+
+            buttons.push(
+                new ButtonBuilder()
+                    .setLabel('Open Banner')
+                    .setEmoji('🌄')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(bannerURL)
+            );
+
+        }
+
+        const row = new ActionRowBuilder()
+            .addComponents(buttons);
 
         await interaction.reply({
             embeds: [embed],

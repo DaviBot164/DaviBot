@@ -7,32 +7,54 @@ module.exports = (client) => {
 
     const commandsPath = path.join(__dirname, '..', 'commands');
 
-    const commandFiles = fs
-        .readdirSync(commandsPath)
-        .filter(file => file.endsWith('.js'));
-
     console.log("======================================");
     console.log("📂 Loading Commands...");
     console.log("======================================");
 
-    for (const file of commandFiles) {
+    const folders = fs.readdirSync(commandsPath);
 
-        console.log(`📄 Loading file: ${file}`);
+    for (const folder of folders) {
 
-        const command = require(path.join(commandsPath, file));
+        const folderPath = path.join(commandsPath, folder);
 
-        if (!command.data || !command.execute) {
-            console.log(`❌ ${file} is missing data or execute.`);
-            continue;
+        if (!fs.statSync(folderPath).isDirectory()) continue;
+
+        const commandFiles = fs
+            .readdirSync(folderPath)
+            .filter(file => file.endsWith('.js'));
+
+        console.log(`📁 Category: ${folder}`);
+
+        for (const file of commandFiles) {
+
+            console.log(`📄 Loading file: ${file}`);
+
+            try {
+
+                const command = require(path.join(folderPath, file));
+
+                if (!command.data || !command.execute) {
+                    console.log(`❌ ${file} is missing data or execute.`);
+                    continue;
+                }
+
+                console.log(`📌 Command Name : ${command.data.name}`);
+                console.log(`📝 Description  : ${command.data.description}`);
+
+                client.commands.set(command.data.name, command);
+
+                console.log(`✅ Successfully Loaded: ${command.data.name}`);
+                console.log("--------------------------------------");
+
+            } catch (error) {
+
+                console.error(`❌ Failed to load: ${file}`);
+                console.error(error);
+
+            }
+
         }
 
-        console.log(`📌 Command Name : ${command.data.name}`);
-        console.log(`📝 Description  : ${command.data.description}`);
-
-        client.commands.set(command.data.name, command);
-
-        console.log(`✅ Successfully Loaded: ${command.data.name}`);
-        console.log("--------------------------------------");
     }
 
     console.log("======================================");
@@ -44,4 +66,5 @@ module.exports = (client) => {
     }
 
     console.log("======================================");
+
 };
