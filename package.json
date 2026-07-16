@@ -1,0 +1,25 @@
+{
+  "name": "davibot",
+  "version": "1.0.0",
+  "description": "Professional Discord Moderation Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "discord.js",
+    "moderation",
+    "davibot"
+  ],
+  "author": "Daviti",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+    "ms": "^2.1.3"
+  }
+}
