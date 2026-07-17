@@ -1,32 +1,50 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const {
     Client,
-    GatewayIntentBits,
     Events,
+    GatewayIntentBits,
+    Collection,
     REST,
     Routes,
-} = require('discord.js');
+} = require("discord.js");
 
-const commandHandler = require('./handlers/commandHandler');
+const commandHandler = require("./handlers/commandHandler");
+const eventHandler = require("./handlers/eventHandler");
 
+// Create Discord Client
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+    ],
 });
+
+// Commands Collection
+client.commands = new Collection();
 
 // Load Commands
 commandHandler(client);
 
-// Ready Event
-client.once(Events.ClientReady, async (readyClient) => {
+// Load Events
+eventHandler(client);
 
-    console.log(`✅ ${readyClient.user.tag} is online!`);
-
-    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+// Bot Ready Event
+client.once(Events.ClientReady, async readyClient => {
+    console.log("======================================");
+    console.log(`🤖 Logged in as: ${readyClient.user.tag}`);
+    console.log("======================================");
 
     try {
+        const commands = Array.from(client.commands.values()).map(command =>
+            command.data.toJSON()
+        );
 
-        console.log("📤 Registering Guild Commands...");
+        const rest = new REST({
+            version: "10",
+        }).setToken(process.env.TOKEN);
+
+        console.log("🔄 Registering Guild Slash Commands...");
 
         await rest.put(
             Routes.applicationGuildCommands(
@@ -34,57 +52,52 @@ client.once(Events.ClientReady, async (readyClient) => {
                 process.env.GUILD_ID
             ),
             {
-                body: [...client.commands.values()].map(cmd => cmd.data.toJSON()),
+                body: commands,
             }
         );
 
-        console.log("✅ Guild Slash Commands Registered!");
-
-    } catch (err) {
-
-        console.error(err);
-
+        console.log(`✅ Registered ${commands.length} Slash Commands.`);
+        console.log("======================================");
+    } catch (error) {
+        console.error("❌ Failed to register Slash Commands:");
+        console.error(error);
     }
-
 });
 
-// Slash Commands
+// Slash Command Interaction
 client.on(Events.InteractionCreate, async interaction => {
-
     if (!interaction.isChatInputCommand()) return;
-
-    console.log(`📥 ${interaction.commandName}`);
 
     const command = client.commands.get(interaction.commandName);
 
-    if (!command) return;
-
-    try {
-
-        await command.execute(interaction);
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (interaction.replied || interaction.deferred) {
-
-            await interaction.followUp({
-                content: "❌ Something went wrong!",
-                ephemeral: true,
-            });
-
-        } else {
-
-            await interaction.reply({
-                content: "❌ Something went wrong!",
-                ephemeral: true,
-            });
-
-        }
-
+    if (!command) {
+        console.error(`❌ Command not found: ${interaction.commandName}`);
+        return;
     }
 
+    try {
+        await command.execute(interaction, client);
+    } catch (error) {
+        console.error(`❌ Error executing /${interaction.commandName}:`);
+        console.error(error);
+
+        const errorMessage = {
+            content: "❌ An error occurred while executing this command.",
+            ephemeral: true,
+        };
+
+        try {
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp(errorMessage);
+            } else {
+                await interaction.reply(errorMessage);
+            }
+        } catch (replyError) {
+            console.error("❌ Failed to send the error message:");
+            console.error(replyError);
+        }
+    }
 });
 
+// Login
 client.login(process.env.TOKEN);
