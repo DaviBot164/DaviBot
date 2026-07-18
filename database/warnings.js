@@ -139,6 +139,29 @@ async function deleteWarningById(guildId, warningId) {
 }
 
 /**
+ * Delete all warnings for a server member.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
+async function deleteAllWarnings(guildId, userId) {
+    const result = await query(
+        `
+            DELETE FROM warnings
+            WHERE guild_id = $1
+              AND user_id = $2;
+        `,
+        [
+            guildId,
+            userId
+        ]
+    );
+
+    return result.rowCount;
+}
+
+/**
  * Count all warnings for a server member.
  *
  * @param {string} guildId
@@ -167,5 +190,6 @@ module.exports = {
     getWarnings,
     getWarningById,
     deleteWarningById,
+    deleteAllWarnings,
     countWarnings
 };
