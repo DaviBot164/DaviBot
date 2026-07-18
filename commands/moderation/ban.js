@@ -3,25 +3,25 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { createEmbed } = require('../../utils/embeds');
+const {
+    createErrorEmbed,
+    createModerationEmbed
+} = require('../../utils/embeds');
 
 const {
-    isSelf,
-    isBot,
-    isOwner,
-    hasHigherRole,
-    canBotModerate
-} = require('../../utils/moderation/permissions');
+    hasBotPermission,
+    getModerationError
+} = require('../../utils/moderation');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ban')
-        .setDescription('Ban a member from the server.')
+        .setDescription('Ban a user from the server.')
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Member to ban')
+                .setDescription('User to ban')
                 .setRequired(true)
         )
 
@@ -29,6 +29,30 @@ module.exports = {
             option
                 .setName('reason')
                 .setDescription('Reason for the ban')
+                .setMaxLength(500)
+                .setRequired(false)
+        )
+
+        .addIntegerOption(option =>
+            option
+                .setName('delete_messages')
+                .setDescription(
+                    'Delete messages sent during the selected number of days'
+                )
+                .addChoices(
+                    {
+                        name: 'Do not delete messages',
+                        value: 0
+                    },
+                    {
+                        name: 'Delete messages from the last day',
+                        value: 1
+                    },
+                    {
+                        name: 'Delete messages from the last 7 days',
+                        value: 7
+                    }
+                )
                 .setRequired(false)
         )
 
@@ -37,83 +61,142 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        try {
+            const user = interaction.options.getUser('user');
 
-        const member = interaction.options.getMember('user');
-        const reason =
-            interaction.options.getString('reason') || 'No reason provided.';
+            const member = interaction.options.getMember('user');
 
-        if (!member) {
-            return interaction.reply({
-                content: '❌ Member not found.',
-                ephemeral: true
-            });
-        }
+            const reason =
+                interaction.options.getString('reason') ||
+                'No reason provided.';
 
-        if (isSelf(interaction.member, member)) {
-            return interaction.reply({
-                content: '❌ You cannot ban yourself.',
-                ephemeral: true
-            });
-        }
+            const deleteMessageDays =
+                interaction.options.getInteger('delete_messages') || 0;
 
-        if (isBot(interaction.client, member)) {
-            return interaction.reply({
-                content: '❌ You cannot ban the bot.',
-                ephemeral: true
-            });
-        }
+            const botMember = interaction.guild.members.me;
 
-        if (isOwner(member)) {
-            return interaction.reply({
-                content: '❌ You cannot ban the server owner.',
-                ephemeral: true
-            });
-        }
+            if (
+                !hasBotPermission(
+                    botMember,
+                    PermissionFlagsBits.BanMembers
+                )
+            ) {
+                const embed = createErrorEmbed(
+                    '❌ Missing Permission',
+                    'I need the **Ban Members** permission to use this command.'
+                );
 
-        if (hasHigherRole(interaction.member, member)) {
-            return interaction.reply({
-                content: '❌ This member has an equal or higher role than you.',
-                ephemeral: true
-            });
-        }
+                return interaction.reply({
+                    embeds: [embed],
+                    ephemeral: true
+                });
+            }
 
-        const botMember = interaction.guild.members.me;
+            if (user.id === interaction.user.id) {
+                const embed = createErrorEmbed(
+                    '❌ Ban Failed',
+                    'You cannot ban yourself.'
+                );
 
-        if (!canBotModerate(botMember, member)) {
-            return interaction.reply({
-                content: '❌ I cannot ban this member. My role must be higher than the target member.',
-                ephemeral: true
-            });
-        }
+                return interaction.reply({
+                    embeds: [embed],
+                    ephemeral: true
+                });
+            }
 
-        await member.ban({ reason });
+            if (user.id === interaction.client.user.id) {
+                const embed = createErrorEmbed(
+                    '❌ Ban Failed',
+                    'You cannot ban DaviBot.'
+                );
 
-        const embed = createEmbed(interaction)
-            .setAuthor({
-                name: '🔨 Member Banned',
-                iconURL: interaction.client.user.displayAvatarURL()
-            })
-            .setThumbnail(member.user.displayAvatarURL())
-            .addFields(
-                {
-                    name: '👤 User',
-                    value: member.user.tag,
-                    inline: true
-                },
-                {
-                    name: '📝 Reason',
-                    value: reason,
-                    inline: true
-                },
-                {
-                    name: '👮 Moderator',
-                    value: interaction.user.tag,
-                    inline: true
+                return interaction.reply({
+                    embeds: [embed],
+                    ephemeral: true
+                });
+            }
+
+            if (user.id === interaction.guild.ownerId) {
+                const embed = createErrorEmbed(
+                    '❌ Ban Failed',
+                    'The server owner cannot be banned.'
+                );
+
+                return interaction.reply({
+                    embeds: [embed],
+                    ephemeral: true
+                });
+            }
+
+            if (member) {
+                const moderationError = getModerationError({
+                    interaction,
+                    target: member,
+                    botMember
+                });
+
+                if (moderationError) {
+                    const embed = createErrorEmbed(
+                        '❌ Ban Failed',
+                        moderationError
+                    );
+
+                    return interaction.reply({
+                        embeds: [embed],
+                        ephemeral: true
+                    });
                 }
+
+                if (!member.bannable) {
+                    const embed = createErrorEmbed(
+                        '❌ Ban Failed',
+                        'I cannot ban this member. Check my permissions and role position.'
+                    );
+
+                    return interaction.reply({
+                        embeds: [embed],
+                        ephemeral: true
+                    });
+                }
+            }
+
+            await interaction.guild.members.ban(user.id, {
+                deleteMessageSeconds:
+                    deleteMessageDays * 24 * 60 * 60,
+
+                reason:
+                    `${reason} | Moderator: ${interaction.user.tag}`
+            });
+
+            const embed = createModerationEmbed({
+                action: '🔨 User Banned',
+                user,
+                moderator: interaction.user,
+                reason
+            });
+
+            return interaction.reply({
+                embeds: [embed]
+            });
+        } catch (error) {
+            console.error('Ban command error:', error);
+
+            const embed = createErrorEmbed(
+                '❌ Unexpected Error',
+                'An unexpected error occurred while trying to ban this user.'
             );
 
-        await interaction.reply({
-            embeds: [embed]
-        });
+            if (interaction.replied || interaction.deferred) {
+                return interaction.followUp({
+                    embeds: [embed],
+                    ephemeral: true
+                });
+            }
+
+            return interaction.reply({
+                embeds: [embed],
+                ephemeral: true
+            });
+        }
     }
 };

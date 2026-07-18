@@ -15,26 +15,26 @@ const {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('kick')
-        .setDescription('Kick a member from the server.')
+        .setName('untimeout')
+        .setDescription('Remove an active timeout from a member.')
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Member to kick')
+                .setDescription('Member to remove timeout from')
                 .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for the kick')
+                .setDescription('Reason for removing the timeout')
                 .setMaxLength(500)
                 .setRequired(false)
         )
 
         .setDefaultMemberPermissions(
-            PermissionFlagsBits.KickMembers
+            PermissionFlagsBits.ModerateMembers
         ),
 
     async execute(interaction) {
@@ -62,12 +62,12 @@ module.exports = {
             if (
                 !hasBotPermission(
                     botMember,
-                    PermissionFlagsBits.KickMembers
+                    PermissionFlagsBits.ModerateMembers
                 )
             ) {
                 const embed = createErrorEmbed(
                     '❌ Missing Permission',
-                    'I need the **Kick Members** permission to use this command.'
+                    'I need the **Moderate Members** permission to use this command.'
                 );
 
                 return interaction.reply({
@@ -84,7 +84,7 @@ module.exports = {
 
             if (moderationError) {
                 const embed = createErrorEmbed(
-                    '❌ Kick Failed',
+                    '❌ Untimeout Failed',
                     moderationError
                 );
 
@@ -94,10 +94,10 @@ module.exports = {
                 });
             }
 
-            if (!member.kickable) {
+            if (!member.isCommunicationDisabled()) {
                 const embed = createErrorEmbed(
-                    '❌ Kick Failed',
-                    'I cannot kick this member. Check my permissions and role position.'
+                    '❌ No Active Timeout',
+                    'This member does not currently have an active timeout.'
                 );
 
                 return interaction.reply({
@@ -106,12 +106,13 @@ module.exports = {
                 });
             }
 
-            await member.kick(
+            await member.timeout(
+                null,
                 `${reason} | Moderator: ${interaction.user.tag}`
             );
 
             const embed = createModerationEmbed({
-                action: '👢 Member Kicked',
+                action: '✅ Timeout Removed',
                 user: member.user,
                 moderator: interaction.user,
                 reason
@@ -121,11 +122,11 @@ module.exports = {
                 embeds: [embed]
             });
         } catch (error) {
-            console.error('Kick command error:', error);
+            console.error('Untimeout command error:', error);
 
             const embed = createErrorEmbed(
                 '❌ Unexpected Error',
-                'An unexpected error occurred while trying to kick this member.'
+                'An unexpected error occurred while trying to remove this timeout.'
             );
 
             if (interaction.replied || interaction.deferred) {

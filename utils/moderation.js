@@ -1,10 +1,7 @@
-const {
-    PermissionFlagsBits
-} = require('discord.js');
-
 /**
  * Check if the bot has a required permission.
- * @param {GuildMember} botMember
+ *
+ * @param {import('discord.js').GuildMember} botMember
  * @param {bigint} permission
  * @returns {boolean}
  */
@@ -13,8 +10,9 @@ function hasBotPermission(botMember, permission) {
 }
 
 /**
- * Check if the user has a required permission.
- * @param {GuildMember} member
+ * Check if a member has a required permission.
+ *
+ * @param {import('discord.js').GuildMember} member
  * @param {bigint} permission
  * @returns {boolean}
  */
@@ -23,17 +21,95 @@ function hasUserPermission(member, permission) {
 }
 
 /**
- * Check if a member can be moderated.
- * (Kick / Ban / Timeout)
- * @param {GuildMember} member
+ * Check whether the target member is above or equal to
+ * the moderator's highest role.
+ *
+ * @param {import('discord.js').GuildMember} moderator
+ * @param {import('discord.js').GuildMember} target
  * @returns {boolean}
  */
-function canModerate(member) {
-    return member.moderatable;
+function isTargetAboveModerator(moderator, target) {
+    return (
+        target.roles.highest.position >=
+        moderator.roles.highest.position
+    );
+}
+
+/**
+ * Check whether the target member is above or equal to
+ * the bot's highest role.
+ *
+ * @param {import('discord.js').GuildMember} botMember
+ * @param {import('discord.js').GuildMember} target
+ * @returns {boolean}
+ */
+function isTargetAboveBot(botMember, target) {
+    return (
+        target.roles.highest.position >=
+        botMember.roles.highest.position
+    );
+}
+
+/**
+ * Check whether a target can be moderated.
+ *
+ * @param {import('discord.js').GuildMember} target
+ * @returns {boolean}
+ */
+function canModerate(target) {
+    return target.moderatable;
+}
+
+/**
+ * Validate common moderation restrictions.
+ *
+ * Returns an error message when moderation is not allowed.
+ * Returns null when moderation can continue.
+ *
+ * @param {Object} options
+ * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
+ * @param {import('discord.js').GuildMember} options.target
+ * @param {import('discord.js').GuildMember} options.botMember
+ * @returns {string|null}
+ */
+function getModerationError({
+    interaction,
+    target,
+    botMember
+}) {
+    const moderator = interaction.member;
+
+    if (target.id === interaction.user.id) {
+        return 'You cannot moderate yourself.';
+    }
+
+    if (target.id === interaction.client.user.id) {
+        return 'You cannot use this command on DaviBot.';
+    }
+
+    if (target.id === interaction.guild.ownerId) {
+        return 'The server owner cannot be moderated.';
+    }
+
+    if (
+        interaction.user.id !== interaction.guild.ownerId &&
+        isTargetAboveModerator(moderator, target)
+    ) {
+        return 'You cannot moderate a member whose role is equal to or higher than yours.';
+    }
+
+    if (isTargetAboveBot(botMember, target)) {
+        return 'I cannot moderate this member because their role is equal to or higher than my role.';
+    }
+
+    return null;
 }
 
 module.exports = {
     hasBotPermission,
     hasUserPermission,
-    canModerate
+    isTargetAboveModerator,
+    isTargetAboveBot,
+    canModerate,
+    getModerationError
 };

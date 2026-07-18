@@ -9,32 +9,36 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    hasBotPermission,
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    warnings
+} = require('../../database');
+
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('kick')
-        .setDescription('Kick a member from the server.')
+        .setName('warn')
+        .setDescription('Give a warning to a server member.')
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Member to kick')
+                .setDescription('Member to warn')
                 .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for the kick')
+                .setDescription('Reason for the warning')
+                .setMinLength(2)
                 .setMaxLength(500)
-                .setRequired(false)
+                .setRequired(true)
         )
 
         .setDefaultMemberPermissions(
-            PermissionFlagsBits.KickMembers
+            PermissionFlagsBits.ModerateMembers
         ),
 
     async execute(interaction) {
@@ -42,8 +46,7 @@ module.exports = {
             const member = interaction.options.getMember('user');
 
             const reason =
-                interaction.options.getString('reason') ||
-                'No reason provided.';
+                interaction.options.getString('reason');
 
             const botMember = interaction.guild.members.me;
 
@@ -51,23 +54,6 @@ module.exports = {
                 const embed = createErrorEmbed(
                     '❌ Member Not Found',
                     'This user is not currently a member of the server.'
-                );
-
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
-                });
-            }
-
-            if (
-                !hasBotPermission(
-                    botMember,
-                    PermissionFlagsBits.KickMembers
-                )
-            ) {
-                const embed = createErrorEmbed(
-                    '❌ Missing Permission',
-                    'I need the **Kick Members** permission to use this command.'
                 );
 
                 return interaction.reply({
@@ -84,7 +70,7 @@ module.exports = {
 
             if (moderationError) {
                 const embed = createErrorEmbed(
-                    '❌ Kick Failed',
+                    '❌ Warning Failed',
                     moderationError
                 );
 
@@ -94,44 +80,55 @@ module.exports = {
                 });
             }
 
-            if (!member.kickable) {
-                const embed = createErrorEmbed(
-                    '❌ Kick Failed',
-                    'I cannot kick this member. Check my permissions and role position.'
+            await interaction.deferReply();
+
+            const warning = await warnings.addWarning({
+                guildId: interaction.guild.id,
+                userId: member.id,
+                moderatorId: interaction.user.id,
+                reason
+            });
+
+            const totalWarnings =
+                await warnings.countWarnings(
+                    interaction.guild.id,
+                    member.id
                 );
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
-                });
-            }
-
-            await member.kick(
-                `${reason} | Moderator: ${interaction.user.tag}`
-            );
-
             const embed = createModerationEmbed({
-                action: '👢 Member Kicked',
+                action: '⚠️ Member Warned',
                 user: member.user,
                 moderator: interaction.user,
                 reason
             });
 
-            return interaction.reply({
+            embed.addFields(
+                {
+                    name: '🆔 Warning ID',
+                    value: `#${warning.id}`,
+                    inline: true
+                },
+                {
+                    name: '📚 Total Warnings',
+                    value: `${totalWarnings}`,
+                    inline: true
+                }
+            );
+
+            return interaction.editReply({
                 embeds: [embed]
             });
         } catch (error) {
-            console.error('Kick command error:', error);
+            console.error('Warn command error:', error);
 
             const embed = createErrorEmbed(
-                '❌ Unexpected Error',
-                'An unexpected error occurred while trying to kick this member.'
+                '❌ Warning Failed',
+                'The warning could not be saved. Please check the database connection.'
             );
 
-            if (interaction.replied || interaction.deferred) {
-                return interaction.followUp({
-                    embeds: [embed],
-                    ephemeral: true
+            if (interaction.deferred || interaction.replied) {
+                return interaction.editReply({
+                    embeds: [embed]
                 });
             }
 
