@@ -78,6 +78,67 @@ async function getWarnings(guildId, userId) {
 }
 
 /**
+ * Get a warning by its ID inside a specific server.
+ *
+ * @param {string} guildId
+ * @param {string|number} warningId
+ * @returns {Promise<Object|null>}
+ */
+async function getWarningById(guildId, warningId) {
+    const result = await query(
+        `
+            SELECT
+                id,
+                guild_id,
+                user_id,
+                moderator_id,
+                reason,
+                created_at
+            FROM warnings
+            WHERE guild_id = $1
+              AND id = $2
+            LIMIT 1;
+        `,
+        [
+            guildId,
+            warningId
+        ]
+    );
+
+    return result.rows[0] || null;
+}
+
+/**
+ * Delete a warning by its ID inside a specific server.
+ *
+ * @param {string} guildId
+ * @param {string|number} warningId
+ * @returns {Promise<Object|null>}
+ */
+async function deleteWarningById(guildId, warningId) {
+    const result = await query(
+        `
+            DELETE FROM warnings
+            WHERE guild_id = $1
+              AND id = $2
+            RETURNING
+                id,
+                guild_id,
+                user_id,
+                moderator_id,
+                reason,
+                created_at;
+        `,
+        [
+            guildId,
+            warningId
+        ]
+    );
+
+    return result.rows[0] || null;
+}
+
+/**
  * Count all warnings for a server member.
  *
  * @param {string} guildId
@@ -104,5 +165,7 @@ async function countWarnings(guildId, userId) {
 module.exports = {
     addWarning,
     getWarnings,
+    getWarningById,
+    deleteWarningById,
     countWarnings
 };
