@@ -2,7 +2,8 @@ const {
     SlashCommandBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    PermissionFlagsBits
 } = require('discord.js');
 
 const {
@@ -41,30 +42,137 @@ function formatDiscordDate(timestamp) {
  */
 function getTimeoutStatus(member) {
     if (!member.isCommunicationDisabled()) {
-        return '✅ Not Timed Out';
+        return '🟢 No Active Timeout';
     }
 
     const timeoutTimestamp =
         member.communicationDisabledUntilTimestamp;
 
     if (!timeoutTimestamp) {
-        return '🔇 Active';
+        return '🔇 Timeout Active';
     }
 
     const unixTimestamp =
         Math.floor(timeoutTimestamp / 1000);
 
     return (
-        `🔇 Active\n` +
+        `🔇 Timeout Active\n` +
         `Ends <t:${unixTimestamp}:R>`
     );
 }
 
 /**
- * Safely get the number of warnings.
+ * Format the warning count.
  *
- * The profile command will continue working even when
- * PostgreSQL is unavailable in the local environment.
+ * @param {number|string} warningCount
+ * @returns {string}
+ */
+function formatWarningCount(warningCount) {
+    if (typeof warningCount !== 'number') {
+        return '⚠️ Unavailable';
+    }
+
+    if (warningCount === 0) {
+        return '🟢 No Warnings';
+    }
+
+    if (warningCount === 1) {
+        return '⚠️ 1 Warning';
+    }
+
+    return `⚠️ ${warningCount} Warnings`;
+}
+
+/**
+ * Get the member's account type.
+ *
+ * @param {import('discord.js').User} user
+ * @returns {string}
+ */
+function getAccountType(user) {
+    if (user.bot) {
+        return '🤖 Bot Account';
+    }
+
+    if (user.system) {
+        return '⚙️ System Account';
+    }
+
+    return '👤 User Account';
+}
+
+/**
+ * Get a profile badge based on the member's server permissions.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {import('discord.js').Guild} guild
+ * @returns {string}
+ */
+function getMemberBadge(member, guild) {
+    if (member.id === guild.ownerId) {
+        return '👑 Server Owner';
+    }
+
+    if (
+        member.permissions.has(
+            PermissionFlagsBits.Administrator
+        )
+    ) {
+        return '💎 Administrator';
+    }
+
+    if (
+        member.permissions.has(
+            PermissionFlagsBits.ModerateMembers
+        ) ||
+        member.permissions.has(
+            PermissionFlagsBits.KickMembers
+        ) ||
+        member.permissions.has(
+            PermissionFlagsBits.BanMembers
+        )
+    ) {
+        return '🛡️ Server Staff';
+    }
+
+    if (member.user.bot) {
+        return '🤖 Server Bot';
+    }
+
+    return '👤 Server Member';
+}
+
+/**
+ * Get the member's highest visible role.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function getHighestRole(member) {
+    if (
+        member.roles.highest.id ===
+        member.guild.id
+    ) {
+        return 'None';
+    }
+
+    return member.roles.highest.toString();
+}
+
+/**
+ * Get the member's role count without @everyone.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {number}
+ */
+function getRoleCount(member) {
+    return member.roles.cache.filter(
+        role => role.id !== member.guild.id
+    ).size;
+}
+
+/**
+ * Safely get the number of warnings.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -135,27 +243,23 @@ module.exports = {
                     forceStatic: false
                 });
 
-            const roleCount =
-                member.roles.cache.filter(
-                    role =>
-                        role.id !== interaction.guild.id
-                ).size;
-
-            const highestRole =
-                member.roles.highest.id ===
-                interaction.guild.id
-                    ? 'None'
-                    : member.roles.highest.toString();
+            const warningDisplay =
+                formatWarningCount(warningCount);
 
             const accountType =
-                fullUser.bot
-                    ? '🤖 Bot'
-                    : '👤 Human';
+                getAccountType(fullUser);
 
-            const warningDisplay =
-                typeof warningCount === 'number'
-                    ? String(warningCount)
-                    : `⚠️ ${warningCount}`;
+            const memberBadge =
+                getMemberBadge(
+                    member,
+                    interaction.guild
+                );
+
+            const highestRole =
+                getHighestRole(member);
+
+            const roleCount =
+                getRoleCount(member);
 
             const embed = createEmbed({
                 title:
@@ -174,11 +278,11 @@ module.exports = {
                         inline: false
                     },
                     {
-                        name: '🏰 Server Information',
+                        name: '🎖️ Member Status',
                         value:
-                            `**Nickname:** ${member.nickname ?? 'None'}\n` +
+                            `**Badge:** ${memberBadge}\n` +
                             `**Highest Role:** ${highestRole}\n` +
-                            `**Roles:** ${roleCount}`,
+                            `**Total Roles:** ${roleCount}`,
                         inline: true
                     },
                     {
