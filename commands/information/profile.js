@@ -14,7 +14,7 @@ const warningDatabase =
     require('../../database/warnings');
 
 /**
- * Convert a timestamp into Discord's full and relative date formats.
+ * Format a timestamp using Discord's date system.
  *
  * @param {number|null} timestamp
  * @returns {string}
@@ -24,7 +24,8 @@ function formatDiscordDate(timestamp) {
         return 'Unknown';
     }
 
-    const unixTimestamp = Math.floor(timestamp / 1000);
+    const unixTimestamp =
+        Math.floor(timestamp / 1000);
 
     return (
         `<t:${unixTimestamp}:F>\n` +
@@ -33,7 +34,7 @@ function formatDiscordDate(timestamp) {
 }
 
 /**
- * Build a readable timeout status for a server member.
+ * Get a readable timeout status.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -60,10 +61,10 @@ function getTimeoutStatus(member) {
 }
 
 /**
- * Safely get the warning count for a server member.
+ * Safely get the number of warnings.
  *
- * This allows the profile command to continue working locally
- * when PostgreSQL is not configured.
+ * The profile command will continue working even when
+ * PostgreSQL is unavailable in the local environment.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -108,18 +109,19 @@ module.exports = {
                 interaction.options.getUser('user') ??
                 interaction.user;
 
-            const [fullUser, member] = await Promise.all([
-                selectedUser.fetch(),
+            const [fullUser, member] =
+                await Promise.all([
+                    selectedUser.fetch(),
+                    interaction.guild.members.fetch(
+                        selectedUser.id
+                    )
+                ]);
 
-                interaction.guild.members.fetch(
+            const warningCount =
+                await getWarningCount(
+                    interaction.guild.id,
                     selectedUser.id
-                )
-            ]);
-
-            const warningCount = await getWarningCount(
-                interaction.guild.id,
-                selectedUser.id
-            );
+                );
 
             const avatarURL =
                 fullUser.displayAvatarURL({
@@ -150,25 +152,18 @@ module.exports = {
                     ? '🤖 Bot'
                     : '👤 Human';
 
-            const timeoutStatus =
-                getTimeoutStatus(member);
-
             const warningDisplay =
                 typeof warningCount === 'number'
                     ? String(warningCount)
                     : `⚠️ ${warningCount}`;
 
-            const embed = createEmbed(interaction)
-                .setAuthor({
-                    name:
-                        `${fullUser.username}'s Profile`,
-                    iconURL: avatarURL
-                })
-                .setThumbnail(avatarURL)
-                .setDescription(
-                    `Detailed profile information for ${fullUser}.`
-                )
-                .addFields(
+            const embed = createEmbed({
+                title:
+                    `👤 ${fullUser.username}'s Profile`,
+                description:
+                    `Detailed profile information for ${fullUser}.`,
+                thumbnail: avatarURL,
+                fields: [
                     {
                         name: '👤 User Information',
                         value:
@@ -190,7 +185,7 @@ module.exports = {
                         name: '🛡️ Moderation Information',
                         value:
                             `**Warnings:** ${warningDisplay}\n` +
-                            `**Timeout:** ${timeoutStatus}`,
+                            `**Timeout:** ${getTimeoutStatus(member)}`,
                         inline: true
                     },
                     {
@@ -207,15 +202,22 @@ module.exports = {
                         ),
                         inline: true
                     }
-                )
-                .setFooter({
-                    text:
-                        `DaviBot Profile System • Requested by ${interaction.user.username}`,
-                    iconURL:
-                        interaction.user.displayAvatarURL({
-                            forceStatic: false
-                        })
-                });
+                ]
+            });
+
+            embed.setAuthor({
+                name: fullUser.tag,
+                iconURL: avatarURL
+            });
+
+            embed.setFooter({
+                text:
+                    `DaviBot Profile System • Requested by ${interaction.user.username}`,
+                iconURL:
+                    interaction.user.displayAvatarURL({
+                        forceStatic: false
+                    })
+            });
 
             if (bannerURL) {
                 embed.setImage(bannerURL);
@@ -240,7 +242,7 @@ module.exports = {
                 );
             }
 
-            return interaction.editReply({
+            await interaction.editReply({
                 embeds: [embed],
                 components: [buttons]
             });
@@ -250,25 +252,32 @@ module.exports = {
                 error
             );
 
-            const embed = createErrorEmbed(
-                '❌ Profile Unavailable',
-                'The requested profile could not be loaded. Please try again later.'
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Profile Unavailable',
+                    'The requested profile could not be loaded. Please try again later.'
+                );
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                return interaction.editReply({
-                    embeds: [embed],
+            if (interaction.deferred) {
+                await interaction.editReply({
+                    embeds: [errorEmbed],
                     components: []
-                });
+                }).catch(() => null);
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            });
+            if (interaction.replied) {
+                await interaction.followUp({
+                    embeds: [errorEmbed]
+                }).catch(() => null);
+
+                return;
+            }
+
+            await interaction.reply({
+                embeds: [errorEmbed]
+            }).catch(() => null);
         }
     }
 };
