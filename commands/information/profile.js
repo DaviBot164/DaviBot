@@ -33,7 +33,7 @@ function formatDiscordDate(timestamp) {
 }
 
 /**
- * Build a readable timeout status for a guild member.
+ * Build a readable timeout status for a server member.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -47,7 +47,7 @@ function getTimeoutStatus(member) {
         member.communicationDisabledUntilTimestamp;
 
     if (!timeoutTimestamp) {
-        return '⚠️ Timed Out';
+        return '🔇 Active';
     }
 
     const unixTimestamp =
@@ -57,6 +57,31 @@ function getTimeoutStatus(member) {
         `🔇 Active\n` +
         `Ends <t:${unixTimestamp}:R>`
     );
+}
+
+/**
+ * Safely get the warning count for a server member.
+ *
+ * This allows the profile command to continue working locally
+ * when PostgreSQL is not configured.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number|string>}
+ */
+async function getWarningCount(guildId, userId) {
+    try {
+        return await warningDatabase.countWarnings(
+            guildId,
+            userId
+        );
+    } catch (error) {
+        console.warn(
+            `⚠️ Profile warning count unavailable: ${error.message}`
+        );
+
+        return 'Unavailable';
+    }
 }
 
 module.exports = {
@@ -83,22 +108,18 @@ module.exports = {
                 interaction.options.getUser('user') ??
                 interaction.user;
 
-            const [
-                fullUser,
-                member,
-                warningCount
-            ] = await Promise.all([
+            const [fullUser, member] = await Promise.all([
                 selectedUser.fetch(),
 
                 interaction.guild.members.fetch(
                     selectedUser.id
-                ),
-
-                warningDatabase.countWarnings(
-                    interaction.guild.id,
-                    selectedUser.id
                 )
             ]);
+
+            const warningCount = await getWarningCount(
+                interaction.guild.id,
+                selectedUser.id
+            );
 
             const avatarURL =
                 fullUser.displayAvatarURL({
@@ -125,10 +146,17 @@ module.exports = {
                     : member.roles.highest.toString();
 
             const accountType =
-                fullUser.bot ? '🤖 Bot' : '👤 Human';
+                fullUser.bot
+                    ? '🤖 Bot'
+                    : '👤 Human';
 
             const timeoutStatus =
                 getTimeoutStatus(member);
+
+            const warningDisplay =
+                typeof warningCount === 'number'
+                    ? String(warningCount)
+                    : `⚠️ ${warningCount}`;
 
             const embed = createEmbed(interaction)
                 .setAuthor({
@@ -161,7 +189,7 @@ module.exports = {
                     {
                         name: '🛡️ Moderation Information',
                         value:
-                            `**Warnings:** ${warningCount}\n` +
+                            `**Warnings:** ${warningDisplay}\n` +
                             `**Timeout:** ${timeoutStatus}`,
                         inline: true
                     },
@@ -184,7 +212,9 @@ module.exports = {
                     text:
                         `DaviBot Profile System • Requested by ${interaction.user.username}`,
                     iconURL:
-                        interaction.user.displayAvatarURL()
+                        interaction.user.displayAvatarURL({
+                            forceStatic: false
+                        })
                 });
 
             if (bannerURL) {
