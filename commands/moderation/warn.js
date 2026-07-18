@@ -12,9 +12,8 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
-const {
-    warnings
-} = require('../../database');
+const warningDatabase =
+    require('../../database/warnings');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -43,12 +42,17 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            const member = interaction.options.getMember('user');
+            const member =
+                interaction.options.getMember('user');
 
             const reason =
-                interaction.options.getString('reason');
+                interaction.options.getString(
+                    'reason',
+                    true
+                );
 
-            const botMember = interaction.guild.members.me;
+            const botMember =
+                interaction.guild.members.me;
 
             if (!member) {
                 const embed = createErrorEmbed(
@@ -62,11 +66,12 @@ module.exports = {
                 });
             }
 
-            const moderationError = getModerationError({
-                interaction,
-                target: member,
-                botMember
-            });
+            const moderationError =
+                getModerationError({
+                    interaction,
+                    target: member,
+                    botMember
+                });
 
             if (moderationError) {
                 const embed = createErrorEmbed(
@@ -82,15 +87,16 @@ module.exports = {
 
             await interaction.deferReply();
 
-            const warning = await warnings.addWarning({
-                guildId: interaction.guild.id,
-                userId: member.id,
-                moderatorId: interaction.user.id,
-                reason
-            });
+            const warning =
+                await warningDatabase.addWarning({
+                    guildId: interaction.guild.id,
+                    userId: member.id,
+                    moderatorId: interaction.user.id,
+                    reason
+                });
 
             const totalWarnings =
-                await warnings.countWarnings(
+                await warningDatabase.countWarnings(
                     interaction.guild.id,
                     member.id
                 );
@@ -110,7 +116,7 @@ module.exports = {
                 },
                 {
                     name: '📚 Total Warnings',
-                    value: `${totalWarnings}`,
+                    value: String(totalWarnings),
                     inline: true
                 }
             );
@@ -119,14 +125,20 @@ module.exports = {
                 embeds: [embed]
             });
         } catch (error) {
-            console.error('Warn command error:', error);
+            console.error(
+                'Warn command error:',
+                error
+            );
 
             const embed = createErrorEmbed(
                 '❌ Warning Failed',
                 'The warning could not be saved. Please check the database connection.'
             );
 
-            if (interaction.deferred || interaction.replied) {
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
                 return interaction.editReply({
                     embeds: [embed]
                 });

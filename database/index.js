@@ -7,10 +7,10 @@ const {
     initializeSchema
 } = require('./schema');
 
-const warnings = require('./warnings');
+const warningDatabase = require('./warnings');
 
 /**
- * Connect to PostgreSQL and initialize all tables.
+ * Connect to PostgreSQL and initialize all required tables.
  *
  * @returns {Promise<boolean>}
  */
@@ -52,5 +52,5 @@ async function initializeDatabase() {
 module.exports = {
     initializeDatabase,
     closeConnection,
-    warnings
+    warnings: warningDatabase
 };
