@@ -13,6 +13,10 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ban')
@@ -175,9 +179,31 @@ module.exports = {
                 reason
             });
 
-            return interaction.reply({
+            await interaction.reply({
                 embeds: [embed]
             });
+
+            await sendModLog({
+                guild: interaction.guild,
+                action: '🔨 User Banned',
+                user,
+                moderator: interaction.user,
+                reason,
+                fields: [
+                    {
+                        name: '🗑️ Deleted Messages',
+                        value:
+                            deleteMessageDays === 0
+                                ? 'No messages deleted'
+                                : `Messages from the last ${deleteMessageDays} day${
+                                    deleteMessageDays === 1 ? '' : 's'
+                                }`,
+                        inline: false
+                    }
+                ]
+            });
+
+            return;
         } catch (error) {
             console.error('Ban command error:', error);
 
