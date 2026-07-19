@@ -1,18 +1,21 @@
 /**
- * Empire Bot
+ * Seraphiel
  * Command: /userinfo
- * Version: 1.0.0
- * Status: Empire Standard
+ * Version: 2.0.0
  */
 
 const {
     SlashCommandBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    MessageFlags
 } = require('discord.js');
 
-const { createEmbed } = require('../../utils/embeds');
+const {
+    createEmbed,
+    createErrorEmbed
+} = require('../../utils/embeds');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -26,54 +29,106 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        try {
+            const selectedUser =
+                interaction.options.getUser('user') ||
+                interaction.user;
 
-        const member =
-            interaction.options.getMember('user') ||
-            interaction.member;
-
-        const user = await member.user.fetch(true);
-
-        const avatarURL = user.displayAvatarURL({
-            size: 4096,
-            forceStatic: false
-        });
-
-        const embed = createEmbed(interaction)
-            .setAuthor({
-                name: `${user.username}'s Information`,
-                iconURL: avatarURL
-            })
-            .setThumbnail(avatarURL)
-            .addFields(
-                {
-                    name: '👤 User Information',
-                    value:
-                        `**Username:** ${user.username}\n` +
-                        `**Display Name:** ${member.displayName}\n` +
-                        `**Mention:** ${user}\n` +
-                        `**Account Type:** ${user.bot ? 'Bot' : 'Human'}\n` +
-                        `**User ID:** \`${user.id}\``
-                },
-                {
-                    name: '📅 Account Information',
-                    value:
-                        `**Account Created:** <t:${Math.floor(user.createdTimestamp / 1000)}:F>\n` +
-                        `**Joined Server:** <t:${Math.floor(member.joinedTimestamp / 1000)}:F>`
-                }
+            const member = await interaction.guild.members.fetch(
+                selectedUser.id
             );
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setLabel('Open Avatar')
-                .setEmoji('🖼️')
-                .setStyle(ButtonStyle.Link)
-                .setURL(avatarURL)
-        );
+            const user = await selectedUser.fetch(true);
 
-        await interaction.reply({
-            embeds: [embed],
-            components: [row]
-        });
+            const avatarURL = user.displayAvatarURL({
+                size: 4096,
+                forceStatic: false
+            });
 
+            const accountCreatedTimestamp = Math.floor(
+                user.createdTimestamp / 1000
+            );
+
+            const joinedServerTimestamp = member.joinedTimestamp
+                ? Math.floor(member.joinedTimestamp / 1000)
+                : null;
+
+            const embed = createEmbed({
+                title: '👤 User Information',
+                thumbnail: avatarURL,
+                fields: [
+                    {
+                        name: '🪽 Profile',
+                        value:
+                            `**Username:** ${user.username}\n` +
+                            `**Display Name:** ${member.displayName}\n` +
+                            `**Mention:** ${user}\n` +
+                            `**Account Type:** ${user.bot ? 'Bot' : 'Human'}\n` +
+                            `**User ID:** \`${user.id}\``,
+                        inline: false
+                    },
+                    {
+                        name: '📅 Account Information',
+                        value:
+                            `**Account Created:** <t:${accountCreatedTimestamp}:F>\n` +
+                            `**Account Age:** <t:${accountCreatedTimestamp}:R>\n` +
+                            (
+                                joinedServerTimestamp
+                                    ? `**Joined Server:** <t:${joinedServerTimestamp}:F>\n` +
+                                      `**Time in Server:** <t:${joinedServerTimestamp}:R>`
+                                    : '**Joined Server:** Unknown'
+                            ),
+                        inline: false
+                    },
+                    {
+                        name: '🎭 Server Information',
+                        value:
+                            `**Highest Role:** ${member.roles.highest}\n` +
+                            `**Role Count:** ${Math.max(
+                                member.roles.cache.size - 1,
+                                0
+                            )}`,
+                        inline: false
+                    }
+                ]
+            });
+
+            embed.setAuthor({
+                name: `${user.username}'s Information`,
+                iconURL: avatarURL
+            });
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Open Avatar')
+                    .setEmoji('🖼️')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(avatarURL)
+            );
+
+            await interaction.reply({
+                embeds: [embed],
+                components: [row]
+            });
+        } catch (error) {
+            console.error('❌ Error executing /userinfo:', error);
+
+            const errorEmbed = createErrorEmbed(
+                '❌ User Information Error',
+                'I could not retrieve information about this user.'
+            );
+
+            if (interaction.replied || interaction.deferred) {
+                return interaction.followUp({
+                    embeds: [errorEmbed],
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            await interaction.reply({
+                embeds: [errorEmbed],
+                flags: MessageFlags.Ephemeral
+            });
+        }
     }
 };
