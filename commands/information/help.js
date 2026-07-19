@@ -1,5 +1,11 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { createEmbed } = require('../../utils/embeds');
+const {
+    SlashCommandBuilder,
+    MessageFlags
+} = require('discord.js');
+
+const {
+    createEmbed
+} = require('../../utils/embeds');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,11 +13,12 @@ module.exports = {
         .setDescription('Displays all available commands.'),
 
     async execute(interaction) {
-        const embed = createEmbed(
-            '📖 DaviBot Help',
-            'Welcome to **DaviBot**!\n\nHere are the commands currently available.'
-        )
-            .addFields(
+        const embed = createEmbed({
+            title: '📖 DaviBot Help',
+            description:
+                'Welcome to **DaviBot**!\n\n' +
+                'Here are the commands currently available.',
+            fields: [
                 {
                     name: '📜 General',
                     value:
@@ -41,11 +48,12 @@ module.exports = {
                         '• `/warnings`',
                     inline: false
                 }
-            );
+            ]
+        });
 
         await interaction.reply({
             embeds: [embed],
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };
