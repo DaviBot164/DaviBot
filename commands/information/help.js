@@ -7,18 +7,17 @@ module.exports = {
         .setDescription('Displays all available commands.'),
 
     async execute(interaction) {
-
-        const embed = createEmbed(interaction)
-            .setTitle('📖 DaviBot Help')
-            .setDescription(
-                'Welcome to **DaviBot**!\n\nHere are the commands currently available.'
-            )
+        const embed = createEmbed(
+            '📖 DaviBot Help',
+            'Welcome to **DaviBot**!\n\nHere are the commands currently available.'
+        )
             .addFields(
                 {
                     name: '📜 General',
                     value:
                         '• `/ping`\n' +
-                        '• `/help`',
+                        '• `/help`\n' +
+                        '• `/testwelcome`',
                     inline: true
                 },
                 {
@@ -35,14 +34,18 @@ module.exports = {
                     value:
                         '• `/clear`\n' +
                         '• `/kick`\n' +
-                        '• `/ban`',
-                    inline: true
+                        '• `/ban`\n' +
+                        '• `/timeout`\n' +
+                        '• `/untimeout`\n' +
+                        '• `/warn`\n' +
+                        '• `/warnings`',
+                    inline: false
                 }
             );
 
         await interaction.reply({
-            embeds: [embed]
+            embeds: [embed],
+            ephemeral: true
         });
-
     }
 };
