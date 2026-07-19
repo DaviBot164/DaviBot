@@ -28,7 +28,9 @@ const UNKNOWN_INTERACTION = 10062;
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -43,12 +45,6 @@ eventHandler(client);
 
 /**
  * Send an error message for a failed Slash Command.
- *
- * The response method depends on the current interaction state:
- *
- * - reply(): interaction has not been acknowledged
- * - editReply(): interaction was deferred
- * - followUp(): interaction already received a response
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @returns {Promise<void>}
@@ -82,12 +78,6 @@ async function sendCommandError(interaction) {
             ephemeral: true
         });
     } catch (error) {
-        /*
-         * Error 40060 means another part of the command
-         * acknowledged the interaction before this handler.
-         *
-         * In that case, attempt a follow-up message once.
-         */
         if (
             error.code ===
             INTERACTION_ALREADY_ACKNOWLEDGED
