@@ -42,8 +42,8 @@ module.exports = {
             }
 
             const channel = interaction.channel;
-            const guild = interaction.guild;
-            const botMember = guild.members.me;
+            const everyoneRole =
+                interaction.guild.roles.everyone;
 
             const reason =
                 interaction.options.getString('reason') ||
@@ -69,18 +69,20 @@ module.exports = {
                 });
             }
 
+            const botMember =
+                interaction.guild.members.me;
+
             const botPermissions =
                 channel.permissionsFor(botMember);
 
             if (
-                !botPermissions ||
-                !botPermissions.has(
+                !botPermissions?.has(
                     PermissionFlagsBits.ManageRoles
                 )
             ) {
                 const embed = createErrorEmbed(
                     '❌ Missing Permission',
-                    'DaviBot needs **Manage Roles** permission in this channel.'
+                    'DaviBot needs the **Manage Roles** permission in this channel.'
                 );
 
                 return interaction.reply({
@@ -89,34 +91,13 @@ module.exports = {
                 });
             }
 
-            if (
-                !botPermissions.has(
-                    PermissionFlagsBits.SendMessages
-                ) ||
-                !botPermissions.has(
-                    PermissionFlagsBits.EmbedLinks
-                )
-            ) {
-                const embed = createErrorEmbed(
-                    '❌ Missing Channel Permission',
-                    'DaviBot needs **Send Messages** and **Embed Links** permissions in this channel.'
-                );
-
-                return interaction.reply({
-                    embeds: [embed],
-                    flags: MessageFlags.Ephemeral
-                });
-            }
-
-            const everyoneRole = guild.roles.everyone;
-
-            const currentOverride =
+            const everyoneOverride =
                 channel.permissionOverwrites.cache.get(
                     everyoneRole.id
                 );
 
             if (
-                currentOverride?.deny.has(
+                everyoneOverride?.deny.has(
                     PermissionFlagsBits.SendMessages
                 )
             ) {
@@ -135,32 +116,6 @@ module.exports = {
                 flags: MessageFlags.Ephemeral
             });
 
-            // Send the public message before removing Send Messages.
-            const publicEmbed = createEmbed({
-                title: '🔒 Channel Locked',
-
-                description:
-                    'This channel has been temporarily locked.',
-
-                fields: [
-                    {
-                        name: '👮 Moderator',
-                        value: `${interaction.user}`,
-                        inline: true
-                    },
-                    {
-                        name: '📝 Reason',
-                        value: reason,
-                        inline: false
-                    }
-                ]
-            });
-
-            await channel.send({
-                embeds: [publicEmbed]
-            });
-
-            // Lock the channel after the announcement is sent.
             await channel.permissionOverwrites.edit(
                 everyoneRole,
                 {
@@ -168,16 +123,14 @@ module.exports = {
                 },
                 {
                     reason:
-                        `Channel locked by ${interaction.user.tag}: ${reason}`
+                        `Locked by ${interaction.user.tag}: ${reason}`
                 }
             );
 
-            const confirmationEmbed = createEmbed({
+            const embed = createEmbed({
                 title: '🔒 Channel Locked',
-
                 description:
                     `${channel} has been locked successfully.`,
-
                 fields: [
                     {
                         name: '📺 Channel',
@@ -201,7 +154,7 @@ module.exports = {
             });
 
             return interaction.editReply({
-                embeds: [confirmationEmbed]
+                embeds: [embed]
             });
         } catch (error) {
             console.error(
@@ -211,7 +164,7 @@ module.exports = {
 
             const embed = createErrorEmbed(
                 '❌ Lock Failed',
-                'The channel could not be locked. Check the Northflank logs for the exact error.'
+                'The channel could not be locked. Check DaviBot’s permissions and Northflank logs.'
             );
 
             if (
