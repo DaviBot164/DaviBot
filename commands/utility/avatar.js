@@ -2,10 +2,14 @@ const {
     SlashCommandBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    MessageFlags
 } = require('discord.js');
 
-const { createEmbed } = require('../../utils/embeds');
+const {
+    createEmbed,
+    createErrorEmbed
+} = require('../../utils/embeds');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,75 +23,118 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        try {
+            const selectedUser =
+                interaction.options.getUser('user') ||
+                interaction.user;
 
-        const selectedUser = interaction.options.getUser('user') || interaction.user;
+            const user = await selectedUser.fetch(true);
 
-        const user = await selectedUser.fetch(true);
-        const member = await interaction.guild.members.fetch(user.id);
-
-        const avatarURL = user.displayAvatarURL({
-            size: 4096,
-            forceStatic: false
-        });
-
-        const bannerURL = user.bannerURL({
-            size: 4096,
-            forceStatic: false
-        });
-
-        const embed = createEmbed(interaction)
-            .setAuthor({
-                name: `${user.username}'s Avatar`,
-                iconURL: avatarURL
-            })
-            .setThumbnail(avatarURL)
-            .setImage(avatarURL)
-            .addFields(
-                {
-                    name: '👤 USER INFORMATION',
-                    value:
-                        `**Username:** ${user.username}\n` +
-                        `**Display Name:** ${member.displayName}\n` +
-                        `**User ID:** \`${user.id}\``
-                },
-                {
-                    name: '🖼️ AVATAR INFORMATION',
-                    value:
-                        `**Animated:** ${avatarURL.includes('.gif') ? 'Yes' : 'No'}\n` +
-                        `**Banner:** ${bannerURL ? 'Available' : 'Not Available'}\n` +
-                        `**Created:** <t:${Math.floor(user.createdTimestamp / 1000)}:F>`
-                }
+            const member = await interaction.guild.members.fetch(
+                user.id
             );
 
-        const buttons = [];
+            const avatarURL = user.displayAvatarURL({
+                size: 4096,
+                forceStatic: false
+            });
 
-        buttons.push(
-            new ButtonBuilder()
-                .setLabel('Open Avatar')
-                .setEmoji('🖼️')
-                .setStyle(ButtonStyle.Link)
-                .setURL(avatarURL)
-        );
+            const bannerURL = user.bannerURL({
+                size: 4096,
+                forceStatic: false
+            });
 
-        if (bannerURL) {
+            const createdTimestamp = Math.floor(
+                user.createdTimestamp / 1000
+            );
 
-            buttons.push(
+            const embed = createEmbed({
+                title: '🖼️ User Avatar',
+                description:
+                    `Avatar information for ${user}.`,
+                thumbnail: avatarURL,
+                fields: [
+                    {
+                        name: '👤 User Information',
+                        value:
+                            `**Username:** ${user.username}\n` +
+                            `**Display Name:** ${member.displayName}\n` +
+                            `**User ID:** \`${user.id}\``,
+                        inline: false
+                    },
+                    {
+                        name: '🖼️ Avatar Information',
+                        value:
+                            `**Animated:** ${
+                                avatarURL.includes('.gif')
+                                    ? 'Yes'
+                                    : 'No'
+                            }\n` +
+                            `**Banner:** ${
+                                bannerURL
+                                    ? 'Available'
+                                    : 'Not Available'
+                            }\n` +
+                            `**Account Created:** <t:${createdTimestamp}:F>`,
+                        inline: false
+                    }
+                ]
+            });
+
+            embed
+                .setAuthor({
+                    name: `${user.username}'s Avatar`,
+                    iconURL: avatarURL
+                })
+                .setImage(avatarURL);
+
+            const buttons = [
                 new ButtonBuilder()
-                    .setLabel('Open Banner')
-                    .setEmoji('🌄')
+                    .setLabel('Open Avatar')
+                    .setEmoji('🖼️')
                     .setStyle(ButtonStyle.Link)
-                    .setURL(bannerURL)
+                    .setURL(avatarURL)
+            ];
+
+            if (bannerURL) {
+                buttons.push(
+                    new ButtonBuilder()
+                        .setLabel('Open Banner')
+                        .setEmoji('🌄')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL(bannerURL)
+                );
+            }
+
+            const row = new ActionRowBuilder()
+                .addComponents(buttons);
+
+            await interaction.reply({
+                embeds: [embed],
+                components: [row]
+            });
+        } catch (error) {
+            console.error(
+                '❌ Error executing /avatar:',
+                error
             );
 
+            const errorEmbed = createErrorEmbed(
+                '❌ Avatar Error',
+                'I could not retrieve this user’s avatar.'
+            );
+
+            if (interaction.replied || interaction.deferred) {
+                return interaction.followUp({
+                    embeds: [errorEmbed],
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            await interaction.reply({
+                embeds: [errorEmbed],
+                flags: MessageFlags.Ephemeral
+            });
         }
-
-        const row = new ActionRowBuilder()
-            .addComponents(buttons);
-
-        await interaction.reply({
-            embeds: [embed],
-            components: [row]
-        });
-
     }
 };
