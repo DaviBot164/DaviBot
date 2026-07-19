@@ -105,6 +105,8 @@ function createModerationEmbed({
     reason,
     duration = null
 }) {
+    const executedAt = Math.floor(Date.now() / 1000);
+
     const fields = [
         {
             name: '👤 User',
@@ -119,6 +121,11 @@ function createModerationEmbed({
         {
             name: '📝 Reason',
             value: reason,
+            inline: false
+        },
+        {
+            name: '🕒 Executed At',
+            value: `<t:${executedAt}:F>`,
             inline: false
         }
     ];
@@ -141,10 +148,70 @@ function createModerationEmbed({
     });
 }
 
+/**
+ * Create an embed for channel moderation actions.
+ *
+ * @param {Object} options
+ * @param {string} options.action
+ * @param {import('discord.js').GuildChannel} options.channel
+ * @param {import('discord.js').User} options.moderator
+ * @param {string} options.reason
+ * @returns {EmbedBuilder}
+ */
+function createChannelModerationEmbed({
+    action,
+    channel,
+    moderator,
+    reason
+}) {
+    const executedAt = Math.floor(Date.now() / 1000);
+
+    return createEmbed({
+        title: action,
+        color: embedConfig.colors.moderation,
+
+        description:
+            `${channel} has been updated successfully.`,
+
+        fields: [
+            {
+                name: '📺 Channel',
+                value:
+                    `${channel}\n\`${channel.id}\``,
+                inline: true
+            },
+            {
+                name: '👮 Moderator',
+                value:
+                    `${moderator}\n\`${moderator.id}\``,
+                inline: true
+            },
+            {
+                name: '🏠 Server',
+                value:
+                    `${channel.guild.name}\n` +
+                    `\`${channel.guild.id}\``,
+                inline: false
+            },
+            {
+                name: '📝 Reason',
+                value: reason,
+                inline: false
+            },
+            {
+                name: '🕒 Executed At',
+                value: `<t:${executedAt}:F>`,
+                inline: false
+            }
+        ]
+    });
+}
+
 module.exports = {
     createEmbed,
     createSuccessEmbed,
     createErrorEmbed,
     createWarningEmbed,
-    createModerationEmbed
+    createModerationEmbed,
+    createChannelModerationEmbed
 };

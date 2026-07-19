@@ -6,8 +6,8 @@ const {
 } = require('discord.js');
 
 const {
-    createEmbed,
-    createErrorEmbed
+    createErrorEmbed,
+    createChannelModerationEmbed
 } = require('../../utils/embeds');
 
 module.exports = {
@@ -18,7 +18,9 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for locking the channel')
+                .setDescription(
+                    'Reason for locking the channel'
+                )
                 .setMaxLength(500)
                 .setRequired(false)
         )
@@ -127,31 +129,13 @@ module.exports = {
                 }
             );
 
-            const embed = createEmbed({
-                title: '🔒 Channel Locked',
-                description:
-                    `${channel} has been locked successfully.`,
-                fields: [
-                    {
-                        name: '📺 Channel',
-                        value:
-                            `${channel}\n\`${channel.id}\``,
-                        inline: true
-                    },
-                    {
-                        name: '👮 Moderator',
-                        value:
-                            `${interaction.user}\n` +
-                            `\`${interaction.user.id}\``,
-                        inline: true
-                    },
-                    {
-                        name: '📝 Reason',
-                        value: reason,
-                        inline: false
-                    }
-                ]
-            });
+            const embed =
+                createChannelModerationEmbed({
+                    action: '🔒 Channel Locked',
+                    channel,
+                    moderator: interaction.user,
+                    reason
+                });
 
             return interaction.editReply({
                 embeds: [embed]
