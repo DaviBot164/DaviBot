@@ -1,11 +1,12 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
-    createErrorEmbed,
-    createModerationEmbed
+    createEmbed,
+    createErrorEmbed
 } = require('../../utils/embeds');
 
 const warningDatabase =
@@ -15,17 +16,42 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unwarn')
         .setDescription(
-            'Remove a warning by its warning ID.'
+            'Remove one warning or all warnings from a server member.'
         )
 
-        .addIntegerOption(option =>
-            option
-                .setName('warning_id')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('single')
                 .setDescription(
-                    'ID of the warning to remove'
+                    'Remove one warning by its ID.'
                 )
-                .setMinValue(1)
-                .setRequired(true)
+
+                .addIntegerOption(option =>
+                    option
+                        .setName('warning_id')
+                        .setDescription(
+                            'ID of the warning to remove'
+                        )
+                        .setMinValue(1)
+                        .setRequired(true)
+                )
+        )
+
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('all')
+                .setDescription(
+                    'Remove all warnings from a member.'
+                )
+
+                .addUserOption(option =>
+                    option
+                        .setName('user')
+                        .setDescription(
+                            'Member whose warnings should be removed'
+                        )
+                        .setRequired(true)
+                )
         )
 
         .setDefaultMemberPermissions(
@@ -34,97 +60,157 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            const warningId =
-                interaction.options.getInteger(
-                    'warning_id',
-                    true
-                );
+            const subcommand =
+                interaction.options.getSubcommand();
 
-            await interaction.deferReply();
+            await interaction.deferReply({
+                flags: MessageFlags.Ephemeral
+            });
 
-            const warning =
-                await warningDatabase.getWarningById(
-                    interaction.guild.id,
-                    warningId
-                );
+            if (subcommand === 'single') {
+                const warningId =
+                    interaction.options.getInteger(
+                        'warning_id',
+                        true
+                    );
 
-            if (!warning) {
-                const embed = createErrorEmbed(
-                    '❌ Warning Not Found',
-                    `Warning #${warningId} does not exist in this server.`
-                );
+                const warning =
+                    await warningDatabase.getWarningById(
+                        interaction.guild.id,
+                        warningId
+                    );
 
-                return interaction.editReply({
-                    embeds: [embed]
-                });
-            }
+                if (!warning) {
+                    const embed = createErrorEmbed(
+                        '❌ Warning Not Found',
+                        `No warning with ID **#${warningId}** exists in this server.`
+                    );
 
-            const deletedWarning =
-                await warningDatabase.deleteWarningById(
-                    interaction.guild.id,
-                    warningId
-                );
+                    return interaction.editReply({
+                        embeds: [embed]
+                    });
+                }
 
-            if (!deletedWarning) {
-                const embed = createErrorEmbed(
-                    '❌ Warning Removal Failed',
-                    `Warning #${warningId} could not be removed.`
-                );
+                const deletedWarning =
+                    await warningDatabase.deleteWarningById(
+                        interaction.guild.id,
+                        warningId
+                    );
 
-                return interaction.editReply({
-                    embeds: [embed]
-                });
-            }
-
-            const remainingWarnings =
-                await warningDatabase.countWarnings(
-                    interaction.guild.id,
-                    deletedWarning.user_id
-                );
-
-            let targetUser = null;
-
-            try {
-                targetUser =
-                    await interaction.client.users.fetch(
+                const remainingWarnings =
+                    await warningDatabase.countWarnings(
+                        interaction.guild.id,
                         deletedWarning.user_id
                     );
-            } catch {
-                targetUser = null;
+
+                const embed = createEmbed({
+                    title: '🗑️ Warning Removed',
+
+                    description:
+                        `Warning **#${deletedWarning.id}** was removed successfully.`,
+
+                    fields: [
+                        {
+                            name: '👤 User',
+                            value:
+                                `<@${deletedWarning.user_id}>\n` +
+                                `\`${deletedWarning.user_id}\``,
+                            inline: true
+                        },
+                        {
+                            name: '👮 Removed By',
+                            value:
+                                `${interaction.user}\n` +
+                                `\`${interaction.user.id}\``,
+                            inline: true
+                        },
+                        {
+                            name: '📝 Original Reason',
+                            value: deletedWarning.reason,
+                            inline: false
+                        },
+                        {
+                            name: '📚 Remaining Warnings',
+                            value:
+                                String(remainingWarnings),
+                            inline: true
+                        }
+                    ]
+                });
+
+                return interaction.editReply({
+                    embeds: [embed]
+                });
             }
 
-            const embed = createModerationEmbed({
-                action: '🗑️ Warning Removed',
-                user: targetUser || {
-                    id: deletedWarning.user_id,
-                    tag: 'Unknown User',
-                    displayAvatarURL: () => null
-                },
-                moderator: interaction.user,
-                reason: deletedWarning.reason
-            });
+            if (subcommand === 'all') {
+                const user =
+                    interaction.options.getUser(
+                        'user',
+                        true
+                    );
 
-            embed.addFields(
-                {
-                    name: '🆔 Removed Warning',
-                    value: `#${deletedWarning.id}`,
-                    inline: true
-                },
-                {
-                    name: '📚 Remaining Warnings',
-                    value: String(remainingWarnings),
-                    inline: true
-                },
-                {
-                    name: '👮 Original Moderator',
-                    value: `<@${deletedWarning.moderator_id}>`,
-                    inline: true
+                const warningCount =
+                    await warningDatabase.countWarnings(
+                        interaction.guild.id,
+                        user.id
+                    );
+
+                if (warningCount === 0) {
+                    const embed = createErrorEmbed(
+                        '❌ No Warnings Found',
+                        `${user.tag} does not have any warnings in this server.`
+                    );
+
+                    return interaction.editReply({
+                        embeds: [embed]
+                    });
                 }
-            );
 
-            return interaction.editReply({
-                embeds: [embed]
-            });
+                const deletedCount =
+                    await warningDatabase.deleteAllWarnings(
+                        interaction.guild.id,
+                        user.id
+                    );
+
+                const embed = createEmbed({
+                    title: '🗑️ All Warnings Removed',
+
+                    description:
+                        `All warnings for ${user} were removed successfully.`,
+
+                    thumbnail:
+                        user.displayAvatarURL({
+                            size: 256
+                        }),
+
+                    fields: [
+                        {
+                            name: '👤 User',
+                            value:
+                                `${user}\n\`${user.id}\``,
+                            inline: true
+                        },
+                        {
+                            name: '👮 Removed By',
+                            value:
+                                `${interaction.user}\n` +
+                                `\`${interaction.user.id}\``,
+                            inline: true
+                        },
+                        {
+                            name: '🗑️ Deleted Warnings',
+                            value:
+                                String(deletedCount),
+                            inline: true
+                        }
+                    ]
+                });
+
+                return interaction.editReply({
+                    embeds: [embed]
+                });
+            }
         } catch (error) {
             console.error(
                 'Unwarn command error:',
@@ -132,7 +218,7 @@ module.exports = {
             );
 
             const embed = createErrorEmbed(
-                '❌ Warning Removal Failed',
+                '❌ Unwarn Failed',
                 'The warning could not be removed. Please check the database connection.'
             );
 
@@ -147,7 +233,7 @@ module.exports = {
 
             return interaction.reply({
                 embeds: [embed],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }
