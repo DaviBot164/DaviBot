@@ -13,7 +13,7 @@ const TICKET_OWNER_PATTERN =
 
 /**
  * Convert configured permission names into
- * Discord PermissionFlagsBits values.
+ * Discord permission bit values.
  *
  * @param {string[]} permissionNames
  * @returns {bigint[]}
@@ -27,7 +27,7 @@ function resolvePermissions(permissionNames) {
 }
 
 /**
- * Create a safe Discord channel name.
+ * Create a safe Discord ticket channel name.
  *
  * @param {import('discord.js').User} user
  * @returns {string}
@@ -44,6 +44,32 @@ function createTicketChannelName(user) {
         safeUsername || `user-${user.id.slice(-6)}`;
 
     return `${ticketConfig.channelPrefix}-${username}`;
+}
+
+/**
+ * Create a closed ticket channel name.
+ *
+ * @param {string} currentName
+ * @returns {string}
+ */
+function createClosedTicketChannelName(currentName) {
+    const cleanName = currentName
+        .replace(/^closed-/, '')
+        .slice(0, 92);
+
+    return `closed-${cleanName}`;
+}
+
+/**
+ * Restore the original ticket channel name.
+ *
+ * @param {string} currentName
+ * @returns {string}
+ */
+function createReopenedTicketChannelName(currentName) {
+    return currentName
+        .replace(/^closed-/, '')
+        .slice(0, 100);
 }
 
 /**
@@ -64,7 +90,7 @@ function createTicketTopic(ownerId, status = 'open') {
  * Read ticket information from a channel topic.
  *
  * @param {string|null} topic
- * @returns {{ownerId: string, status: string}|null}
+ * @returns {{ownerId: string, status: 'open'|'closed'}|null}
  */
 function parseTicketTopic(topic) {
     if (!topic) {
@@ -88,7 +114,7 @@ function parseTicketTopic(topic) {
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} userId
- * @returns {import('discord.js').GuildTextBasedChannel|null}
+ * @returns {import('discord.js').TextChannel|null}
  */
 function findOpenTicket(guild, userId) {
     return (
@@ -110,9 +136,6 @@ function findOpenTicket(guild, userId) {
 
 /**
  * Create the ticket panel button.
- *
- * Category and staff role IDs are stored in the custom ID,
- * allowing the button to continue working after bot restarts.
  *
  * @param {string} categoryId
  * @param {string} staffRoleId
@@ -136,20 +159,125 @@ function createTicketPanelButtons(
 }
 
 /**
- * Create the buttons shown inside a ticket channel.
+ * Create the button shown inside an open ticket.
  *
  * @param {string} ownerId
+ * @param {string} staffRoleId
  * @returns {ActionRowBuilder}
  */
-function createTicketControlButtons(ownerId) {
+function createOpenTicketButtons(
+    ownerId,
+    staffRoleId
+) {
     const closeButton = new ButtonBuilder()
-        .setCustomId(`ticket:close:${ownerId}`)
+        .setCustomId(
+            `ticket:close:${ownerId}:${staffRoleId}`
+        )
         .setLabel(ticketConfig.ticket.closeButtonLabel)
         .setEmoji(ticketConfig.ticket.closeButtonEmoji)
         .setStyle(ButtonStyle.Danger);
 
     return new ActionRowBuilder().addComponents(
         closeButton
+    );
+}
+
+/**
+ * Create Close Ticket confirmation buttons.
+ *
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {ActionRowBuilder}
+ */
+function createCloseConfirmationButtons(
+    ownerId,
+    staffRoleId
+) {
+    const confirmButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:confirm-close:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Confirm Close')
+        .setEmoji('✅')
+        .setStyle(ButtonStyle.Danger);
+
+    const cancelButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:cancel-close:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Cancel')
+        .setEmoji('❌')
+        .setStyle(ButtonStyle.Secondary);
+
+    return new ActionRowBuilder().addComponents(
+        confirmButton,
+        cancelButton
+    );
+}
+
+/**
+ * Create buttons shown inside a closed ticket.
+ *
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {ActionRowBuilder}
+ */
+function createClosedTicketButtons(
+    ownerId,
+    staffRoleId
+) {
+    const reopenButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:reopen:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Reopen Ticket')
+        .setEmoji('🔓')
+        .setStyle(ButtonStyle.Success);
+
+    const deleteButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:delete:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Delete Ticket')
+        .setEmoji('🗑️')
+        .setStyle(ButtonStyle.Danger);
+
+    return new ActionRowBuilder().addComponents(
+        reopenButton,
+        deleteButton
+    );
+}
+
+/**
+ * Create Delete Ticket confirmation buttons.
+ *
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {ActionRowBuilder}
+ */
+function createDeleteConfirmationButtons(
+    ownerId,
+    staffRoleId
+) {
+    const confirmButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:confirm-delete:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Confirm Delete')
+        .setEmoji('✅')
+        .setStyle(ButtonStyle.Danger);
+
+    const cancelButton = new ButtonBuilder()
+        .setCustomId(
+            `ticket:cancel-delete:${ownerId}:${staffRoleId}`
+        )
+        .setLabel('Cancel')
+        .setEmoji('❌')
+        .setStyle(ButtonStyle.Secondary);
+
+    return new ActionRowBuilder().addComponents(
+        confirmButton,
+        cancelButton
     );
 }
 
@@ -196,12 +324,37 @@ function createTicketPermissionOverwrites(
     ];
 }
 
+/**
+ * Check whether a member belongs to the configured
+ * ticket staff role.
+ *
+ * Administrators are also accepted.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {string} staffRoleId
+ * @returns {boolean}
+ */
+function isTicketStaff(member, staffRoleId) {
+    return (
+        member.permissions.has(
+            PermissionFlagsBits.Administrator
+        ) ||
+        member.roles.cache.has(staffRoleId)
+    );
+}
+
 module.exports = {
     createTicketChannelName,
+    createClosedTicketChannelName,
+    createReopenedTicketChannelName,
     createTicketTopic,
     parseTicketTopic,
     findOpenTicket,
     createTicketPanelButtons,
-    createTicketControlButtons,
-    createTicketPermissionOverwrites
+    createOpenTicketButtons,
+    createCloseConfirmationButtons,
+    createClosedTicketButtons,
+    createDeleteConfirmationButtons,
+    createTicketPermissionOverwrites,
+    isTicketStaff
 };

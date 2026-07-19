@@ -14,15 +14,96 @@ const {
 
 const {
     createTicketChannelName,
+    createClosedTicketChannelName,
+    createReopenedTicketChannelName,
     createTicketTopic,
     findOpenTicket,
-    createTicketControlButtons,
+    createOpenTicketButtons,
+    createCloseConfirmationButtons,
+    createClosedTicketButtons,
+    createDeleteConfirmationButtons,
     createTicketPermissionOverwrites,
-    parseTicketTopic
+    parseTicketTopic,
+    isTicketStaff
 } = require('../utils/tickets');
 
 const ticketConfig =
     require('../config/tickets');
+
+/**
+ * Send a safe ephemeral ticket error response.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} title
+ * @param {string} description
+ * @returns {Promise<void>}
+ */
+async function sendTicketError(
+    interaction,
+    title,
+    description
+) {
+    const errorEmbed = createErrorEmbed(
+        title,
+        description
+    );
+
+    if (interaction.deferred) {
+        await interaction.editReply({
+            embeds: [errorEmbed],
+            components: []
+        });
+
+        return;
+    }
+
+    if (interaction.replied) {
+        await interaction.followUp({
+            flags: MessageFlags.Ephemeral,
+            embeds: [errorEmbed]
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        embeds: [errorEmbed]
+    });
+}
+
+/**
+ * Validate the current ticket channel.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} expectedOwnerId
+ * @returns {{ownerId: string, status: 'open'|'closed'}|null}
+ */
+function validateTicketChannel(
+    interaction,
+    expectedOwnerId
+) {
+    if (
+        !interaction.channel ||
+        interaction.channel.type !==
+            ChannelType.GuildText
+    ) {
+        return null;
+    }
+
+    const ticketData = parseTicketTopic(
+        interaction.channel.topic
+    );
+
+    if (
+        !ticketData ||
+        ticketData.ownerId !== expectedOwnerId
+    ) {
+        return null;
+    }
+
+    return ticketData;
+}
 
 /**
  * Handle the Create Ticket button.
@@ -156,7 +237,8 @@ async function handleCreateTicket(
                 parent: category.id,
 
                 topic: createTicketTopic(
-                    interaction.user.id
+                    interaction.user.id,
+                    'open'
                 ),
 
                 permissionOverwrites:
@@ -200,6 +282,11 @@ async function handleCreateTicket(
                     inline: true
                 },
                 {
+                    name: '🟢 Status',
+                    value: 'Open',
+                    inline: true
+                },
+                {
                     name: '🕒 Opened At',
                     value: `<t:${openedAt}:F>`,
                     inline: false
@@ -208,8 +295,9 @@ async function handleCreateTicket(
         });
 
         const controlButtons =
-            createTicketControlButtons(
-                interaction.user.id
+            createOpenTicketButtons(
+                interaction.user.id,
+                staffRole.id
             );
 
         await ticketChannel.send({
@@ -264,36 +352,47 @@ async function handleCreateTicket(
 }
 
 /**
- * Handle the Close Ticket button.
+ * Show Close Ticket confirmation.
  *
- * Full closing functionality will be added
- * in the next Ticket System stage.
+ * The ticket owner or ticket staff may request closure.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {string} ownerId
+ * @param {string} staffRoleId
  * @returns {Promise<void>}
  */
 async function handleCloseTicket(
     interaction,
-    ownerId
+    ownerId,
+    staffRoleId
 ) {
-    const ticketData =
-        parseTicketTopic(interaction.channel?.topic);
+    const ticketData = validateTicketChannel(
+        interaction,
+        ownerId
+    );
 
-    if (
-        !ticketData ||
-        ticketData.ownerId !== ownerId
-    ) {
-        await interaction.reply({
-            flags: MessageFlags.Ephemeral,
+    if (!ticketData || ticketData.status !== 'open') {
+        await sendTicketError(
+            interaction,
+            '❌ Invalid Ticket',
+            'This channel is not recognized as an open DaviBot ticket.'
+        );
 
-            embeds: [
-                createErrorEmbed(
-                    '❌ Invalid Ticket',
-                    'This channel is not recognized as a valid DaviBot ticket.'
-                )
-            ]
-        });
+        return;
+    }
+
+    const member = interaction.member;
+
+    const canClose =
+        interaction.user.id === ownerId ||
+        isTicketStaff(member, staffRoleId);
+
+    if (!canClose) {
+        await sendTicketError(
+            interaction,
+            '❌ Permission Denied',
+            'Only the ticket owner or Ticket Support staff can close this ticket.'
+        );
 
         return;
     }
@@ -303,11 +402,470 @@ async function handleCloseTicket(
 
         embeds: [
             createWarningEmbed(
-                '🔒 Close Ticket',
-                'The Close Ticket button is ready. Its full closing and confirmation system will be added in the next stage.'
+                '🔒 Close Ticket?',
+                'Are you sure you want to close this ticket?\n\n' +
+                'The ticket owner will no longer be able to send messages until the ticket is reopened.'
+            )
+        ],
+
+        components: [
+            createCloseConfirmationButtons(
+                ownerId,
+                staffRoleId
             )
         ]
     });
+}
+
+/**
+ * Cancel Close Ticket confirmation.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleCancelClose(interaction) {
+    await interaction.update({
+        embeds: [
+            createSuccessEmbed(
+                '✅ Closure Cancelled',
+                'The ticket will remain open.'
+            )
+        ],
+        components: []
+    });
+}
+
+/**
+ * Confirm and close the ticket.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {Promise<void>}
+ */
+async function handleConfirmClose(
+    interaction,
+    ownerId,
+    staffRoleId
+) {
+    const ticketData = validateTicketChannel(
+        interaction,
+        ownerId
+    );
+
+    if (!ticketData || ticketData.status !== 'open') {
+        await sendTicketError(
+            interaction,
+            '❌ Invalid Ticket',
+            'This ticket is already closed or is no longer valid.'
+        );
+
+        return;
+    }
+
+    const member = interaction.member;
+
+    const canClose =
+        interaction.user.id === ownerId ||
+        isTicketStaff(member, staffRoleId);
+
+    if (!canClose) {
+        await sendTicketError(
+            interaction,
+            '❌ Permission Denied',
+            'Only the ticket owner or Ticket Support staff can close this ticket.'
+        );
+
+        return;
+    }
+
+    await interaction.deferUpdate();
+
+    const channel = interaction.channel;
+
+    try {
+        await channel.permissionOverwrites.edit(
+            ownerId,
+            {
+                ViewChannel: true,
+                SendMessages: false,
+                AddReactions: false,
+                AttachFiles: false
+            },
+            {
+                reason:
+                    `Ticket closed by ${interaction.user.tag}`
+            }
+        );
+
+        await channel.setTopic(
+            createTicketTopic(ownerId, 'closed'),
+            `Ticket closed by ${interaction.user.tag}`
+        );
+
+        await channel.setName(
+            createClosedTicketChannelName(
+                channel.name
+            ),
+            `Ticket closed by ${interaction.user.tag}`
+        );
+
+        const closedAt =
+            Math.floor(Date.now() / 1000);
+
+        const closedEmbed = createWarningEmbed(
+            '🔒 Ticket Closed',
+            `This ticket was closed by ${interaction.user}.\n\n` +
+            `**Closed at:** <t:${closedAt}:F>\n` +
+            'Ticket Support staff can reopen or delete this ticket.'
+        );
+
+        await channel.send({
+            embeds: [closedEmbed],
+            components: [
+                createClosedTicketButtons(
+                    ownerId,
+                    staffRoleId
+                )
+            ]
+        });
+
+        await interaction.editReply({
+            embeds: [
+                createSuccessEmbed(
+                    '✅ Ticket Closed',
+                    'The ticket was closed successfully.'
+                )
+            ],
+            components: []
+        });
+
+        console.log('======================================');
+        console.log(
+            `🔒 Ticket Closed: ${channel.name}`
+        );
+        console.log(
+            `👮 Closed By: ${interaction.user.tag}`
+        );
+        console.log('======================================');
+    } catch (error) {
+        console.error(
+            '❌ Failed to close ticket:'
+        );
+        console.error(error);
+
+        await interaction.editReply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Ticket Close Failed',
+                    'The ticket could not be closed. Please check DaviBot permissions.'
+                )
+            ],
+            components: []
+        });
+    }
+}
+
+/**
+ * Reopen a closed ticket.
+ *
+ * Only Ticket Support staff may reopen tickets.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {Promise<void>}
+ */
+async function handleReopenTicket(
+    interaction,
+    ownerId,
+    staffRoleId
+) {
+    const ticketData = validateTicketChannel(
+        interaction,
+        ownerId
+    );
+
+    if (!ticketData || ticketData.status !== 'closed') {
+        await sendTicketError(
+            interaction,
+            '❌ Invalid Ticket',
+            'This channel is not recognized as a closed DaviBot ticket.'
+        );
+
+        return;
+    }
+
+    if (
+        !isTicketStaff(
+            interaction.member,
+            staffRoleId
+        )
+    ) {
+        await sendTicketError(
+            interaction,
+            '❌ Permission Denied',
+            'Only Ticket Support staff can reopen tickets.'
+        );
+
+        return;
+    }
+
+    await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+    });
+
+    const channel = interaction.channel;
+
+    try {
+        await channel.permissionOverwrites.edit(
+            ownerId,
+            {
+                ViewChannel: true,
+                SendMessages: true,
+                ReadMessageHistory: true,
+                AttachFiles: true,
+                EmbedLinks: true
+            },
+            {
+                reason:
+                    `Ticket reopened by ${interaction.user.tag}`
+            }
+        );
+
+        await channel.setTopic(
+            createTicketTopic(ownerId, 'open'),
+            `Ticket reopened by ${interaction.user.tag}`
+        );
+
+        await channel.setName(
+            createReopenedTicketChannelName(
+                channel.name
+            ),
+            `Ticket reopened by ${interaction.user.tag}`
+        );
+
+        const reopenedAt =
+            Math.floor(Date.now() / 1000);
+
+        await channel.send({
+            content: `<@${ownerId}>`,
+
+            embeds: [
+                createSuccessEmbed(
+                    '🔓 Ticket Reopened',
+                    `This ticket was reopened by ${interaction.user}.\n\n` +
+                    `**Reopened at:** <t:${reopenedAt}:F>`
+                )
+            ],
+
+            components: [
+                createOpenTicketButtons(
+                    ownerId,
+                    staffRoleId
+                )
+            ],
+
+            allowedMentions: {
+                users: [ownerId]
+            }
+        });
+
+        await interaction.editReply({
+            embeds: [
+                createSuccessEmbed(
+                    '✅ Ticket Reopened',
+                    'The ticket was reopened successfully.'
+                )
+            ]
+        });
+
+        console.log('======================================');
+        console.log(
+            `🔓 Ticket Reopened: ${channel.name}`
+        );
+        console.log(
+            `👮 Reopened By: ${interaction.user.tag}`
+        );
+        console.log('======================================');
+    } catch (error) {
+        console.error(
+            '❌ Failed to reopen ticket:'
+        );
+        console.error(error);
+
+        await interaction.editReply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Reopen Failed',
+                    'The ticket could not be reopened. Please check DaviBot permissions.'
+                )
+            ]
+        });
+    }
+}
+
+/**
+ * Show Delete Ticket confirmation.
+ *
+ * Only Ticket Support staff may delete tickets.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {Promise<void>}
+ */
+async function handleDeleteTicket(
+    interaction,
+    ownerId,
+    staffRoleId
+) {
+    const ticketData = validateTicketChannel(
+        interaction,
+        ownerId
+    );
+
+    if (!ticketData || ticketData.status !== 'closed') {
+        await sendTicketError(
+            interaction,
+            '❌ Invalid Ticket',
+            'Only closed tickets can be deleted.'
+        );
+
+        return;
+    }
+
+    if (
+        !isTicketStaff(
+            interaction.member,
+            staffRoleId
+        )
+    ) {
+        await sendTicketError(
+            interaction,
+            '❌ Permission Denied',
+            'Only Ticket Support staff can delete tickets.'
+        );
+
+        return;
+    }
+
+    await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+
+        embeds: [
+            createWarningEmbed(
+                '🗑️ Delete Ticket?',
+                'Are you sure you want to permanently delete this ticket?\n\n' +
+                '**This action cannot be undone.**'
+            )
+        ],
+
+        components: [
+            createDeleteConfirmationButtons(
+                ownerId,
+                staffRoleId
+            )
+        ]
+    });
+}
+
+/**
+ * Cancel Delete Ticket confirmation.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleCancelDelete(interaction) {
+    await interaction.update({
+        embeds: [
+            createSuccessEmbed(
+                '✅ Deletion Cancelled',
+                'The ticket was not deleted.'
+            )
+        ],
+        components: []
+    });
+}
+
+/**
+ * Permanently delete a closed ticket.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {string} ownerId
+ * @param {string} staffRoleId
+ * @returns {Promise<void>}
+ */
+async function handleConfirmDelete(
+    interaction,
+    ownerId,
+    staffRoleId
+) {
+    const ticketData = validateTicketChannel(
+        interaction,
+        ownerId
+    );
+
+    if (!ticketData || ticketData.status !== 'closed') {
+        await sendTicketError(
+            interaction,
+            '❌ Invalid Ticket',
+            'Only closed tickets can be deleted.'
+        );
+
+        return;
+    }
+
+    if (
+        !isTicketStaff(
+            interaction.member,
+            staffRoleId
+        )
+    ) {
+        await sendTicketError(
+            interaction,
+            '❌ Permission Denied',
+            'Only Ticket Support staff can delete tickets.'
+        );
+
+        return;
+    }
+
+    await interaction.update({
+        embeds: [
+            createWarningEmbed(
+                '🗑️ Deleting Ticket',
+                'This ticket will be permanently deleted in 5 seconds.'
+            )
+        ],
+        components: []
+    });
+
+    const channel = interaction.channel;
+    const channelName = channel.name;
+    const deletedBy = interaction.user.tag;
+
+    setTimeout(async () => {
+        try {
+            await channel.delete(
+                `Ticket deleted by ${deletedBy}`
+            );
+
+            console.log('======================================');
+            console.log(
+                `🗑️ Ticket Deleted: ${channelName}`
+            );
+            console.log(
+                `👮 Deleted By: ${deletedBy}`
+            );
+            console.log('======================================');
+        } catch (error) {
+            console.error(
+                '❌ Failed to delete ticket:'
+            );
+            console.error(error);
+        }
+    }, 5000);
 }
 
 module.exports = {
@@ -338,31 +896,84 @@ module.exports = {
                 interaction.customId.split(':');
 
             const action = customIdParts[1];
+            const ownerId = customIdParts[2];
+            const staffRoleId = customIdParts[3];
 
-            if (action === 'create') {
-                const categoryId =
-                    customIdParts[2];
+            switch (action) {
+                case 'create': {
+                    const categoryId =
+                        customIdParts[2];
 
-                const staffRoleId =
-                    customIdParts[3];
+                    const createStaffRoleId =
+                        customIdParts[3];
 
-                await handleCreateTicket(
-                    interaction,
-                    categoryId,
-                    staffRoleId
-                );
+                    await handleCreateTicket(
+                        interaction,
+                        categoryId,
+                        createStaffRoleId
+                    );
 
-                return;
-            }
+                    break;
+                }
 
-            if (action === 'close') {
-                const ownerId =
-                    customIdParts[2];
+                case 'close':
+                    await handleCloseTicket(
+                        interaction,
+                        ownerId,
+                        staffRoleId
+                    );
+                    break;
 
-                await handleCloseTicket(
-                    interaction,
-                    ownerId
-                );
+                case 'confirm-close':
+                    await handleConfirmClose(
+                        interaction,
+                        ownerId,
+                        staffRoleId
+                    );
+                    break;
+
+                case 'cancel-close':
+                    await handleCancelClose(
+                        interaction
+                    );
+                    break;
+
+                case 'reopen':
+                    await handleReopenTicket(
+                        interaction,
+                        ownerId,
+                        staffRoleId
+                    );
+                    break;
+
+                case 'delete':
+                    await handleDeleteTicket(
+                        interaction,
+                        ownerId,
+                        staffRoleId
+                    );
+                    break;
+
+                case 'confirm-delete':
+                    await handleConfirmDelete(
+                        interaction,
+                        ownerId,
+                        staffRoleId
+                    );
+                    break;
+
+                case 'cancel-delete':
+                    await handleCancelDelete(
+                        interaction
+                    );
+                    break;
+
+                default:
+                    await sendTicketError(
+                        interaction,
+                        '❌ Unknown Ticket Action',
+                        'This ticket button is no longer supported.'
+                    );
             }
         } catch (error) {
             console.error(
@@ -371,36 +982,11 @@ module.exports = {
             console.error(error);
 
             try {
-                const errorEmbed =
-                    createErrorEmbed(
-                        '❌ Ticket System Error',
-                        'An unexpected error occurred while processing this ticket action.'
-                    );
-
-                if (interaction.deferred) {
-                    await interaction.editReply({
-                        embeds: [errorEmbed],
-                        components: []
-                    });
-
-                    return;
-                }
-
-                if (interaction.replied) {
-                    await interaction.followUp({
-                        flags:
-                            MessageFlags.Ephemeral,
-
-                        embeds: [errorEmbed]
-                    });
-
-                    return;
-                }
-
-                await interaction.reply({
-                    flags: MessageFlags.Ephemeral,
-                    embeds: [errorEmbed]
-                });
+                await sendTicketError(
+                    interaction,
+                    '❌ Ticket System Error',
+                    'An unexpected error occurred while processing this ticket action.'
+                );
             } catch (responseError) {
                 console.error(
                     '❌ Failed to send ticket interaction error response:'
