@@ -498,17 +498,19 @@ async function handleConfirmClose(
             }
         );
 
-        await channel.setTopic(
-            createTicketTopic(ownerId, 'closed'),
-            `Ticket closed by ${interaction.user.tag}`
-        );
-
-        await channel.setName(
-            createClosedTicketChannelName(
+        await channel.edit({
+            name: createClosedTicketChannelName(
                 channel.name
             ),
-            `Ticket closed by ${interaction.user.tag}`
-        );
+
+            topic: createTicketTopic(
+                ownerId,
+                'closed'
+            ),
+
+            reason:
+                `Ticket closed by ${interaction.user.tag}`
+        });
 
         const closedAt =
             Math.floor(Date.now() / 1000);
@@ -611,39 +613,89 @@ async function handleReopenTicket(
         return;
     }
 
-    await interaction.deferReply({
-        flags: MessageFlags.Ephemeral
+    // Reply immediately so Discord stops showing "thinking...".
+    await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        embeds: [
+            createWarningEmbed(
+                '⏳ Reopening Ticket',
+                'Please wait while DaviBot restores this ticket.'
+            )
+        ]
     });
 
-    const channel = interaction.channel;
-
     try {
-        await channel.permissionOverwrites.edit(
-            ownerId,
-            {
-                ViewChannel: true,
-                SendMessages: true,
-                ReadMessageHistory: true,
-                AttachFiles: true,
-                EmbedLinks: true
-            },
-            {
-                reason:
-                    `Ticket reopened by ${interaction.user.tag}`
-            }
+        const channel = await interaction.guild.channels.fetch(
+            interaction.channelId
         );
 
-        await channel.setTopic(
-            createTicketTopic(ownerId, 'open'),
-            `Ticket reopened by ${interaction.user.tag}`
+        if (!channel || channel.type !== ChannelType.GuildText) {
+            await interaction.editReply({
+                embeds: [
+                    createErrorEmbed(
+                        '❌ Channel Missing',
+                        'This ticket channel no longer exists.'
+                    )
+                ]
+            });
+
+            return;
+        }
+
+        const freshTicketData = parseTicketTopic(
+            channel.topic
         );
 
-        await channel.setName(
+        if (
+            !freshTicketData ||
+            freshTicketData.ownerId !== ownerId ||
+            freshTicketData.status !== 'closed'
+        ) {
+            await interaction.editReply({
+                embeds: [
+                    createErrorEmbed(
+                        '❌ Invalid Ticket',
+                        'This ticket is already open or is no longer valid.'
+                    )
+                ]
+            });
+
+            return;
+        }
+
+        const reopenedName =
             createReopenedTicketChannelName(
                 channel.name
+            );
+
+        // Run independent Discord API requests together.
+        await Promise.all([
+            channel.permissionOverwrites.edit(
+                ownerId,
+                {
+                    ViewChannel: true,
+                    SendMessages: true,
+                    ReadMessageHistory: true,
+                    AttachFiles: true,
+                    EmbedLinks: true,
+                    AddReactions: true
+                },
+                {
+                    reason:
+                        `Ticket reopened by ${interaction.user.tag}`
+                }
             ),
-            `Ticket reopened by ${interaction.user.tag}`
-        );
+
+            channel.edit({
+                name: reopenedName,
+                topic: createTicketTopic(
+                    ownerId,
+                    'open'
+                ),
+                reason:
+                    `Ticket reopened by ${interaction.user.tag}`
+            })
+        ]);
 
         const reopenedAt =
             Math.floor(Date.now() / 1000);
@@ -671,18 +723,29 @@ async function handleReopenTicket(
             }
         });
 
-        await interaction.editReply({
-            embeds: [
-                createSuccessEmbed(
-                    '✅ Ticket Reopened',
-                    'The ticket was reopened successfully.'
-                )
-            ]
-        });
+        try {
+            await interaction.editReply({
+                embeds: [
+                    createSuccessEmbed(
+                        '✅ Ticket Reopened',
+                        'The ticket was reopened successfully.'
+                    )
+                ]
+            });
+        } catch (responseError) {
+            // The ticket is already reopened; do not treat a stale
+            // ephemeral response as a ticket failure.
+            if (
+                responseError.code !== 10008 &&
+                responseError.code !== 10062
+            ) {
+                throw responseError;
+            }
+        }
 
         console.log('======================================');
         console.log(
-            `🔓 Ticket Reopened: ${channel.name}`
+            `🔓 Ticket Reopened: ${reopenedName}`
         );
         console.log(
             `👮 Reopened By: ${interaction.user.tag}`
@@ -694,14 +757,26 @@ async function handleReopenTicket(
         );
         console.error(error);
 
-        await interaction.editReply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Reopen Failed',
-                    'The ticket could not be reopened. Please check DaviBot permissions.'
-                )
-            ]
-        });
+        try {
+            await interaction.editReply({
+                embeds: [
+                    createErrorEmbed(
+                        '❌ Reopen Failed',
+                        'The ticket could not be reopened. Please check DaviBot permissions and try again.'
+                    )
+                ]
+            });
+        } catch (responseError) {
+            if (
+                responseError.code !== 10008 &&
+                responseError.code !== 10062
+            ) {
+                console.error(
+                    '❌ Failed to update reopen response:'
+                );
+                console.error(responseError);
+            }
+        }
     }
 }
 
