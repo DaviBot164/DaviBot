@@ -7,12 +7,6 @@ const {
     createEmbed
 } = require('../../utils/embeds');
 
-/*
- * ბრძანებების კატეგორიები.
- *
- * ახალი ბრძანება თუ ამ სიებში არ იქნება,
- * ავტომატურად გამოჩნდება "Other" კატეგორიაში.
- */
 const commandCategories = {
     general: {
         title: '📜 General',
@@ -60,14 +54,6 @@ const commandCategories = {
     }
 };
 
-/**
- * აბრუნებს command-ის კატეგორიას.
- *
- * თუ command-ს მომავალში ექნება:
- * category: 'moderation'
- *
- * მაშინ პირველ რიგში ის იქნება გამოყენებული.
- */
 function getCommandCategory(command) {
     if (
         command.category &&
@@ -89,10 +75,6 @@ function getCommandCategory(command) {
     return 'other';
 }
 
-/**
- * Discord embed field-ის მაქსიმალური ზომაა 1024 სიმბოლო.
- * ეს ფუნქცია დიდ სიას რამდენიმე ნაწილად ჰყოფს.
- */
 function splitFieldValue(lines, maxLength = 1024) {
     const chunks = [];
     let currentChunk = '';
@@ -131,8 +113,7 @@ module.exports = {
 
             if (!clientCommands || clientCommands.size === 0) {
                 return await interaction.reply({
-                    content:
-                        '❌ No commands are currently available.',
+                    content: '❌ No commands are currently available.',
                     flags: MessageFlags.Ephemeral
                 });
             }
@@ -145,10 +126,6 @@ module.exports = {
                 other: []
             };
 
-            /*
-             * client.commands-დან ყველა რეალურად
-             * ჩატვირთული command-ის მიღება.
-             */
             for (const command of clientCommands.values()) {
                 if (!command?.data?.name) {
                     continue;
@@ -167,9 +144,6 @@ module.exports = {
                 });
             }
 
-            /*
-             * თითოეული კატეგორიის ანბანური დალაგება.
-             */
             for (const commands of Object.values(groupedCommands)) {
                 commands.sort((a, b) =>
                     a.name.localeCompare(b.name)
@@ -201,8 +175,7 @@ module.exports = {
                     `• \`/${command.name}\` — ${command.description}`
                 );
 
-                const fieldParts =
-                    splitFieldValue(commandLines);
+                const fieldParts = splitFieldValue(commandLines);
 
                 fieldParts.forEach((fieldValue, index) => {
                     fields.push({
@@ -221,10 +194,10 @@ module.exports = {
             ).filter(command => command?.data?.name).length;
 
             const embed = createEmbed({
-                title: '📖 DaviBot Help',
+                title: '🪽 Seraphiel Help',
                 description:
-                    'Welcome to **DaviBot**!\n\n' +
-                    'Below are all currently loaded Slash Commands.\n' +
+                    'Welcome to **Seraphiel**.\n\n' +
+                    '*Guardian of Your Community*\n\n' +
                     `**Total Commands:** ${commandCount}`,
                 fields
             });
