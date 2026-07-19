@@ -1,13 +1,14 @@
 module.exports = {
     colors: {
-        primary: '#5865F2',
+        // Official Seraphiel Brand Colors
+        primary: '#6EA8FE',      // Celestial Blue
         success: '#57F287',
         error: '#ED4245',
         warning: '#FEE75C',
-        moderation: '#EB459E'
+        moderation: '#D4AF37'    // Royal Gold
     },
 
     footer: {
-        text: 'DaviBot Moderation System'
+        text: '🪽 Seraphiel • Created & Developed by Davi'
     }
 };
