@@ -29,13 +29,7 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            const channel = interaction.channel;
-
-            const reason =
-                interaction.options.getString('reason') ||
-                'No reason provided.';
-
-            if (!interaction.guild || !channel) {
+            if (!interaction.inGuild()) {
                 const embed = createErrorEmbed(
                     '❌ Lock Failed',
                     'This command can only be used inside a server.'
@@ -47,16 +41,26 @@ module.exports = {
                 });
             }
 
+            const channel = interaction.channel;
+            const guild = interaction.guild;
+            const botMember = guild.members.me;
+
+            const reason =
+                interaction.options.getString('reason') ||
+                'No reason provided.';
+
             const supportedChannelTypes = [
                 ChannelType.GuildText,
-                ChannelType.GuildAnnouncement,
-                ChannelType.GuildForum
+                ChannelType.GuildAnnouncement
             ];
 
-            if (!supportedChannelTypes.includes(channel.type)) {
+            if (
+                !channel ||
+                !supportedChannelTypes.includes(channel.type)
+            ) {
                 const embed = createErrorEmbed(
                     '❌ Unsupported Channel',
-                    'This channel cannot be locked with this command.'
+                    'This command can only be used in a text or announcement channel.'
                 );
 
                 return interaction.reply({
@@ -65,16 +69,18 @@ module.exports = {
                 });
             }
 
-            const botMember = interaction.guild.members.me;
+            const botPermissions =
+                channel.permissionsFor(botMember);
 
             if (
-                !botMember.permissions.has(
-                    PermissionFlagsBits.ManageChannels
+                !botPermissions ||
+                !botPermissions.has(
+                    PermissionFlagsBits.ManageRoles
                 )
             ) {
                 const embed = createErrorEmbed(
                     '❌ Missing Permission',
-                    'DaviBot needs the **Manage Channels** permission to lock channels.'
+                    'DaviBot needs **Manage Roles** permission in this channel.'
                 );
 
                 return interaction.reply({
@@ -83,8 +89,26 @@ module.exports = {
                 });
             }
 
-            const everyoneRole =
-                interaction.guild.roles.everyone;
+            if (
+                !botPermissions.has(
+                    PermissionFlagsBits.SendMessages
+                ) ||
+                !botPermissions.has(
+                    PermissionFlagsBits.EmbedLinks
+                )
+            ) {
+                const embed = createErrorEmbed(
+                    '❌ Missing Channel Permission',
+                    'DaviBot needs **Send Messages** and **Embed Links** permissions in this channel.'
+                );
+
+                return interaction.reply({
+                    embeds: [embed],
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            const everyoneRole = guild.roles.everyone;
 
             const currentOverride =
                 channel.permissionOverwrites.cache.get(
@@ -92,8 +116,7 @@ module.exports = {
                 );
 
             if (
-                currentOverride &&
-                currentOverride.deny.has(
+                currentOverride?.deny.has(
                     PermissionFlagsBits.SendMessages
                 )
             ) {
@@ -112,6 +135,32 @@ module.exports = {
                 flags: MessageFlags.Ephemeral
             });
 
+            // Send the public message before removing Send Messages.
+            const publicEmbed = createEmbed({
+                title: '🔒 Channel Locked',
+
+                description:
+                    'This channel has been temporarily locked.',
+
+                fields: [
+                    {
+                        name: '👮 Moderator',
+                        value: `${interaction.user}`,
+                        inline: true
+                    },
+                    {
+                        name: '📝 Reason',
+                        value: reason,
+                        inline: false
+                    }
+                ]
+            });
+
+            await channel.send({
+                embeds: [publicEmbed]
+            });
+
+            // Lock the channel after the announcement is sent.
             await channel.permissionOverwrites.edit(
                 everyoneRole,
                 {
@@ -123,7 +172,7 @@ module.exports = {
                 }
             );
 
-            const embed = createEmbed({
+            const confirmationEmbed = createEmbed({
                 title: '🔒 Channel Locked',
 
                 description:
@@ -151,32 +200,8 @@ module.exports = {
                 ]
             });
 
-            await interaction.editReply({
-                embeds: [embed]
-            });
-
-            const publicEmbed = createEmbed({
-                title: '🔒 Channel Locked',
-
-                description:
-                    'This channel has been temporarily locked.',
-
-                fields: [
-                    {
-                        name: '👮 Moderator',
-                        value: `${interaction.user}`,
-                        inline: true
-                    },
-                    {
-                        name: '📝 Reason',
-                        value: reason,
-                        inline: false
-                    }
-                ]
-            });
-
-            await channel.send({
-                embeds: [publicEmbed]
+            return interaction.editReply({
+                embeds: [confirmationEmbed]
             });
         } catch (error) {
             console.error(
@@ -186,7 +211,7 @@ module.exports = {
 
             const embed = createErrorEmbed(
                 '❌ Lock Failed',
-                'The channel could not be locked. Please check DaviBot’s permissions.'
+                'The channel could not be locked. Check the Northflank logs for the exact error.'
             );
 
             if (
