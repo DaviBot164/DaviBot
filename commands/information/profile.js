@@ -3,7 +3,8 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -84,7 +85,7 @@ function formatWarningCount(warningCount) {
 }
 
 /**
- * Get the member's account type.
+ * Get the user's account type.
  *
  * @param {import('discord.js').User} user
  * @returns {string}
@@ -102,7 +103,7 @@ function getAccountType(user) {
 }
 
 /**
- * Get a profile badge based on the member's server permissions.
+ * Get a profile badge based on server permissions.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
@@ -219,7 +220,7 @@ module.exports = {
 
             const [fullUser, member] =
                 await Promise.all([
-                    selectedUser.fetch(),
+                    selectedUser.fetch(true),
                     interaction.guild.members.fetch(
                         selectedUser.id
                     )
@@ -310,15 +311,17 @@ module.exports = {
             });
 
             embed.setAuthor({
-                name: fullUser.tag,
+                name:
+                    `${fullUser.username} • Member Profile`,
                 iconURL: avatarURL
             });
 
             embed.setFooter({
                 text:
-                    `DaviBot Profile System • Requested by ${interaction.user.username}`,
+                    `🪽 Seraphiel Profile System • Requested by ${interaction.user.username}`,
                 iconURL:
-                    interaction.user.displayAvatarURL({
+                    interaction.client.user.displayAvatarURL({
+                        size: 128,
                         forceStatic: false
                     })
             });
@@ -352,7 +355,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                'Profile command error:',
+                '❌ Profile command error:',
                 error
             );
 
@@ -373,14 +376,16 @@ module.exports = {
 
             if (interaction.replied) {
                 await interaction.followUp({
-                    embeds: [errorEmbed]
+                    embeds: [errorEmbed],
+                    flags: MessageFlags.Ephemeral
                 }).catch(() => null);
 
                 return;
             }
 
             await interaction.reply({
-                embeds: [errorEmbed]
+                embeds: [errorEmbed],
+                flags: MessageFlags.Ephemeral
             }).catch(() => null);
         }
     }
