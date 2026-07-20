@@ -6,11 +6,25 @@ const guardianConfig =
     require('../config/guardian');
 
 const {
+    handleProfanityProtection
+} = require('./profanityFilter');
+
+const {
     handleSpamProtection
 } = require('./spamProtection');
 
 /**
  * Check whether a message should bypass Guardian.
+ *
+ * Guardian ignores:
+ * - Direct messages
+ * - Bots
+ * - Webhooks
+ * - Server owner
+ * - Administrator members
+ * - Members with Manage Messages
+ * - Configured Staff roles
+ * - Configured ignored channels
  *
  * @param {import('discord.js').Message} message
  * @returns {boolean}
@@ -22,6 +36,13 @@ function shouldIgnoreMessage(message) {
         !message.member ||
         message.author.bot ||
         message.webhookId
+    ) {
+        return true;
+    }
+
+    if (
+        message.author.id ===
+        message.guild.ownerId
     ) {
         return true;
     }
@@ -45,14 +66,15 @@ function shouldIgnoreMessage(message) {
         return true;
     }
 
-    if (
+    const isStaff =
         message.member.permissions.has(
             PermissionFlagsBits.Administrator
         ) ||
         message.member.permissions.has(
             PermissionFlagsBits.ManageMessages
-        )
-    ) {
+        );
+
+    if (isStaff) {
         return true;
     }
 
@@ -71,6 +93,23 @@ async function handleGuardianMessage(message) {
     }
 
     try {
+        /*
+         * Check profanity before spam.
+         *
+         * When profanity handles the message,
+         * stop processing so the same message
+         * does not receive two punishments.
+         */
+        const profanityHandled =
+            await handleProfanityProtection(
+                message,
+                guardianConfig
+            );
+
+        if (profanityHandled) {
+            return;
+        }
+
         await handleSpamProtection(
             message,
             guardianConfig
@@ -79,6 +118,7 @@ async function handleGuardianMessage(message) {
         console.error(
             '❌ Guardian failed to process a message:'
         );
+
         console.error(error);
     }
 }

@@ -41,6 +41,7 @@ async function saveGuardianWarning(
         console.error(
             '❌ Failed to save Guardian warning:'
         );
+
         console.error(error);
 
         return false;
@@ -66,6 +67,7 @@ async function deleteViolatingMessage(message) {
         console.error(
             '❌ Failed to delete Guardian violation message:'
         );
+
         console.error(error);
 
         return false;
@@ -89,7 +91,7 @@ async function sendTemporaryWarning(
         const notification =
             await message.channel.send({
                 content:
-                    `${message.author}, 🛡️ DaviBot Guardian blocked your message.\n` +
+                    `${message.author}, 🛡️ **Seraphiel Guardian** blocked your message.\n` +
                     `**Reason:** ${reason}`
             });
 
@@ -106,6 +108,7 @@ async function sendTemporaryWarning(
         console.error(
             '❌ Failed to send Guardian warning message:'
         );
+
         console.error(error);
     }
 }
@@ -147,6 +150,7 @@ async function timeoutMember(
         console.error(
             '❌ Failed to timeout Guardian offender:'
         );
+
         console.error(error);
 
         return false;
