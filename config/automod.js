@@ -7,13 +7,14 @@ module.exports = {
     enabled: true,
 
     /**
-     * AutoMod-ისა და Raid Shield-ის ლოგების არხი.
+     * AutoMod-ის, Scam Shield-ისა და
+     * Raid Shield-ის ლოგების არხი.
      */
     logChannelId: '1527768422535004360',
 
     /**
      * გამოიყენება მხოლოდ მაშინ,
-     * თუ logChannelId ცარიელია.
+     * თუ logChannelId ცარიელია ან არხი ვერ მოიძებნა.
      */
     logChannelName: '📄・moderation-logs',
 
@@ -35,39 +36,66 @@ module.exports = {
 
     /**
      * აკრძალული სიტყვების ფილტრი.
+     *
+     * სია ჯერ ცარიელია.
+     * სიტყვებს მოგვიანებით დავამატებთ.
      */
     badWords: {
         enabled: true,
+
         words: []
     },
 
     /**
      * სწრაფი შეტყობინებების სპამი.
+     *
+     * 7 წამში 5 შეტყობინება გამოიწვევს
+     * შეტყობინების წაშლასა და 5-წუთიან timeout-ს.
      */
     spam: {
         enabled: true,
+
         messageLimit: 5,
-        intervalMilliseconds: 7_000,
-        timeoutMilliseconds: 5 * 60 * 1_000
+
+        intervalMilliseconds:
+            7 * 1_000,
+
+        timeoutMilliseconds:
+            5 * 60 * 1_000
     },
 
     /**
      * ერთი და იმავე შეტყობინების გამეორება.
+     *
+     * 15 წამში 3 ერთნაირი შეტყობინება
+     * გამოიწვევს 5-წუთიან timeout-ს.
      */
     duplicateMessages: {
         enabled: true,
+
         messageLimit: 3,
-        intervalMilliseconds: 15_000,
-        timeoutMilliseconds: 5 * 60 * 1_000
+
+        intervalMilliseconds:
+            15 * 1_000,
+
+        timeoutMilliseconds:
+            5 * 60 * 1_000
     },
 
     /**
-     * Mention spam.
+     * Mention Spam Protection.
+     *
+     * ერთ შეტყობინებაში 5 ან მეტი
+     * მომხმარებლის ან როლის mention გამოიწვევს
+     * 10-წუთიან timeout-ს.
      */
     mentionSpam: {
         enabled: true,
+
         mentionLimit: 5,
-        timeoutMilliseconds: 10 * 60 * 1_000
+
+        timeoutMilliseconds:
+            10 * 60 * 1_000
     },
 
     /**
@@ -89,8 +117,25 @@ module.exports = {
     },
 
     /**
-     * დროებითი AutoMod გაფრთხილების
-     * წაშლის დრო.
+     * Seraphiel Scam Shield.
+     *
+     * ამოიცნობს გავრცელებულ Scam და
+     * Phishing შეტყობინებებსა და ბმულებს.
+     *
+     * აღმოჩენისას შეტყობინება წაიშლება
+     * და წევრს 30-წუთიანი timeout მიენიჭება.
      */
-    warningDeleteDelayMilliseconds: 5_000
+    scamProtection: {
+        enabled: true,
+
+        timeoutMilliseconds:
+            30 * 60 * 1_000
+    },
+
+    /**
+     * რამდენ ხანში წაიშალოს არხში
+     * გამოტანილი დროებითი გაფრთხილება.
+     */
+    warningDeleteDelayMilliseconds:
+        5 * 1_000
 };

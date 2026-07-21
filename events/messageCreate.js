@@ -11,6 +11,10 @@ const {
     addAutoModCase
 } = require('../database/automodCases');
 
+const {
+    detectScam
+} = require('../utils/scamDetector');
+
 /**
  * Recent message timestamps used for spam detection.
  *
@@ -689,6 +693,45 @@ module.exports = {
 
         const content =
             message.content ?? '';
+
+        /*
+         * Seraphiel Scam Shield
+         */
+        if (
+            automodConfig
+                .scamProtection
+                .enabled
+        ) {
+            const scamResult =
+                detectScam(
+                    content,
+                    {
+                        timeoutMilliseconds:
+                            automodConfig
+                                .scamProtection
+                                .timeoutMilliseconds
+                    }
+                );
+
+            if (scamResult.detected) {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            scamResult.reason,
+
+                        warning:
+                            scamResult.warning,
+
+                        timeoutDuration:
+                            scamResult
+                                .timeoutDuration
+                    }
+                );
+
+                return;
+            }
+        }
 
         /*
          * Discord invite protection
