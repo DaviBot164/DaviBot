@@ -1,13 +1,13 @@
 module.exports = {
     /**
-     * მთავარი ჩამრთველი.
+     * მთავარი AutoMod ჩამრთველი.
      *
      * false-ის შემთხვევაში მთელი AutoMod გაითიშება.
      */
     enabled: true,
 
     /**
-     * AutoMod-ის ლოგების არხი.
+     * AutoMod-ისა და Raid Shield-ის ლოგების არხი.
      */
     logChannelId: '1527768422535004360',
 
@@ -19,7 +19,7 @@ module.exports = {
 
     /**
      * ამ უფლებების მქონე წევრებს
-     * AutoMod არ შეამოწმებს.
+     * შეტყობინებების AutoMod არ შეამოწმებს.
      */
     bypassPermissions: [
         'Administrator',
@@ -35,21 +35,14 @@ module.exports = {
 
     /**
      * აკრძალული სიტყვების ფილტრი.
-     *
-     * ჯერ სია ცარიელია.
-     * სიტყვებს შემდეგ დავამატებთ.
      */
     badWords: {
         enabled: true,
-
         words: []
     },
 
     /**
      * სწრაფი შეტყობინებების სპამი.
-     *
-     * 7 წამში 5 შეტყობინება გამოიწვევს
-     * შეტყობინების წაშლასა და 5-წუთიან timeout-ს.
      */
     spam: {
         enabled: true,
@@ -60,9 +53,6 @@ module.exports = {
 
     /**
      * ერთი და იმავე შეტყობინების გამეორება.
-     *
-     * 15 წამში 3 ერთნაირი შეტყობინება
-     * გამოიწვევს 5-წუთიან timeout-ს.
      */
     duplicateMessages: {
         enabled: true,
@@ -73,10 +63,6 @@ module.exports = {
 
     /**
      * Mention spam.
-     *
-     * ერთ შეტყობინებაში 5 ან მეტი
-     * მომხმარებლის/როლის mention გამოიწვევს
-     * 10-წუთიან timeout-ს.
      */
     mentionSpam: {
         enabled: true,
@@ -85,8 +71,26 @@ module.exports = {
     },
 
     /**
-     * რამდენ ხანში წაიშალოს არხში
-     * გამოტანილი დროებითი გაფრთხილება.
+     * Seraphiel Raid Shield.
+     *
+     * 10 წამში 5 წევრის შემოსვლა
+     * Raid Mode-ს 10 წუთით ჩართავს.
+     */
+    antiRaid: {
+        enabled: true,
+
+        joinLimit: 5,
+
+        joinIntervalMilliseconds:
+            10 * 1_000,
+
+        raidModeDurationMilliseconds:
+            10 * 60 * 1_000
+    },
+
+    /**
+     * დროებითი AutoMod გაფრთხილების
+     * წაშლის დრო.
      */
     warningDeleteDelayMilliseconds: 5_000
 };

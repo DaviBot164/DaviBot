@@ -13,6 +13,9 @@ const warningDatabase =
 const autoModCaseDatabase =
     require('./automodCases');
 
+const raidCaseDatabase =
+    require('./raidCases');
+
 /**
  * Connect to PostgreSQL and initialize all required tables.
  *
@@ -83,5 +86,6 @@ module.exports = {
     closeConnection,
 
     warnings: warningDatabase,
-    automodCases: autoModCaseDatabase
+    automodCases: autoModCaseDatabase,
+    raidCases: raidCaseDatabase
 };

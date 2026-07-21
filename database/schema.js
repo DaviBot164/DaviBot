@@ -68,6 +68,46 @@ async function initializeSchema() {
         CREATE INDEX IF NOT EXISTS automod_cases_created_at_index
         ON automod_cases (created_at DESC);
     `);
+
+    /*
+     * Raid Shield Case System
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS raid_cases (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+
+            join_count INTEGER NOT NULL,
+            join_limit INTEGER NOT NULL,
+
+            detection_window_ms BIGINT NOT NULL,
+            raid_mode_duration_ms BIGINT NOT NULL,
+
+            status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+
+            member_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+
+            detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            ends_at TIMESTAMPTZ NOT NULL,
+            closed_at TIMESTAMPTZ
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS raid_cases_guild_status_index
+        ON raid_cases (guild_id, status);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS raid_cases_guild_id_index
+        ON raid_cases (guild_id, id DESC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS raid_cases_detected_at_index
+        ON raid_cases (detected_at DESC);
+    `);
 }
 
 module.exports = {
