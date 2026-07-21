@@ -7,7 +7,11 @@ const {
     initializeSchema
 } = require('./schema');
 
-const warningDatabase = require('./warnings');
+const warningDatabase =
+    require('./warnings');
+
+const autoModCaseDatabase =
+    require('./automodCases');
 
 /**
  * Connect to PostgreSQL and initialize all required tables.
@@ -20,31 +24,56 @@ async function initializeDatabase() {
         process.env.DATABASE_URL;
 
     if (!databaseUrl) {
-        console.log('======================================');
-        console.log('⚠️ PostgreSQL connection skipped.');
+        console.log(
+            '======================================'
+        );
+
+        console.log(
+            '⚠️ PostgreSQL connection skipped.'
+        );
+
         console.log(
             'ℹ️ No DATABASE_URL was found in the local environment.'
         );
+
         console.log(
             'ℹ️ PostgreSQL will connect automatically on Northflank.'
         );
-        console.log('======================================');
+
+        console.log(
+            '======================================'
+        );
 
         return false;
     }
 
-    console.log('======================================');
-    console.log('🗄️ Connecting to PostgreSQL...');
-    console.log('======================================');
+    console.log(
+        '======================================'
+    );
+
+    console.log(
+        '🗄️ Connecting to PostgreSQL...'
+    );
+
+    console.log(
+        '======================================'
+    );
 
     await testConnection();
 
-    console.log('✅ Connected to PostgreSQL.');
+    console.log(
+        '✅ Connected to PostgreSQL.'
+    );
 
     await initializeSchema();
 
-    console.log('✅ Database schema initialized.');
-    console.log('======================================');
+    console.log(
+        '✅ Database schema initialized.'
+    );
+
+    console.log(
+        '======================================'
+    );
 
     return true;
 }
@@ -52,5 +81,7 @@ async function initializeDatabase() {
 module.exports = {
     initializeDatabase,
     closeConnection,
-    warnings: warningDatabase
+
+    warnings: warningDatabase,
+    automodCases: autoModCaseDatabase
 };

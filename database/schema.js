@@ -6,6 +6,9 @@ const { query } = require('./connection');
  * @returns {Promise<void>}
  */
 async function initializeSchema() {
+    /*
+     * Warning System
+     */
     await query(`
         CREATE TABLE IF NOT EXISTS warnings (
             id BIGSERIAL PRIMARY KEY,
@@ -25,6 +28,45 @@ async function initializeSchema() {
     await query(`
         CREATE INDEX IF NOT EXISTS warnings_created_at_index
         ON warnings (created_at DESC);
+    `);
+
+    /*
+     * AutoMod Case System
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS automod_cases (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+            channel_id VARCHAR(32) NOT NULL,
+
+            reason VARCHAR(500) NOT NULL,
+            action VARCHAR(500) NOT NULL,
+
+            message_content TEXT,
+
+            message_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            timeout_applied BOOLEAN NOT NULL DEFAULT FALSE,
+            timeout_duration_ms BIGINT,
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS automod_cases_guild_user_index
+        ON automod_cases (guild_id, user_id);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS automod_cases_guild_id_index
+        ON automod_cases (guild_id, id DESC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS automod_cases_created_at_index
+        ON automod_cases (created_at DESC);
     `);
 }
 

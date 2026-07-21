@@ -7,18 +7,22 @@ const {
 const automodConfig =
     require('../config/automod');
 
+const {
+    addAutoModCase
+} = require('../database/automodCases');
+
 /**
- * Stores recent message timestamps for spam detection.
+ * Recent message timestamps used for spam detection.
  *
- * Key format:
+ * Key:
  * guildId:userId
  */
 const messageHistory = new Map();
 
 /**
- * Stores repeated-message information.
+ * Repeated-message history.
  *
- * Key format:
+ * Key:
  * guildId:userId
  */
 const duplicateHistory = new Map();
@@ -27,7 +31,7 @@ const DISCORD_INVITE_PATTERN =
     /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-zA-Z0-9-]+/i;
 
 /**
- * Check whether the member should bypass AutoMod.
+ * Check whether a member bypasses AutoMod.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -58,13 +62,15 @@ function shouldBypassAutoMod(member) {
                 return false;
             }
 
-            return member.permissions.has(permission);
+            return member.permissions.has(
+                permission
+            );
         }
     );
 }
 
 /**
- * Normalize message content before comparing it.
+ * Normalize content for comparisons.
  *
  * @param {string} content
  * @returns {string}
@@ -90,7 +96,10 @@ function findBadWord(content) {
     const normalizedContent =
         normalizeContent(content);
 
-    for (const configuredWord of automodConfig.badWords.words) {
+    for (
+        const configuredWord
+        of automodConfig.badWords.words
+    ) {
         const normalizedWord =
             normalizeContent(configuredWord);
 
@@ -98,7 +107,11 @@ function findBadWord(content) {
             continue;
         }
 
-        if (normalizedContent.includes(normalizedWord)) {
+        if (
+            normalizedContent.includes(
+                normalizedWord
+            )
+        ) {
             return configuredWord;
         }
     }
@@ -107,7 +120,7 @@ function findBadWord(content) {
 }
 
 /**
- * Check fast-message spam.
+ * Detect rapid-message spam.
  *
  * @param {import('discord.js').Message} message
  * @returns {boolean}
@@ -124,7 +137,8 @@ function isMessageSpam(message) {
 
     const minimumTimestamp =
         now -
-        automodConfig.spam.intervalMilliseconds;
+        automodConfig.spam
+            .intervalMilliseconds;
 
     const previousTimestamps =
         messageHistory.get(key) ?? [];
@@ -149,13 +163,17 @@ function isMessageSpam(message) {
 }
 
 /**
- * Check repeated-message spam.
+ * Detect repeated-message spam.
  *
  * @param {import('discord.js').Message} message
  * @returns {boolean}
  */
 function isDuplicateSpam(message) {
-    if (!automodConfig.duplicateMessages.enabled) {
+    if (
+        !automodConfig
+            .duplicateMessages
+            .enabled
+    ) {
         return false;
     }
 
@@ -176,8 +194,10 @@ function isDuplicateSpam(message) {
 
     if (
         !previousData ||
-        previousData.content !== normalizedContent ||
-        now - previousData.firstMessageAt >
+        previousData.content !==
+            normalizedContent ||
+        now -
+            previousData.firstMessageAt >
             automodConfig
                 .duplicateMessages
                 .intervalMilliseconds
@@ -210,7 +230,7 @@ function isDuplicateSpam(message) {
 }
 
 /**
- * Count unique user and role mentions.
+ * Count unique mentions.
  *
  * @param {import('discord.js').Message} message
  * @returns {number}
@@ -235,7 +255,7 @@ function getMentionCount(message) {
 }
 
 /**
- * Find the AutoMod log channel.
+ * Find the configured AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -272,12 +292,14 @@ function findLogChannel(guild) {
  * @param {import('discord.js').Message} message
  * @param {string} reason
  * @param {string} action
+ * @param {Object|null} savedCase
  * @returns {Promise<void>}
  */
 async function sendAutoModLog(
     message,
     reason,
-    action
+    action,
+    savedCase
 ) {
     const logChannel =
         findLogChannel(message.guild);
@@ -292,20 +314,30 @@ async function sendAutoModLog(
 
     const cleanContent =
         message.content
-            ? message.content.slice(0, 1_000)
+            ? message.content
+                .slice(0, 1_000)
+                .replace(/```/g, 'ˋˋˋ')
             : 'No text content';
+
+    const caseNumber =
+        savedCase?.id
+            ? `#${savedCase.id}`
+            : 'Not saved';
 
     const embed = new EmbedBuilder()
         .setColor('#8B0000')
         .setAuthor({
             name: 'Seraphiel AutoMod',
             iconURL:
-                message.client.user.displayAvatarURL({
-                    extension: 'png',
-                    size: 256
-                })
+                message.client.user
+                    .displayAvatarURL({
+                        extension: 'png',
+                        size: 256
+                    })
         })
-        .setTitle('🛡️ Automatic Moderation Action')
+        .setTitle(
+            `🛡️ AutoMod Case ${caseNumber}`
+        )
         .addFields(
             {
                 name: 'Member',
@@ -320,9 +352,16 @@ async function sendAutoModLog(
                 inline: true
             },
             {
+                name: 'Case ID',
+                value: savedCase?.id
+                    ? `\`${savedCase.id}\``
+                    : '`Database error`',
+                inline: true
+            },
+            {
                 name: 'Reason',
                 value: reason,
-                inline: true
+                inline: false
             },
             {
                 name: 'Action',
@@ -337,10 +376,11 @@ async function sendAutoModLog(
             }
         )
         .setThumbnail(
-            message.author.displayAvatarURL({
-                extension: 'png',
-                size: 256
-            })
+            message.author
+                .displayAvatarURL({
+                    extension: 'png',
+                    size: 256
+                })
         )
         .setTimestamp()
         .setFooter({
@@ -362,7 +402,7 @@ async function sendAutoModLog(
 }
 
 /**
- * Delete the violating message.
+ * Delete a violating message.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<boolean>}
@@ -392,7 +432,7 @@ async function deleteViolationMessage(message) {
 }
 
 /**
- * Apply timeout when possible.
+ * Apply a Discord timeout.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} duration
@@ -427,7 +467,7 @@ async function applyTimeout(
 }
 
 /**
- * Send a temporary warning in the affected channel.
+ * Send a temporary warning.
  *
  * @param {import('discord.js').Message} message
  * @param {string} warningText
@@ -451,11 +491,14 @@ async function sendTemporaryWarning(
         setTimeout(
             async () => {
                 try {
-                    if (warningMessage.deletable) {
-                        await warningMessage.delete();
+                    if (
+                        warningMessage.deletable
+                    ) {
+                        await warningMessage
+                            .delete();
                     }
                 } catch {
-                    // The warning may already be deleted.
+                    // Warning may already be deleted.
                 }
             },
             automodConfig
@@ -467,6 +510,75 @@ async function sendTemporaryWarning(
         );
 
         console.error(error);
+    }
+}
+
+/**
+ * Save a completed moderation action.
+ *
+ * Database failure must not stop AutoMod protection.
+ *
+ * @param {import('discord.js').Message} message
+ * @param {Object} violation
+ * @param {string} action
+ * @param {boolean} deleted
+ * @param {boolean} timedOut
+ * @returns {Promise<Object|null>}
+ */
+async function saveAutoModCase(
+    message,
+    violation,
+    action,
+    deleted,
+    timedOut
+) {
+    try {
+        const savedCase =
+            await addAutoModCase({
+                guildId:
+                    message.guild.id,
+
+                userId:
+                    message.author.id,
+
+                channelId:
+                    message.channel.id,
+
+                reason:
+                    violation.reason,
+
+                action,
+
+                messageContent:
+                    message.content
+                        ? message.content
+                            .slice(0, 4_000)
+                        : null,
+
+                messageDeleted:
+                    deleted,
+
+                timeoutApplied:
+                    timedOut,
+
+                timeoutDurationMilliseconds:
+                    violation.timeoutDuration ??
+                    null
+            });
+
+        console.log(
+            `🛡️ AutoMod Case #${savedCase.id} saved for ${message.author.tag}.`
+        );
+
+        return savedCase;
+    } catch (error) {
+        console.error(
+            '❌ Failed to save AutoMod case:'
+        );
+
+        console.error(error);
+
+        return null;
     }
 }
 
@@ -514,6 +626,18 @@ async function processViolation(
         );
     }
 
+    const action =
+        actions.join(' • ');
+
+    const savedCase =
+        await saveAutoModCase(
+            message,
+            violation,
+            action,
+            deleted,
+            timedOut
+        );
+
     await Promise.all([
         sendTemporaryWarning(
             message,
@@ -523,7 +647,8 @@ async function processViolation(
         sendAutoModLog(
             message,
             violation.reason,
-            actions.join(' • ')
+            action,
+            savedCase
         )
     ]);
 }
@@ -554,7 +679,11 @@ module.exports = {
             return;
         }
 
-        if (shouldBypassAutoMod(message.member)) {
+        if (
+            shouldBypassAutoMod(
+                message.member
+            )
+        ) {
             return;
         }
 
@@ -568,7 +697,8 @@ module.exports = {
             automodConfig
                 .inviteProtection
                 .enabled &&
-            DISCORD_INVITE_PATTERN.test(content)
+            DISCORD_INVITE_PATTERN
+                .test(content)
         ) {
             await processViolation(
                 message,
@@ -585,7 +715,7 @@ module.exports = {
         }
 
         /*
-         * Bad words protection
+         * Bad-word protection
          */
         const badWord =
             findBadWord(content);
@@ -606,7 +736,7 @@ module.exports = {
         }
 
         /*
-         * Mention spam protection
+         * Mention-spam protection
          */
         const mentionCount =
             getMentionCount(message);
@@ -641,9 +771,6 @@ module.exports = {
 
         /*
          * Repeated-message protection
-         *
-         * Check this before general message spam so that
-         * the log contains the more accurate reason.
          */
         if (isDuplicateSpam(message)) {
             await processViolation(
@@ -670,7 +797,7 @@ module.exports = {
         }
 
         /*
-         * Fast-message spam protection
+         * Rapid-message protection
          */
         if (isMessageSpam(message)) {
             await processViolation(
@@ -697,8 +824,7 @@ module.exports = {
 };
 
 /**
- * Remove old tracking information periodically
- * to prevent unnecessary memory usage.
+ * Remove expired tracking data.
  */
 setInterval(
     () => {
@@ -717,7 +843,9 @@ setInterval(
                             .intervalMilliseconds
                 );
 
-            if (activeTimestamps.length === 0) {
+            if (
+                activeTimestamps.length === 0
+            ) {
                 messageHistory.delete(key);
             } else {
                 messageHistory.set(
@@ -732,7 +860,8 @@ setInterval(
             of duplicateHistory.entries()
         ) {
             if (
-                now - data.firstMessageAt >
+                now -
+                    data.firstMessageAt >
                 automodConfig
                     .duplicateMessages
                     .intervalMilliseconds
