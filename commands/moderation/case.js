@@ -6,11 +6,12 @@ const {
 } = require('discord.js');
 
 const {
-    getAutoModCaseById
+    getMemberAutoModCases,
+    countMemberAutoModCases
 } = require('../../database/automodCases');
 
 /**
- * Convert a database date into a Discord timestamp.
+ * Convert a database date into Discord timestamps.
  *
  * @param {string|Date} dateValue
  * @returns {string}
@@ -27,18 +28,55 @@ function formatDiscordTimestamp(dateValue) {
     );
 
     return (
-        `<t:${unixTimestamp}:F>\n` +
+        `<t:${unixTimestamp}:f> ` +
         `(<t:${unixTimestamp}:R>)`
     );
 }
 
 /**
- * Format a timeout duration stored in milliseconds.
+ * Shorten text so the embed remains readable.
+ *
+ * @param {string|null} text
+ * @param {number} maximumLength
+ * @returns {string}
+ */
+function shortenText(
+    text,
+    maximumLength = 160
+) {
+    if (!text) {
+        return 'No information stored.';
+    }
+
+    const cleanText = String(text)
+        .replace(/\s+/g, ' ')
+        .replace(/`/g, 'ˋ')
+        .trim();
+
+    if (
+        cleanText.length <=
+        maximumLength
+    ) {
+        return cleanText;
+    }
+
+    return (
+        cleanText.slice(
+            0,
+            maximumLength - 3
+        ) + '...'
+    );
+}
+
+/**
+ * Format timeout duration stored in milliseconds.
  *
  * @param {string|number|null} durationMilliseconds
  * @returns {string}
  */
-function formatDuration(durationMilliseconds) {
+function formatDuration(
+    durationMilliseconds
+) {
     const duration =
         Number(durationMilliseconds);
 
@@ -46,23 +84,27 @@ function formatDuration(durationMilliseconds) {
         !Number.isFinite(duration) ||
         duration <= 0
     ) {
-        return 'No timeout';
+        return 'None';
     }
 
     const totalSeconds =
         Math.floor(duration / 1_000);
 
     const days =
-        Math.floor(totalSeconds / 86_400);
+        Math.floor(
+            totalSeconds / 86_400
+        );
 
     const hours =
         Math.floor(
-            (totalSeconds % 86_400) / 3_600
+            (totalSeconds % 86_400) /
+            3_600
         );
 
     const minutes =
         Math.floor(
-            (totalSeconds % 3_600) / 60
+            (totalSeconds % 3_600) /
+            60
         );
 
     const seconds =
@@ -71,68 +113,85 @@ function formatDuration(durationMilliseconds) {
     const parts = [];
 
     if (days > 0) {
-        parts.push(
-            `${days} day${days === 1 ? '' : 's'}`
-        );
+        parts.push(`${days}d`);
     }
 
     if (hours > 0) {
-        parts.push(
-            `${hours} hour${hours === 1 ? '' : 's'}`
-        );
+        parts.push(`${hours}h`);
     }
 
     if (minutes > 0) {
-        parts.push(
-            `${minutes} minute${minutes === 1 ? '' : 's'}`
-        );
+        parts.push(`${minutes}m`);
     }
 
     if (
         seconds > 0 &&
         parts.length === 0
     ) {
-        parts.push(
-            `${seconds} second${seconds === 1 ? '' : 's'}`
-        );
+        parts.push(`${seconds}s`);
     }
 
-    return parts.join(', ') || 'No timeout';
+    return parts.join(' ') || 'None';
 }
 
 /**
- * Prevent message content from breaking an embed code block.
+ * Create one readable case entry.
  *
- * @param {string|null} content
+ * @param {Object} autoModCase
  * @returns {string}
  */
-function formatMessageContent(content) {
-    if (!content) {
-        return 'No message content was stored.';
-    }
+function formatCaseEntry(autoModCase) {
+    const deletedStatus =
+        autoModCase.message_deleted
+            ? '✅ Deleted'
+            : '❌ Not deleted';
 
-    const cleanContent = String(content)
-        .replace(/```/g, 'ˋˋˋ')
-        .slice(0, 1_000);
+    const timeoutStatus =
+        autoModCase.timeout_applied
+            ? (
+                '✅ Timeout: ' +
+                formatDuration(
+                    autoModCase
+                        .timeout_duration_ms
+                )
+            )
+            : '❌ No timeout';
 
-    return `\`\`\`\n${cleanContent}\n\`\`\``;
+    return [
+        `### 🛡️ Case #${autoModCase.id}`,
+        `**Reason:** ${shortenText(autoModCase.reason, 180)}`,
+        `**Action:** ${shortenText(autoModCase.action, 180)}`,
+        `**Channel:** <#${autoModCase.channel_id}>`,
+        `**Result:** ${deletedStatus} • ${timeoutStatus}`,
+        `**Created:** ${formatDiscordTimestamp(autoModCase.created_at)}`
+    ].join('\n');
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('case')
+        .setName('cases')
         .setDescription(
-            'View a specific Seraphiel AutoMod case.'
+            'View the AutoMod cases of a server member.'
+        )
+
+        .addUserOption(option =>
+            option
+                .setName('user')
+                .setDescription(
+                    'The member whose AutoMod cases you want to view'
+                )
+                .setRequired(true)
         )
 
         .addIntegerOption(option =>
             option
-                .setName('id')
+                .setName('limit')
                 .setDescription(
-                    'The AutoMod Case ID'
+                    'Number of recent cases to display'
                 )
                 .setMinValue(1)
-                .setRequired(true)
+                .setMaxValue(10)
+                .setRequired(false)
         )
 
         .setDefaultMemberPermissions(
@@ -140,7 +199,7 @@ module.exports = {
         ),
 
     /**
-     * Display a stored AutoMod case.
+     * Display a member's recent AutoMod cases.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -150,176 +209,178 @@ module.exports = {
             await interaction.reply({
                 content:
                     '❌ This command can only be used inside a server.',
-                flags: MessageFlags.Ephemeral
+                flags:
+                    MessageFlags.Ephemeral
             });
 
             return;
         }
 
-        const caseId =
-            interaction.options.getInteger(
-                'id',
+        const targetUser =
+            interaction.options.getUser(
+                'user',
                 true
             );
 
+        const requestedLimit =
+            interaction.options.getInteger(
+                'limit'
+            ) ?? 5;
+
         await interaction.deferReply({
-            flags: MessageFlags.Ephemeral
+            flags:
+                MessageFlags.Ephemeral
         });
 
-        let autoModCase;
+        let autoModCases;
+        let totalCases;
 
         try {
-            autoModCase =
-                await getAutoModCaseById(
+            [
+                autoModCases,
+                totalCases
+            ] = await Promise.all([
+                getMemberAutoModCases(
                     interaction.guild.id,
-                    caseId
-                );
+                    targetUser.id,
+                    requestedLimit
+                ),
+
+                countMemberAutoModCases(
+                    interaction.guild.id,
+                    targetUser.id
+                )
+            ]);
         } catch (error) {
             console.error(
-                `❌ Failed to retrieve AutoMod Case #${caseId}:`
+                `❌ Failed to retrieve AutoMod cases for ${targetUser.tag}:`
             );
 
             console.error(error);
 
             await interaction.editReply({
                 content:
-                    '❌ The AutoMod case could not be retrieved from the database.'
+                    '❌ The AutoMod cases could not be retrieved from the database.'
             });
 
             return;
         }
 
-        if (!autoModCase) {
+        if (autoModCases.length === 0) {
+            const emptyEmbed =
+                new EmbedBuilder()
+                    .setColor('#2F3136')
+
+                    .setAuthor({
+                        name:
+                            'Seraphiel Case System',
+
+                        iconURL:
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    extension: 'png',
+                                    size: 256
+                                })
+                    })
+
+                    .setTitle(
+                        '🛡️ No AutoMod Cases'
+                    )
+
+                    .setDescription(
+                        `${targetUser} does not have any AutoMod cases in this server.`
+                    )
+
+                    .setThumbnail(
+                        targetUser
+                            .displayAvatarURL({
+                                extension: 'png',
+                                size: 256
+                            })
+                    )
+
+                    .setFooter({
+                        text:
+                            `User ID: ${targetUser.id}`
+                    })
+
+                    .setTimestamp();
+
             await interaction.editReply({
-                content:
-                    `❌ AutoMod Case **#${caseId}** was not found in this server.`
+                embeds: [emptyEmbed]
             });
 
             return;
         }
 
-        const userMention =
-            `<@${autoModCase.user_id}>`;
-
-        const channelMention =
-            `<#${autoModCase.channel_id}>`;
-
-        const messageDeleted =
-            autoModCase.message_deleted
-                ? '✅ Yes'
-                : '❌ No';
-
-        const timeoutApplied =
-            autoModCase.timeout_applied
-                ? '✅ Yes'
-                : '❌ No';
-
-        const timeoutDuration =
-            formatDuration(
-                autoModCase.timeout_duration_ms
+        const caseEntries =
+            autoModCases.map(
+                formatCaseEntry
             );
 
-        const embed = new EmbedBuilder()
-            .setColor('#8B0000')
+        const embed =
+            new EmbedBuilder()
+                .setColor('#8B0000')
 
-            .setAuthor({
-                name: 'Seraphiel Case System',
-                iconURL:
-                    interaction.client.user
+                .setAuthor({
+                    name:
+                        'Seraphiel Case System',
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                extension: 'png',
+                                size: 256
+                            })
+                })
+
+                .setTitle(
+                    `🛡️ AutoMod History — ${targetUser.username}`
+                )
+
+                .setDescription(
+                    [
+                        `Showing the latest **${autoModCases.length}** of **${totalCases}** AutoMod cases.`,
+                        '',
+                        caseEntries.join(
+                            '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
+                        )
+                    ].join('\n')
+                )
+
+                .addFields({
+                    name:
+                        '📊 Case Summary',
+
+                    value:
+                        `**Member:** ${targetUser}\n` +
+                        `**Total Cases:** \`${totalCases}\`\n` +
+                        `**Displayed:** \`${autoModCases.length}\``,
+
+                    inline: false
+                })
+
+                .setThumbnail(
+                    targetUser
                         .displayAvatarURL({
                             extension: 'png',
                             size: 256
                         })
-            })
+                )
 
-            .setTitle(
-                `🛡️ AutoMod Case #${autoModCase.id}`
-            )
+                .setFooter({
+                    text:
+                        `Requested by ${interaction.user.username}`,
 
-            .setDescription(
-                'Detailed information about this automatic moderation action.'
-            )
+                    iconURL:
+                        interaction.user
+                            .displayAvatarURL({
+                                extension: 'png',
+                                size: 128
+                            })
+                })
 
-            .addFields(
-                {
-                    name: '👤 Member',
-                    value:
-                        `${userMention}\n` +
-                        `\`${autoModCase.user_id}\``,
-                    inline: true
-                },
-                {
-                    name: '📍 Channel',
-                    value:
-                        `${channelMention}\n` +
-                        `\`${autoModCase.channel_id}\``,
-                    inline: true
-                },
-                {
-                    name: '🆔 Case ID',
-                    value:
-                        `\`${autoModCase.id}\``,
-                    inline: true
-                },
-                {
-                    name: '📜 Reason',
-                    value:
-                        autoModCase.reason ||
-                        'No reason stored.',
-                    inline: false
-                },
-                {
-                    name: '⚔️ Action',
-                    value:
-                        autoModCase.action ||
-                        'No action stored.',
-                    inline: false
-                },
-                {
-                    name: '🗑️ Message Deleted',
-                    value: messageDeleted,
-                    inline: true
-                },
-                {
-                    name: '⏳ Timeout Applied',
-                    value: timeoutApplied,
-                    inline: true
-                },
-                {
-                    name: '🕒 Timeout Duration',
-                    value: timeoutDuration,
-                    inline: true
-                },
-                {
-                    name: '💬 Original Message',
-                    value:
-                        formatMessageContent(
-                            autoModCase.message_content
-                        ),
-                    inline: false
-                },
-                {
-                    name: '📅 Created',
-                    value:
-                        formatDiscordTimestamp(
-                            autoModCase.created_at
-                        ),
-                    inline: false
-                }
-            )
-
-            .setFooter({
-                text:
-                    `Requested by ${interaction.user.username}`,
-                iconURL:
-                    interaction.user
-                        .displayAvatarURL({
-                            extension: 'png',
-                            size: 128
-                        })
-            })
-
-            .setTimestamp();
+                .setTimestamp();
 
         await interaction.editReply({
             embeds: [embed]
