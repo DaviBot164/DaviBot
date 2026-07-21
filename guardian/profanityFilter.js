@@ -14,8 +14,77 @@ const {
     sendGuardianLog
 } = require('./guardianLogger');
 
+/*
+ * Built-in Guardian profanity levels.
+ *
+ * Severe:
+ * Delete + notify + database warning.
+ *
+ * Medium:
+ * Delete + notify.
+ * Database warning on MEDIUM/HIGH protection.
+ *
+ * Mild:
+ * Delete + temporary notification.
+ */
+const PROFANITY_LEVELS = {
+    severe: [
+        'pedo',
+        'pedophile',
+        'predator',
+        'rapist',
+
+        'kill yourself',
+        'go kill yourself',
+        'kys',
+
+        'nigger',
+        'nigga',
+
+        'faggot',
+        'retard'
+    ],
+
+    medium: [
+        'pussy',
+        'bitch',
+        'slut',
+        'whore',
+        'cunt',
+
+        'motherfucker',
+        'mother fucker',
+        'mf',
+
+        'fuck you',
+        'fuck off',
+        'shut the fuck up',
+        'stfu',
+
+        'dumbass',
+        'dipshit',
+        'piece of shit'
+    ],
+
+    mild: [
+        'idiot',
+        'moron',
+        'loser',
+        'clown',
+        'trash',
+        'noob',
+        'stupid',
+        'dumb'
+    ]
+};
+
 /**
  * Replace commonly used disguised characters.
+ *
+ * Examples:
+ * b1tch  -> bitch
+ * pu$$y  -> pussy
+ * f@ggot -> faggot
  *
  * @param {string} content
  * @returns {string}
@@ -23,109 +92,303 @@ const {
 function replaceDisguisedCharacters(content) {
     return content
         .replace(/[@4]/g, 'a')
-        .replace(/[3]/g, 'e')
+        .replace(/8/g, 'b')
+        .replace(/3/g, 'e')
         .replace(/[1!|]/g, 'i')
-        .replace(/[0]/g, 'o')
+        .replace(/0/g, 'o')
         .replace(/[5$]/g, 's')
-        .replace(/[7]/g, 't');
+        .replace(/7/g, 't');
 }
 
 /**
  * Normalize text for profanity detection.
  *
+ * normal:
+ * "you are p.u.s.s.y" -> "you are p u s s y"
+ *
+ * compact:
+ * "you are p.u.s.s.y" -> "youarepussy"
+ *
  * @param {string} content
  * @returns {{ normal: string, compact: string }}
  */
 function normalizeContent(content) {
-    const normal = replaceDisguisedCharacters(
-        content
+    const normalized = replaceDisguisedCharacters(
+        String(content)
             .normalize('NFKC')
             .toLowerCase()
             .replace(/[\u200B-\u200D\uFEFF]/g, '')
-            .replace(/[._\-–—*,/\\()[\]{}:;"'`~+=<>!?]+/g, ' ')
+            .replace(
+                /[._\-–—*,/\\()[\]{}:;"'`~+=<>!?@#$%^&]+/g,
+                ' '
+            )
             .replace(/\s+/g, ' ')
             .trim()
     );
 
-    const compact = normal.replace(
-        /[^\p{L}\p{N}]/gu,
-        ''
-    );
-
     return {
-        normal,
-        compact
+        normal: normalized,
+
+        compact: normalized.replace(
+            /[^\p{L}\p{N}]/gu,
+            ''
+        )
     };
 }
 
 /**
- * Normalize one blocked word.
+ * Escape text before placing it inside a RegExp.
  *
- * @param {string} word
- * @returns {{ normal: string, compact: string }}
+ * @param {string} value
+ * @returns {string}
  */
-function normalizeBlockedWord(word) {
-    return normalizeContent(word);
+function escapeRegExp(value) {
+    return value.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+    );
 }
 
 /**
- * Check whether a message contains a blocked word.
+ * Create a phrase-safe regular expression.
+ *
+ * This prevents "ass" from matching inside words
+ * such as "class" or "assistant".
+ *
+ * @param {string} normalizedTerm
+ * @returns {RegExp}
+ */
+function createTermRegex(normalizedTerm) {
+    const parts = normalizedTerm
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(escapeRegExp);
+
+    const phrase = parts.join('\\s+');
+
+    return new RegExp(
+        `(^|[^\\p{L}\\p{N}])${phrase}(?=$|[^\\p{L}\\p{N}])`,
+        'iu'
+    );
+}
+
+/**
+ * Determine whether a blocked term exists in content.
+ *
+ * Supports:
+ * pussy
+ * pu$$y
+ * p.u.s.s.y
+ * p u s s y
+ * kill yourself
+ *
+ * @param {{ normal: string, compact: string }} normalizedMessage
+ * @param {string} blockedTerm
+ * @returns {boolean}
+ */
+function containsBlockedTerm(
+    normalizedMessage,
+    blockedTerm
+) {
+    const normalizedBlocked =
+        normalizeContent(blockedTerm);
+
+    if (!normalizedBlocked.normal) {
+        return false;
+    }
+
+    /*
+     * Exact word or exact phrase detection.
+     */
+    const termRegex = createTermRegex(
+        normalizedBlocked.normal
+    );
+
+    if (termRegex.test(normalizedMessage.normal)) {
+        return true;
+    }
+
+    /*
+     * Detect characters separated by spaces or symbols.
+     *
+     * Example:
+     * p.u.s.s.y
+     * p u s s y
+     */
+    if (
+        normalizedBlocked.compact.length >= 4 &&
+        normalizedMessage.compact.includes(
+            normalizedBlocked.compact
+        )
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Build the final profanity list.
+ *
+ * Custom words from guardian configuration are treated
+ * as medium severity unless they already exist in one
+ * of the built-in lists.
+ *
+ * @param {string[]} customBlockedWords
+ * @returns {{
+ *   severe: string[],
+ *   medium: string[],
+ *   mild: string[]
+ * }}
+ */
+function buildProfanityLevels(
+    customBlockedWords = []
+) {
+    const severe = new Set(
+        PROFANITY_LEVELS.severe
+    );
+
+    const medium = new Set(
+        PROFANITY_LEVELS.medium
+    );
+
+    const mild = new Set(
+        PROFANITY_LEVELS.mild
+    );
+
+    for (const word of customBlockedWords) {
+        if (
+            typeof word !== 'string' ||
+            !word.trim()
+        ) {
+            continue;
+        }
+
+        const cleanWord = word
+            .toLowerCase()
+            .trim();
+
+        if (
+            severe.has(cleanWord) ||
+            medium.has(cleanWord) ||
+            mild.has(cleanWord)
+        ) {
+            continue;
+        }
+
+        medium.add(cleanWord);
+    }
+
+    return {
+        severe: [...severe],
+        medium: [...medium],
+        mild: [...mild]
+    };
+}
+
+/**
+ * Find the first prohibited term and its severity.
+ *
+ * Severe is checked first, followed by medium and mild.
  *
  * @param {string} content
- * @param {string[]} blockedWords
- * @returns {string|null}
+ * @param {string[]} customBlockedWords
+ * @returns {{
+ *   word: string,
+ *   severity: 'severe'|'medium'|'mild'
+ * }|null}
  */
-function findBlockedWord(content, blockedWords) {
-    if (!content || blockedWords.length === 0) {
+function findProfanityViolation(
+    content,
+    customBlockedWords = []
+) {
+    if (!content) {
         return null;
     }
 
     const normalizedMessage =
         normalizeContent(content);
 
-    const messageWords =
-        normalizedMessage.normal.match(
-            /[\p{L}\p{N}]+/gu
-        ) || [];
+    const levels = buildProfanityLevels(
+        customBlockedWords
+    );
 
-    for (const blockedWord of blockedWords) {
-        const normalizedBlocked =
-            normalizeBlockedWord(blockedWord);
+    const severityOrder = [
+        'severe',
+        'medium',
+        'mild'
+    ];
 
-        if (!normalizedBlocked.compact) {
-            continue;
-        }
-
-        /*
-         * Normal word detection.
-         * Example: "you are idiot"
-         */
-        if (
-            messageWords.includes(
-                normalizedBlocked.normal
-            )
-        ) {
-            return blockedWord;
-        }
-
-        /*
-         * Obfuscated-word detection.
-         * Examples:
-         * i.d.i.o.t
-         * i d i o t
-         * დ ე ბ ი ლ ი
-         */
-        if (
-            normalizedBlocked.compact.length >= 4 &&
-            normalizedMessage.compact.includes(
-                normalizedBlocked.compact
-            )
-        ) {
-            return blockedWord;
+    for (const severity of severityOrder) {
+        for (const blockedWord of levels[severity]) {
+            if (
+                containsBlockedTerm(
+                    normalizedMessage,
+                    blockedWord
+                )
+            ) {
+                return {
+                    word: blockedWord,
+                    severity
+                };
+            }
         }
     }
 
     return null;
+}
+
+/**
+ * Return a readable severity label.
+ *
+ * @param {'severe'|'medium'|'mild'} severity
+ * @returns {string}
+ */
+function formatSeverity(severity) {
+    switch (severity) {
+        case 'severe':
+            return 'Severe';
+
+        case 'medium':
+            return 'Medium';
+
+        default:
+            return 'Mild';
+    }
+}
+
+/**
+ * Decide whether a database warning must be saved.
+ *
+ * Severe:
+ * Always save a warning.
+ *
+ * Medium:
+ * Save on MEDIUM or HIGH Guardian protection.
+ *
+ * Mild:
+ * Save only on HIGH Guardian protection.
+ *
+ * @param {'severe'|'medium'|'mild'} severity
+ * @param {string} protectionLevel
+ * @returns {boolean}
+ */
+function shouldSaveWarning(
+    severity,
+    protectionLevel
+) {
+    if (severity === 'severe') {
+        return true;
+    }
+
+    if (severity === 'medium') {
+        return (
+            protectionLevel === 'MEDIUM' ||
+            protectionLevel === 'HIGH'
+        );
+    }
+
+    return protectionLevel === 'HIGH';
 }
 
 /**
@@ -149,17 +412,22 @@ async function handleProfanityProtection(
         return false;
     }
 
-    const blockedWord = findBlockedWord(
+    const violation = findProfanityViolation(
         message.content,
-        config.blockedWords
+        Array.isArray(config.blockedWords)
+            ? config.blockedWords
+            : []
     );
 
-    if (!blockedWord) {
+    if (!violation) {
         return false;
     }
 
+    const severityLabel =
+        formatSeverity(violation.severity);
+
     const reason =
-        'Inappropriate or insulting language';
+        `${severityLabel} inappropriate or insulting language`;
 
     const violationCount = addViolation(
         message.guild.id,
@@ -168,6 +436,10 @@ async function handleProfanityProtection(
 
     const actions = [];
 
+    /*
+     * All three levels are deleted when message deletion
+     * is enabled in the Guardian configuration.
+     */
     if (config.deleteMessage) {
         const deleted =
             await deleteViolatingMessage(message);
@@ -175,10 +447,16 @@ async function handleProfanityProtection(
         if (deleted) {
             actions.push('Message deleted');
         } else {
-            actions.push('Message could not be deleted');
+            actions.push(
+                'Message could not be deleted'
+            );
         }
     }
 
+    /*
+     * Notify the member without displaying the exact
+     * blocked term publicly.
+     */
     if (config.notifyUser) {
         await sendTemporaryWarning(
             message,
@@ -189,26 +467,37 @@ async function handleProfanityProtection(
         actions.push('User notified');
     }
 
-    const level =
-        guardianConfig.protectionLevel.toUpperCase();
+    const protectionLevel = String(
+        guardianConfig.protectionLevel || 'LOW'
+    ).toUpperCase();
 
     if (
-        level === 'MEDIUM' ||
-        level === 'HIGH'
+        shouldSaveWarning(
+            violation.severity,
+            protectionLevel
+        )
     ) {
         const warningSaved =
             await saveGuardianWarning(
                 message,
-                `[Guardian Profanity] ${reason}`
+                `[Guardian Profanity: ${severityLabel}] ${reason}`
             );
 
         if (warningSaved) {
             actions.push('Warning saved');
+        } else {
+            actions.push(
+                'Warning could not be saved'
+            );
         }
     }
 
+    /*
+     * High protection mode applies a timeout after
+     * repeated violations.
+     */
     if (
-        level === 'HIGH' &&
+        protectionLevel === 'HIGH' &&
         violationCount >=
             config.timeoutAfterViolations
     ) {
@@ -216,15 +505,17 @@ async function handleProfanityProtection(
             await timeoutMember(
                 message.member,
                 config.timeoutDurationMs,
-                `[Guardian Profanity] ${reason}`
+                `[Guardian Profanity: ${severityLabel}] ${reason}`
             );
 
         if (timedOut) {
-            const timeoutMinutes =
+            const timeoutMinutes = Math.max(
+                1,
                 Math.round(
                     config.timeoutDurationMs /
                     60000
-                );
+                )
+            );
 
             actions.push(
                 `${timeoutMinutes}-minute timeout`
@@ -243,12 +534,17 @@ async function handleProfanityProtection(
 
     await sendGuardianLog({
         message,
-        reason,
+
+        reason:
+            `${reason} — detected term: "${violation.word}"`,
+
         action:
             actions.length > 0
                 ? actions.join(', ')
                 : 'Detected only',
+
         violationCount,
+
         logChannelName:
             guardianConfig.logChannelName
     });
