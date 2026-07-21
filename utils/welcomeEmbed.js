@@ -1,72 +1,94 @@
-const { EmbedBuilder } = require("discord.js");
-const embedConfig = require("../config/embed");
+const {
+    EmbedBuilder
+} = require('discord.js');
 
+const embedConfig = require('../config/embed');
+
+/**
+ * Create the Seraphiel welcome embed.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {EmbedBuilder}
+ */
 function createWelcomeEmbed(member) {
     const guild = member.guild;
 
     const serverIcon =
         guild.iconURL({
-            extension: "png",
+            extension: 'png',
             size: 512
         }) || undefined;
 
-    const memberAvatar = member.user.displayAvatarURL({
-        extension: "png",
-        size: 512
-    });
+    const memberAvatar =
+        member.user.displayAvatarURL({
+            extension: 'png',
+            size: 512
+        });
 
-    const botAvatar = member.client.user.displayAvatarURL({
-        extension: "png",
-        size: 256
-    });
+    const botAvatar =
+        member.client.user.displayAvatarURL({
+            extension: 'png',
+            size: 256
+        });
+
+    const joinedTimestamp =
+        Math.floor(Date.now() / 1000);
 
     return new EmbedBuilder()
-        .setColor("#8B0000")
+        /*
+         * Seraphiel ice-blue theme.
+         */
+        .setColor('#6EC6FF')
 
         .setAuthor({
             name: guild.name,
             iconURL: serverIcon
         })
 
-        .setTitle("⚔️ A New Commandment Has Arrived")
+        .setTitle(
+            '🐉 Seraphiel Welcomes a New Traveler'
+        )
 
         .setDescription(
             [
                 `Welcome to **${guild.name}**, ${member}!`,
-                "",
-                "Your journey begins here. Become part of the community,",
-                "meet new members and prepare for future events.",
-                "",
-                "━━━━━━━━━━━━━━━━━━━━━━"
-            ].join("\n")
+                '',
+                'The Guardian Dragon watches over this realm.',
+                'Respect the rules, meet the community,',
+                'and begin your journey.',
+                '',
+                '━━━━━━━━━━━━━━━━━━━━━━'
+            ].join('\n')
         )
 
         .addFields(
             {
-                name: "📜 Server Guide",
+                name: '📜 Server Guide',
                 value: [
-                    "• Read the server rules",
-                    "• Choose your roles",
-                    "• Explore the community"
-                ].join("\n"),
+                    '• Read the server rules',
+                    '• Complete verification',
+                    '• Choose your roles',
+                    '• Explore the community'
+                ].join('\n'),
                 inline: true
             },
             {
-                name: "⚔️ Your Journey",
+                name: '⚔️ Your Journey',
                 value: [
-                    "• Join server events",
-                    "• Meet other members",
-                    "• Rise through the ranks"
-                ].join("\n"),
+                    '• Join server events',
+                    '• Meet other members',
+                    '• Rise through the ranks',
+                    '• Build your legacy'
+                ].join('\n'),
                 inline: true
             },
             {
-                name: "👥 Member Information",
+                name: '👥 Member Information',
                 value: [
                     `**Member:** ${member}`,
                     `**Member Number:** #${guild.memberCount}`,
-                    `**Joined:** <t:${Math.floor(Date.now() / 1000)}:R>`
-                ].join("\n"),
+                    `**Joined:** <t:${joinedTimestamp}:R>`
+                ].join('\n'),
                 inline: false
             }
         )
@@ -74,7 +96,9 @@ function createWelcomeEmbed(member) {
         .setThumbnail(memberAvatar)
 
         .setFooter({
-            text: `${embedConfig.footer.text} • Welcome System`,
+            text:
+                `${embedConfig.footer.text} • ` +
+                'Seraphiel Welcome System',
             iconURL: botAvatar
         })
 
