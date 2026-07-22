@@ -16,7 +16,7 @@ const {
 } = require('../utils/scamDetector');
 
 /**
- * Recent message timestamps used for spam detection.
+ * Rapid-message history.
  *
  * Key:
  * guildId:userId
@@ -24,7 +24,7 @@ const {
 const messageHistory = new Map();
 
 /**
- * Repeated-message history.
+ * Duplicate-message history.
  *
  * Key:
  * guildId:userId
@@ -33,6 +33,183 @@ const duplicateHistory = new Map();
 
 const DISCORD_INVITE_PATTERN =
     /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-zA-Z0-9-]+/i;
+
+/**
+ * Escape characters that have a special
+ * meaning inside a regular expression.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegExp(value) {
+    return value.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+    );
+}
+
+/**
+ * Convert common number and symbol replacements
+ * back into normal letters.
+ *
+ * Examples:
+ * f@ggot
+ * sh1t
+ * b1tch
+ *
+ * @param {string} content
+ * @returns {string}
+ */
+function normalizeLeetCharacters(content) {
+    return content
+        .toLowerCase()
+        .replace(/[@4]/g, 'a')
+        .replace(/[8]/g, 'b')
+        .replace(/[3]/g, 'e')
+        .replace(/[1!|]/g, 'i')
+        .replace(/[0]/g, 'o')
+        .replace(/[$5]/g, 's')
+        .replace(/[7+]/g, 't');
+}
+
+/**
+ * Normalize message content.
+ *
+ * @param {string} content
+ * @returns {string}
+ */
+function normalizeContent(content) {
+    return normalizeLeetCharacters(content)
+        .normalize('NFKC')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Create a flexible regular expression for
+ * one configured word or phrase.
+ *
+ * It allows separators between letters:
+ *
+ * f.u.c.k
+ * f_u_c_k
+ * f-u-c-k
+ * ყ ლ ე
+ * ყ.ლ.ე
+ *
+ * @param {string} configuredWord
+ * @returns {RegExp|null}
+ */
+function createProfanityPattern(
+    configuredWord
+) {
+    const normalizedWord =
+        normalizeContent(configuredWord);
+
+    if (!normalizedWord) {
+        return null;
+    }
+
+    const characters =
+        Array.from(normalizedWord);
+
+    const separatorPattern =
+        '[\\s._*~`\\-–—|/\\\\]*';
+
+    const wordPattern =
+        characters
+            .map(character => {
+                if (character === ' ') {
+                    return '[\\s._*~`\\-–—|/\\\\]+';
+                }
+
+                return escapeRegExp(character);
+            })
+            .join(separatorPattern);
+
+    /*
+     * Unicode-aware boundaries prevent words such
+     * as "ass" from matching inside "class".
+     */
+    return new RegExp(
+        `(^|[^\\p{L}\\p{N}])${wordPattern}(?=$|[^\\p{L}\\p{N}])`,
+        'iu'
+    );
+}
+
+/**
+ * Search one configured word list.
+ *
+ * @param {string} content
+ * @param {string[]} words
+ * @returns {string|null}
+ */
+function findWordFromList(
+    content,
+    words
+) {
+    const normalizedContent =
+        normalizeContent(content);
+
+    for (const word of words) {
+        const pattern =
+            createProfanityPattern(word);
+
+        if (
+            pattern &&
+            pattern.test(normalizedContent)
+        ) {
+            return word;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Detect configured profanity.
+ *
+ * @param {string} content
+ * @returns {{
+ *   word: string,
+ *   severity: 'warning'|'timeout'
+ * }|null}
+ */
+function findBadWord(content) {
+    if (!automodConfig.badWords.enabled) {
+        return null;
+    }
+
+    const timeoutWord =
+        findWordFromList(
+            content,
+            automodConfig.badWords
+                .timeoutWords ?? []
+        );
+
+    if (timeoutWord) {
+        return {
+            word: timeoutWord,
+            severity: 'timeout'
+        };
+    }
+
+    const warningWord =
+        findWordFromList(
+            content,
+            automodConfig.badWords
+                .warningWords ?? []
+        );
+
+    if (warningWord) {
+        return {
+            word: warningWord,
+            severity: 'warning'
+        };
+    }
+
+    return null;
+}
 
 /**
  * Check whether a member bypasses AutoMod.
@@ -57,8 +234,9 @@ function shouldBypassAutoMod(member) {
             PermissionFlagsBits.ManageMessages
     };
 
-    return automodConfig.bypassPermissions.some(
-        permissionName => {
+    return automodConfig
+        .bypassPermissions
+        .some(permissionName => {
             const permission =
                 permissionMap[permissionName];
 
@@ -69,58 +247,7 @@ function shouldBypassAutoMod(member) {
             return member.permissions.has(
                 permission
             );
-        }
-    );
-}
-
-/**
- * Normalize content for comparisons.
- *
- * @param {string} content
- * @returns {string}
- */
-function normalizeContent(content) {
-    return content
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-/**
- * Detect a configured forbidden word.
- *
- * @param {string} content
- * @returns {string|null}
- */
-function findBadWord(content) {
-    if (!automodConfig.badWords.enabled) {
-        return null;
-    }
-
-    const normalizedContent =
-        normalizeContent(content);
-
-    for (
-        const configuredWord
-        of automodConfig.badWords.words
-    ) {
-        const normalizedWord =
-            normalizeContent(configuredWord);
-
-        if (!normalizedWord) {
-            continue;
-        }
-
-        if (
-            normalizedContent.includes(
-                normalizedWord
-            )
-        ) {
-            return configuredWord;
-        }
-    }
-
-    return null;
+        });
 }
 
 /**
@@ -259,7 +386,7 @@ function getMentionCount(message) {
 }
 
 /**
- * Find the configured AutoMod log channel.
+ * Find AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -291,7 +418,7 @@ function findLogChannel(guild) {
 }
 
 /**
- * Send an AutoMod log embed.
+ * Send AutoMod log.
  *
  * @param {import('discord.js').Message} message
  * @param {string} reason
@@ -406,7 +533,7 @@ async function sendAutoModLog(
 }
 
 /**
- * Delete a violating message.
+ * Delete violation message.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<boolean>}
@@ -436,7 +563,7 @@ async function deleteViolationMessage(message) {
 }
 
 /**
- * Apply a Discord timeout.
+ * Apply Discord timeout.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} duration
@@ -471,7 +598,7 @@ async function applyTimeout(
 }
 
 /**
- * Send a temporary warning.
+ * Send temporary channel warning.
  *
  * @param {import('discord.js').Message} message
  * @param {string} warningText
@@ -518,9 +645,7 @@ async function sendTemporaryWarning(
 }
 
 /**
- * Save a completed moderation action.
- *
- * Database failure must not stop AutoMod protection.
+ * Save AutoMod case.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} violation
@@ -587,7 +712,7 @@ async function saveAutoModCase(
 }
 
 /**
- * Process an AutoMod violation.
+ * Process AutoMod violation.
  *
  * @param {import('discord.js').Message} message
  * @param {{
@@ -661,7 +786,7 @@ module.exports = {
     name: Events.MessageCreate,
 
     /**
-     * Run AutoMod whenever a message is created.
+     * Run AutoMod for every new message.
      *
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
@@ -758,22 +883,43 @@ module.exports = {
         }
 
         /*
-         * Bad-word protection
+         * Seraphiel Profanity Shield
          */
-        const badWord =
+        const badWordResult =
             findBadWord(content);
 
-        if (badWord) {
-            await processViolation(
-                message,
-                {
-                    reason:
-                        'Forbidden language detected',
+        if (badWordResult) {
+            if (
+                badWordResult.severity ===
+                'timeout'
+            ) {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            'Severe profanity or abusive language detected',
 
-                    warning:
-                        'that language is not allowed on this server.'
-                }
-            );
+                        warning:
+                            'severe profanity and abusive language are not allowed.',
+
+                        timeoutDuration:
+                            automodConfig
+                                .badWords
+                                .timeoutMilliseconds
+                    }
+                );
+            } else {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            'Insulting language detected',
+
+                        warning:
+                            'insulting language is not allowed on this server.'
+                    }
+                );
+            }
 
             return;
         }
@@ -813,7 +959,7 @@ module.exports = {
         }
 
         /*
-         * Repeated-message protection
+         * Duplicate-message protection
          */
         if (isDuplicateSpam(message)) {
             await processViolation(
@@ -867,7 +1013,7 @@ module.exports = {
 };
 
 /**
- * Remove expired tracking data.
+ * Remove expired tracking information.
  */
 setInterval(
     () => {

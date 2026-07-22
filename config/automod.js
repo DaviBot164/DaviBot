@@ -1,26 +1,19 @@
 module.exports = {
     /**
      * მთავარი AutoMod ჩამრთველი.
-     *
-     * false-ის შემთხვევაში მთელი AutoMod გაითიშება.
      */
     enabled: true,
 
     /**
-     * AutoMod-ის, Scam Shield-ისა და
-     * Raid Shield-ის ლოგების არხი.
+     * AutoMod-ის ლოგების არხი.
      */
     logChannelId: '1527768422535004360',
 
-    /**
-     * გამოიყენება მხოლოდ მაშინ,
-     * თუ logChannelId ცარიელია ან არხი ვერ მოიძებნა.
-     */
     logChannelName: '📄・moderation-logs',
 
     /**
      * ამ უფლებების მქონე წევრებს
-     * შეტყობინებების AutoMod არ შეამოწმებს.
+     * AutoMod არ შეამოწმებს.
      */
     bypassPermissions: [
         'Administrator',
@@ -35,22 +28,128 @@ module.exports = {
     },
 
     /**
-     * აკრძალული სიტყვების ფილტრი.
-     *
-     * სია ჯერ ცარიელია.
-     * სიტყვებს მოგვიანებით დავამატებთ.
+     * Seraphiel Profanity Shield.
      */
     badWords: {
         enabled: true,
 
-        words: []
+        /**
+         * მსუბუქი შეურაცხყოფა.
+         *
+         * შეტყობინება წაიშლება,
+         * მაგრამ წევრს Timeout არ დაედება.
+         */
+        warningWords: [
+            // English
+            'idiot',
+            'stupid',
+            'dumb',
+            'moron',
+            'imbecile',
+            'loser',
+            'trash',
+            'clown',
+            'noob',
+            'bozo',
+            'pathetic',
+            'useless',
+            'shut up',
+
+            // Georgian
+            'დებილი',
+            'იდიოტი',
+            'სულელი',
+            'ტვინნაკლული',
+            'ჩლუნგი',
+            'გონებაჩლუნგი',
+            'ნაგავი',
+            'უსარგებლო',
+            'მატყუარა',
+            'გაჩუმდი'
+        ],
+
+        /**
+         * მძიმე გინება და შეურაცხყოფა.
+         *
+         * შეტყობინება წაიშლება და წევრს
+         * Timeout მიენიჭება.
+         */
+        timeoutWords: [
+            // English profanity
+            'fuck',
+            'fck',
+            'fuk',
+            'fuq',
+            'fvck',
+            'fucking',
+            'fcking',
+            'motherfucker',
+            'motherfucking',
+            'shit',
+            'bullshit',
+            'bitch',
+            'son of a bitch',
+            'bastard',
+            'asshole',
+            'dickhead',
+            'dick',
+            'cock',
+            'prick',
+            'cunt',
+            'slut',
+            'whore',
+            'hoe',
+            'retard',
+            'retarded',
+
+            // Hate speech and slurs
+            'faggot',
+            'fag',
+            'nigger',
+            'nigga',
+            'tranny',
+
+            // Abuse accusations used as insults
+            'pedo',
+            'pedophile',
+            'paedophile',
+            'rapist',
+
+            // Georgian profanity
+            'ყლე',
+            'ყლეო',
+            'ყლეობა',
+            'ყლეური',
+            'ბოზი',
+            'ბოზიშვილი',
+            'ნაბოზარი',
+            'ნაბიჭვარი',
+            'მუტელი',
+            'მუტლის',
+            'ტრაკი',
+            'ტრაკში',
+            'შევეცი',
+            'მოგიტყნავ',
+            'გიტყნავ',
+            'მოტყნული',
+            'მტყვნელი',
+            'დედის მტყვნელი',
+            'დედას შევეცი',
+            'დედას მოგიტყნავ',
+            'დედას გიტყნავ',
+            'შენს დედას',
+            'დედისტრაკი'
+        ],
+
+        /**
+         * მძიმე სიტყვის აღმოჩენისას Timeout.
+         */
+        timeoutMilliseconds:
+            10 * 60 * 1_000
     },
 
     /**
      * სწრაფი შეტყობინებების სპამი.
-     *
-     * 7 წამში 5 შეტყობინება გამოიწვევს
-     * შეტყობინების წაშლასა და 5-წუთიან timeout-ს.
      */
     spam: {
         enabled: true,
@@ -66,9 +165,6 @@ module.exports = {
 
     /**
      * ერთი და იმავე შეტყობინების გამეორება.
-     *
-     * 15 წამში 3 ერთნაირი შეტყობინება
-     * გამოიწვევს 5-წუთიან timeout-ს.
      */
     duplicateMessages: {
         enabled: true,
@@ -84,10 +180,6 @@ module.exports = {
 
     /**
      * Mention Spam Protection.
-     *
-     * ერთ შეტყობინებაში 5 ან მეტი
-     * მომხმარებლის ან როლის mention გამოიწვევს
-     * 10-წუთიან timeout-ს.
      */
     mentionSpam: {
         enabled: true,
@@ -100,9 +192,6 @@ module.exports = {
 
     /**
      * Seraphiel Raid Shield.
-     *
-     * 10 წამში 5 წევრის შემოსვლა
-     * Raid Mode-ს 10 წუთით ჩართავს.
      */
     antiRaid: {
         enabled: true,
@@ -118,12 +207,6 @@ module.exports = {
 
     /**
      * Seraphiel Scam Shield.
-     *
-     * ამოიცნობს გავრცელებულ Scam და
-     * Phishing შეტყობინებებსა და ბმულებს.
-     *
-     * აღმოჩენისას შეტყობინება წაიშლება
-     * და წევრს 30-წუთიანი timeout მიენიჭება.
      */
     scamProtection: {
         enabled: true,
@@ -133,8 +216,7 @@ module.exports = {
     },
 
     /**
-     * რამდენ ხანში წაიშალოს არხში
-     * გამოტანილი დროებითი გაფრთხილება.
+     * დროებითი გაფრთხილების წაშლის დრო.
      */
     warningDeleteDelayMilliseconds:
         5 * 1_000
