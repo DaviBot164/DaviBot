@@ -22,6 +22,12 @@ const {
 } = require('./database');
 
 /**
+ * Server that Seraphiel must leave.
+ */
+const SERVER_TO_LEAVE_ID =
+    '1521240178633605383';
+
+/**
  * Discord API error codes that do not require
  * another response attempt.
  */
@@ -65,9 +71,76 @@ function getConfiguredGuildIds() {
     const guildIds = rawGuildIds
         .split(',')
         .map(guildId => guildId.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .filter(guildId =>
+            guildId !== SERVER_TO_LEAVE_ID
+        );
 
     return [...new Set(guildIds)];
+}
+
+/**
+ * Leave the selected Discord server.
+ *
+ * This function affects only SERVER_TO_LEAVE_ID.
+ *
+ * @param {import('discord.js').Client<true>} readyClient
+ * @returns {Promise<boolean>}
+ */
+async function leaveSelectedServer(readyClient) {
+    console.log(
+        '🔍 Checking whether Seraphiel is still in the removed server...'
+    );
+
+    let guild = readyClient.guilds.cache.get(
+        SERVER_TO_LEAVE_ID
+    );
+
+    if (!guild) {
+        try {
+            guild = await readyClient.guilds.fetch(
+                SERVER_TO_LEAVE_ID
+            );
+        } catch (error) {
+            if (error.code === 10004) {
+                console.log(
+                    'ℹ️ Seraphiel is no longer in that server.'
+                );
+
+                return false;
+            }
+
+            console.warn(
+                '⚠️ The selected server could not be found or accessed.'
+            );
+
+            return false;
+        }
+    }
+
+    try {
+        const guildName = guild.name;
+
+        console.log(
+            `👋 Leaving server: ${guildName} (${SERVER_TO_LEAVE_ID})`
+        );
+
+        await guild.leave();
+
+        console.log(
+            `✅ Seraphiel successfully left: ${guildName}`
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            '❌ Seraphiel failed to leave the selected server:'
+        );
+
+        console.error(error);
+
+        return false;
+    }
 }
 
 /**
@@ -85,9 +158,15 @@ async function registerGuildCommands(readyClient) {
     const guildIds = getConfiguredGuildIds();
 
     if (guildIds.length === 0) {
-        throw new Error(
-            'No Guild IDs were configured. Add GUILD_IDS to the environment variables.'
+        console.warn(
+            '⚠️ No active Guild IDs were configured for Slash Commands.'
         );
+
+        console.warn(
+            'Add your remaining server IDs to GUILD_IDS.'
+        );
+
+        return;
     }
 
     const rest = new REST({
@@ -233,6 +312,9 @@ client.once(
         console.log(
             '======================================'
         );
+
+        // Leave only the selected server.
+        await leaveSelectedServer(readyClient);
 
         try {
             await registerGuildCommands(
