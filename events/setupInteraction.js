@@ -29,6 +29,10 @@ const {
     publishFAQ
 } = require('../utils/setup/publishFAQ');
 
+const {
+    publishFullSetup
+} = require('../utils/setup/publishFullSetup');
+
 /**
  * Safely send an ephemeral setup error.
  *
@@ -204,10 +208,8 @@ module.exports = {
                     break;
 
                 case 'full-setup':
-                    await showComingSoon(
-                        interaction,
-                        '🚀',
-                        'Full Server Setup'
+                    await publishFullSetup(
+                        interaction
                     );
                     break;
 
