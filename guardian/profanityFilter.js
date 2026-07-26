@@ -15,7 +15,7 @@ const {
 } = require('./guardianLogger');
 
 /*
- * Built-in Guardian profanity levels.
+ * Built-in Umbra Guardian profanity levels.
  *
  * Severe:
  * Delete + notify + database warning.
@@ -113,18 +113,22 @@ function replaceDisguisedCharacters(content) {
  * @returns {{ normal: string, compact: string }}
  */
 function normalizeContent(content) {
-    const normalized = replaceDisguisedCharacters(
-        String(content)
-            .normalize('NFKC')
-            .toLowerCase()
-            .replace(/[\u200B-\u200D\uFEFF]/g, '')
-            .replace(
-                /[._\-–—*,/\\()[\]{}:;"'`~+=<>!?@#$%^&]+/g,
-                ' '
-            )
-            .replace(/\s+/g, ' ')
-            .trim()
-    );
+    const normalized =
+        replaceDisguisedCharacters(
+            String(content)
+                .normalize('NFKC')
+                .toLowerCase()
+                .replace(
+                    /[\u200B-\u200D\uFEFF]/g,
+                    ''
+                )
+                .replace(
+                    /[._\-–—*,/\\()[\]{}:;"'`~+=<>!?@#$%^&]+/g,
+                    ' '
+                )
+                .replace(/\s+/g, ' ')
+                .trim()
+        );
 
     return {
         normal: normalized,
@@ -152,8 +156,8 @@ function escapeRegExp(value) {
 /**
  * Create a phrase-safe regular expression.
  *
- * This prevents "ass" from matching inside words
- * such as "class" or "assistant".
+ * This prevents short blocked words from
+ * matching inside unrelated longer words.
  *
  * @param {string} normalizedTerm
  * @returns {RegExp}
@@ -164,7 +168,8 @@ function createTermRegex(normalizedTerm) {
         .filter(Boolean)
         .map(escapeRegExp);
 
-    const phrase = parts.join('\\s+');
+    const phrase =
+        parts.join('\\s+');
 
     return new RegExp(
         `(^|[^\\p{L}\\p{N}])${phrase}(?=$|[^\\p{L}\\p{N}])`,
@@ -173,7 +178,8 @@ function createTermRegex(normalizedTerm) {
 }
 
 /**
- * Determine whether a blocked term exists in content.
+ * Determine whether a blocked term exists
+ * inside the message content.
  *
  * Supports:
  * pussy
@@ -200,18 +206,24 @@ function containsBlockedTerm(
     /*
      * Exact word or exact phrase detection.
      */
-    const termRegex = createTermRegex(
-        normalizedBlocked.normal
-    );
+    const termRegex =
+        createTermRegex(
+            normalizedBlocked.normal
+        );
 
-    if (termRegex.test(normalizedMessage.normal)) {
+    if (
+        termRegex.test(
+            normalizedMessage.normal
+        )
+    ) {
         return true;
     }
 
     /*
-     * Detect characters separated by spaces or symbols.
+     * Detect characters separated by spaces
+     * or symbols.
      *
-     * Example:
+     * Examples:
      * p.u.s.s.y
      * p u s s y
      */
@@ -228,11 +240,12 @@ function containsBlockedTerm(
 }
 
 /**
- * Build the final profanity list.
+ * Build the final profanity lists.
  *
- * Custom words from guardian configuration are treated
- * as medium severity unless they already exist in one
- * of the built-in lists.
+ * Custom words from Umbra Guardian's
+ * configuration are treated as medium severity
+ * unless they already exist in one of the
+ * built-in lists.
  *
  * @param {string[]} customBlockedWords
  * @returns {{
@@ -256,7 +269,9 @@ function buildProfanityLevels(
         PROFANITY_LEVELS.mild
     );
 
-    for (const word of customBlockedWords) {
+    for (
+        const word of customBlockedWords
+    ) {
         if (
             typeof word !== 'string' ||
             !word.trim()
@@ -287,9 +302,11 @@ function buildProfanityLevels(
 }
 
 /**
- * Find the first prohibited term and its severity.
+ * Find the first prohibited term and
+ * determine its severity.
  *
- * Severe is checked first, followed by medium and mild.
+ * Severe is checked first, followed by
+ * medium and mild.
  *
  * @param {string} content
  * @param {string[]} customBlockedWords
@@ -309,9 +326,10 @@ function findProfanityViolation(
     const normalizedMessage =
         normalizeContent(content);
 
-    const levels = buildProfanityLevels(
-        customBlockedWords
-    );
+    const levels =
+        buildProfanityLevels(
+            customBlockedWords
+        );
 
     const severityOrder = [
         'severe',
@@ -319,8 +337,13 @@ function findProfanityViolation(
         'mild'
     ];
 
-    for (const severity of severityOrder) {
-        for (const blockedWord of levels[severity]) {
+    for (
+        const severity of severityOrder
+    ) {
+        for (
+            const blockedWord
+            of levels[severity]
+        ) {
             if (
                 containsBlockedTerm(
                     normalizedMessage,
@@ -358,16 +381,17 @@ function formatSeverity(severity) {
 }
 
 /**
- * Decide whether a database warning must be saved.
+ * Decide whether a database warning
+ * must be saved.
  *
  * Severe:
  * Always save a warning.
  *
  * Medium:
- * Save on MEDIUM or HIGH Guardian protection.
+ * Save on MEDIUM or HIGH protection.
  *
  * Mild:
- * Save only on HIGH Guardian protection.
+ * Save only on HIGH protection.
  *
  * @param {'severe'|'medium'|'mild'} severity
  * @param {string} protectionLevel
@@ -388,11 +412,14 @@ function shouldSaveWarning(
         );
     }
 
-    return protectionLevel === 'HIGH';
+    return (
+        protectionLevel === 'HIGH'
+    );
 }
 
 /**
- * Handle profanity protection.
+ * Handle Umbra Guardian profanity
+ * protection.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} guardianConfig
@@ -402,7 +429,8 @@ async function handleProfanityProtection(
     message,
     guardianConfig
 ) {
-    const config = guardianConfig.profanity;
+    const config =
+        guardianConfig.profanity;
 
     if (
         !config ||
@@ -412,40 +440,52 @@ async function handleProfanityProtection(
         return false;
     }
 
-    const violation = findProfanityViolation(
-        message.content,
-        Array.isArray(config.blockedWords)
-            ? config.blockedWords
-            : []
-    );
+    const violation =
+        findProfanityViolation(
+            message.content,
+
+            Array.isArray(
+                config.blockedWords
+            )
+                ? config.blockedWords
+                : []
+        );
 
     if (!violation) {
         return false;
     }
 
     const severityLabel =
-        formatSeverity(violation.severity);
+        formatSeverity(
+            violation.severity
+        );
 
     const reason =
-        `${severityLabel} inappropriate or insulting language`;
+        `${severityLabel} violation of the Sacred Laws`;
 
-    const violationCount = addViolation(
-        message.guild.id,
-        message.author.id
-    );
+    const violationCount =
+        addViolation(
+            message.guild.id,
+            message.author.id
+        );
 
     const actions = [];
 
     /*
-     * All three levels are deleted when message deletion
-     * is enabled in the Guardian configuration.
+     * All three levels are deleted when
+     * message deletion is enabled in
+     * Umbra Guardian's configuration.
      */
     if (config.deleteMessage) {
         const deleted =
-            await deleteViolatingMessage(message);
+            await deleteViolatingMessage(
+                message
+            );
 
         if (deleted) {
-            actions.push('Message deleted');
+            actions.push(
+                'Message deleted'
+            );
         } else {
             actions.push(
                 'Message could not be deleted'
@@ -454,8 +494,8 @@ async function handleProfanityProtection(
     }
 
     /*
-     * Notify the member without displaying the exact
-     * blocked term publicly.
+     * Notify the Soul without displaying
+     * the exact blocked term publicly.
      */
     if (config.notifyUser) {
         await sendTemporaryWarning(
@@ -464,12 +504,17 @@ async function handleProfanityProtection(
             config.notificationDeleteAfterMs
         );
 
-        actions.push('User notified');
+        actions.push(
+            'Soul notified'
+        );
     }
 
-    const protectionLevel = String(
-        guardianConfig.protectionLevel || 'LOW'
-    ).toUpperCase();
+    const protectionLevel =
+        String(
+            guardianConfig
+                .protectionLevel ||
+            'LOW'
+        ).toUpperCase();
 
     if (
         shouldSaveWarning(
@@ -480,11 +525,14 @@ async function handleProfanityProtection(
         const warningSaved =
             await saveGuardianWarning(
                 message,
-                `[Guardian Profanity: ${severityLabel}] ${reason}`
+
+                `[Umbra Guardian: ${severityLabel}] ${reason}`
             );
 
         if (warningSaved) {
-            actions.push('Warning saved');
+            actions.push(
+                'Warning saved'
+            );
         } else {
             actions.push(
                 'Warning could not be saved'
@@ -493,8 +541,8 @@ async function handleProfanityProtection(
     }
 
     /*
-     * High protection mode applies a timeout after
-     * repeated violations.
+     * HIGH protection applies a timeout
+     * after repeated violations.
      */
     if (
         protectionLevel === 'HIGH' &&
@@ -505,17 +553,20 @@ async function handleProfanityProtection(
             await timeoutMember(
                 message.member,
                 config.timeoutDurationMs,
-                `[Guardian Profanity: ${severityLabel}] ${reason}`
+
+                `[Umbra Guardian: ${severityLabel}] ${reason}`
             );
 
         if (timedOut) {
-            const timeoutMinutes = Math.max(
-                1,
-                Math.round(
-                    config.timeoutDurationMs /
-                    60000
-                )
-            );
+            const timeoutMinutes =
+                Math.max(
+                    1,
+
+                    Math.round(
+                        config.timeoutDurationMs /
+                        60_000
+                    )
+                );
 
             actions.push(
                 `${timeoutMinutes}-minute timeout`
@@ -536,12 +587,13 @@ async function handleProfanityProtection(
         message,
 
         reason:
-            `${reason} — detected term: "${violation.word}"`,
+            `${reason}\n` +
+            `Detected term: "${violation.word}"`,
 
         action:
             actions.length > 0
                 ? actions.join(', ')
-                : 'Detected only',
+                : 'Violation detected',
 
         violationCount,
 

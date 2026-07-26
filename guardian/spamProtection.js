@@ -17,14 +17,20 @@ const {
 } = require('./guardianLogger');
 
 /**
- * Normalize message content for repeat detection.
+ * Normalize message content for
+ * repeated-message detection.
  *
  * @param {string} content
  * @returns {string}
  */
 function normalizeContent(content) {
-    return content
+    return String(content || '')
+        .normalize('NFKC')
         .toLowerCase()
+        .replace(
+            /[\u200B-\u200D\uFEFF]/g,
+            ''
+        )
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -36,14 +42,21 @@ function normalizeContent(content) {
  * @param {Object} config
  * @returns {boolean}
  */
-function isRapidSpam(message, config) {
-    const timestamps = addMessageTimestamp(
-        message.guild.id,
-        message.author.id,
-        config.intervalMs
-    );
+function isRapidSpam(
+    message,
+    config
+) {
+    const timestamps =
+        addMessageTimestamp(
+            message.guild.id,
+            message.author.id,
+            config.intervalMs
+        );
 
-    return timestamps.length > config.maxMessages;
+    return (
+        timestamps.length >
+        config.maxMessages
+    );
 }
 
 /**
@@ -53,9 +66,14 @@ function isRapidSpam(message, config) {
  * @param {Object} config
  * @returns {boolean}
  */
-function isRepeatedSpam(message, config) {
+function isRepeatedSpam(
+    message,
+    config
+) {
     const normalized =
-        normalizeContent(message.content);
+        normalizeContent(
+            message.content
+        );
 
     if (!normalized) {
         return false;
@@ -76,7 +94,29 @@ function isRepeatedSpam(message, config) {
 }
 
 /**
- * Handle spam protection for a message.
+ * Create a readable timeout duration.
+ *
+ * @param {number} durationMs
+ * @returns {string}
+ */
+function formatTimeoutDuration(
+    durationMs
+) {
+    const totalMinutes =
+        Math.max(
+            1,
+            Math.round(
+                durationMs / 60_000
+            )
+        );
+
+    return (
+        `${totalMinutes}-minute timeout`
+    );
+}
+
+/**
+ * Handle Umbra Guardian spam protection.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} guardianConfig
@@ -86,42 +126,73 @@ async function handleSpamProtection(
     message,
     guardianConfig
 ) {
-    const config = guardianConfig.spam;
+    const config =
+        guardianConfig.spam;
 
-    if (!config.enabled) {
+    if (
+        !config ||
+        !config.enabled
+    ) {
         return false;
     }
 
     const rapidSpam =
-        isRapidSpam(message, config);
+        isRapidSpam(
+            message,
+            config
+        );
 
     const repeatedSpam =
-        isRepeatedSpam(message, config);
+        isRepeatedSpam(
+            message,
+            config
+        );
 
-    if (!rapidSpam && !repeatedSpam) {
+    if (
+        !rapidSpam &&
+        !repeatedSpam
+    ) {
         return false;
     }
 
-    const reason = repeatedSpam
-        ? 'Repeated message spam'
-        : 'Sending messages too quickly';
+    const reason =
+        repeatedSpam
+            ? 'Repeated message spam'
+            : 'Sending messages too quickly';
 
-    const violationCount = addViolation(
-        message.guild.id,
-        message.author.id
-    );
+    const violationCount =
+        addViolation(
+            message.guild.id,
+            message.author.id
+        );
 
     const actions = [];
 
+    /*
+     * Delete the spam message when
+     * message deletion is enabled.
+     */
     if (config.deleteMessage) {
         const deleted =
-            await deleteViolatingMessage(message);
+            await deleteViolatingMessage(
+                message
+            );
 
         if (deleted) {
-            actions.push('Message deleted');
+            actions.push(
+                'Message deleted'
+            );
+        } else {
+            actions.push(
+                'Message could not be deleted'
+            );
         }
     }
 
+    /*
+     * Notify the Soul publicly without
+     * exposing internal Guardian data.
+     */
     if (config.notifyUser) {
         await sendTemporaryWarning(
             message,
@@ -129,29 +200,49 @@ async function handleSpamProtection(
             config.notificationDeleteAfterMs
         );
 
-        actions.push('User notified');
+        actions.push(
+            'Soul notified'
+        );
     }
 
-    const level =
-        guardianConfig.protectionLevel.toUpperCase();
+    const protectionLevel =
+        String(
+            guardianConfig
+                .protectionLevel ||
+            'LOW'
+        ).toUpperCase();
 
+    /*
+     * MEDIUM and HIGH protection save
+     * an automatic database warning.
+     */
     if (
-        level === 'MEDIUM' ||
-        level === 'HIGH'
+        protectionLevel === 'MEDIUM' ||
+        protectionLevel === 'HIGH'
     ) {
         const warningSaved =
             await saveGuardianWarning(
                 message,
-                `[Guardian] ${reason}`
+                `[Umbra Guardian: Spam] ${reason}`
             );
 
         if (warningSaved) {
-            actions.push('Warning saved');
+            actions.push(
+                'Warning saved'
+            );
+        } else {
+            actions.push(
+                'Warning could not be saved'
+            );
         }
     }
 
+    /*
+     * HIGH protection applies a timeout
+     * after repeated spam violations.
+     */
     if (
-        level === 'HIGH' &&
+        protectionLevel === 'HIGH' &&
         violationCount >=
             config.timeoutAfterViolations
     ) {
@@ -159,26 +250,39 @@ async function handleSpamProtection(
             await timeoutMember(
                 message.member,
                 config.timeoutDurationMs,
-                `[Guardian] ${reason}`
+                `[Umbra Guardian: Spam] ${reason}`
             );
 
         if (timedOut) {
-            actions.push('10-minute timeout');
+            actions.push(
+                formatTimeoutDuration(
+                    config.timeoutDurationMs
+                )
+            );
+
             resetViolations(
                 message.guild.id,
                 message.author.id
+            );
+        } else {
+            actions.push(
+                'Timeout could not be applied'
             );
         }
     }
 
     await sendGuardianLog({
         message,
+
         reason,
+
         action:
             actions.length > 0
                 ? actions.join(', ')
-                : 'Detected only',
+                : 'Violation detected',
+
         violationCount,
+
         logChannelName:
             guardianConfig.logChannelName
     });

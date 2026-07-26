@@ -11,9 +11,13 @@ const {
 } = require('../../utils/embeds');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('lock')
-        .setDescription('Lock the current channel.')
+        .setDescription(
+            'Lock the current channel for the Order.'
+        )
 
         .addStringOption(option =>
             option
@@ -27,29 +31,45 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageChannels
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /lock command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
             if (!interaction.inGuild()) {
-                const embed = createErrorEmbed(
-                    '❌ Lock Failed',
-                    'This command can only be used inside a server.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    flags: MessageFlags.Ephemeral
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
-            const channel = interaction.channel;
+            const channel =
+                interaction.channel;
+
             const everyoneRole =
                 interaction.guild.roles.everyone;
 
             const reason =
-                interaction.options.getString('reason') ||
-                'No reason provided.';
+                interaction.options.getString(
+                    'reason'
+                ) ||
+                'No reason was provided.';
 
             const supportedChannelTypes = [
                 ChannelType.GuildText,
@@ -58,39 +78,67 @@ module.exports = {
 
             if (
                 !channel ||
-                !supportedChannelTypes.includes(channel.type)
+                !supportedChannelTypes.includes(
+                    channel.type
+                )
             ) {
-                const embed = createErrorEmbed(
-                    '❌ Unsupported Channel',
-                    'This command can only be used in a text or announcement channel.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Unsupported Channel',
+                            'This command can only be used in a text or announcement channel.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    flags: MessageFlags.Ephemeral
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             const botMember =
                 interaction.guild.members.me;
 
+            if (!botMember) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Umbra Unavailable',
+                            'Umbra could not access its server member information.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             const botPermissions =
-                channel.permissionsFor(botMember);
+                channel.permissionsFor(
+                    botMember
+                );
 
             if (
                 !botPermissions?.has(
                     PermissionFlagsBits.ManageRoles
                 )
             ) {
-                const embed = createErrorEmbed(
-                    '❌ Missing Permission',
-                    'DaviBot needs the **Manage Roles** permission in this channel.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Missing Umbra Permission',
+                            'Umbra requires the **Manage Roles** permission in this channel.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    flags: MessageFlags.Ephemeral
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             const everyoneOverride =
@@ -103,19 +151,24 @@ module.exports = {
                     PermissionFlagsBits.SendMessages
                 )
             ) {
-                const embed = createErrorEmbed(
-                    '🔒 Channel Already Locked',
-                    `${channel} is already locked for @everyone.`
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '🔒 Channel Already Sealed',
+                            `${channel} is already locked for @everyone.`
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    flags: MessageFlags.Ephemeral
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             await interaction.deferReply({
-                flags: MessageFlags.Ephemeral
+                flags:
+                    MessageFlags.Ephemeral
             });
 
             await channel.permissionOverwrites.edit(
@@ -125,45 +178,92 @@ module.exports = {
                 },
                 {
                     reason:
-                        `Locked by ${interaction.user.tag}: ${reason}`
+                        `Channel sealed by ${interaction.user.tag}: ${reason}`
                 }
             );
 
             const embed =
                 createChannelModerationEmbed({
-                    action: '🔒 Channel Locked',
+                    action:
+                        '🔒 Channel Sealed',
+
                     channel,
-                    moderator: interaction.user,
+
+                    moderator:
+                        interaction.user,
+
                     reason
                 });
 
-            return interaction.editReply({
+            embed.addFields({
+                name:
+                    '🌑 Order Status',
+
+                value:
+                    'Members of the Order can no longer send messages in this channel until it is unlocked.',
+
+                inline:
+                    false
+            });
+
+            await interaction.editReply({
                 embeds: [embed]
             });
         } catch (error) {
             console.error(
-                'Lock command error:',
+                '❌ Umbra /lock command error:',
                 error
             );
 
-            const embed = createErrorEmbed(
-                '❌ Lock Failed',
-                'The channel could not be locked. Check DaviBot’s permissions and Northflank logs.'
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Channel Seal Failed',
+                    'Umbra could not lock this channel. Check its permissions and Northflank logs.'
+                );
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                return interaction.editReply({
-                    embeds: [embed]
-                });
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                flags: MessageFlags.Ephemeral
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

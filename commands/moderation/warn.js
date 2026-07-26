@@ -1,6 +1,7 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -16,21 +17,29 @@ const warningDatabase =
     require('../../database/warnings');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('warn')
-        .setDescription('Give a warning to a server member.')
+        .setDescription(
+            'Record a warning against a Soul.'
+        )
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Member to warn')
+                .setDescription(
+                    'Select the Soul you want to warn'
+                )
                 .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for the warning')
+                .setDescription(
+                    'Reason for the warning'
+                )
                 .setMinLength(2)
                 .setMaxLength(500)
                 .setRequired(true)
@@ -38,12 +47,38 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ModerateMembers
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /warn command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             const member =
-                interaction.options.getMember('user');
+                interaction.options.getMember(
+                    'user'
+                );
 
             const reason =
                 interaction.options.getString(
@@ -55,15 +90,35 @@ module.exports = {
                 interaction.guild.members.me;
 
             if (!member) {
-                const embed = createErrorEmbed(
-                    '❌ Member Not Found',
-                    'This user is not currently a member of the server.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Soul Not Found',
+                            'This Soul is not currently a member of the Order.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
+            }
+
+            if (!botMember) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Umbra Unavailable',
+                            'Umbra could not access its server member information.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
             }
 
             const moderationError =
@@ -74,24 +129,34 @@ module.exports = {
                 });
 
             if (moderationError) {
-                const embed = createErrorEmbed(
-                    '❌ Warning Failed',
-                    moderationError
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Warning Failed',
+                            moderationError
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             await interaction.deferReply();
 
             const warning =
                 await warningDatabase.addWarning({
-                    guildId: interaction.guild.id,
-                    userId: member.id,
-                    moderatorId: interaction.user.id,
+                    guildId:
+                        interaction.guild.id,
+
+                    userId:
+                        member.id,
+
+                    moderatorId:
+                        interaction.user.id,
+
                     reason
                 });
 
@@ -101,53 +166,113 @@ module.exports = {
                     member.id
                 );
 
-            const embed = createModerationEmbed({
-                action: '⚠️ Member Warned',
-                user: member.user,
-                moderator: interaction.user,
-                reason
-            });
+            const embed =
+                createModerationEmbed({
+                    action:
+                        '⚠️ Sacred Warning Recorded',
+
+                    user:
+                        member.user,
+
+                    moderator:
+                        interaction.user,
+
+                    reason
+                });
 
             embed.addFields(
                 {
-                    name: '🆔 Warning ID',
-                    value: `#${warning.id}`,
-                    inline: true
+                    name:
+                        '🆔 Warning Record',
+
+                    value:
+                        `\`#${warning.id}\``,
+
+                    inline:
+                        true
                 },
                 {
-                    name: '📚 Total Warnings',
-                    value: String(totalWarnings),
-                    inline: true
+                    name:
+                        '📚 Total Warnings',
+
+                    value:
+                        `\`${totalWarnings}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🌑 Order Status',
+
+                    value:
+                        totalWarnings >= 3
+                            ? '🔴 Repeated violations recorded'
+                            : '🟡 Warning placed on record',
+
+                    inline:
+                        false
                 }
             );
 
-            return interaction.editReply({
+            await interaction.editReply({
                 embeds: [embed]
             });
         } catch (error) {
             console.error(
-                'Warn command error:',
+                '❌ Umbra /warn command error:',
                 error
             );
 
-            const embed = createErrorEmbed(
-                '❌ Warning Failed',
-                'The warning could not be saved. Please check the database connection.'
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Warning Record Failed',
+                    'Umbra could not save this warning. Please check the database connection and try again.'
+                );
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                return interaction.editReply({
-                    embeds: [embed]
-                });
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

@@ -14,9 +14,10 @@ const {
 } = require('./spamProtection');
 
 /**
- * Check whether a message should bypass Guardian.
+ * Check whether a message should bypass
+ * Umbra Guardian.
  *
- * Guardian ignores:
+ * Umbra Guardian ignores:
  * - Direct messages
  * - Bots
  * - Webhooks
@@ -56,10 +57,11 @@ function shouldIgnoreMessage(message) {
     }
 
     const hasIgnoredRole =
-        message.member.roles.cache.some(role =>
-            guardianConfig.ignoredRoleIds.includes(
-                role.id
-            )
+        message.member.roles.cache.some(
+            role =>
+                guardianConfig.ignoredRoleIds.includes(
+                    role.id
+                )
         );
 
     if (hasIgnoredRole) {
@@ -82,23 +84,28 @@ function shouldIgnoreMessage(message) {
 }
 
 /**
- * Process one server message through Guardian.
+ * Process one server message through
+ * Umbra Guardian.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<void>}
  */
-async function handleGuardianMessage(message) {
+async function handleGuardianMessage(
+    message
+) {
     if (shouldIgnoreMessage(message)) {
         return;
     }
 
     try {
         /*
-         * Check profanity before spam.
+         * Profanity protection runs before
+         * spam protection.
          *
-         * When profanity handles the message,
-         * stop processing so the same message
-         * does not receive two punishments.
+         * If profanity protection already
+         * handled the message, stop processing
+         * so the same message does not receive
+         * two Guardian punishments.
          */
         const profanityHandled =
             await handleProfanityProtection(
@@ -116,7 +123,7 @@ async function handleGuardianMessage(message) {
         );
     } catch (error) {
         console.error(
-            '❌ Guardian failed to process a message:'
+            '❌ Umbra Guardian failed to process a message:'
         );
 
         console.error(error);

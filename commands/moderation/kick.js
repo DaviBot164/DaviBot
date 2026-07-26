@@ -1,6 +1,7 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -14,131 +15,246 @@ const {
 } = require('../../utils/moderation');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('kick')
-        .setDescription('Kick a member from the server.')
+        .setDescription(
+            'Remove a Soul from the Order.'
+        )
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Member to kick')
+                .setDescription(
+                    'Select the Soul you want to remove'
+                )
                 .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for the kick')
+                .setDescription(
+                    'Reason for the removal'
+                )
                 .setMaxLength(500)
                 .setRequired(false)
         )
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.KickMembers
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /kick command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
-            const member = interaction.options.getMember('user');
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
 
-            const reason =
-                interaction.options.getString('reason') ||
-                'No reason provided.';
+                    flags:
+                        MessageFlags.Ephemeral
+                });
 
-            const botMember = interaction.guild.members.me;
+                return;
+            }
 
-            if (!member) {
-                const embed = createErrorEmbed(
-                    '❌ Member Not Found',
-                    'This user is not currently a member of the server.'
+            const member =
+                interaction.options.getMember(
+                    'user'
                 );
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+            const reason =
+                interaction.options.getString(
+                    'reason'
+                ) ||
+                'No reason was provided.';
+
+            const botMember =
+                interaction.guild.members.me;
+
+            if (!member) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Soul Not Found',
+                            'This Soul is not currently a member of the Order.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             if (
+                !botMember ||
                 !hasBotPermission(
                     botMember,
                     PermissionFlagsBits.KickMembers
                 )
             ) {
-                const embed = createErrorEmbed(
-                    '❌ Missing Permission',
-                    'I need the **Kick Members** permission to use this command.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Missing Umbra Permission',
+                            'Umbra requires the **Kick Members** permission to carry out this action.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
-            const moderationError = getModerationError({
-                interaction,
-                target: member,
-                botMember
-            });
+            const moderationError =
+                getModerationError({
+                    interaction,
+                    target: member,
+                    botMember
+                });
 
             if (moderationError) {
-                const embed = createErrorEmbed(
-                    '❌ Kick Failed',
-                    moderationError
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Removal Failed',
+                            moderationError
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             if (!member.kickable) {
-                const embed = createErrorEmbed(
-                    '❌ Kick Failed',
-                    'I cannot kick this member. Check my permissions and role position.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Removal Failed',
+                            'Umbra cannot remove this Soul. Check its permissions and role position.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
+            await interaction.deferReply();
+
+            const targetUser =
+                member.user;
+
             await member.kick(
-                `${reason} | Moderator: ${interaction.user.tag}`
+                `${reason} | Shadow Warden: ${interaction.user.tag}`
             );
 
-            const embed = createModerationEmbed({
-                action: '👢 Member Kicked',
-                user: member.user,
-                moderator: interaction.user,
-                reason
+            const embed =
+                createModerationEmbed({
+                    action:
+                        '👢 Soul Removed',
+
+                    user:
+                        targetUser,
+
+                    moderator:
+                        interaction.user,
+
+                    reason
+                });
+
+            embed.addFields({
+                name:
+                    '🌑 Order Status',
+
+                value:
+                    'The Soul has been removed from Crimson Eclipse.',
+
+                inline:
+                    false
             });
 
-            return interaction.reply({
+            await interaction.editReply({
                 embeds: [embed]
             });
         } catch (error) {
-            console.error('Kick command error:', error);
-
-            const embed = createErrorEmbed(
-                '❌ Unexpected Error',
-                'An unexpected error occurred while trying to kick this member.'
+            console.error(
+                '❌ Umbra /kick command error:',
+                error
             );
 
-            if (interaction.replied || interaction.deferred) {
-                return interaction.followUp({
-                    embeds: [embed],
-                    ephemeral: true
-                });
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Removal Failed',
+                    'Umbra encountered an unexpected error while trying to remove this Soul.'
+                );
+
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

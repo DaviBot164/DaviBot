@@ -6,10 +6,19 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const ticketConfig = require('../config/tickets');
+const ticketConfig =
+    require('../config/tickets');
 
+/**
+ * Recognize both the new Umbra ticket topic
+ * and the old DaviBot ticket topic.
+ *
+ * Keeping legacy support prevents existing
+ * open or closed tickets from becoming invalid
+ * after the bot rebrand.
+ */
 const TICKET_OWNER_PATTERN =
-    /DaviBot Ticket \| Owner: (\d+) \| Status: (open|closed)/;
+    /(?:Umbra|DaviBot) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
 
 /**
  * Convert configured permission names into
@@ -18,12 +27,24 @@ const TICKET_OWNER_PATTERN =
  * @param {string[]} permissionNames
  * @returns {bigint[]}
  */
-function resolvePermissions(permissionNames) {
+function resolvePermissions(
+    permissionNames
+) {
+    if (!Array.isArray(permissionNames)) {
+        return [];
+    }
+
     return permissionNames
-        .map(permissionName =>
-            PermissionFlagsBits[permissionName]
+        .map(
+            permissionName =>
+                PermissionFlagsBits[
+                    permissionName
+                ]
         )
-        .filter(permission => permission !== undefined);
+        .filter(
+            permission =>
+                permission !== undefined
+        );
 }
 
 /**
@@ -33,17 +54,34 @@ function resolvePermissions(permissionNames) {
  * @returns {string}
  */
 function createTicketChannelName(user) {
-    const safeUsername = user.username
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 70);
+    const safeUsername =
+        user.username
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9-]/g,
+                '-'
+            )
+            .replace(
+                /-+/g,
+                '-'
+            )
+            .replace(
+                /^-|-$/g,
+                ''
+            )
+            .slice(
+                0,
+                70
+            );
 
     const username =
-        safeUsername || `user-${user.id.slice(-6)}`;
+        safeUsername ||
+        `soul-${user.id.slice(-6)}`;
 
-    return `${ticketConfig.channelPrefix}-${username}`;
+    return (
+        `${ticketConfig.channelPrefix}-` +
+        `${username}`
+    );
 }
 
 /**
@@ -52,10 +90,19 @@ function createTicketChannelName(user) {
  * @param {string} currentName
  * @returns {string}
  */
-function createClosedTicketChannelName(currentName) {
-    const cleanName = currentName
-        .replace(/^closed-/, '')
-        .slice(0, 92);
+function createClosedTicketChannelName(
+    currentName
+) {
+    const cleanName =
+        currentName
+            .replace(
+                /^closed-/,
+                ''
+            )
+            .slice(
+                0,
+                92
+            );
 
     return `closed-${cleanName}`;
 }
@@ -66,22 +113,35 @@ function createClosedTicketChannelName(currentName) {
  * @param {string} currentName
  * @returns {string}
  */
-function createReopenedTicketChannelName(currentName) {
+function createReopenedTicketChannelName(
+    currentName
+) {
     return currentName
-        .replace(/^closed-/, '')
-        .slice(0, 100);
+        .replace(
+            /^closed-/,
+            ''
+        )
+        .slice(
+            0,
+            100
+        );
 }
 
 /**
  * Create the topic stored inside a ticket channel.
  *
+ * New tickets use the Umbra identity.
+ *
  * @param {string} ownerId
  * @param {'open'|'closed'} status
  * @returns {string}
  */
-function createTicketTopic(ownerId, status = 'open') {
+function createTicketTopic(
+    ownerId,
+    status = 'open'
+) {
     return (
-        `DaviBot Ticket | Owner: ${ownerId} | ` +
+        `Umbra Ticket | Owner: ${ownerId} | ` +
         `Status: ${status}`
     );
 }
@@ -89,15 +149,24 @@ function createTicketTopic(ownerId, status = 'open') {
 /**
  * Read ticket information from a channel topic.
  *
+ * Both new Umbra topics and legacy DaviBot
+ * topics are supported.
+ *
  * @param {string|null} topic
- * @returns {{ownerId: string, status: 'open'|'closed'}|null}
+ * @returns {{
+ *   ownerId: string,
+ *   status: 'open'|'closed'
+ * }|null}
  */
 function parseTicketTopic(topic) {
     if (!topic) {
         return null;
     }
 
-    const match = topic.match(TICKET_OWNER_PATTERN);
+    const match =
+        topic.match(
+            TICKET_OWNER_PATTERN
+        );
 
     if (!match) {
         return null;
@@ -110,27 +179,40 @@ function parseTicketTopic(topic) {
 }
 
 /**
- * Find an existing open ticket belonging to a user.
+ * Find an existing open ticket belonging
+ * to a Soul.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} userId
  * @returns {import('discord.js').TextChannel|null}
  */
-function findOpenTicket(guild, userId) {
+function findOpenTicket(
+    guild,
+    userId
+) {
     return (
-        guild.channels.cache.find(channel => {
-            if (channel.type !== ChannelType.GuildText) {
-                return false;
+        guild.channels.cache.find(
+            channel => {
+                if (
+                    channel.type !==
+                    ChannelType.GuildText
+                ) {
+                    return false;
+                }
+
+                const ticketData =
+                    parseTicketTopic(
+                        channel.topic
+                    );
+
+                return (
+                    ticketData?.ownerId ===
+                        userId &&
+                    ticketData.status ===
+                        'open'
+                );
             }
-
-            const ticketData =
-                parseTicketTopic(channel.topic);
-
-            return (
-                ticketData?.ownerId === userId &&
-                ticketData.status === 'open'
-            );
-        }) || null
+        ) || null
     );
 }
 
@@ -145,21 +227,32 @@ function createTicketPanelButtons(
     categoryId,
     staffRoleId
 ) {
-    const createButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:create:${categoryId}:${staffRoleId}`
-        )
-        .setLabel(ticketConfig.panel.buttonLabel)
-        .setEmoji(ticketConfig.panel.buttonEmoji)
-        .setStyle(ButtonStyle.Primary);
+    const createButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:create:${categoryId}:${staffRoleId}`
+            )
+            .setLabel(
+                ticketConfig.panel
+                    .buttonLabel
+            )
+            .setEmoji(
+                ticketConfig.panel
+                    .buttonEmoji
+            )
+            .setStyle(
+                ButtonStyle.Primary
+            );
 
-    return new ActionRowBuilder().addComponents(
-        createButton
-    );
+    return new ActionRowBuilder()
+        .addComponents(
+            createButton
+        );
 }
 
 /**
- * Create the button shown inside an open ticket.
+ * Create the button shown inside
+ * an open ticket.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -169,17 +262,27 @@ function createOpenTicketButtons(
     ownerId,
     staffRoleId
 ) {
-    const closeButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:close:${ownerId}:${staffRoleId}`
-        )
-        .setLabel(ticketConfig.ticket.closeButtonLabel)
-        .setEmoji(ticketConfig.ticket.closeButtonEmoji)
-        .setStyle(ButtonStyle.Danger);
+    const closeButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:close:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                ticketConfig.ticket
+                    .closeButtonLabel
+            )
+            .setEmoji(
+                ticketConfig.ticket
+                    .closeButtonEmoji
+            )
+            .setStyle(
+                ButtonStyle.Danger
+            );
 
-    return new ActionRowBuilder().addComponents(
-        closeButton
-    );
+    return new ActionRowBuilder()
+        .addComponents(
+            closeButton
+        );
 }
 
 /**
@@ -193,30 +296,42 @@ function createCloseConfirmationButtons(
     ownerId,
     staffRoleId
 ) {
-    const confirmButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:confirm-close:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Confirm Close')
-        .setEmoji('✅')
-        .setStyle(ButtonStyle.Danger);
+    const confirmButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:confirm-close:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Confirm Close'
+            )
+            .setEmoji('✅')
+            .setStyle(
+                ButtonStyle.Danger
+            );
 
-    const cancelButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:cancel-close:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Cancel')
-        .setEmoji('❌')
-        .setStyle(ButtonStyle.Secondary);
+    const cancelButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:cancel-close:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Cancel'
+            )
+            .setEmoji('❌')
+            .setStyle(
+                ButtonStyle.Secondary
+            );
 
-    return new ActionRowBuilder().addComponents(
-        confirmButton,
-        cancelButton
-    );
+    return new ActionRowBuilder()
+        .addComponents(
+            confirmButton,
+            cancelButton
+        );
 }
 
 /**
- * Create buttons shown inside a closed ticket.
+ * Create buttons shown inside
+ * a closed ticket.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -226,26 +341,37 @@ function createClosedTicketButtons(
     ownerId,
     staffRoleId
 ) {
-    const reopenButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:reopen:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Reopen Ticket')
-        .setEmoji('🔓')
-        .setStyle(ButtonStyle.Success);
+    const reopenButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:reopen:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Reopen Ticket'
+            )
+            .setEmoji('🔓')
+            .setStyle(
+                ButtonStyle.Success
+            );
 
-    const deleteButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:delete:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Delete Ticket')
-        .setEmoji('🗑️')
-        .setStyle(ButtonStyle.Danger);
+    const deleteButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:delete:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Delete Ticket'
+            )
+            .setEmoji('🗑️')
+            .setStyle(
+                ButtonStyle.Danger
+            );
 
-    return new ActionRowBuilder().addComponents(
-        reopenButton,
-        deleteButton
-    );
+    return new ActionRowBuilder()
+        .addComponents(
+            reopenButton,
+            deleteButton
+        );
 }
 
 /**
@@ -259,30 +385,42 @@ function createDeleteConfirmationButtons(
     ownerId,
     staffRoleId
 ) {
-    const confirmButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:confirm-delete:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Confirm Delete')
-        .setEmoji('✅')
-        .setStyle(ButtonStyle.Danger);
+    const confirmButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:confirm-delete:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Confirm Delete'
+            )
+            .setEmoji('✅')
+            .setStyle(
+                ButtonStyle.Danger
+            );
 
-    const cancelButton = new ButtonBuilder()
-        .setCustomId(
-            `ticket:cancel-delete:${ownerId}:${staffRoleId}`
-        )
-        .setLabel('Cancel')
-        .setEmoji('❌')
-        .setStyle(ButtonStyle.Secondary);
+    const cancelButton =
+        new ButtonBuilder()
+            .setCustomId(
+                `ticket:cancel-delete:${ownerId}:${staffRoleId}`
+            )
+            .setLabel(
+                'Cancel'
+            )
+            .setEmoji('❌')
+            .setStyle(
+                ButtonStyle.Secondary
+            );
 
-    return new ActionRowBuilder().addComponents(
-        confirmButton,
-        cancelButton
-    );
+    return new ActionRowBuilder()
+        .addComponents(
+            confirmButton,
+            cancelButton
+        );
 }
 
 /**
- * Create permission overwrites for a ticket channel.
+ * Create permission overwrites
+ * for a ticket channel.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} ownerId
@@ -298,35 +436,53 @@ function createTicketPermissionOverwrites(
 ) {
     return [
         {
-            id: guild.roles.everyone.id,
+            id:
+                guild.roles.everyone.id,
+
             deny: [
-                PermissionFlagsBits.ViewChannel
+                PermissionFlagsBits
+                    .ViewChannel
             ]
         },
         {
-            id: ownerId,
-            allow: resolvePermissions(
-                ticketConfig.permissions.user
-            )
+            id:
+                ownerId,
+
+            allow:
+                resolvePermissions(
+                    ticketConfig
+                        .permissions
+                        .user
+                )
         },
         {
-            id: staffRoleId,
-            allow: resolvePermissions(
-                ticketConfig.permissions.staff
-            )
+            id:
+                staffRoleId,
+
+            allow:
+                resolvePermissions(
+                    ticketConfig
+                        .permissions
+                        .staff
+                )
         },
         {
-            id: botId,
-            allow: resolvePermissions(
-                ticketConfig.permissions.bot
-            )
+            id:
+                botId,
+
+            allow:
+                resolvePermissions(
+                    ticketConfig
+                        .permissions
+                        .bot
+                )
         }
     ];
 }
 
 /**
- * Check whether a member belongs to the configured
- * ticket staff role.
+ * Check whether a member belongs to
+ * the configured Shadow Warden role.
  *
  * Administrators are also accepted.
  *
@@ -334,12 +490,22 @@ function createTicketPermissionOverwrites(
  * @param {string} staffRoleId
  * @returns {boolean}
  */
-function isTicketStaff(member, staffRoleId) {
+function isTicketStaff(
+    member,
+    staffRoleId
+) {
+    if (!member) {
+        return false;
+    }
+
     return (
         member.permissions.has(
-            PermissionFlagsBits.Administrator
+            PermissionFlagsBits
+                .Administrator
         ) ||
-        member.roles.cache.has(staffRoleId)
+        member.roles.cache.has(
+            staffRoleId
+        )
     );
 }
 

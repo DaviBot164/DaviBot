@@ -13,10 +13,12 @@ const warningDatabase =
     require('../../database/warnings');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('unwarn')
         .setDescription(
-            'Remove one warning or all warnings from a server member.'
+            'Remove one or all warning records from a Soul.'
         )
 
         .addSubcommand(subcommand =>
@@ -30,7 +32,7 @@ module.exports = {
                     option
                         .setName('warning_id')
                         .setDescription(
-                            'ID of the warning to remove'
+                            'ID of the warning record to remove'
                         )
                         .setMinValue(1)
                         .setRequired(true)
@@ -41,14 +43,14 @@ module.exports = {
             subcommand
                 .setName('all')
                 .setDescription(
-                    'Remove all warnings from a member.'
+                    'Remove all warnings from a Soul.'
                 )
 
                 .addUserOption(option =>
                     option
                         .setName('user')
                         .setDescription(
-                            'Member whose warnings should be removed'
+                            'Select the Soul whose warnings should be removed'
                         )
                         .setRequired(true)
                 )
@@ -56,15 +58,40 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ModerateMembers
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /unwarn command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             const subcommand =
                 interaction.options.getSubcommand();
 
             await interaction.deferReply({
-                flags: MessageFlags.Ephemeral
+                flags:
+                    MessageFlags.Ephemeral
             });
 
             if (subcommand === 'single') {
@@ -81,14 +108,16 @@ module.exports = {
                     );
 
                 if (!warning) {
-                    const embed = createErrorEmbed(
-                        '❌ Warning Not Found',
-                        `No warning with ID **#${warningId}** exists in this server.`
-                    );
-
-                    return interaction.editReply({
-                        embeds: [embed]
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Warning Record Not Found',
+                                `No warning with ID **#${warningId}** exists within this Order.`
+                            )
+                        ]
                     });
+
+                    return;
                 }
 
                 const deletedWarning =
@@ -97,50 +126,97 @@ module.exports = {
                         warningId
                     );
 
+                if (!deletedWarning) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Warning Removal Failed',
+                                'Umbra could not remove the selected warning record.'
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
                 const remainingWarnings =
                     await warningDatabase.countWarnings(
                         interaction.guild.id,
                         deletedWarning.user_id
                     );
 
-                const embed = createEmbed({
-                    title: '🗑️ Warning Removed',
+                const embed =
+                    createEmbed({
+                        title:
+                            '🗑️ Sacred Warning Removed',
 
-                    description:
-                        `Warning **#${deletedWarning.id}** was removed successfully.`,
+                        description:
+                            `Warning record **#${deletedWarning.id}** was removed successfully.`,
 
-                    fields: [
-                        {
-                            name: '👤 User',
-                            value:
-                                `<@${deletedWarning.user_id}>\n` +
-                                `\`${deletedWarning.user_id}\``,
-                            inline: true
-                        },
-                        {
-                            name: '👮 Removed By',
-                            value:
-                                `${interaction.user}\n` +
-                                `\`${interaction.user.id}\``,
-                            inline: true
-                        },
-                        {
-                            name: '📝 Original Reason',
-                            value: deletedWarning.reason,
-                            inline: false
-                        },
-                        {
-                            name: '📚 Remaining Warnings',
-                            value:
-                                String(remainingWarnings),
-                            inline: true
-                        }
-                    ]
+                        fields: [
+                            {
+                                name:
+                                    '🌑 Soul',
+
+                                value:
+                                    `<@${deletedWarning.user_id}>\n` +
+                                    `\`${deletedWarning.user_id}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🛡️ Removed By',
+
+                                value:
+                                    `${interaction.user}\n` +
+                                    `\`${interaction.user.id}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '📜 Original Reason',
+
+                                value:
+                                    deletedWarning.reason ||
+                                    'No reason was recorded.',
+
+                                inline:
+                                    false
+                            },
+                            {
+                                name:
+                                    '📚 Remaining Warnings',
+
+                                value:
+                                    `\`${remainingWarnings}\``,
+
+                                inline:
+                                    true
+                            }
+                        ]
+                    });
+
+                embed.setFooter({
+                    text:
+                        `🌑 Umbra Warning Records • Removed by ${interaction.user.username}`,
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size: 128,
+                                forceStatic: false
+                            })
                 });
 
-                return interaction.editReply({
+                await interaction.editReply({
                     embeds: [embed]
                 });
+
+                return;
             }
 
             if (subcommand === 'all') {
@@ -157,14 +233,16 @@ module.exports = {
                     );
 
                 if (warningCount === 0) {
-                    const embed = createErrorEmbed(
-                        '❌ No Warnings Found',
-                        `${user.tag} does not have any warnings in this server.`
-                    );
-
-                    return interaction.editReply({
-                        embeds: [embed]
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ No Warning Records Found',
+                                `${user.tag} has no warnings within this Order.`
+                            )
+                        ]
                     });
+
+                    return;
                 }
 
                 const deletedCount =
@@ -173,68 +251,152 @@ module.exports = {
                         user.id
                     );
 
-                const embed = createEmbed({
-                    title: '🗑️ All Warnings Removed',
+                const embed =
+                    createEmbed({
+                        title:
+                            '🗑️ All Sacred Warnings Removed',
 
-                    description:
-                        `All warnings for ${user} were removed successfully.`,
+                        description:
+                            [
+                                `All warning records for ${user} were removed successfully.`,
+                                '',
+                                '*Umbra has cleared this Soul’s Guardian record.*'
+                            ].join('\n'),
 
-                    thumbnail:
-                        user.displayAvatarURL({
-                            size: 256
-                        }),
+                        thumbnail:
+                            user.displayAvatarURL({
+                                size: 256,
+                                forceStatic: false
+                            }),
 
-                    fields: [
-                        {
-                            name: '👤 User',
-                            value:
-                                `${user}\n\`${user.id}\``,
-                            inline: true
-                        },
-                        {
-                            name: '👮 Removed By',
-                            value:
-                                `${interaction.user}\n` +
-                                `\`${interaction.user.id}\``,
-                            inline: true
-                        },
-                        {
-                            name: '🗑️ Deleted Warnings',
-                            value:
-                                String(deletedCount),
-                            inline: true
-                        }
-                    ]
+                        fields: [
+                            {
+                                name:
+                                    '🌑 Soul',
+
+                                value:
+                                    `${user}\n` +
+                                    `\`${user.id}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🛡️ Removed By',
+
+                                value:
+                                    `${interaction.user}\n` +
+                                    `\`${interaction.user.id}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🗑️ Deleted Records',
+
+                                value:
+                                    `\`${deletedCount}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🛡️ Guardian Status',
+
+                                value:
+                                    '🟢 Warning record cleared',
+
+                                inline:
+                                    false
+                            }
+                        ]
+                    });
+
+                embed.setFooter({
+                    text:
+                        `🌑 Umbra Warning Records • Cleared by ${interaction.user.username}`,
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size: 128,
+                                forceStatic: false
+                            })
                 });
 
-                return interaction.editReply({
+                await interaction.editReply({
                     embeds: [embed]
                 });
+
+                return;
             }
+
+            await interaction.editReply({
+                embeds: [
+                    createErrorEmbed(
+                        '❌ Unknown Warning Action',
+                        'Umbra could not recognize the selected warning action.'
+                    )
+                ]
+            });
         } catch (error) {
             console.error(
-                'Unwarn command error:',
+                '❌ Umbra /unwarn command error:',
                 error
             );
 
-            const embed = createErrorEmbed(
-                '❌ Unwarn Failed',
-                'The warning could not be removed. Please check the database connection.'
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Warning Removal Failed',
+                    'Umbra could not remove the warning record. Please check the database connection.'
+                );
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                return interaction.editReply({
-                    embeds: [embed]
-                });
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                flags: MessageFlags.Ephemeral
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

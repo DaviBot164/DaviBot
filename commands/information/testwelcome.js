@@ -1,44 +1,79 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
-} = require("discord.js");
+    PermissionFlagsBits,
+    MessageFlags
+} = require('discord.js');
 
 const {
     createWelcomeEmbed
-} = require("../../utils/welcomeEmbed");
+} = require('../../utils/welcomeEmbed');
 
 module.exports = {
+    category: 'general',
+
     data: new SlashCommandBuilder()
-        .setName("testwelcome")
-        .setDescription("Preview the DaviBot welcome message.")
+        .setName('testwelcome')
+        .setDescription(
+            'Preview the Umbra welcome message.'
+        )
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageGuild
-        ),
+        )
+        .setDMPermission(false),
 
+    /**
+     * Execute the /testwelcome command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
-
-            const welcomeEmbed = createWelcomeEmbed(interaction.member);
+            const welcomeEmbed =
+                createWelcomeEmbed(
+                    interaction.member
+                );
 
             await interaction.reply({
-                content: `👋 Welcome ${interaction.user}!`,
+                content: [
+                    '━━━━━━━━━━━━━━━━━━━━━━',
+                    '🌑 **Umbra Welcome Preview**',
+                    '',
+                    `Welcome ${interaction.user}!`,
+                    '',
+                    'This is a preview of the Crimson Eclipse welcome message.',
+                    '━━━━━━━━━━━━━━━━━━━━━━'
+                ].join('\n'),
+
                 embeds: [welcomeEmbed]
             });
-
         } catch (error) {
-
-            console.error("Error executing /testwelcome:", error);
+            console.error(
+                '❌ Error executing Umbra /testwelcome:',
+                error
+            );
 
             const errorMessage = {
-                content: "❌ The test welcome message could not be sent.",
-                ephemeral: true
+                content:
+                    '❌ Umbra could not generate the welcome preview.',
+                flags:
+                    MessageFlags.Ephemeral
             };
 
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp(errorMessage);
-            } else {
-                await interaction.reply(errorMessage);
+            if (
+                interaction.replied ||
+                interaction.deferred
+            ) {
+                await interaction.followUp(
+                    errorMessage
+                );
+
+                return;
             }
+
+            await interaction.reply(
+                errorMessage
+            );
         }
     }
 };

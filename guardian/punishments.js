@@ -7,7 +7,10 @@ const {
 } = require('../database/connection');
 
 /**
- * Save an automatic Guardian warning.
+ * Save an automatic Umbra Guardian warning.
+ *
+ * Database structure and warning logic
+ * must remain unchanged.
  *
  * @param {import('discord.js').Message} message
  * @param {string} reason
@@ -39,7 +42,7 @@ async function saveGuardianWarning(
         return true;
     } catch (error) {
         console.error(
-            '❌ Failed to save Guardian warning:'
+            '❌ Failed to save Umbra Guardian warning:'
         );
 
         console.error(error);
@@ -54,7 +57,9 @@ async function saveGuardianWarning(
  * @param {import('discord.js').Message} message
  * @returns {Promise<boolean>}
  */
-async function deleteViolatingMessage(message) {
+async function deleteViolatingMessage(
+    message
+) {
     if (!message.deletable) {
         return false;
     }
@@ -65,7 +70,7 @@ async function deleteViolatingMessage(message) {
         return true;
     } catch (error) {
         console.error(
-            '❌ Failed to delete Guardian violation message:'
+            '❌ Failed to delete Umbra Guardian violation message:'
         );
 
         console.error(error);
@@ -91,22 +96,41 @@ async function sendTemporaryWarning(
         const notification =
             await message.channel.send({
                 content:
-                    `${message.author}, 🛡️ **Seraphiel Guardian** blocked your message.\n` +
-                    `**Reason:** ${reason}`
+                    [
+                        `${message.author}, 🌑 **Umbra Guardian** blocked your message.`,
+                        `**Violation:** ${reason}`,
+                        '',
+                        'Respect the laws of Crimson Eclipse.'
+                    ].join('\n')
             });
 
-        setTimeout(async () => {
-            try {
-                if (notification.deletable) {
-                    await notification.delete();
+        const warningTimer = setTimeout(
+            async () => {
+                try {
+                    if (
+                        notification.deletable
+                    ) {
+                        await notification.delete();
+                    }
+                } catch {
+                    /*
+                     * The notification may already
+                     * have been deleted.
+                     */
                 }
-            } catch {
-                // The notification may already be deleted.
-            }
-        }, deleteAfterMs);
+            },
+            deleteAfterMs
+        );
+
+        if (
+            typeof warningTimer.unref ===
+            'function'
+        ) {
+            warningTimer.unref();
+        }
     } catch (error) {
         console.error(
-            '❌ Failed to send Guardian warning message:'
+            '❌ Failed to send Umbra Guardian warning message:'
         );
 
         console.error(error);
@@ -148,7 +172,7 @@ async function timeoutMember(
         return true;
     } catch (error) {
         console.error(
-            '❌ Failed to timeout Guardian offender:'
+            '❌ Failed to timeout Umbra Guardian offender:'
         );
 
         console.error(error);

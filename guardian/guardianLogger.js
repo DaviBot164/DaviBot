@@ -7,21 +7,29 @@ const {
 } = require('../utils/embeds');
 
 /**
- * Find the Guardian log channel.
+ * Find Umbra's moderation log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} channelName
  * @returns {import('discord.js').TextChannel|null}
  */
-function findLogChannel(guild, channelName) {
-    return guild.channels.cache.find(channel =>
-        channel.type === ChannelType.GuildText &&
-        channel.name === channelName
-    ) || null;
+function findLogChannel(
+    guild,
+    channelName
+) {
+    return (
+        guild.channels.cache.find(
+            channel =>
+                channel.type ===
+                    ChannelType.GuildText &&
+                channel.name ===
+                    channelName
+        ) || null
+    );
 }
 
 /**
- * Send a Guardian action log.
+ * Send an Umbra Guardian action log.
  *
  * @param {Object} options
  * @param {import('discord.js').Message} options.message
@@ -38,24 +46,41 @@ async function sendGuardianLog({
     violationCount,
     logChannelName
 }) {
-    const logChannel = findLogChannel(
-        message.guild,
-        logChannelName
-    );
+    const logChannel =
+        findLogChannel(
+            message.guild,
+            logChannelName
+        );
 
     if (!logChannel) {
+        console.warn(
+            `⚠️ Umbra log channel "${logChannelName}" was not found in ${message.guild.name}.`
+        );
+
         return;
     }
 
     const embed = createEmbed({
-        title: '🛡️ Guardian Report',
-        color: '#ED4245',
-        thumbnail: message.author.displayAvatarURL({
-            size: 256
-        }),
+        title: '🌑 Umbra Guardian Report',
+
+        color: '#D7263D',
+
+        thumbnail:
+            message.author.displayAvatarURL({
+                extension: 'png',
+                size: 256
+            }),
+
+        description:
+            [
+                'A disturbance was detected within the Order.',
+                '',
+                'Umbra has recorded the violation beneath the crimson moon.'
+            ].join('\n'),
+
         fields: [
             {
-                name: '👤 User',
+                name: '🌑 Soul',
                 value:
                     `${message.author.tag}\n` +
                     `\`${message.author.id}\``,
@@ -69,26 +94,34 @@ async function sendGuardianLog({
                 inline: true
             },
             {
-                name: '🚨 Reason',
-                value: reason,
+                name: '🚨 Violation',
+                value:
+                    reason ||
+                    'No violation reason was provided.',
                 inline: false
             },
             {
-                name: '⚙️ Action',
-                value: action,
+                name: '🛡️ Guardian Action',
+                value:
+                    action ||
+                    'No action was recorded.',
                 inline: true
             },
             {
-                name: '📊 Violations',
-                value: String(violationCount),
+                name: '📊 Violation Count',
+                value:
+                    `\`${violationCount}\``,
                 inline: true
             },
             {
-                name: '💬 Message',
+                name: '💬 Detected Message',
                 value:
                     message.content
-                        ? `\`\`\`${message.content.slice(0, 900)}\`\`\``
-                        : '*No text content*',
+                        ? `\`\`\`${message.content.slice(
+                            0,
+                            900
+                        )}\`\`\``
+                        : '*No text content was detected.*',
                 inline: false
             }
         ]
@@ -98,10 +131,15 @@ async function sendGuardianLog({
         await logChannel.send({
             embeds: [embed]
         });
+
+        console.log(
+            `✅ Umbra Guardian log sent for ${message.author.tag}.`
+        );
     } catch (error) {
         console.error(
-            '❌ Failed to send Guardian log:'
+            '❌ Failed to send Umbra Guardian log:'
         );
+
         console.error(error);
     }
 }

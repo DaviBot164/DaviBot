@@ -1,7 +1,7 @@
 /**
- * Seraphiel
+ * Umbra
  * Command: /userinfo
- * Version: 2.0.0
+ * Version: 2.1.0
  */
 
 const {
@@ -18,117 +18,276 @@ const {
 } = require('../../utils/embeds');
 
 module.exports = {
+    category: 'information',
+
     data: new SlashCommandBuilder()
         .setName('userinfo')
-        .setDescription('View information about a user.')
+        .setDescription(
+            'View information about a Soul.'
+        )
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('Select a user')
+                .setDescription(
+                    'Select the Soul whose information you want to view'
+                )
                 .setRequired(false)
-        ),
+        )
+        .setDMPermission(false),
 
+    /**
+     * Execute the /userinfo command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
+            await interaction.deferReply();
+
             const selectedUser =
-                interaction.options.getUser('user') ||
+                interaction.options.getUser(
+                    'user'
+                ) ||
                 interaction.user;
 
-            const member = await interaction.guild.members.fetch(
-                selectedUser.id
-            );
+            const [member, user] =
+                await Promise.all([
+                    interaction.guild.members.fetch(
+                        selectedUser.id
+                    ),
 
-            const user = await selectedUser.fetch(true);
+                    selectedUser.fetch(true)
+                ]);
 
-            const avatarURL = user.displayAvatarURL({
-                size: 4096,
-                forceStatic: false
-            });
+            const avatarURL =
+                user.displayAvatarURL({
+                    size: 4096,
+                    forceStatic: false
+                });
 
-            const accountCreatedTimestamp = Math.floor(
-                user.createdTimestamp / 1000
-            );
+            const bannerURL =
+                user.bannerURL({
+                    size: 4096,
+                    forceStatic: false
+                });
 
-            const joinedServerTimestamp = member.joinedTimestamp
-                ? Math.floor(member.joinedTimestamp / 1000)
-                : null;
+            const accountCreatedTimestamp =
+                Math.floor(
+                    user.createdTimestamp /
+                    1_000
+                );
 
-            const embed = createEmbed({
-                title: '👤 User Information',
-                thumbnail: avatarURL,
-                fields: [
-                    {
-                        name: '🪽 Profile',
-                        value:
-                            `**Username:** ${user.username}\n` +
-                            `**Display Name:** ${member.displayName}\n` +
-                            `**Mention:** ${user}\n` +
-                            `**Account Type:** ${user.bot ? 'Bot' : 'Human'}\n` +
-                            `**User ID:** \`${user.id}\``,
-                        inline: false
-                    },
-                    {
-                        name: '📅 Account Information',
-                        value:
-                            `**Account Created:** <t:${accountCreatedTimestamp}:F>\n` +
-                            `**Account Age:** <t:${accountCreatedTimestamp}:R>\n` +
-                            (
-                                joinedServerTimestamp
-                                    ? `**Joined Server:** <t:${joinedServerTimestamp}:F>\n` +
-                                      `**Time in Server:** <t:${joinedServerTimestamp}:R>`
-                                    : '**Joined Server:** Unknown'
-                            ),
-                        inline: false
-                    },
-                    {
-                        name: '🎭 Server Information',
-                        value:
-                            `**Highest Role:** ${member.roles.highest}\n` +
-                            `**Role Count:** ${Math.max(
-                                member.roles.cache.size - 1,
-                                0
-                            )}`,
-                        inline: false
-                    }
-                ]
-            });
+            const joinedServerTimestamp =
+                member.joinedTimestamp
+                    ? Math.floor(
+                        member.joinedTimestamp /
+                        1_000
+                    )
+                    : null;
+
+            const highestRole =
+                member.roles.highest.id ===
+                interaction.guild.id
+                    ? 'None'
+                    : member.roles.highest;
+
+            const roleCount =
+                Math.max(
+                    member.roles.cache.size -
+                    1,
+                    0
+                );
+
+            const accountType =
+                user.bot
+                    ? '🤖 Order Guardian'
+                    : user.system
+                        ? '⚙️ System Account'
+                        : '🌑 Soul';
+
+            const embed =
+                createEmbed({
+                    title:
+                        '🌑 Soul Information',
+
+                    description:
+                        [
+                            `Umbra has opened the record of ${user}.`,
+                            '',
+                            '*Every Soul is known beneath the crimson moon.*'
+                        ].join('\n'),
+
+                    thumbnail:
+                        avatarURL,
+
+                    fields: [
+                        {
+                            name:
+                                '🌑 Soul Record',
+
+                            value:
+                                `**Username:** ${user.username}\n` +
+                                `**Display Name:** ${member.displayName}\n` +
+                                `**Mention:** ${user}\n` +
+                                `**Account Type:** ${accountType}\n` +
+                                `**Soul ID:** \`${user.id}\``,
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '📅 Soul History',
+
+                            value:
+                                `**Account Created:** <t:${accountCreatedTimestamp}:F>\n` +
+                                `**Account Age:** <t:${accountCreatedTimestamp}:R>\n` +
+                                (
+                                    joinedServerTimestamp
+                                        ? `**Entered the Order:** <t:${joinedServerTimestamp}:F>\n` +
+                                          `**Time in the Order:** <t:${joinedServerTimestamp}:R>`
+                                        : '**Entered the Order:** Unknown'
+                                ),
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '🎭 Order Standing',
+
+                            value:
+                                `**Highest Role:** ${highestRole}\n` +
+                                `**Total Roles:** \`${roleCount}\`\n` +
+                                `**Nickname:** ${member.nickname ?? 'None'}`,
+
+                            inline:
+                                false
+                        }
+                    ]
+                });
 
             embed.setAuthor({
-                name: `${user.username}'s Information`,
-                iconURL: avatarURL
+                name:
+                    `${user.username} • Soul Record`,
+
+                iconURL:
+                    avatarURL
             });
 
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setLabel('Open Avatar')
-                    .setEmoji('🖼️')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(avatarURL)
-            );
+            embed.setFooter({
+                text:
+                    `🌑 Umbra Soul Records • Requested by ${interaction.user.username}`,
 
-            await interaction.reply({
+                iconURL:
+                    interaction.client.user
+                        .displayAvatarURL({
+                            size: 128,
+                            forceStatic: false
+                        })
+            });
+
+            if (bannerURL) {
+                embed.setImage(
+                    bannerURL
+                );
+            }
+
+            const row =
+                new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setLabel(
+                                'Open Avatar'
+                            )
+                            .setEmoji('🖼️')
+                            .setStyle(
+                                ButtonStyle.Link
+                            )
+                            .setURL(
+                                avatarURL
+                            )
+                    );
+
+            if (bannerURL) {
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setLabel(
+                            'Open Banner'
+                        )
+                        .setEmoji('🌌')
+                        .setStyle(
+                            ButtonStyle.Link
+                        )
+                        .setURL(
+                            bannerURL
+                        )
+                );
+            }
+
+            await interaction.editReply({
                 embeds: [embed],
                 components: [row]
             });
         } catch (error) {
-            console.error('❌ Error executing /userinfo:', error);
-
-            const errorEmbed = createErrorEmbed(
-                '❌ User Information Error',
-                'I could not retrieve information about this user.'
+            console.error(
+                '❌ Error executing Umbra /userinfo:',
+                error
             );
 
-            if (interaction.replied || interaction.deferred) {
-                return interaction.followUp({
-                    embeds: [errorEmbed],
-                    flags: MessageFlags.Ephemeral
-                });
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Soul Information Unavailable',
+
+                    'Umbra could not retrieve information about this Soul.'
+                );
+
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        components: []
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            await interaction.reply({
-                embeds: [errorEmbed],
-                flags: MessageFlags.Ephemeral
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

@@ -1,50 +1,87 @@
 /**
- * Seraphiel Guardian configuration.
+ * Umbra Guardian configuration.
  *
  * Protection levels:
  *
  * LOW
  * - Delete violating messages
- * - Notify the user
+ * - Notify the Soul
  *
  * MEDIUM
  * - Delete violating messages
- * - Notify the user
+ * - Notify the Soul
  * - Save a database warning
  *
  * HIGH
  * - Delete violating messages
- * - Notify the user
+ * - Notify the Soul
  * - Save a database warning
  * - Timeout repeat offenders
  */
 module.exports = {
+    /**
+     * Main Umbra Guardian switch.
+     *
+     * false disables profanity and spam
+     * protection completely.
+     */
     enabled: true,
 
+    /**
+     * Available levels:
+     * LOW
+     * MEDIUM
+     * HIGH
+     */
     protectionLevel: 'HIGH',
 
-    logChannelName: '🤖・guardian-log',
+    /**
+     * Umbra Guardian log channel.
+     *
+     * This must match the Discord channel
+     * name exactly.
+     */
+    logChannelName: '📄・umbra-logs',
 
     /*
-     * Guardian will not inspect these channels.
-     * Add Discord channel IDs inside this array.
+     * Umbra will not inspect these channels.
+     *
+     * Add Discord channel IDs inside
+     * this array.
      */
     ignoredChannelIds: [],
 
     /*
-     * Guardian will not inspect members with these roles.
-     * Add Staff role IDs inside this array.
+     * Umbra will not inspect members
+     * with these roles.
+     *
+     * Add Staff role IDs inside
+     * this array.
+     *
+     * Members with Administrator or
+     * Manage Messages are already ignored
+     * automatically.
      */
     ignoredRoleIds: [],
 
+    /**
+     * Profanity and insulting-language
+     * protection.
+     */
     profanity: {
         enabled: true,
 
         /*
-         * Add or remove blocked words here.
+         * Additional blocked words.
          *
-         * Keep each word inside quotation marks
-         * and separate entries using commas.
+         * Built-in severe, medium and mild
+         * profanity lists are stored inside:
+         *
+         * guardian/profanityFilter.js
+         *
+         * Words added here are treated as
+         * medium severity unless they already
+         * exist in a built-in list.
          */
         blockedWords: [
             // English
@@ -71,85 +108,99 @@ module.exports = {
         ],
 
         /*
-         * Delete the insulting message.
+         * Delete the violating message.
          */
         deleteMessage: true,
 
         /*
-         * Send a temporary warning to the user.
+         * Send a temporary Umbra warning
+         * to the Soul.
          */
         notifyUser: true,
 
         /*
-         * Delete Guardian's temporary warning
-         * after 7 seconds.
+         * Delete Umbra's temporary warning
+         * after seven seconds.
          */
-        notificationDeleteAfterMs: 7000,
+        notificationDeleteAfterMs: 7_000,
 
         /*
-         * Timeout the member after this many
-         * Guardian violations.
+         * Timeout the member after this
+         * number of Guardian violations.
          *
-         * Spam and profanity currently share the
-         * same violation counter.
+         * Spam and profanity share the same
+         * violation counter.
          */
         timeoutAfterViolations: 3,
 
         /*
-         * 10-minute timeout.
+         * Ten-minute timeout.
          */
-        timeoutDurationMs: 10 * 60 * 1000
+        timeoutDurationMs:
+            10 * 60 * 1_000
     },
 
+    /**
+     * Rapid-message and repeated-message
+     * spam protection.
+     */
     spam: {
         enabled: true,
 
         /*
          * Number of messages allowed inside
          * the configured time window.
+         *
+         * The sixth message inside seven
+         * seconds will trigger protection.
          */
         maxMessages: 5,
 
         /*
          * Seven-second message window.
          */
-        intervalMs: 7000,
+        intervalMs: 7_000,
 
         /*
-         * Matching messages required to count
-         * as repeated-message spam.
+         * Number of matching messages
+         * required to trigger repeated-message
+         * spam protection.
          */
         repeatedMessageLimit: 3,
 
         /*
          * Repeated-message record lifetime.
          */
-        repeatedMessageWindowMs: 15000,
+        repeatedMessageWindowMs:
+            15_000,
 
         /*
-         * Timeout after this many violations.
+         * Timeout after this number of
+         * Guardian violations.
          */
         timeoutAfterViolations: 3,
 
         /*
-         * 10-minute timeout.
+         * Ten-minute timeout.
          */
-        timeoutDurationMs: 10 * 60 * 1000,
+        timeoutDurationMs:
+            10 * 60 * 1_000,
 
         /*
-         * Delete spam messages.
+         * Delete the detected spam message.
          */
         deleteMessage: true,
 
         /*
-         * Send a temporary warning.
+         * Send a temporary Umbra warning
+         * to the Soul.
          */
         notifyUser: true,
 
         /*
-         * Delete the temporary warning
-         * after 7 seconds.
+         * Delete Umbra's temporary warning
+         * after seven seconds.
          */
-        notificationDeleteAfterMs: 7000
+        notificationDeleteAfterMs: 7_000
     }
 };

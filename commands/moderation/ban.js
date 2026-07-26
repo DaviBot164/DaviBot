@@ -1,6 +1,7 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -18,21 +19,29 @@ const {
 } = require('../../utils/modLogs');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('ban')
-        .setDescription('Ban a user from the server.')
+        .setDescription(
+            'Ban a Soul from the Order.'
+        )
 
         .addUserOption(option =>
             option
                 .setName('user')
-                .setDescription('User to ban')
+                .setDescription(
+                    'Select the Soul you want to ban'
+                )
                 .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName('reason')
-                .setDescription('Reason for the ban')
+                .setDescription(
+                    'Reason for the ban'
+                )
                 .setMaxLength(500)
                 .setRequired(false)
         )
@@ -45,15 +54,18 @@ module.exports = {
                 )
                 .addChoices(
                     {
-                        name: 'Do not delete messages',
+                        name:
+                            'Do not delete messages',
                         value: 0
                     },
                     {
-                        name: 'Delete messages from the last day',
+                        name:
+                            'Delete messages from the last day',
                         value: 1
                     },
                     {
-                        name: 'Delete messages from the last 7 days',
+                        name:
+                            'Delete messages from the last 7 days',
                         value: 7
                     }
                 )
@@ -62,167 +74,324 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.BanMembers
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /ban command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
-            const user = interaction.options.getUser('user');
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
 
-            const member = interaction.options.getMember('user');
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            const user =
+                interaction.options.getUser(
+                    'user',
+                    true
+                );
+
+            const member =
+                interaction.options.getMember(
+                    'user'
+                );
 
             const reason =
-                interaction.options.getString('reason') ||
-                'No reason provided.';
+                interaction.options.getString(
+                    'reason'
+                ) ||
+                'No reason was provided.';
 
             const deleteMessageDays =
-                interaction.options.getInteger('delete_messages') || 0;
+                interaction.options.getInteger(
+                    'delete_messages'
+                ) || 0;
 
-            const botMember = interaction.guild.members.me;
+            const botMember =
+                interaction.guild.members.me;
 
             if (
+                !botMember ||
                 !hasBotPermission(
                     botMember,
                     PermissionFlagsBits.BanMembers
                 )
             ) {
-                const embed = createErrorEmbed(
-                    '❌ Missing Permission',
-                    'I need the **Ban Members** permission to use this command.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Missing Umbra Permission',
+                            'Umbra requires the **Ban Members** permission to carry out this action.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
-            if (user.id === interaction.user.id) {
-                const embed = createErrorEmbed(
-                    '❌ Ban Failed',
-                    'You cannot ban yourself.'
-                );
+            if (
+                user.id ===
+                interaction.user.id
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Ban Failed',
+                            'You cannot ban yourself from the Order.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
-            if (user.id === interaction.client.user.id) {
-                const embed = createErrorEmbed(
-                    '❌ Ban Failed',
-                    'You cannot ban DaviBot.'
-                );
+            if (
+                user.id ===
+                interaction.client.user.id
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Ban Failed',
+                            'Umbra cannot ban itself.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
-            if (user.id === interaction.guild.ownerId) {
-                const embed = createErrorEmbed(
-                    '❌ Ban Failed',
-                    'The server owner cannot be banned.'
-                );
+            if (
+                user.id ===
+                interaction.guild.ownerId
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Ban Failed',
+                            'The Crimson Lord cannot be banned.'
+                        )
+                    ],
 
-                return interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true
+                    flags:
+                        MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             if (member) {
-                const moderationError = getModerationError({
-                    interaction,
-                    target: member,
-                    botMember
-                });
+                const moderationError =
+                    getModerationError({
+                        interaction,
+                        target: member,
+                        botMember
+                    });
 
                 if (moderationError) {
-                    const embed = createErrorEmbed(
-                        '❌ Ban Failed',
-                        moderationError
-                    );
+                    await interaction.reply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Ban Failed',
+                                moderationError
+                            )
+                        ],
 
-                    return interaction.reply({
-                        embeds: [embed],
-                        ephemeral: true
+                        flags:
+                            MessageFlags.Ephemeral
                     });
+
+                    return;
                 }
 
                 if (!member.bannable) {
-                    const embed = createErrorEmbed(
-                        '❌ Ban Failed',
-                        'I cannot ban this member. Check my permissions and role position.'
-                    );
+                    await interaction.reply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Ban Failed',
+                                'Umbra cannot ban this Soul. Check its permissions and role position.'
+                            )
+                        ],
 
-                    return interaction.reply({
-                        embeds: [embed],
-                        ephemeral: true
+                        flags:
+                            MessageFlags.Ephemeral
                     });
+
+                    return;
                 }
             }
 
-            await interaction.guild.members.ban(user.id, {
-                deleteMessageSeconds:
-                    deleteMessageDays * 24 * 60 * 60,
+            await interaction.deferReply();
 
-                reason:
-                    `${reason} | Moderator: ${interaction.user.tag}`
+            await interaction.guild.members.ban(
+                user.id,
+                {
+                    deleteMessageSeconds:
+                        deleteMessageDays *
+                        24 *
+                        60 *
+                        60,
+
+                    reason:
+                        `${reason} | Shadow Warden: ${interaction.user.tag}`
+                }
+            );
+
+            const embed =
+                createModerationEmbed({
+                    action:
+                        '🔨 Soul Banished',
+
+                    user,
+
+                    moderator:
+                        interaction.user,
+
+                    reason
+                });
+
+            embed.addFields({
+                name:
+                    '🗑️ Deleted Messages',
+
+                value:
+                    deleteMessageDays === 0
+                        ? 'No messages were deleted.'
+                        : `Messages from the last ${deleteMessageDays} day${
+                            deleteMessageDays === 1
+                                ? ''
+                                : 's'
+                        } were deleted.`,
+
+                inline:
+                    false
             });
 
-            const embed = createModerationEmbed({
-                action: '🔨 User Banned',
-                user,
-                moderator: interaction.user,
-                reason
-            });
-
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [embed]
             });
 
-            await sendModLog({
-                guild: interaction.guild,
-                action: '🔨 User Banned',
-                user,
-                moderator: interaction.user,
-                reason,
-                fields: [
-                    {
-                        name: '🗑️ Deleted Messages',
-                        value:
-                            deleteMessageDays === 0
-                                ? 'No messages deleted'
-                                : `Messages from the last ${deleteMessageDays} day${
-                                    deleteMessageDays === 1 ? '' : 's'
-                                }`,
-                        inline: false
-                    }
-                ]
-            });
+            try {
+                await sendModLog({
+                    guild:
+                        interaction.guild,
 
-            return;
+                    action:
+                        '🔨 Soul Banished',
+
+                    user,
+
+                    moderator:
+                        interaction.user,
+
+                    reason,
+
+                    fields: [
+                        {
+                            name:
+                                '🗑️ Deleted Messages',
+
+                            value:
+                                deleteMessageDays === 0
+                                    ? 'No messages deleted'
+                                    : `Messages from the last ${deleteMessageDays} day${
+                                        deleteMessageDays === 1
+                                            ? ''
+                                            : 's'
+                                    }`,
+
+                            inline:
+                                false
+                        }
+                    ]
+                });
+            } catch (logError) {
+                console.error(
+                    '❌ Umbra failed to send the ban moderation log:',
+                    logError
+                );
+            }
         } catch (error) {
-            console.error('Ban command error:', error);
-
-            const embed = createErrorEmbed(
-                '❌ Unexpected Error',
-                'An unexpected error occurred while trying to ban this user.'
+            console.error(
+                '❌ Umbra /ban command error:',
+                error
             );
 
-            if (interaction.replied || interaction.deferred) {
-                return interaction.followUp({
-                    embeds: [embed],
-                    ephemeral: true
-                });
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Ban Failed',
+                    'Umbra encountered an unexpected error while trying to ban this Soul.'
+                );
+
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

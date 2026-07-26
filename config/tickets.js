@@ -2,27 +2,47 @@ module.exports = {
     channelPrefix: 'ticket',
 
     panel: {
-        title: '🎫 Support Tickets',
+        title:
+            '🌑 Umbra Support',
 
         description:
-            'Need assistance from our staff team?\n\n' +
-            'Click the button below to create a private support ticket.\n\n' +
-            'Please create a ticket only when you genuinely need help.',
+            [
+                'Do you require assistance from the Shadow Wardens?',
+                '',
+                'Click the button below to open a private support ticket.',
+                '',
+                'Please create a ticket only when you genuinely need help.',
+                '',
+                '*Umbra will guide your request beneath the crimson moon.*'
+            ].join('\n'),
 
-        buttonLabel: 'Create Ticket',
-        buttonEmoji: '🎫'
+        buttonLabel:
+            'Open a Ticket',
+
+        buttonEmoji:
+            '🎫'
     },
 
     ticket: {
-        title: '🎫 Support Ticket',
+        title:
+            '🎫 Order Support Ticket',
 
         description:
-            'Thank you for contacting our staff team.\n\n' +
-            'Please describe your issue clearly and provide all relevant information. ' +
-            'A staff member will assist you as soon as possible.',
+            [
+                'Your request has been received by Umbra.',
+                '',
+                'Please describe your issue clearly and include all relevant information.',
+                '',
+                'A Shadow Warden will assist you as soon as possible.',
+                '',
+                '*Remain patient while the Order reviews your request.*'
+            ].join('\n'),
 
-        closeButtonLabel: 'Close Ticket',
-        closeButtonEmoji: '🔒'
+        closeButtonLabel:
+            'Close Ticket',
+
+        closeButtonEmoji:
+            '🔒'
     },
 
     permissions: {

@@ -19,14 +19,17 @@ const ticketConfig =
     require('../../config/tickets');
 
 module.exports = {
+    category: 'tickets',
+
     data: new SlashCommandBuilder()
         .setName('ticketpanel')
         .setDescription(
-            'Create a ticket panel in a selected channel.'
+            'Create the Umbra support panel in a selected channel.'
         )
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageGuild
         )
+        .setDMPermission(false)
 
         .addChannelOption(option =>
             option
@@ -56,7 +59,7 @@ module.exports = {
             option
                 .setName('staff_role')
                 .setDescription(
-                    'Role that can view and manage tickets'
+                    'Shadow Warden role that can manage tickets'
                 )
                 .setRequired(true)
         ),
@@ -76,7 +79,7 @@ module.exports = {
             await interaction.editReply({
                 embeds: [
                     createErrorEmbed(
-                        '❌ Server Only Command',
+                        '❌ Order Only Command',
                         'This command can only be used inside a server.'
                     )
                 ]
@@ -171,8 +174,8 @@ module.exports = {
             await interaction.editReply({
                 embeds: [
                     createErrorEmbed(
-                        '❌ Bot Member Not Found',
-                        'DaviBot could not access its server member information.'
+                        '❌ Umbra Member Not Found',
+                        'Umbra could not access its server member information.'
                     )
                 ]
             });
@@ -195,12 +198,15 @@ module.exports = {
             await interaction.editReply({
                 embeds: [
                     createErrorEmbed(
-                        '❌ Missing Bot Permissions',
-                        'DaviBot requires the following permissions:\n\n' +
-                        '• View Channels\n' +
-                        '• Send Messages\n' +
-                        '• Embed Links\n' +
-                        '• Manage Channels'
+                        '❌ Missing Umbra Permissions',
+                        [
+                            'Umbra requires the following permissions:',
+                            '',
+                            '• View Channels',
+                            '• Send Messages',
+                            '• Embed Links',
+                            '• Manage Channels'
+                        ].join('\n')
                     )
                 ]
             });
@@ -209,7 +215,9 @@ module.exports = {
         }
 
         const channelPermissions =
-            panelChannel.permissionsFor(botMember);
+            panelChannel.permissionsFor(
+                botMember
+            );
 
         if (
             !channelPermissions?.has([
@@ -222,7 +230,7 @@ module.exports = {
                 embeds: [
                     createErrorEmbed(
                         '❌ Panel Channel Permission Error',
-                        `DaviBot cannot send embeds inside ${panelChannel}.`
+                        `Umbra cannot send embeds inside ${panelChannel}.`
                     )
                 ]
             });
@@ -230,16 +238,31 @@ module.exports = {
             return;
         }
 
-        const panelEmbed = createEmbed({
-            title: ticketConfig.panel.title,
+        const panelEmbed =
+            createEmbed({
+                title:
+                    ticketConfig.panel.title,
 
-            description:
-                ticketConfig.panel.description,
+                description:
+                    ticketConfig.panel.description,
 
-            thumbnail:
-                interaction.guild.iconURL({
-                    size: 256
-                })
+                thumbnail:
+                    interaction.guild.iconURL({
+                        size: 256,
+                        forceStatic: false
+                    })
+            });
+
+        panelEmbed.setAuthor({
+            name:
+                'Umbra • Order Support',
+
+            iconURL:
+                interaction.client.user
+                    .displayAvatarURL({
+                        size: 128,
+                        forceStatic: false
+                    })
         });
 
         const panelButtons =
@@ -250,31 +273,44 @@ module.exports = {
 
         try {
             await panelChannel.send({
-                embeds: [panelEmbed],
-                components: [panelButtons]
+                embeds: [
+                    panelEmbed
+                ],
+
+                components: [
+                    panelButtons
+                ]
             });
 
             await interaction.editReply({
                 embeds: [
                     createSuccessEmbed(
-                        '✅ Ticket Panel Created',
-                        `The ticket panel was successfully sent to ${panelChannel}.\n\n` +
-                        `**Ticket category:** ${ticketCategory.name}\n` +
-                        `**Staff role:** ${staffRole}`
+                        '✅ Umbra Support Panel Created',
+
+                        [
+                            `The support panel was successfully sent to ${panelChannel}.`,
+                            '',
+                            `**Ticket Category:** ${ticketCategory.name}`,
+                            `**Shadow Warden Role:** ${staffRole}`,
+                            '',
+                            'Umbra is now ready to guide Souls who require assistance.'
+                        ].join('\n')
                     )
                 ]
             });
         } catch (error) {
             console.error(
-                '❌ Failed to create ticket panel:'
+                '❌ Failed to create Umbra ticket panel:'
             );
+
             console.error(error);
 
             await interaction.editReply({
                 embeds: [
                     createErrorEmbed(
-                        '❌ Ticket Panel Failed',
-                        'The ticket panel could not be created. Please check DaviBot permissions and try again.'
+                        '❌ Support Panel Failed',
+
+                        'The support panel could not be created. Check Umbra’s permissions and try again.'
                     )
                 ]
             });

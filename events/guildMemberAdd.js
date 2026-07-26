@@ -637,7 +637,10 @@ async function processRaidDetection(member) {
 }
 
 /**
- * Send the normal welcome message.
+ * Send the Umbra Welcome message.
+ *
+ * The embed itself is created inside:
+ * utils/welcomeEmbed.js
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {Promise<void>}
@@ -647,9 +650,9 @@ async function sendWelcomeMessage(member) {
         const welcomeChannel =
             member.guild.channels.cache.find(
                 channel =>
+                    channel.isTextBased() &&
                     channel.name ===
-                        '👋・welcome' &&
-                    channel.isTextBased()
+                        '👋・welcome'
             );
 
         if (!welcomeChannel) {
@@ -665,7 +668,16 @@ async function sendWelcomeMessage(member) {
 
         await welcomeChannel.send({
             content:
-                `👋 Welcome ${member}!`,
+                [
+                    '━━━━━━━━━━━━━━━━━━━━━━',
+                    '🌑 **A New Soul Has Arrived**',
+                    '',
+                    `Umbra welcomes ${member} to **Crimson Eclipse**.`,
+                    '',
+                    'May your strength guide your path beneath the crimson moon.',
+                    'Complete verification to enter the Order.',
+                    '━━━━━━━━━━━━━━━━━━━━━━'
+                ].join('\n'),
 
             embeds: [
                 welcomeEmbed
@@ -673,7 +685,7 @@ async function sendWelcomeMessage(member) {
         });
 
         console.log(
-            `✅ Welcome message sent for ${member.user.tag}`
+            `✅ Umbra welcomed ${member.user.tag} to ${member.guild.name}.`
         );
     } catch (error) {
         console.error(

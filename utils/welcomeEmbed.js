@@ -30,9 +30,27 @@ function createWelcomeEmbed(member) {
         });
 
     const joinedTimestamp =
-        Math.floor(Date.now() / 1000);
+        Math.floor(Date.now() / 1_000);
+
+    /*
+     * Find the verification channel.
+     */
+    const verifyChannel =
+        guild.channels.cache.find(
+            channel =>
+                channel.isTextBased() &&
+                channel.name === '⛩️・verify'
+        );
+
+    const verificationText =
+        verifyChannel
+            ? `Complete verification in ${verifyChannel} to enter the Order.`
+            : 'Complete verification to enter the Order.';
 
     return new EmbedBuilder()
+        /*
+         * Crimson Eclipse theme.
+         */
         .setColor('#8B0000')
 
         .setAuthor({
@@ -44,11 +62,11 @@ function createWelcomeEmbed(member) {
 
         .setDescription(
             [
-                `Umbra welcomes ${member} to **Crimson Eclipse**.`,
+                `Umbra welcomes ${member} to **${guild.name}**.`,
                 '',
                 'May your strength guide your path beneath the crimson moon.',
                 '',
-                '**Complete verification to enter the Order.**',
+                `**${verificationText}**`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━'
             ].join('\n')

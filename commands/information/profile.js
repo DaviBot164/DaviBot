@@ -57,7 +57,7 @@ function getTimeoutStatus(member) {
         Math.floor(timeoutTimestamp / 1000);
 
     return (
-        `🔇 Timeout Active\n` +
+        '🔇 Timeout Active\n' +
         `Ends <t:${unixTimestamp}:R>`
     );
 }
@@ -85,7 +85,7 @@ function formatWarningCount(warningCount) {
 }
 
 /**
- * Get the user's account type.
+ * Get the Soul's account type.
  *
  * @param {import('discord.js').User} user
  * @returns {string}
@@ -99,11 +99,11 @@ function getAccountType(user) {
         return '⚙️ System Account';
     }
 
-    return '👤 User Account';
+    return '🌑 Soul Account';
 }
 
 /**
- * Get a profile badge based on server permissions.
+ * Get an Order badge based on server permissions.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
@@ -111,7 +111,7 @@ function getAccountType(user) {
  */
 function getMemberBadge(member, guild) {
     if (member.id === guild.ownerId) {
-        return '👑 Server Owner';
+        return '👑 Crimson Lord';
     }
 
     if (
@@ -119,7 +119,7 @@ function getMemberBadge(member, guild) {
             PermissionFlagsBits.Administrator
         )
     ) {
-        return '💎 Administrator';
+        return '⚜️ Eclipse Keeper';
     }
 
     if (
@@ -133,14 +133,14 @@ function getMemberBadge(member, guild) {
             PermissionFlagsBits.BanMembers
         )
     ) {
-        return '🛡️ Server Staff';
+        return '🛡️ Shadow Warden';
     }
 
     if (member.user.bot) {
-        return '🤖 Server Bot';
+        return '🤖 Order Guardian';
     }
 
-    return '👤 Server Member';
+    return '🌑 Soul of the Order';
 }
 
 /**
@@ -168,7 +168,9 @@ function getHighestRole(member) {
  */
 function getRoleCount(member) {
     return member.roles.cache.filter(
-        role => role.id !== member.guild.id
+        role =>
+            role.id !==
+            member.guild.id
     ).size;
 }
 
@@ -179,7 +181,10 @@ function getRoleCount(member) {
  * @param {string} userId
  * @returns {Promise<number|string>}
  */
-async function getWarningCount(guildId, userId) {
+async function getWarningCount(
+    guildId,
+    userId
+) {
     try {
         return await warningDatabase.countWarnings(
             guildId,
@@ -187,7 +192,7 @@ async function getWarningCount(guildId, userId) {
         );
     } catch (error) {
         console.warn(
-            `⚠️ Profile warning count unavailable: ${error.message}`
+            `⚠️ Umbra profile warning count unavailable: ${error.message}`
         );
 
         return 'Unavailable';
@@ -195,32 +200,43 @@ async function getWarningCount(guildId, userId) {
 }
 
 module.exports = {
+    category: 'information',
+
     data: new SlashCommandBuilder()
         .setName('profile')
         .setDescription(
-            'View detailed information about a server member.'
+            'View the Order profile of a server member.'
         )
         .addUserOption(option =>
             option
                 .setName('user')
                 .setDescription(
-                    'Select the member whose profile you want to view'
+                    'Select the Soul whose profile you want to view'
                 )
                 .setRequired(false)
         )
         .setDMPermission(false),
 
+    /**
+     * Execute the /profile command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
             await interaction.deferReply();
 
             const selectedUser =
-                interaction.options.getUser('user') ??
+                interaction.options.getUser(
+                    'user'
+                ) ??
                 interaction.user;
 
             const [fullUser, member] =
                 await Promise.all([
                     selectedUser.fetch(true),
+
                     interaction.guild.members.fetch(
                         selectedUser.id
                     )
@@ -245,10 +261,14 @@ module.exports = {
                 });
 
             const warningDisplay =
-                formatWarningCount(warningCount);
+                formatWarningCount(
+                    warningCount
+                );
 
             const accountType =
-                getAccountType(fullUser);
+                getAccountType(
+                    fullUser
+                );
 
             const memberBadge =
                 getMemberBadge(
@@ -257,68 +277,106 @@ module.exports = {
                 );
 
             const highestRole =
-                getHighestRole(member);
+                getHighestRole(
+                    member
+                );
 
             const roleCount =
-                getRoleCount(member);
+                getRoleCount(
+                    member
+                );
 
-            const embed = createEmbed({
-                title:
-                    `👤 ${fullUser.username}'s Profile`,
-                description:
-                    `Detailed profile information for ${fullUser}.`,
-                thumbnail: avatarURL,
-                fields: [
-                    {
-                        name: '👤 User Information',
-                        value:
-                            `**Username:** ${fullUser.username}\n` +
-                            `**Display Name:** ${member.displayName}\n` +
-                            `**Account Type:** ${accountType}\n` +
-                            `**User ID:** \`${fullUser.id}\``,
-                        inline: false
-                    },
-                    {
-                        name: '🎖️ Member Status',
-                        value:
-                            `**Badge:** ${memberBadge}\n` +
-                            `**Highest Role:** ${highestRole}\n` +
-                            `**Total Roles:** ${roleCount}`,
-                        inline: true
-                    },
-                    {
-                        name: '🛡️ Moderation Information',
-                        value:
-                            `**Warnings:** ${warningDisplay}\n` +
-                            `**Timeout:** ${getTimeoutStatus(member)}`,
-                        inline: true
-                    },
-                    {
-                        name: '📅 Account Created',
-                        value: formatDiscordDate(
-                            fullUser.createdTimestamp
-                        ),
-                        inline: true
-                    },
-                    {
-                        name: '📥 Joined Server',
-                        value: formatDiscordDate(
-                            member.joinedTimestamp
-                        ),
-                        inline: true
-                    }
-                ]
-            });
+            const embed =
+                createEmbed({
+                    title:
+                        `🌑 ${fullUser.username}'s Soul Record`,
+
+                    description:
+                        [
+                            `Umbra has opened the Order record of ${fullUser}.`,
+                            '',
+                            '*Every Soul leaves a mark beneath the crimson moon.*'
+                        ].join('\n'),
+
+                    thumbnail:
+                        avatarURL,
+
+                    fields: [
+                        {
+                            name:
+                                '🌑 Soul Information',
+
+                            value:
+                                `**Username:** ${fullUser.username}\n` +
+                                `**Display Name:** ${member.displayName}\n` +
+                                `**Account Type:** ${accountType}\n` +
+                                `**Soul ID:** \`${fullUser.id}\``,
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '🎖️ Order Status',
+
+                            value:
+                                `**Rank:** ${memberBadge}\n` +
+                                `**Highest Role:** ${highestRole}\n` +
+                                `**Total Roles:** \`${roleCount}\``,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🛡️ Guardian Record',
+
+                            value:
+                                `**Warnings:** ${warningDisplay}\n` +
+                                `**Timeout:** ${getTimeoutStatus(member)}`,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '📅 Soul Created',
+
+                            value:
+                                formatDiscordDate(
+                                    fullUser.createdTimestamp
+                                ),
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '📥 Entered the Order',
+
+                            value:
+                                formatDiscordDate(
+                                    member.joinedTimestamp
+                                ),
+
+                            inline:
+                                true
+                        }
+                    ]
+                });
 
             embed.setAuthor({
                 name:
-                    `${fullUser.username} • Member Profile`,
-                iconURL: avatarURL
+                    `${fullUser.username} • Soul Record`,
+
+                iconURL:
+                    avatarURL
             });
 
             embed.setFooter({
                 text:
-                    `🪽 Seraphiel Profile System • Requested by ${interaction.user.username}`,
+                    `🌑 Umbra Profile System • Requested by ${interaction.user.username}`,
+
                 iconURL:
                     interaction.client.user.displayAvatarURL({
                         size: 128,
@@ -327,25 +385,40 @@ module.exports = {
             });
 
             if (bannerURL) {
-                embed.setImage(bannerURL);
+                embed.setImage(
+                    bannerURL
+                );
             }
 
             const buttons =
-                new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setLabel('Open Avatar')
-                        .setEmoji('🖼️')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL(avatarURL)
-                );
+                new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setLabel(
+                                'Open Avatar'
+                            )
+                            .setEmoji('🖼️')
+                            .setStyle(
+                                ButtonStyle.Link
+                            )
+                            .setURL(
+                                avatarURL
+                            )
+                    );
 
             if (bannerURL) {
                 buttons.addComponents(
                     new ButtonBuilder()
-                        .setLabel('Open Banner')
+                        .setLabel(
+                            'Open Banner'
+                        )
                         .setEmoji('🌌')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL(bannerURL)
+                        .setStyle(
+                            ButtonStyle.Link
+                        )
+                        .setURL(
+                            bannerURL
+                        )
                 );
             }
 
@@ -355,38 +428,62 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Profile command error:',
+                '❌ Umbra profile command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Profile Unavailable',
-                    'The requested profile could not be loaded. Please try again later.'
+                    '❌ Soul Record Unavailable',
+
+                    'Umbra could not open the requested Soul record. Please try again later.'
                 );
 
             if (interaction.deferred) {
-                await interaction.editReply({
-                    embeds: [errorEmbed],
-                    components: []
-                }).catch(() => null);
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        components: []
+                    })
+                    .catch(
+                        () => null
+                    );
 
                 return;
             }
 
             if (interaction.replied) {
-                await interaction.followUp({
-                    embeds: [errorEmbed],
-                    flags: MessageFlags.Ephemeral
-                }).catch(() => null);
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
 
                 return;
             }
 
-            await interaction.reply({
-                embeds: [errorEmbed],
-                flags: MessageFlags.Ephemeral
-            }).catch(() => null);
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

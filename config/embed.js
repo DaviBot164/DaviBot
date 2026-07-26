@@ -1,14 +1,14 @@
 module.exports = {
     colors: {
-        // Official Seraphiel Brand Colors
-        primary: '#6EA8FE',      // Celestial Blue
-        success: '#57F287',
-        error: '#ED4245',
-        warning: '#FEE75C',
-        moderation: '#D4AF37'    // Royal Gold
+        // Umbra Brand Colors
+        primary: '#8B0000',      // Crimson
+        success: '#7CFC98',      // Emerald
+        error: '#D7263D',        // Blood Red
+        warning: '#F4C430',      // Golden Warning
+        moderation: '#5B0E2D'    // Dark Crimson
     },
 
     footer: {
-        text: '🪽 Seraphiel • Created & Developed by Davi'
+        text: '🌑 Umbra • Guardian of Crimson Eclipse'
     }
 };
