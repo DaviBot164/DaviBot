@@ -31,6 +31,9 @@ const messageHistory = new Map();
  */
 const duplicateHistory = new Map();
 
+/**
+ * Discord invite link pattern.
+ */
 const DISCORD_INVITE_PATTERN =
     /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-zA-Z0-9-]+/i;
 
@@ -61,13 +64,13 @@ function escapeRegExp(value) {
  * @returns {string}
  */
 function normalizeLeetCharacters(content) {
-    return content
+    return String(content)
         .toLowerCase()
         .replace(/[@4]/g, 'a')
-        .replace(/[8]/g, 'b')
-        .replace(/[3]/g, 'e')
+        .replace(/8/g, 'b')
+        .replace(/3/g, 'e')
         .replace(/[1!|]/g, 'i')
-        .replace(/[0]/g, 'o')
+        .replace(/0/g, 'o')
         .replace(/[$5]/g, 's')
         .replace(/[7+]/g, 't');
 }
@@ -81,6 +84,10 @@ function normalizeLeetCharacters(content) {
 function normalizeContent(content) {
     return normalizeLeetCharacters(content)
         .normalize('NFKC')
+        .replace(
+            /[\u200B-\u200D\uFEFF]/g,
+            ''
+        )
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -104,14 +111,18 @@ function createProfanityPattern(
     configuredWord
 ) {
     const normalizedWord =
-        normalizeContent(configuredWord);
+        normalizeContent(
+            configuredWord
+        );
 
     if (!normalizedWord) {
         return null;
     }
 
     const characters =
-        Array.from(normalizedWord);
+        Array.from(
+            normalizedWord
+        );
 
     const separatorPattern =
         '[\\s._*~`\\-–—|/\\\\]*';
@@ -120,16 +131,22 @@ function createProfanityPattern(
         characters
             .map(character => {
                 if (character === ' ') {
-                    return '[\\s._*~`\\-–—|/\\\\]+';
+                    return (
+                        '[\\s._*~`\\-–—|/\\\\]+'
+                    );
                 }
 
-                return escapeRegExp(character);
+                return escapeRegExp(
+                    character
+                );
             })
-            .join(separatorPattern);
+            .join(
+                separatorPattern
+            );
 
     /*
-     * Unicode-aware boundaries prevent words such
-     * as "ass" from matching inside "class".
+     * Unicode-aware boundaries prevent words
+     * from matching inside unrelated words.
      */
     return new RegExp(
         `(^|[^\\p{L}\\p{N}])${wordPattern}(?=$|[^\\p{L}\\p{N}])`,
@@ -153,11 +170,15 @@ function findWordFromList(
 
     for (const word of words) {
         const pattern =
-            createProfanityPattern(word);
+            createProfanityPattern(
+                word
+            );
 
         if (
             pattern &&
-            pattern.test(normalizedContent)
+            pattern.test(
+                normalizedContent
+            )
         ) {
             return word;
         }
@@ -176,13 +197,17 @@ function findWordFromList(
  * }|null}
  */
 function findBadWord(content) {
-    if (!automodConfig.badWords.enabled) {
+    if (
+        !automodConfig.badWords ||
+        !automodConfig.badWords.enabled
+    ) {
         return null;
     }
 
     const timeoutWord =
         findWordFromList(
             content,
+
             automodConfig.badWords
                 .timeoutWords ?? []
         );
@@ -197,6 +222,7 @@ function findBadWord(content) {
     const warningWord =
         findWordFromList(
             content,
+
             automodConfig.badWords
                 .warningWords ?? []
         );
@@ -222,7 +248,10 @@ function shouldBypassAutoMod(member) {
         return false;
     }
 
-    if (member.id === member.guild.ownerId) {
+    if (
+        member.id ===
+        member.guild.ownerId
+    ) {
         return true;
     }
 
@@ -234,11 +263,19 @@ function shouldBypassAutoMod(member) {
             PermissionFlagsBits.ManageMessages
     };
 
-    return automodConfig
-        .bypassPermissions
-        .some(permissionName => {
+    const bypassPermissions =
+        Array.isArray(
+            automodConfig.bypassPermissions
+        )
+            ? automodConfig.bypassPermissions
+            : [];
+
+    return bypassPermissions.some(
+        permissionName => {
             const permission =
-                permissionMap[permissionName];
+                permissionMap[
+                    permissionName
+                ];
 
             if (!permission) {
                 return false;
@@ -247,7 +284,8 @@ function shouldBypassAutoMod(member) {
             return member.permissions.has(
                 permission
             );
-        });
+        }
+    );
 }
 
 /**
@@ -257,14 +295,19 @@ function shouldBypassAutoMod(member) {
  * @returns {boolean}
  */
 function isMessageSpam(message) {
-    if (!automodConfig.spam.enabled) {
+    if (
+        !automodConfig.spam ||
+        !automodConfig.spam.enabled
+    ) {
         return false;
     }
 
     const key =
-        `${message.guild.id}:${message.author.id}`;
+        `${message.guild.id}:` +
+        `${message.author.id}`;
 
-    const now = Date.now();
+    const now =
+        Date.now();
 
     const minimumTimestamp =
         now -
@@ -272,15 +315,19 @@ function isMessageSpam(message) {
             .intervalMilliseconds;
 
     const previousTimestamps =
-        messageHistory.get(key) ?? [];
+        messageHistory.get(key) ??
+        [];
 
     const activeTimestamps =
         previousTimestamps.filter(
             timestamp =>
-                timestamp >= minimumTimestamp
+                timestamp >=
+                minimumTimestamp
         );
 
-    activeTimestamps.push(now);
+    activeTimestamps.push(
+        now
+    );
 
     messageHistory.set(
         key,
@@ -289,7 +336,8 @@ function isMessageSpam(message) {
 
     return (
         activeTimestamps.length >=
-        automodConfig.spam.messageLimit
+        automodConfig.spam
+            .messageLimit
     );
 }
 
@@ -302,6 +350,8 @@ function isMessageSpam(message) {
 function isDuplicateSpam(message) {
     if (
         !automodConfig
+            .duplicateMessages ||
+        !automodConfig
             .duplicateMessages
             .enabled
     ) {
@@ -309,19 +359,25 @@ function isDuplicateSpam(message) {
     }
 
     const normalizedContent =
-        normalizeContent(message.content);
+        normalizeContent(
+            message.content
+        );
 
     if (!normalizedContent) {
         return false;
     }
 
     const key =
-        `${message.guild.id}:${message.author.id}`;
+        `${message.guild.id}:` +
+        `${message.author.id}`;
 
-    const now = Date.now();
+    const now =
+        Date.now();
 
     const previousData =
-        duplicateHistory.get(key);
+        duplicateHistory.get(
+            key
+        );
 
     if (
         !previousData ||
@@ -336,9 +392,14 @@ function isDuplicateSpam(message) {
         duplicateHistory.set(
             key,
             {
-                content: normalizedContent,
-                count: 1,
-                firstMessageAt: now
+                content:
+                    normalizedContent,
+
+                count:
+                    1,
+
+                firstMessageAt:
+                    now
             }
         );
 
@@ -386,16 +447,19 @@ function getMentionCount(message) {
 }
 
 /**
- * Find AutoMod log channel.
+ * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
  */
 function findLogChannel(guild) {
-    if (automodConfig.logChannelId) {
+    if (
+        automodConfig.logChannelId
+    ) {
         const channelById =
             guild.channels.cache.get(
-                automodConfig.logChannelId
+                automodConfig
+                    .logChannelId
             );
 
         if (
@@ -411,14 +475,15 @@ function findLogChannel(guild) {
             channel =>
                 channel.isTextBased() &&
                 channel.name ===
-                    automodConfig.logChannelName
+                    automodConfig
+                        .logChannelName
         );
 
     return channelByName ?? null;
 }
 
 /**
- * Send AutoMod log.
+ * Send Umbra AutoMod log.
  *
  * @param {import('discord.js').Message} message
  * @param {string} reason
@@ -433,11 +498,13 @@ async function sendAutoModLog(
     savedCase
 ) {
     const logChannel =
-        findLogChannel(message.guild);
+        findLogChannel(
+            message.guild
+        );
 
     if (!logChannel) {
         console.warn(
-            `⚠️ AutoMod log channel was not found in ${message.guild.name}.`
+            `⚠️ Umbra AutoMod log channel was not found in ${message.guild.name}.`
         );
 
         return;
@@ -447,7 +514,10 @@ async function sendAutoModLog(
         message.content
             ? message.content
                 .slice(0, 1_000)
-                .replace(/```/g, 'ˋˋˋ')
+                .replace(
+                    /```/g,
+                    'ˋˋˋ'
+                )
             : 'No text content';
 
     const caseNumber =
@@ -455,93 +525,149 @@ async function sendAutoModLog(
             ? `#${savedCase.id}`
             : 'Not saved';
 
-    const embed = new EmbedBuilder()
-        .setColor('#8B0000')
-        .setAuthor({
-            name: 'Seraphiel AutoMod',
-            iconURL:
-                message.client.user
+    const embed =
+        new EmbedBuilder()
+            .setColor(
+                '#8B0000'
+            )
+
+            .setAuthor({
+                name:
+                    'Umbra AutoMod',
+
+                iconURL:
+                    message.client.user
+                        .displayAvatarURL({
+                            extension:
+                                'png',
+
+                            size:
+                                256
+                        })
+            })
+
+            .setTitle(
+                `🛡️ AutoMod Case ${caseNumber}`
+            )
+
+            .setDescription(
+                'Umbra detected and recorded a violation within the Order.'
+            )
+
+            .addFields(
+                {
+                    name:
+                        '🌑 Soul',
+
+                    value:
+                        `${message.author}\n` +
+                        `\`${message.author.id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📺 Channel',
+
+                    value:
+                        `${message.channel}\n` +
+                        `\`${message.channel.id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🆔 Case ID',
+
+                    value:
+                        savedCase?.id
+                            ? `\`${savedCase.id}\``
+                            : '`Database error`',
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🚨 Violation',
+
+                    value:
+                        reason,
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🛡️ Guardian Action',
+
+                    value:
+                        action,
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '💬 Detected Message',
+
+                    value:
+                        `\`\`\`\n${cleanContent}\n\`\`\``,
+
+                    inline:
+                        false
+                }
+            )
+
+            .setThumbnail(
+                message.author
                     .displayAvatarURL({
-                        extension: 'png',
-                        size: 256
+                        extension:
+                            'png',
+
+                        size:
+                            256
                     })
-        })
-        .setTitle(
-            `🛡️ AutoMod Case ${caseNumber}`
-        )
-        .addFields(
-            {
-                name: 'Member',
-                value:
-                    `${message.author} ` +
-                    `(\`${message.author.id}\`)`,
-                inline: false
-            },
-            {
-                name: 'Channel',
-                value: `${message.channel}`,
-                inline: true
-            },
-            {
-                name: 'Case ID',
-                value: savedCase?.id
-                    ? `\`${savedCase.id}\``
-                    : '`Database error`',
-                inline: true
-            },
-            {
-                name: 'Reason',
-                value: reason,
-                inline: false
-            },
-            {
-                name: 'Action',
-                value: action,
-                inline: false
-            },
-            {
-                name: 'Message',
-                value:
-                    `\`\`\`\n${cleanContent}\n\`\`\``,
-                inline: false
-            }
-        )
-        .setThumbnail(
-            message.author
-                .displayAvatarURL({
-                    extension: 'png',
-                    size: 256
-                })
-        )
-        .setTimestamp()
-        .setFooter({
-            text:
-                `User ID: ${message.author.id}`
-        });
+            )
+
+            .setTimestamp()
+
+            .setFooter({
+                text:
+                    `🌑 Umbra • Soul ID: ${message.author.id}`
+            });
 
     try {
         await logChannel.send({
-            embeds: [embed]
+            embeds: [
+                embed
+            ]
         });
     } catch (error) {
         console.error(
-            '❌ Failed to send AutoMod log:'
+            '❌ Failed to send Umbra AutoMod log:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
     }
 }
 
 /**
- * Delete violation message.
+ * Delete a violating message.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<boolean>}
  */
-async function deleteViolationMessage(message) {
+async function deleteViolationMessage(
+    message
+) {
     if (!message.deletable) {
         console.warn(
-            `⚠️ Seraphiel cannot delete a message in #${message.channel.name}.`
+            `⚠️ Umbra cannot delete a message in #${message.channel.name}.`
         );
 
         return false;
@@ -553,17 +679,19 @@ async function deleteViolationMessage(message) {
         return true;
     } catch (error) {
         console.error(
-            '❌ AutoMod failed to delete a message:'
+            '❌ Umbra AutoMod failed to delete a message:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         return false;
     }
 }
 
 /**
- * Apply Discord timeout.
+ * Apply a Discord timeout.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} duration
@@ -575,30 +703,34 @@ async function applyTimeout(
     duration,
     reason
 ) {
-    if (!member?.moderatable) {
+    if (
+        !member?.moderatable
+    ) {
         return false;
     }
 
     try {
         await member.timeout(
             duration,
-            `Seraphiel AutoMod: ${reason}`
+            `Umbra AutoMod: ${reason}`
         );
 
         return true;
     } catch (error) {
         console.error(
-            '❌ AutoMod failed to timeout a member:'
+            '❌ Umbra AutoMod failed to timeout a member:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         return false;
     }
 }
 
 /**
- * Send temporary channel warning.
+ * Send a temporary channel warning.
  *
  * @param {import('discord.js').Message} message
  * @param {string} warningText
@@ -608,7 +740,9 @@ async function sendTemporaryWarning(
     message,
     warningText
 ) {
-    if (!message.channel.isTextBased()) {
+    if (
+        !message.channel.isTextBased()
+    ) {
         return;
     }
 
@@ -616,36 +750,51 @@ async function sendTemporaryWarning(
         const warningMessage =
             await message.channel.send({
                 content:
-                    `${message.author}, ${warningText}`
+                    `${message.author}, 🌑 **Umbra Guardian:** ${warningText}`
             });
 
-        setTimeout(
-            async () => {
-                try {
-                    if (
-                        warningMessage.deletable
-                    ) {
-                        await warningMessage
-                            .delete();
+        const warningTimer =
+            setTimeout(
+                async () => {
+                    try {
+                        if (
+                            warningMessage
+                                .deletable
+                        ) {
+                            await warningMessage
+                                .delete();
+                        }
+                    } catch {
+                        /*
+                         * The warning may
+                         * already be deleted.
+                         */
                     }
-                } catch {
-                    // Warning may already be deleted.
-                }
-            },
-            automodConfig
-                .warningDeleteDelayMilliseconds
-        );
+                },
+
+                automodConfig
+                    .warningDeleteDelayMilliseconds
+            );
+
+        if (
+            typeof warningTimer.unref ===
+            'function'
+        ) {
+            warningTimer.unref();
+        }
     } catch (error) {
         console.error(
-            '❌ Failed to send AutoMod warning:'
+            '❌ Failed to send Umbra AutoMod warning:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
     }
 }
 
 /**
- * Save AutoMod case.
+ * Save an AutoMod case.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} violation
@@ -681,7 +830,10 @@ async function saveAutoModCase(
                 messageContent:
                     message.content
                         ? message.content
-                            .slice(0, 4_000)
+                            .slice(
+                                0,
+                                4_000
+                            )
                         : null,
 
                 messageDeleted:
@@ -691,28 +843,31 @@ async function saveAutoModCase(
                     timedOut,
 
                 timeoutDurationMilliseconds:
-                    violation.timeoutDuration ??
+                    violation
+                        .timeoutDuration ??
                     null
             });
 
         console.log(
-            `🛡️ AutoMod Case #${savedCase.id} saved for ${message.author.tag}.`
+            `🛡️ Umbra AutoMod Case #${savedCase.id} saved for ${message.author.tag}.`
         );
 
         return savedCase;
     } catch (error) {
         console.error(
-            '❌ Failed to save AutoMod case:'
+            '❌ Failed to save Umbra AutoMod case:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         return null;
     }
 }
 
 /**
- * Process AutoMod violation.
+ * Process an Umbra AutoMod violation.
  *
  * @param {import('discord.js').Message} message
  * @param {{
@@ -727,16 +882,25 @@ async function processViolation(
     violation
 ) {
     const deleted =
-        await deleteViolationMessage(message);
-
-    let timedOut = false;
-
-    if (violation.timeoutDuration) {
-        timedOut = await applyTimeout(
-            message.member,
-            violation.timeoutDuration,
-            violation.reason
+        await deleteViolationMessage(
+            message
         );
+
+    let timedOut =
+        false;
+
+    if (
+        violation.timeoutDuration
+    ) {
+        timedOut =
+            await applyTimeout(
+                message.member,
+
+                violation
+                    .timeoutDuration,
+
+                violation.reason
+            );
     }
 
     const actions = [];
@@ -747,16 +911,20 @@ async function processViolation(
             : 'Message could not be deleted'
     );
 
-    if (violation.timeoutDuration) {
+    if (
+        violation.timeoutDuration
+    ) {
         actions.push(
             timedOut
-                ? 'Member timed out'
+                ? 'Soul timed out'
                 : 'Timeout could not be applied'
         );
     }
 
     const action =
-        actions.join(' • ');
+        actions.join(
+            ' • '
+        );
 
     const savedCase =
         await saveAutoModCase(
@@ -783,28 +951,41 @@ async function processViolation(
 }
 
 module.exports = {
-    name: Events.MessageCreate,
+    name:
+        Events.MessageCreate,
+
+    once:
+        false,
 
     /**
-     * Run AutoMod for every new message.
+     * Run Umbra AutoMod for every
+     * new server message.
      *
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
      */
     async execute(message) {
-        if (!automodConfig.enabled) {
+        if (
+            !automodConfig.enabled
+        ) {
             return;
         }
 
-        if (!message.inGuild()) {
+        if (
+            !message.inGuild()
+        ) {
             return;
         }
 
-        if (message.author.bot) {
+        if (
+            message.author.bot
+        ) {
             return;
         }
 
-        if (!message.member) {
+        if (
+            !message.member
+        ) {
             return;
         }
 
@@ -820,12 +1001,12 @@ module.exports = {
             message.content ?? '';
 
         /*
-         * Seraphiel Scam Shield
+         * Umbra Scam Shield
          */
         if (
             automodConfig
                 .scamProtection
-                .enabled
+                ?.enabled
         ) {
             const scamResult =
                 detectScam(
@@ -838,7 +1019,9 @@ module.exports = {
                     }
                 );
 
-            if (scamResult.detected) {
+            if (
+                scamResult.detected
+            ) {
                 await processViolation(
                     message,
                     {
@@ -859,12 +1042,12 @@ module.exports = {
         }
 
         /*
-         * Discord invite protection
+         * Discord invite protection.
          */
         if (
             automodConfig
                 .inviteProtection
-                .enabled &&
+                ?.enabled &&
             DISCORD_INVITE_PATTERN
                 .test(content)
         ) {
@@ -875,7 +1058,7 @@ module.exports = {
                         'Unauthorized Discord invite',
 
                     warning:
-                        'Discord invite links are not allowed here.'
+                        'Discord invite links are not allowed within this Order.'
                 }
             );
 
@@ -883,10 +1066,12 @@ module.exports = {
         }
 
         /*
-         * Seraphiel Profanity Shield
+         * Umbra Profanity Shield
          */
         const badWordResult =
-            findBadWord(content);
+            findBadWord(
+                content
+            );
 
         if (badWordResult) {
             if (
@@ -900,7 +1085,7 @@ module.exports = {
                             'Severe profanity or abusive language detected',
 
                         warning:
-                            'severe profanity and abusive language are not allowed.',
+                            'severe profanity and abusive language violate the Sacred Laws.',
 
                         timeoutDuration:
                             automodConfig
@@ -916,7 +1101,7 @@ module.exports = {
                             'Insulting language detected',
 
                         warning:
-                            'insulting language is not allowed on this server.'
+                            'insulting language violates the Sacred Laws.'
                     }
                 );
             }
@@ -925,15 +1110,17 @@ module.exports = {
         }
 
         /*
-         * Mention-spam protection
+         * Mention-spam protection.
          */
         const mentionCount =
-            getMentionCount(message);
+            getMentionCount(
+                message
+            );
 
         if (
             automodConfig
                 .mentionSpam
-                .enabled &&
+                ?.enabled &&
             mentionCount >=
                 automodConfig
                     .mentionSpam
@@ -946,7 +1133,7 @@ module.exports = {
                         `Mention spam (${mentionCount} mentions)`,
 
                     warning:
-                        'mention spam is not allowed.',
+                        'mention spam is not allowed within this Order.',
 
                     timeoutDuration:
                         automodConfig
@@ -959,9 +1146,13 @@ module.exports = {
         }
 
         /*
-         * Duplicate-message protection
+         * Duplicate-message protection.
          */
-        if (isDuplicateSpam(message)) {
+        if (
+            isDuplicateSpam(
+                message
+            )
+        ) {
             await processViolation(
                 message,
                 {
@@ -969,7 +1160,7 @@ module.exports = {
                         'Repeated-message spam',
 
                     warning:
-                        'stop sending the same message repeatedly.',
+                        'do not send the same message repeatedly.',
 
                     timeoutDuration:
                         automodConfig
@@ -979,16 +1170,21 @@ module.exports = {
             );
 
             duplicateHistory.delete(
-                `${message.guild.id}:${message.author.id}`
+                `${message.guild.id}:` +
+                `${message.author.id}`
             );
 
             return;
         }
 
         /*
-         * Rapid-message protection
+         * Rapid-message protection.
          */
-        if (isMessageSpam(message)) {
+        if (
+            isMessageSpam(
+                message
+            )
+        ) {
             await processViolation(
                 message,
                 {
@@ -1006,58 +1202,93 @@ module.exports = {
             );
 
             messageHistory.delete(
-                `${message.guild.id}:${message.author.id}`
+                `${message.guild.id}:` +
+                `${message.author.id}`
             );
         }
     }
 };
 
 /**
- * Remove expired tracking information.
+ * Remove expired spam tracking
+ * information from memory.
  */
-setInterval(
-    () => {
-        const now = Date.now();
-
-        for (
-            const [key, timestamps]
-            of messageHistory.entries()
-        ) {
-            const activeTimestamps =
-                timestamps.filter(
-                    timestamp =>
-                        now - timestamp <
-                        automodConfig
-                            .spam
-                            .intervalMilliseconds
-                );
+const cleanupTimer =
+    setInterval(
+        () => {
+            const now =
+                Date.now();
 
             if (
-                activeTimestamps.length === 0
+                automodConfig.spam
             ) {
-                messageHistory.delete(key);
-            } else {
-                messageHistory.set(
-                    key,
-                    activeTimestamps
-                );
-            }
-        }
+                for (
+                    const [
+                        key,
+                        timestamps
+                    ]
+                    of messageHistory
+                        .entries()
+                ) {
+                    const activeTimestamps =
+                        timestamps.filter(
+                            timestamp =>
+                                now -
+                                    timestamp <
+                                automodConfig
+                                    .spam
+                                    .intervalMilliseconds
+                        );
 
-        for (
-            const [key, data]
-            of duplicateHistory.entries()
-        ) {
+                    if (
+                        activeTimestamps
+                            .length === 0
+                    ) {
+                        messageHistory.delete(
+                            key
+                        );
+                    } else {
+                        messageHistory.set(
+                            key,
+                            activeTimestamps
+                        );
+                    }
+                }
+            }
+
             if (
-                now -
-                    data.firstMessageAt >
                 automodConfig
                     .duplicateMessages
-                    .intervalMilliseconds
             ) {
-                duplicateHistory.delete(key);
+                for (
+                    const [
+                        key,
+                        data
+                    ]
+                    of duplicateHistory
+                        .entries()
+                ) {
+                    if (
+                        now -
+                            data.firstMessageAt >
+                        automodConfig
+                            .duplicateMessages
+                            .intervalMilliseconds
+                    ) {
+                        duplicateHistory.delete(
+                            key
+                        );
+                    }
+                }
             }
-        }
-    },
-    60_000
-);
+        },
+
+        60_000
+    );
+
+if (
+    typeof cleanupTimer.unref ===
+    'function'
+) {
+    cleanupTimer.unref();
+}

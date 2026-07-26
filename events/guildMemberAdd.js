@@ -176,7 +176,7 @@ async function sendRaidDetectedLog(
         .setColor('#FF0000')
 
         .setAuthor({
-            name: 'Seraphiel Raid Shield',
+            name: 'Umbra Raid Shield',
             iconURL:
                 guild.client.user
                     .displayAvatarURL({
@@ -189,7 +189,7 @@ async function sendRaidDetectedLog(
 
         .setDescription(
             [
-                'Seraphiel detected an unusual number of member joins.',
+                'Umbra detected an unusual number of member joins.',
                 '',
                 '🔴 **Raid Mode has been activated.**'
             ].join('\n')
@@ -258,7 +258,7 @@ async function sendRaidDetectedLog(
 
         .setFooter({
             text:
-                `Seraphiel Raid Shield • Case ${raidCaseId}`
+                `Umbra Raid Shield • Case ${raidCaseId}`
         })
 
         .setTimestamp();
@@ -298,7 +298,7 @@ async function sendRaidEndedLog(
         .setColor('#2ECC71')
 
         .setAuthor({
-            name: 'Seraphiel Raid Shield',
+            name: 'Umbra Raid Shield',
             iconURL:
                 guild.client.user
                     .displayAvatarURL({
@@ -335,7 +335,7 @@ async function sendRaidEndedLog(
         )
 
         .setFooter({
-            text: 'Seraphiel Raid Shield'
+            text: 'Umbra Raid Shield'
         })
 
         .setTimestamp();

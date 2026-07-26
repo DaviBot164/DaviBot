@@ -11,14 +11,14 @@ const ticketConfig =
 
 /**
  * Recognize both the new Umbra ticket topic
- * and the old DaviBot ticket topic.
+ * and the old Umbra ticket topic.
  *
  * Keeping legacy support prevents existing
  * open or closed tickets from becoming invalid
  * after the bot rebrand.
  */
 const TICKET_OWNER_PATTERN =
-    /(?:Umbra|DaviBot) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
+    /(?:Umbra|Umbra) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
 
 /**
  * Convert configured permission names into
@@ -149,7 +149,7 @@ function createTicketTopic(
 /**
  * Read ticket information from a channel topic.
  *
- * Both new Umbra topics and legacy DaviBot
+ * Both new Umbra topics and legacy Umbra
  * topics are supported.
  *
  * @param {string|null} topic

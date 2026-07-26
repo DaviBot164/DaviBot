@@ -28,7 +28,7 @@ module.exports = {
     },
 
     /**
-     * Seraphiel Profanity Shield.
+     * Umbra Profanity Shield.
      */
     badWords: {
         enabled: true,
@@ -191,7 +191,7 @@ module.exports = {
     },
 
     /**
-     * Seraphiel Raid Shield.
+     * Umbra Raid Shield.
      */
     antiRaid: {
         enabled: true,
@@ -206,7 +206,7 @@ module.exports = {
     },
 
     /**
-     * Seraphiel Scam Shield.
+     * Umbra Scam Shield.
      */
     scamProtection: {
         enabled: true,

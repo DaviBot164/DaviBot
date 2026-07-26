@@ -1,5 +1,5 @@
 /**
- * Seraphiel Scam Shield
+ * Umbra Scam Shield
  *
  * Detects common phishing and scam patterns
  * inside Discord messages.

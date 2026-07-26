@@ -84,7 +84,7 @@ function getModerationError({
     }
 
     if (target.id === interaction.client.user.id) {
-        return 'You cannot use this command on DaviBot.';
+        return 'You cannot use this command on Umbra.';
     }
 
     if (target.id === interaction.guild.ownerId) {

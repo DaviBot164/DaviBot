@@ -22,7 +22,7 @@ const {
 } = require('./database');
 
 /**
- * Server that Seraphiel must leave.
+ * Server that Umbra must leave.
  */
 const SERVER_TO_LEAVE_ID =
     '1521240178633605383';
@@ -89,7 +89,7 @@ function getConfiguredGuildIds() {
  */
 async function leaveSelectedServer(readyClient) {
     console.log(
-        '🔍 Checking whether Seraphiel is still in the removed server...'
+        '🔍 Checking whether Umbra is still in the removed server...'
     );
 
     let guild = readyClient.guilds.cache.get(
@@ -104,7 +104,7 @@ async function leaveSelectedServer(readyClient) {
         } catch (error) {
             if (error.code === 10004) {
                 console.log(
-                    'ℹ️ Seraphiel is no longer in that server.'
+                    'ℹ️ Umbra is no longer in that server.'
                 );
 
                 return false;
@@ -128,13 +128,13 @@ async function leaveSelectedServer(readyClient) {
         await guild.leave();
 
         console.log(
-            `✅ Seraphiel successfully left: ${guildName}`
+            `✅ Umbra successfully left: ${guildName}`
         );
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Seraphiel failed to leave the selected server:'
+            '❌ Umbra failed to leave the selected server:'
         );
 
         console.error(error);
@@ -370,7 +370,7 @@ client.on(
 );
 
 /**
- * Start Seraphiel.
+ * Start Umbra.
  *
  * @returns {Promise<void>}
  */
@@ -390,7 +390,7 @@ async function startBot() {
         );
 
         console.error(
-            '❌ Failed to start Seraphiel:'
+            '❌ Failed to start Umbra:'
         );
 
         console.error(error);
@@ -404,7 +404,7 @@ async function startBot() {
 }
 
 /**
- * Gracefully stop Seraphiel.
+ * Gracefully stop Umbra.
  *
  * @param {string} signal
  * @returns {Promise<void>}
@@ -423,7 +423,7 @@ async function shutdown(signal) {
         await closeConnection();
 
         console.log(
-            '✅ Seraphiel shut down safely.'
+            '✅ Umbra shut down safely.'
         );
 
         console.log(

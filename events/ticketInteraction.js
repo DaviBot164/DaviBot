@@ -43,10 +43,11 @@ async function sendTicketError(
     title,
     description
 ) {
-    const errorEmbed = createErrorEmbed(
-        title,
-        description
-    );
+    const errorEmbed =
+        createErrorEmbed(
+            title,
+            description
+        );
 
     if (interaction.deferred) {
         await interaction.editReply({
@@ -75,6 +76,9 @@ async function sendTicketError(
 /**
  * Validate the current ticket channel.
  *
+ * Ticket topic parsing is handled by utils/tickets.js.
+ * This keeps support for both Umbra and older DaviBot tickets.
+ *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {string} expectedOwnerId
  * @returns {{ownerId: string, status: 'open'|'closed'}|null}
@@ -91,9 +95,10 @@ function validateTicketChannel(
         return null;
     }
 
-    const ticketData = parseTicketTopic(
-        interaction.channel.topic
-    );
+    const ticketData =
+        parseTicketTopic(
+            interaction.channel.topic
+        );
 
     if (
         !ticketData ||
@@ -147,7 +152,8 @@ async function handleCreateTicket(
 
     if (
         !category ||
-        category.type !== ChannelType.GuildCategory
+        category.type !==
+            ChannelType.GuildCategory
     ) {
         await interaction.editReply({
             embeds: [
@@ -165,8 +171,8 @@ async function handleCreateTicket(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Staff Role Missing',
-                    'The configured ticket staff role no longer exists. Please ask an administrator to create a new ticket panel.'
+                    '❌ Shadow Warden Role Missing',
+                    'The configured Shadow Wardens role no longer exists. Please ask an administrator to create a new ticket panel.'
                 )
             ]
         });
@@ -174,10 +180,11 @@ async function handleCreateTicket(
         return;
     }
 
-    const existingTicket = findOpenTicket(
-        interaction.guild,
-        interaction.user.id
-    );
+    const existingTicket =
+        findOpenTicket(
+            interaction.guild,
+            interaction.user.id
+        );
 
     if (existingTicket) {
         await interaction.editReply({
@@ -199,8 +206,8 @@ async function handleCreateTicket(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Bot Member Not Found',
-                    'DaviBot could not access its server member information.'
+                    '❌ Umbra Unavailable',
+                    'Umbra could not access its server member information.'
                 )
             ]
         });
@@ -216,8 +223,8 @@ async function handleCreateTicket(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Bot Permission',
-                    'DaviBot requires the **Manage Channels** permission to create tickets.'
+                    '❌ Missing Umbra Permission',
+                    'Umbra requires the **Manage Channels** permission to create tickets.'
                 )
             ]
         });
@@ -228,18 +235,22 @@ async function handleCreateTicket(
     try {
         const ticketChannel =
             await interaction.guild.channels.create({
-                name: createTicketChannelName(
-                    interaction.user
-                ),
+                name:
+                    createTicketChannelName(
+                        interaction.user
+                    ),
 
-                type: ChannelType.GuildText,
+                type:
+                    ChannelType.GuildText,
 
-                parent: category.id,
+                parent:
+                    category.id,
 
-                topic: createTicketTopic(
-                    interaction.user.id,
-                    'open'
-                ),
+                topic:
+                    createTicketTopic(
+                        interaction.user.id,
+                        'open'
+                    ),
 
                 permissionOverwrites:
                     createTicketPermissionOverwrites(
@@ -254,45 +265,69 @@ async function handleCreateTicket(
             });
 
         const openedAt =
-            Math.floor(Date.now() / 1000);
+            Math.floor(
+                Date.now() / 1_000
+            );
 
-        const ticketEmbed = createEmbed({
-            title: ticketConfig.ticket.title,
+        const ticketEmbed =
+            createEmbed({
+                title:
+                    ticketConfig.ticket.title,
 
-            description:
-                `${interaction.user}, your ticket has been created successfully.\n\n` +
-                ticketConfig.ticket.description,
+                description:
+                    `${interaction.user}, your ticket has been created successfully.\n\n` +
+                    ticketConfig.ticket.description,
 
-            thumbnail:
-                interaction.user.displayAvatarURL({
-                    size: 256
-                }),
+                thumbnail:
+                    interaction.user.displayAvatarURL({
+                        size: 256,
+                        forceStatic: false
+                    }),
 
-            fields: [
-                {
-                    name: '👤 Ticket Owner',
-                    value:
-                        `${interaction.user.tag}\n` +
-                        `\`${interaction.user.id}\``,
-                    inline: true
-                },
-                {
-                    name: '🛡️ Staff Role',
-                    value: `${staffRole}`,
-                    inline: true
-                },
-                {
-                    name: '🟢 Status',
-                    value: 'Open',
-                    inline: true
-                },
-                {
-                    name: '🕒 Opened At',
-                    value: `<t:${openedAt}:F>`,
-                    inline: false
-                }
-            ]
-        });
+                fields: [
+                    {
+                        name:
+                            '🌑 Soul',
+
+                        value:
+                            `${interaction.user.tag}\n` +
+                            `\`${interaction.user.id}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🛡️ Shadow Wardens',
+
+                        value:
+                            `${staffRole}`,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🟢 Status',
+
+                        value:
+                            'Open',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🕒 Opened At',
+
+                        value:
+                            `<t:${openedAt}:F>`,
+
+                        inline:
+                            false
+                    }
+                ]
+            });
 
         const controlButtons =
             createOpenTicketButtons(
@@ -304,13 +339,18 @@ async function handleCreateTicket(
             content:
                 `${interaction.user} ${staffRole}`,
 
-            embeds: [ticketEmbed],
+            embeds:
+                [ticketEmbed],
 
-            components: [controlButtons],
+            components:
+                [controlButtons],
 
             allowedMentions: {
-                users: [interaction.user.id],
-                roles: [staffRole.id]
+                users:
+                    [interaction.user.id],
+
+                roles:
+                    [staffRole.id]
             }
         });
 
@@ -318,43 +358,50 @@ async function handleCreateTicket(
             embeds: [
                 createSuccessEmbed(
                     '✅ Ticket Created',
-                    `Your private support ticket has been created: ${ticketChannel}`
+                    `Your private Crimson Eclipse support ticket has been created: ${ticketChannel}`
                 )
             ]
         });
 
-        console.log('======================================');
+        console.log(
+            '======================================'
+        );
+
         console.log(
             `🎫 Ticket Created: ${ticketChannel.name}`
         );
+
         console.log(
-            `👤 Owner: ${interaction.user.tag}`
+            `🌑 Soul: ${interaction.user.tag}`
         );
+
         console.log(
             `🏰 Server: ${interaction.guild.name}`
         );
-        console.log('======================================');
+
+        console.log(
+            '======================================'
+        );
     } catch (error) {
         console.error(
             '❌ Failed to create ticket:'
         );
+
         console.error(error);
 
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
                     '❌ Ticket Creation Failed',
-                    'Your ticket could not be created. Please contact a server administrator.'
+                    'Your ticket could not be created. Please contact a Shadow Warden or server administrator.'
                 )
             ]
         });
     }
-}
-
-/**
+}/**
  * Show Close Ticket confirmation.
  *
- * The ticket owner or ticket staff may request closure.
+ * The ticket owner or Shadow Wardens may request closure.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {string} ownerId
@@ -366,39 +413,48 @@ async function handleCloseTicket(
     ownerId,
     staffRoleId
 ) {
-    const ticketData = validateTicketChannel(
-        interaction,
-        ownerId
-    );
+    const ticketData =
+        validateTicketChannel(
+            interaction,
+            ownerId
+        );
 
-    if (!ticketData || ticketData.status !== 'open') {
+    if (
+        !ticketData ||
+        ticketData.status !== 'open'
+    ) {
         await sendTicketError(
             interaction,
             '❌ Invalid Ticket',
-            'This channel is not recognized as an open DaviBot ticket.'
+            'This channel is not recognized as an open Umbra ticket.'
         );
 
         return;
     }
 
-    const member = interaction.member;
+    const member =
+        interaction.member;
 
     const canClose =
         interaction.user.id === ownerId ||
-        isTicketStaff(member, staffRoleId);
+        isTicketStaff(
+            member,
+            staffRoleId
+        );
 
     if (!canClose) {
         await sendTicketError(
             interaction,
             '❌ Permission Denied',
-            'Only the ticket owner or Ticket Support staff can close this ticket.'
+            'Only the ticket owner or Shadow Wardens can close this ticket.'
         );
 
         return;
     }
 
     await interaction.reply({
-        flags: MessageFlags.Ephemeral,
+        flags:
+            MessageFlags.Ephemeral,
 
         embeds: [
             createWarningEmbed(
@@ -423,7 +479,9 @@ async function handleCloseTicket(
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
  */
-async function handleCancelClose(interaction) {
+async function handleCancelClose(
+    interaction
+) {
     await interaction.update({
         embeds: [
             createSuccessEmbed(
@@ -431,6 +489,7 @@ async function handleCancelClose(interaction) {
                 'The ticket will remain open.'
             )
         ],
+
         components: []
     });
 }
@@ -448,12 +507,16 @@ async function handleConfirmClose(
     ownerId,
     staffRoleId
 ) {
-    const ticketData = validateTicketChannel(
-        interaction,
-        ownerId
-    );
+    const ticketData =
+        validateTicketChannel(
+            interaction,
+            ownerId
+        );
 
-    if (!ticketData || ticketData.status !== 'open') {
+    if (
+        !ticketData ||
+        ticketData.status !== 'open'
+    ) {
         await sendTicketError(
             interaction,
             '❌ Invalid Ticket',
@@ -463,17 +526,21 @@ async function handleConfirmClose(
         return;
     }
 
-    const member = interaction.member;
+    const member =
+        interaction.member;
 
     const canClose =
         interaction.user.id === ownerId ||
-        isTicketStaff(member, staffRoleId);
+        isTicketStaff(
+            member,
+            staffRoleId
+        );
 
     if (!canClose) {
         await sendTicketError(
             interaction,
             '❌ Permission Denied',
-            'Only the ticket owner or Ticket Support staff can close this ticket.'
+            'Only the ticket owner or Shadow Wardens can close this ticket.'
         );
 
         return;
@@ -481,7 +548,8 @@ async function handleConfirmClose(
 
     await interaction.deferUpdate();
 
-    const channel = interaction.channel;
+    const channel =
+        interaction.channel;
 
     try {
         await channel.permissionOverwrites.edit(
@@ -499,31 +567,38 @@ async function handleConfirmClose(
         );
 
         await channel.edit({
-            name: createClosedTicketChannelName(
-                channel.name
-            ),
+            name:
+                createClosedTicketChannelName(
+                    channel.name
+                ),
 
-            topic: createTicketTopic(
-                ownerId,
-                'closed'
-            ),
+            topic:
+                createTicketTopic(
+                    ownerId,
+                    'closed'
+                ),
 
             reason:
                 `Ticket closed by ${interaction.user.tag}`
         });
 
         const closedAt =
-            Math.floor(Date.now() / 1000);
+            Math.floor(
+                Date.now() / 1_000
+            );
 
-        const closedEmbed = createWarningEmbed(
-            '🔒 Ticket Closed',
-            `This ticket was closed by ${interaction.user}.\n\n` +
-            `**Closed at:** <t:${closedAt}:F>\n` +
-            'Ticket Support staff can reopen or delete this ticket.'
-        );
+        const closedEmbed =
+            createWarningEmbed(
+                '🔒 Ticket Closed',
+                `This ticket was closed by ${interaction.user}.\n\n` +
+                `**Closed at:** <t:${closedAt}:F>\n` +
+                'Shadow Wardens can reopen or delete this ticket.'
+            );
 
         await channel.send({
-            embeds: [closedEmbed],
+            embeds:
+                [closedEmbed],
+
             components: [
                 createClosedTicketButtons(
                     ownerId,
@@ -539,60 +614,67 @@ async function handleConfirmClose(
                     'The ticket was closed successfully.'
                 )
             ],
+
             components: []
         });
 
-        console.log('======================================');
+        console.log(
+            '======================================'
+        );
+
         console.log(
             `🔒 Ticket Closed: ${channel.name}`
         );
+
         console.log(
-            `👮 Closed By: ${interaction.user.tag}`
+            `🛡️ Closed By: ${interaction.user.tag}`
         );
-        console.log('======================================');
+
+        console.log(
+            '======================================'
+        );
     } catch (error) {
         console.error(
             '❌ Failed to close ticket:'
         );
+
         console.error(error);
 
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
                     '❌ Ticket Close Failed',
-                    'The ticket could not be closed. Please check DaviBot permissions.'
+                    'The ticket could not be closed. Please check Umbra permissions.'
                 )
             ],
+
             components: []
         });
     }
-}
-
-/**
+}/**
  * Reopen a closed ticket.
  *
- * Only Ticket Support staff may reopen tickets.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {string} ownerId
- * @param {string} staffRoleId
- * @returns {Promise<void>}
+ * Only Shadow Wardens may reopen tickets.
  */
 async function handleReopenTicket(
     interaction,
     ownerId,
     staffRoleId
 ) {
-    const ticketData = validateTicketChannel(
-        interaction,
-        ownerId
-    );
+    const ticketData =
+        validateTicketChannel(
+            interaction,
+            ownerId
+        );
 
-    if (!ticketData || ticketData.status !== 'closed') {
+    if (
+        !ticketData ||
+        ticketData.status !== 'closed'
+    ) {
         await sendTicketError(
             interaction,
             '❌ Invalid Ticket',
-            'This channel is not recognized as a closed DaviBot ticket.'
+            'This channel is not recognized as a closed Umbra ticket.'
         );
 
         return;
@@ -607,107 +689,68 @@ async function handleReopenTicket(
         await sendTicketError(
             interaction,
             '❌ Permission Denied',
-            'Only Ticket Support staff can reopen tickets.'
+            'Only Shadow Wardens can reopen tickets.'
         );
 
         return;
     }
 
-    // Reply immediately so Discord stops showing "thinking...".
     await interaction.reply({
         flags: MessageFlags.Ephemeral,
         embeds: [
             createWarningEmbed(
                 '⏳ Reopening Ticket',
-                'Please wait while DaviBot restores this ticket.'
+                'Please wait while Umbra restores this ticket.'
             )
         ]
     });
 
     try {
-        const channel = await interaction.guild.channels.fetch(
-            interaction.channelId
-        );
 
-        if (!channel || channel.type !== ChannelType.GuildText) {
-            await interaction.editReply({
-                embeds: [
-                    createErrorEmbed(
-                        '❌ Channel Missing',
-                        'This ticket channel no longer exists.'
-                    )
-                ]
-            });
-
-            return;
-        }
-
-        const freshTicketData = parseTicketTopic(
-            channel.topic
-        );
-
-        if (
-            !freshTicketData ||
-            freshTicketData.ownerId !== ownerId ||
-            freshTicketData.status !== 'closed'
-        ) {
-            await interaction.editReply({
-                embeds: [
-                    createErrorEmbed(
-                        '❌ Invalid Ticket',
-                        'This ticket is already open or is no longer valid.'
-                    )
-                ]
-            });
-
-            return;
-        }
+        const channel =
+            await interaction.guild.channels.fetch(
+                interaction.channelId
+            );
 
         const reopenedName =
             createReopenedTicketChannelName(
                 channel.name
             );
 
-        // Run independent Discord API requests together.
-        await Promise.all([
-            channel.permissionOverwrites.edit(
-                ownerId,
-                {
-                    ViewChannel: true,
-                    SendMessages: true,
-                    ReadMessageHistory: true,
-                    AttachFiles: true,
-                    EmbedLinks: true,
-                    AddReactions: true
-                },
-                {
-                    reason:
-                        `Ticket reopened by ${interaction.user.tag}`
-                }
-            ),
+        await channel.permissionOverwrites.edit(
+            ownerId,
+            {
+                ViewChannel: true,
+                SendMessages: true,
+                ReadMessageHistory: true,
+                AttachFiles: true,
+                EmbedLinks: true,
+                AddReactions: true
+            }
+        );
 
-            channel.edit({
-                name: reopenedName,
-                topic: createTicketTopic(
+        await channel.edit({
+
+            name: reopenedName,
+
+            topic:
+                createTicketTopic(
                     ownerId,
                     'open'
-                ),
-                reason:
-                    `Ticket reopened by ${interaction.user.tag}`
-            })
-        ]);
+                )
+        });
 
         const reopenedAt =
             Math.floor(Date.now() / 1000);
 
         await channel.send({
+
             content: `<@${ownerId}>`,
 
             embeds: [
                 createSuccessEmbed(
                     '🔓 Ticket Reopened',
-                    `This ticket was reopened by ${interaction.user}.\n\n` +
-                    `**Reopened at:** <t:${reopenedAt}:F>`
+                    `This ticket was reopened by ${interaction.user}.\n\n**Reopened at:** <t:${reopenedAt}:F>`
                 )
             ],
 
@@ -721,86 +764,69 @@ async function handleReopenTicket(
             allowedMentions: {
                 users: [ownerId]
             }
+
         });
 
-        try {
-            await interaction.editReply({
-                embeds: [
-                    createSuccessEmbed(
-                        '✅ Ticket Reopened',
-                        'The ticket was reopened successfully.'
-                    )
-                ]
-            });
-        } catch (responseError) {
-            // The ticket is already reopened; do not treat a stale
-            // ephemeral response as a ticket failure.
-            if (
-                responseError.code !== 10008 &&
-                responseError.code !== 10062
-            ) {
-                throw responseError;
-            }
-        }
+        await interaction.editReply({
 
-        console.log('======================================');
-        console.log(
-            `🔓 Ticket Reopened: ${reopenedName}`
-        );
-        console.log(
-            `👮 Reopened By: ${interaction.user.tag}`
-        );
-        console.log('======================================');
+            embeds: [
+                createSuccessEmbed(
+                    '✅ Ticket Reopened',
+                    'The ticket was reopened successfully.'
+                )
+            ],
+
+            components: []
+
+        });
+
     } catch (error) {
+
         console.error(
             '❌ Failed to reopen ticket:'
         );
+
         console.error(error);
 
-        try {
-            await interaction.editReply({
-                embeds: [
-                    createErrorEmbed(
-                        '❌ Reopen Failed',
-                        'The ticket could not be reopened. Please check DaviBot permissions and try again.'
-                    )
-                ]
-            });
-        } catch (responseError) {
-            if (
-                responseError.code !== 10008 &&
-                responseError.code !== 10062
-            ) {
-                console.error(
-                    '❌ Failed to update reopen response:'
-                );
-                console.error(responseError);
-            }
-        }
+        await interaction.editReply({
+
+            embeds: [
+                createErrorEmbed(
+                    '❌ Reopen Failed',
+                    'The ticket could not be reopened.'
+                )
+            ],
+
+            components: []
+
+        });
+
     }
+
 }
 
 /**
  * Show Delete Ticket confirmation.
  *
- * Only Ticket Support staff may delete tickets.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {string} ownerId
- * @param {string} staffRoleId
- * @returns {Promise<void>}
+ * Only Shadow Wardens may delete tickets.
  */
 async function handleDeleteTicket(
     interaction,
     ownerId,
     staffRoleId
 ) {
-    const ticketData = validateTicketChannel(
-        interaction,
-        ownerId
-    );
 
-    if (!ticketData || ticketData.status !== 'closed') {
+    const ticketData =
+        validateTicketChannel(
+            interaction,
+            ownerId
+        );
+
+    if (
+        !ticketData ||
+        ticketData.status !== 'closed'
+    ) {
+
         await sendTicketError(
             interaction,
             '❌ Invalid Ticket',
@@ -808,6 +834,7 @@ async function handleDeleteTicket(
         );
 
         return;
+
     }
 
     if (
@@ -816,42 +843,47 @@ async function handleDeleteTicket(
             staffRoleId
         )
     ) {
+
         await sendTicketError(
             interaction,
             '❌ Permission Denied',
-            'Only Ticket Support staff can delete tickets.'
+            'Only Shadow Wardens can delete tickets.'
         );
 
         return;
+
     }
 
     await interaction.reply({
+
         flags: MessageFlags.Ephemeral,
 
         embeds: [
+
             createWarningEmbed(
                 '🗑️ Delete Ticket?',
-                'Are you sure you want to permanently delete this ticket?\n\n' +
-                '**This action cannot be undone.**'
+                'Are you sure you want to permanently delete this ticket?\n\n**This action cannot be undone.**'
             )
+
         ],
 
         components: [
+
             createDeleteConfirmationButtons(
                 ownerId,
                 staffRoleId
             )
-        ]
-    });
-}
 
-/**
+        ]
+
+    });
+
+}/**
  * Cancel Delete Ticket confirmation.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
  */
-async function handleCancelDelete(interaction) {
+async function handleCancelDelete(
+    interaction
+) {
     await interaction.update({
         embeds: [
             createSuccessEmbed(
@@ -859,6 +891,7 @@ async function handleCancelDelete(interaction) {
                 'The ticket was not deleted.'
             )
         ],
+
         components: []
     });
 }
@@ -866,22 +899,23 @@ async function handleCancelDelete(interaction) {
 /**
  * Permanently delete a closed ticket.
  *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {string} ownerId
- * @param {string} staffRoleId
- * @returns {Promise<void>}
+ * Only Shadow Wardens may confirm deletion.
  */
 async function handleConfirmDelete(
     interaction,
     ownerId,
     staffRoleId
 ) {
-    const ticketData = validateTicketChannel(
-        interaction,
-        ownerId
-    );
+    const ticketData =
+        validateTicketChannel(
+            interaction,
+            ownerId
+        );
 
-    if (!ticketData || ticketData.status !== 'closed') {
+    if (
+        !ticketData ||
+        ticketData.status !== 'closed'
+    ) {
         await sendTicketError(
             interaction,
             '❌ Invalid Ticket',
@@ -900,7 +934,7 @@ async function handleConfirmDelete(
         await sendTicketError(
             interaction,
             '❌ Permission Denied',
-            'Only Ticket Support staff can delete tickets.'
+            'Only Shadow Wardens can delete tickets.'
         );
 
         return;
@@ -913,48 +947,79 @@ async function handleConfirmDelete(
                 'This ticket will be permanently deleted in 5 seconds.'
             )
         ],
+
         components: []
     });
 
-    const channel = interaction.channel;
-    const channelName = channel.name;
-    const deletedBy = interaction.user.tag;
+    const channel =
+        interaction.channel;
 
-    setTimeout(async () => {
-        try {
-            await channel.delete(
-                `Ticket deleted by ${deletedBy}`
-            );
+    const channelName =
+        channel.name;
 
-            console.log('======================================');
-            console.log(
-                `🗑️ Ticket Deleted: ${channelName}`
-            );
-            console.log(
-                `👮 Deleted By: ${deletedBy}`
-            );
-            console.log('======================================');
-        } catch (error) {
-            console.error(
-                '❌ Failed to delete ticket:'
-            );
-            console.error(error);
-        }
-    }, 5000);
+    const deletedBy =
+        interaction.user.tag;
+
+    const deleteTimer =
+        setTimeout(
+            async () => {
+                try {
+                    await channel.delete(
+                        `Ticket deleted by ${deletedBy}`
+                    );
+
+                    console.log(
+                        '======================================'
+                    );
+
+                    console.log(
+                        `🗑️ Ticket Deleted: ${channelName}`
+                    );
+
+                    console.log(
+                        `🛡️ Deleted By: ${deletedBy}`
+                    );
+
+                    console.log(
+                        '======================================'
+                    );
+                } catch (error) {
+                    console.error(
+                        '❌ Failed to delete ticket:'
+                    );
+
+                    console.error(error);
+                }
+            },
+
+            5_000
+        );
+
+    if (
+        typeof deleteTimer.unref ===
+        'function'
+    ) {
+        deleteTimer.unref();
+    }
 }
 
 module.exports = {
-    name: Events.InteractionCreate,
-    once: false,
+    name:
+        Events.InteractionCreate,
+
+    once:
+        false,
 
     /**
-     * Handle DaviBot ticket button interactions.
+     * Handle Umbra ticket button interactions.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
      */
     async execute(interaction) {
-        if (!interaction.isButton()) {
+        if (
+            !interaction.isButton()
+        ) {
             return;
         }
 
@@ -968,11 +1033,18 @@ module.exports = {
 
         try {
             const customIdParts =
-                interaction.customId.split(':');
+                interaction.customId.split(
+                    ':'
+                );
 
-            const action = customIdParts[1];
-            const ownerId = customIdParts[2];
-            const staffRoleId = customIdParts[3];
+            const action =
+                customIdParts[1];
+
+            const ownerId =
+                customIdParts[2];
+
+            const staffRoleId =
+                customIdParts[3];
 
             switch (action) {
                 case 'create': {
@@ -1052,8 +1124,9 @@ module.exports = {
             }
         } catch (error) {
             console.error(
-                '❌ Ticket interaction error:'
+                '❌ Umbra ticket interaction error:'
             );
+
             console.error(error);
 
             try {
@@ -1066,7 +1139,10 @@ module.exports = {
                 console.error(
                     '❌ Failed to send ticket interaction error response:'
                 );
-                console.error(responseError);
+
+                console.error(
+                    responseError
+                );
             }
         }
     }
