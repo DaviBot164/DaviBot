@@ -25,6 +25,10 @@ const {
     publishTicketGuide
 } = require('../utils/setup/publishTicketGuide');
 
+const {
+    publishFAQ
+} = require('../utils/setup/publishFAQ');
+
 /**
  * Safely send an ephemeral setup error.
  *
@@ -188,10 +192,8 @@ module.exports = {
                     break;
 
                 case 'faq':
-                    await showComingSoon(
-                        interaction,
-                        '❓',
-                        'Frequently Asked Questions'
+                    await publishFAQ(
+                        interaction
                     );
                     break;
 
