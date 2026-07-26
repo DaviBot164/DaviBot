@@ -13,6 +13,92 @@ const {
 const DECREES_CHANNEL_ID =
     '1528401988272914463';
 
+/**
+ * Get announcement design information.
+ *
+ * @param {string} type
+ * @returns {{
+ *     emoji: string,
+ *     label: string,
+ *     authorityText: string
+ * }}
+ */
+function getAnnouncementType(type) {
+    switch (type) {
+        case 'server-update':
+            return {
+                emoji: '📢',
+                label: 'Server Update',
+                authorityText:
+                    'An official update from the Crimson Eclipse Order.'
+            };
+
+        case 'event':
+            return {
+                emoji: '🎉',
+                label: 'Community Event',
+                authorityText:
+                    'An official Crimson Eclipse community event.'
+            };
+
+        case 'giveaway':
+            return {
+                emoji: '🎁',
+                label: 'Giveaway',
+                authorityText:
+                    'An official giveaway hosted within Crimson Eclipse.'
+            };
+
+        case 'maintenance':
+            return {
+                emoji: '🛠️',
+                label: 'Maintenance Notice',
+                authorityText:
+                    'An official maintenance notice from the Crimson Eclipse Order.'
+            };
+
+        case 'important':
+            return {
+                emoji: '⚠️',
+                label: 'Important Notice',
+                authorityText:
+                    'An important notice requiring the attention of every Soul.'
+            };
+
+        default:
+            return {
+                emoji: '🌑',
+                label: 'Official Decree',
+                authorityText:
+                    'An official decree issued under the authority of Crimson Eclipse.'
+            };
+    }
+}
+
+/**
+ * Validate an optional image URL.
+ *
+ * @param {string|null} imageURL
+ * @returns {boolean}
+ */
+function isValidImageURL(imageURL) {
+    if (!imageURL) {
+        return true;
+    }
+
+    try {
+        const parsedURL =
+            new URL(imageURL);
+
+        return (
+            parsedURL.protocol === 'http:' ||
+            parsedURL.protocol === 'https:'
+        );
+    } catch {
+        return false;
+    }
+}
+
 module.exports = {
     category: 'information',
 
@@ -23,12 +109,46 @@ module.exports = {
         )
         .addStringOption(option =>
             option
+                .setName('type')
+                .setDescription(
+                    'Select the announcement type'
+                )
+                .setRequired(true)
+                .addChoices(
+                    {
+                        name: '📢 Server Update',
+                        value: 'server-update'
+                    },
+                    {
+                        name: '🎉 Event',
+                        value: 'event'
+                    },
+                    {
+                        name: '🎁 Giveaway',
+                        value: 'giveaway'
+                    },
+                    {
+                        name: '🛠️ Maintenance',
+                        value: 'maintenance'
+                    },
+                    {
+                        name: '⚠️ Important Notice',
+                        value: 'important'
+                    },
+                    {
+                        name: '🌑 General Decree',
+                        value: 'general'
+                    }
+                )
+        )
+        .addStringOption(option =>
+            option
                 .setName('title')
                 .setDescription(
                     'The title of the announcement'
                 )
                 .setRequired(true)
-                .setMaxLength(256)
+                .setMaxLength(200)
         )
         .addStringOption(option =>
             option
@@ -37,13 +157,13 @@ module.exports = {
                     'The announcement message'
                 )
                 .setRequired(true)
-                .setMaxLength(4000)
+                .setMaxLength(3500)
         )
         .addStringOption(option =>
             option
                 .setName('image')
                 .setDescription(
-                    'Optional image URL for the announcement'
+                    'Optional image URL'
                 )
                 .setRequired(false)
         )
@@ -51,7 +171,7 @@ module.exports = {
             option
                 .setName('mention_everyone')
                 .setDescription(
-                    'Mention everyone when publishing the announcement'
+                    'Mention everyone when publishing'
                 )
                 .setRequired(false)
         )
@@ -103,6 +223,12 @@ module.exports = {
                 return;
             }
 
+            const announcementType =
+                interaction.options.getString(
+                    'type',
+                    true
+                );
+
             const title =
                 interaction.options.getString(
                     'title',
@@ -125,6 +251,28 @@ module.exports = {
                     'mention_everyone'
                 ) ??
                 false;
+
+            if (
+                !isValidImageURL(
+                    imageURL
+                )
+            ) {
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Invalid Image URL',
+                            'The image must use a valid `http://` or `https://` URL.'
+                        )
+                    ]
+                });
+
+                return;
+            }
+
+            const typeData =
+                getAnnouncementType(
+                    announcementType
+                );
 
             const decreesChannel =
                 await interaction.guild.channels.fetch(
@@ -174,9 +322,7 @@ module.exports = {
                 PermissionFlagsBits.EmbedLinks
             ];
 
-            if (
-                mentionEveryone
-            ) {
+            if (mentionEveryone) {
                 requiredPermissions.push(
                     PermissionFlagsBits.MentionEveryone
                 );
@@ -201,42 +347,35 @@ module.exports = {
                 return;
             }
 
-            if (imageURL) {
-                try {
-                    new URL(
-                        imageURL
-                    );
-                } catch {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Invalid Image URL',
-                                'The provided image must be a valid URL beginning with `http://` or `https://`.'
-                            )
-                        ]
-                    });
-
-                    return;
-                }
-            }
+            const issuedTimestamp =
+                Math.floor(
+                    Date.now() / 1000
+                );
 
             const announcementEmbed =
                 createEmbed({
                     title:
-                        `📢 ${title}`,
+                        `${typeData.emoji} ${title}`,
 
                     description:
                         [
+                            `### ${typeData.emoji} ${typeData.label}`,
+                            '',
                             message,
                             '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
                             `**Issued by:** ${interaction.user}`,
-                            `**Issued:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                            `**Issued at:** <t:${issuedTimestamp}:F>`,
+                            `-# <t:${issuedTimestamp}:R>`
                         ].join('\n'),
 
                     thumbnail:
                         interaction.guild.iconURL({
+                            size: 512,
+                            forceStatic: false
+                        }) ??
+                        interaction.client.user.displayAvatarURL({
                             size: 512,
                             forceStatic: false
                         }),
@@ -244,10 +383,10 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '🌑 Official Decree',
+                                '🌑 Crimson Eclipse Authority',
 
                             value:
-                                'This announcement was issued under the authority of the Crimson Eclipse Order.',
+                                typeData.authorityText,
 
                             inline:
                                 false
@@ -268,7 +407,7 @@ module.exports = {
 
             announcementEmbed.setFooter({
                 text:
-                    '🌑 Crimson Eclipse • Official Decree',
+                    `${typeData.emoji} Crimson Eclipse • ${typeData.label}`,
 
                 iconURL:
                     interaction.guild.iconURL({
@@ -310,7 +449,7 @@ module.exports = {
                 embeds: [
                     createSuccessEmbed(
                         '✅ Decree Published',
-                        `Umbra successfully published the announcement in ${decreesChannel}.`
+                        `${typeData.emoji} **${typeData.label}** was successfully published in ${decreesChannel}.`
                     )
                 ]
             });
@@ -320,7 +459,7 @@ module.exports = {
             );
 
             console.log(
-                '📢 Official Decree Published'
+                `${typeData.emoji} ${typeData.label} Published`
             );
 
             console.log(
@@ -337,6 +476,10 @@ module.exports = {
 
             console.log(
                 `🏰 Server: ${interaction.guild.name}`
+            );
+
+            console.log(
+                `📣 Mention Everyone: ${mentionEveryone}`
             );
 
             console.log(
@@ -359,7 +502,9 @@ module.exports = {
                 await interaction
                     .editReply({
                         embeds:
-                            [errorEmbed]
+                            [errorEmbed],
+
+                        components: []
                     })
                     .catch(
                         () => null
