@@ -2,10 +2,8 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
-const embedConfig = require('../config/embed');
-
 /**
- * Create the Seraphiel welcome embed.
+ * Create the Umbra welcome embed.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {EmbedBuilder}
@@ -35,27 +33,22 @@ function createWelcomeEmbed(member) {
         Math.floor(Date.now() / 1000);
 
     return new EmbedBuilder()
-        /*
-         * Seraphiel ice-blue theme.
-         */
-        .setColor('#6EC6FF')
+        .setColor('#8B0000')
 
         .setAuthor({
             name: guild.name,
             iconURL: serverIcon
         })
 
-        .setTitle(
-            '🐉 Seraphiel Welcomes a New Traveler'
-        )
+        .setTitle('🌑 A New Soul Has Arrived')
 
         .setDescription(
             [
-                `Welcome to **${guild.name}**, ${member}!`,
+                `Umbra welcomes ${member} to **Crimson Eclipse**.`,
                 '',
-                'The Guardian Dragon watches over this realm.',
-                'Respect the rules, meet the community,',
-                'and begin your journey.',
+                'May your strength guide your path beneath the crimson moon.',
+                '',
+                '**Complete verification to enter the Order.**',
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━'
             ].join('\n')
@@ -63,30 +56,28 @@ function createWelcomeEmbed(member) {
 
         .addFields(
             {
-                name: '📜 Server Guide',
+                name: '📜 Your First Steps',
                 value: [
-                    '• Read the server rules',
                     '• Complete verification',
-                    '• Choose your roles',
+                    '• Read the Sacred Laws',
                     '• Explore the community'
                 ].join('\n'),
                 inline: true
             },
             {
-                name: '⚔️ Your Journey',
+                name: '⚔️ The Order',
                 value: [
-                    '• Join server events',
-                    '• Meet other members',
-                    '• Rise through the ranks',
-                    '• Build your legacy'
+                    '• Respect every Soul',
+                    '• Support the community',
+                    '• Forge your legacy'
                 ].join('\n'),
                 inline: true
             },
             {
-                name: '👥 Member Information',
+                name: '👤 Soul Information',
                 value: [
-                    `**Member:** ${member}`,
-                    `**Member Number:** #${guild.memberCount}`,
+                    `**Soul:** ${member}`,
+                    `**Soul Number:** #${guild.memberCount}`,
                     `**Joined:** <t:${joinedTimestamp}:R>`
                 ].join('\n'),
                 inline: false
@@ -96,9 +87,7 @@ function createWelcomeEmbed(member) {
         .setThumbnail(memberAvatar)
 
         .setFooter({
-            text:
-                `${embedConfig.footer.text} • ` +
-                'Seraphiel Welcome System',
+            text: 'Umbra • Guardian of Crimson Eclipse',
             iconURL: botAvatar
         })
 
