@@ -260,6 +260,14 @@ module.exports = {
                     forceStatic: false
                 });
 
+            /*
+             * If the Soul has a banner, use it as the large image.
+             * Otherwise, use the Soul's avatar.
+             */
+            const profileImageURL =
+                bannerURL ??
+                avatarURL;
+
             const warningDisplay =
                 formatWarningCount(
                     warningCount
@@ -286,6 +294,11 @@ module.exports = {
                     member
                 );
 
+            const bannerStatus =
+                bannerURL
+                    ? '🌌 Banner Forged'
+                    : '🌑 No Banner Forged';
+
             const embed =
                 createEmbed({
                     title:
@@ -300,6 +313,9 @@ module.exports = {
 
                     thumbnail:
                         avatarURL,
+
+                    image:
+                        profileImageURL,
 
                     fields: [
                         {
@@ -334,6 +350,16 @@ module.exports = {
                             value:
                                 `**Warnings:** ${warningDisplay}\n` +
                                 `**Timeout:** ${getTimeoutStatus(member)}`,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🌌 Soul Banner',
+
+                            value:
+                                bannerStatus,
 
                             inline:
                                 true
@@ -384,11 +410,13 @@ module.exports = {
                     })
             });
 
-            if (bannerURL) {
-                embed.setImage(
-                    bannerURL
-                );
-            }
+            /*
+             * This guarantees that a large image appears even if
+             * the user does not have a Discord banner.
+             */
+            embed.setImage(
+                profileImageURL
+            );
 
             const buttons =
                 new ActionRowBuilder()
@@ -406,6 +434,11 @@ module.exports = {
                             )
                     );
 
+            /*
+             * A Discord link button requires a valid URL.
+             * Therefore, the Banner button is only added
+             * when the user actually has a banner.
+             */
             if (bannerURL) {
                 buttons.addComponents(
                     new ButtonBuilder()
