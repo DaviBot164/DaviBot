@@ -22,6 +22,9 @@ const eventDatabase =
 const giveawayDatabase =
     require('./giveaways');
 
+const levelDatabase =
+    require('./levels');
+
 /**
  * Connect to PostgreSQL and initialize all required tables.
  *
@@ -90,6 +93,10 @@ async function initializeDatabase() {
         );
 
         console.log(
+            '✅ Level database initialized.'
+        );
+
+        console.log(
             '======================================'
         );
 
@@ -126,5 +133,8 @@ module.exports = {
         eventDatabase,
 
     giveaways:
-        giveawayDatabase
+        giveawayDatabase,
+
+    levels:
+        levelDatabase
 };

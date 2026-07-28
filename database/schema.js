@@ -187,23 +187,29 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS event_participants_event_index
-        ON event_participants (event_id, joined_at ASC);
+        ON event_participants (
+            event_id,
+            joined_at ASC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS event_participants_guild_user_index
-        ON event_participants (guild_id, user_id);
+        ON event_participants (
+            guild_id,
+            user_id
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS event_participants_joined_at_index
-        ON event_participants (joined_at DESC);
+        ON event_participants (
+            joined_at DESC
+        );
     `);
 
     /*
      * Crimson Eclipse Giveaway System
-     *
-     * Stores every Giveaway created through Umbra.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS giveaways (
@@ -232,34 +238,46 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS giveaways_guild_status_index
-        ON giveaways (guild_id, status);
+        ON giveaways (
+            guild_id,
+            status
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS giveaways_guild_created_at_index
-        ON giveaways (guild_id, created_at DESC);
+        ON giveaways (
+            guild_id,
+            created_at DESC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS giveaways_host_index
-        ON giveaways (guild_id, host_id);
+        ON giveaways (
+            guild_id,
+            host_id
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS giveaways_ends_at_index
-        ON giveaways (status, ends_at ASC);
+        ON giveaways (
+            status,
+            ends_at ASC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS giveaways_message_index
-        ON giveaways (guild_id, message_id);
+        ON giveaways (
+            guild_id,
+            message_id
+        );
     `);
 
     /*
      * Giveaway Participants
-     *
-     * Prevents the same Soul from entering
-     * the same Giveaway more than once.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS giveaway_participants (
@@ -269,7 +287,10 @@ async function initializeSchema() {
 
             joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-            PRIMARY KEY (giveaway_id, user_id),
+            PRIMARY KEY (
+                giveaway_id,
+                user_id
+            ),
 
             CONSTRAINT giveaway_participants_giveaway_foreign_key
                 FOREIGN KEY (giveaway_id)
@@ -303,8 +324,6 @@ async function initializeSchema() {
 
     /*
      * Giveaway Winners
-     *
-     * Stores the selected winners permanently.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS giveaway_winners (
@@ -314,7 +333,10 @@ async function initializeSchema() {
 
             selected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-            PRIMARY KEY (giveaway_id, user_id),
+            PRIMARY KEY (
+                giveaway_id,
+                user_id
+            ),
 
             CONSTRAINT giveaway_winners_giveaway_foreign_key
                 FOREIGN KEY (giveaway_id)
@@ -336,6 +358,137 @@ async function initializeSchema() {
         ON giveaway_winners (
             guild_id,
             user_id
+        );
+    `);
+
+    /*
+     * Umbra Level System
+     *
+     * Stores each Soul's XP, Level and
+     * message activity separately per server.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS levels (
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            xp BIGINT NOT NULL DEFAULT 0,
+            level INTEGER NOT NULL DEFAULT 0,
+            message_count BIGINT NOT NULL DEFAULT 0,
+
+            last_xp_at TIMESTAMPTZ,
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (
+                guild_id,
+                user_id
+            ),
+
+            CONSTRAINT levels_xp_non_negative
+                CHECK (xp >= 0),
+
+            CONSTRAINT levels_level_non_negative
+                CHECK (level >= 0),
+
+            CONSTRAINT levels_message_count_non_negative
+                CHECK (message_count >= 0)
+        );
+    `);
+
+    /*
+     * Used for the server XP leaderboard.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS levels_guild_xp_index
+        ON levels (
+            guild_id,
+            xp DESC
+        );
+    `);
+
+    /*
+     * Used for sorting Souls by Level and XP.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS levels_guild_level_xp_index
+        ON levels (
+            guild_id,
+            level DESC,
+            xp DESC
+        );
+    `);
+
+    /*
+     * Used for activity statistics.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS levels_guild_message_count_index
+        ON levels (
+            guild_id,
+            message_count DESC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS levels_updated_at_index
+        ON levels (
+            updated_at DESC
+        );
+    `);
+
+    /*
+     * Level Reward Roles
+     *
+     * Stores the roles Umbra should grant
+     * when a Soul reaches a specific Level.
+     *
+     * Multiple roles may be assigned
+     * to the same Level if needed.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS level_rewards (
+            guild_id VARCHAR(32) NOT NULL,
+            level INTEGER NOT NULL,
+            role_id VARCHAR(32) NOT NULL,
+
+            created_by VARCHAR(32) NOT NULL,
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (
+                guild_id,
+                level,
+                role_id
+            ),
+
+            CONSTRAINT level_rewards_level_positive
+                CHECK (level > 0)
+        );
+    `);
+
+    /*
+     * Quickly finds every reward earned
+     * up to the Soul's current Level.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS level_rewards_guild_level_index
+        ON level_rewards (
+            guild_id,
+            level ASC
+        );
+    `);
+
+    /*
+     * Helps locate a reward configuration
+     * by its Discord role.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS level_rewards_guild_role_index
+        ON level_rewards (
+            guild_id,
+            role_id
         );
     `);
 }
