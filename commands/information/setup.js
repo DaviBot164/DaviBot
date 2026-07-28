@@ -84,6 +84,9 @@ module.exports = {
                             '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
+                            '⛩️ **Verification Guide**',
+                            'Publish the official verification instructions.',
+                            '',
                             '📜 **Sacred Laws**',
                             'Publish the official laws of the Order.',
                             '',
@@ -156,6 +159,18 @@ module.exports = {
                     .setMinValues(1)
                     .setMaxValues(1)
                     .addOptions(
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel(
+                                'Verification Guide'
+                            )
+                            .setDescription(
+                                'Publish the official verification instructions'
+                            )
+                            .setEmoji('⛩️')
+                            .setValue(
+                                'verification-guide'
+                            ),
+
                         new StringSelectMenuOptionBuilder()
                             .setLabel(
                                 'Sacred Laws'

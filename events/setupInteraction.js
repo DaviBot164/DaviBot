@@ -30,6 +30,10 @@ const {
 } = require('../utils/setup/publishFAQ');
 
 const {
+    publishVerificationGuide
+} = require('../utils/setup/publishVerificationGuide');
+
+const {
     publishFullSetup
 } = require('../utils/setup/publishFullSetup');
 
@@ -169,6 +173,12 @@ module.exports = {
                 interaction.values[0];
 
             switch (selectedModule) {
+                case 'verification-guide':
+                    await publishVerificationGuide(
+                        interaction
+                    );
+                    break;
+
                 case 'sacred-laws':
                     await publishSacredLaws(
                         interaction
