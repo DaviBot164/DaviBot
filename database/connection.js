@@ -1,12 +1,26 @@
-const { Pool } = require('pg');
+const {
+    Pool
+} = require('pg');
 
+/**
+ * Northflank PostgreSQL connection string.
+ *
+ * The Addon currently exposes:
+ * NF_DAVIBOT_DATABASE_POSTGRES_URI
+ */
 const databaseUrl =
-    process.env.NF_Umbra_DATABASE_POSTGRES_URI ||
+    process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI ||
     process.env.DATABASE_URL;
 
-const isNorthflank = Boolean(
-    process.env.NF_Umbra_DATABASE_POSTGRES_URI
-);
+/**
+ * Detect whether the database connection
+ * comes from the Northflank PostgreSQL Addon.
+ */
+const isNorthflank =
+    Boolean(
+        process.env
+            .NF_DAVIBOT_DATABASE_POSTGRES_URI
+    );
 
 let pool = null;
 
@@ -22,26 +36,43 @@ function getPool() {
 
     if (!pool) {
         pool = new Pool({
-            connectionString: databaseUrl,
+            connectionString:
+                databaseUrl,
 
-            // Northflank PostgreSQL uses TLS.
-            ssl: isNorthflank
-                ? {
-                    rejectUnauthorized: false
-                }
-                : undefined,
+            /*
+             * Northflank PostgreSQL connections
+             * require TLS.
+             */
+            ssl:
+                isNorthflank
+                    ? {
+                        rejectUnauthorized:
+                            false
+                    }
+                    : undefined,
 
-            max: 10,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 10000
+            max:
+                10,
+
+            idleTimeoutMillis:
+                30_000,
+
+            connectionTimeoutMillis:
+                10_000
         });
 
-        pool.on('error', error => {
-            console.error(
-                '❌ Unexpected PostgreSQL pool error:'
-            );
-            console.error(error);
-        });
+        pool.on(
+            'error',
+            error => {
+                console.error(
+                    '❌ Unexpected PostgreSQL pool error:'
+                );
+
+                console.error(
+                    error
+                );
+            }
+        );
     }
 
     return pool;
@@ -54,16 +85,29 @@ function getPool() {
  * @param {Array} params
  * @returns {Promise<import('pg').QueryResult>}
  */
-async function query(text, params = []) {
-    const databasePool = getPool();
+async function query(
+    text,
+    params = []
+) {
+    const databasePool =
+        getPool();
 
     if (!databasePool) {
         throw new Error(
-            'PostgreSQL connection is not configured.'
+            [
+                'PostgreSQL connection is not configured.',
+                '',
+                'Expected one of these environment variables:',
+                'NF_DAVIBOT_DATABASE_POSTGRES_URI',
+                'DATABASE_URL'
+            ].join('\n')
         );
     }
 
-    return databasePool.query(text, params);
+    return databasePool.query(
+        text,
+        params
+    );
 }
 
 /**
@@ -72,16 +116,21 @@ async function query(text, params = []) {
  * @returns {Promise<boolean>}
  */
 async function testConnection() {
-    const databasePool = getPool();
+    const databasePool =
+        getPool();
 
     if (!databasePool) {
         return false;
     }
 
-    const client = await databasePool.connect();
+    const client =
+        await databasePool.connect();
 
     try {
-        await client.query('SELECT NOW()');
+        await client.query(
+            'SELECT NOW();'
+        );
+
         return true;
     } finally {
         client.release();
@@ -99,6 +148,7 @@ async function closeConnection() {
     }
 
     await pool.end();
+
     pool = null;
 }
 
