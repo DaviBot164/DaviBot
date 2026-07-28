@@ -12,6 +12,12 @@ const {
 } = require('../database');
 
 /**
+ * Official Crimson Eclipse Level Up channel.
+ */
+const LEVEL_UP_CHANNEL_ID =
+    '1531777201303978145';
+
+/**
  * Level System configuration.
  */
 const LEVEL_CONFIG = {
@@ -658,7 +664,71 @@ async function synchronizeLevelRewards(
 }
 
 /**
- * Send a Level Up announcement.
+ * Resolve the channel that should receive
+ * Level Up announcements.
+ *
+ * The dedicated Level Up channel is preferred.
+ * The original message channel is used as
+ * a fallback when the configured channel
+ * cannot be found or used.
+ *
+ * @param {import('discord.js').Message} message
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
+ */
+async function getLevelUpChannel(
+    message
+) {
+    const configuredChannel =
+        await message.guild.channels
+            .fetch(
+                LEVEL_UP_CHANNEL_ID
+            )
+            .catch(
+                () => null
+            );
+
+    if (
+        configuredChannel &&
+        configuredChannel.isTextBased()
+    ) {
+        const botMember =
+            message.guild.members.me;
+
+        const permissions =
+            botMember
+                ? configuredChannel
+                    .permissionsFor(
+                        botMember
+                    )
+                : null;
+
+        if (
+            permissions?.has([
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.EmbedLinks
+            ])
+        ) {
+            return configuredChannel;
+        }
+
+        console.warn(
+            `⚠️ Umbra cannot send Level Up messages in #${configuredChannel.name}.`
+        );
+    }
+
+    if (
+        message.channel &&
+        message.channel.isTextBased()
+    ) {
+        return message.channel;
+    }
+
+    return null;
+}
+
+/**
+ * Send a detailed Level Up announcement.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} levelResult
@@ -673,9 +743,16 @@ async function sendLevelUpMessage(
     levelResult,
     rewardResult
 ) {
-    if (
-        !message.channel.isTextBased()
-    ) {
+    const targetChannel =
+        await getLevelUpChannel(
+            message
+        );
+
+    if (!targetChannel) {
+        console.warn(
+            '⚠️ No valid channel was found for the Level Up announcement.'
+        );
+
         return;
     }
 
@@ -687,14 +764,40 @@ async function sendLevelUpMessage(
             progress.progressPercent
         );
 
+    const serverRank =
+        await levelDatabase
+            .getUserRank(
+                message.guild.id,
+                message.author.id
+            )
+            .catch(
+                () => null
+            );
+
+    const xpUntilNextLevel =
+        Math.max(
+            0,
+            progress.nextLevelXp -
+            levelResult.data.xp
+        );
+
     const descriptionLines = [
-        `${message.author}, your strength has grown beneath the crimson moon.`,
+        `Congratulations ${message.author}!`,
         '',
-        `🌑 **New Level:** \`${levelResult.newLevel}\``,
-        `⭐ **Total XP:** \`${levelResult.data.xp.toLocaleString('en-US')}\``,
+        'Your strength has grown beneath the crimson moon.',
         '',
-        `\`${progressBar}\``,
-        `Next Level Progress: **${progress.progressPercent}%**`
+        '━━━━━━━━━━━━━━━━━━━━',
+        '',
+        '🌑 **New Level**',
+        `\`${levelResult.newLevel}\``,
+        '',
+        '⭐ **Total XP**',
+        `\`${levelResult.data.xp.toLocaleString('en-US')}\``,
+        '',
+        '🏆 **Server Rank**',
+        serverRank
+            ? `\`#${serverRank}\``
+            : '`Unranked`'
     ];
 
     if (
@@ -705,7 +808,7 @@ async function sendLevelUpMessage(
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '',
-            '🎖️ **Progression Rank Unlocked**',
+            '🎖️ **New Progression Rank**',
             rewardResult.grantedRoles
                 .map(
                     role =>
@@ -721,9 +824,30 @@ async function sendLevelUpMessage(
     ) {
         descriptionLines.push(
             '',
-            `🌘 Previous progression rank${rewardResult.removedRoles.length > 1 ? 's were' : ' was'} replaced.`
+            '🌘 **Previous Rank Replaced**',
+            rewardResult.removedRoles
+                .map(
+                    role =>
+                        `~~${role.name}~~`
+                )
+                .join('\n')
         );
     }
+
+    descriptionLines.push(
+        '',
+        '━━━━━━━━━━━━━━━━━━━━',
+        '',
+        `📈 **Progress to Level ${levelResult.newLevel + 1}**`,
+        `\`${progressBar}\` **${progress.progressPercent}%**`,
+        '',
+        `⭐ \`${progress.progressXp.toLocaleString('en-US')} / ${progress.requiredForNextLevel.toLocaleString('en-US')} XP\``,
+        `🌙 \`${xpUntilNextLevel.toLocaleString('en-US')} XP\` remaining`,
+        '',
+        '━━━━━━━━━━━━━━━━━━━━',
+        '',
+        '*Continue your ascent and conquer the path beneath the crimson moon.*'
+    );
 
     const levelUpEmbed =
         createEmbed({
@@ -742,7 +866,7 @@ async function sendLevelUpMessage(
                             'png',
 
                         size:
-                            256,
+                            512,
 
                         forceStatic:
                             false
@@ -750,7 +874,7 @@ async function sendLevelUpMessage(
         });
 
     try {
-        await message.channel.send({
+        await targetChannel.send({
             content:
                 `${message.author}`,
 
@@ -874,6 +998,16 @@ async function processLevelMessage(
         rewardResult
     );
 
+    const serverRank =
+        await levelDatabase
+            .getUserRank(
+                message.guild.id,
+                message.author.id
+            )
+            .catch(
+                () => null
+            );
+
     console.log(
         '======================================'
     );
@@ -892,6 +1026,12 @@ async function processLevelMessage(
 
     console.log(
         `🏰 Server: ${message.guild.name}`
+    );
+
+    console.log(
+        `🏆 Server Rank: ${
+            serverRank || 'Unknown'
+        }`
     );
 
     console.log(
