@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 
 /**
- * Build the Event creation modal.
+ * Build the Crimson Eclipse Event creation modal.
  *
  * @param {string} userId
  * @returns {ModalBuilder}
@@ -20,7 +20,7 @@ function buildEventModal(
                 `umbra:event:create:${userId}`
             )
             .setTitle(
-                'Create Crimson Eclipse Event'
+                '🌑 Create Event'
             );
 
     const titleInput =
@@ -32,31 +32,13 @@ function buildEventModal(
                 'Event Title'
             )
             .setPlaceholder(
-                'Example: PvP Tournament'
+                'Example: Crimson PvP Tournament'
             )
             .setStyle(
                 TextInputStyle.Short
             )
             .setMinLength(3)
             .setMaxLength(100)
-            .setRequired(true);
-
-    const descriptionInput =
-        new TextInputBuilder()
-            .setCustomId(
-                'event-description'
-            )
-            .setLabel(
-                'Event Description'
-            )
-            .setPlaceholder(
-                'Explain what will happen during the event.'
-            )
-            .setStyle(
-                TextInputStyle.Paragraph
-            )
-            .setMinLength(5)
-            .setMaxLength(1000)
             .setRequired(true);
 
     const timeInput =
@@ -77,24 +59,6 @@ function buildEventModal(
             .setMaxLength(100)
             .setRequired(true);
 
-    const rewardInput =
-        new TextInputBuilder()
-            .setCustomId(
-                'event-reward'
-            )
-            .setLabel(
-                'Event Reward'
-            )
-            .setPlaceholder(
-                'Example: Eclipse Champion role'
-            )
-            .setStyle(
-                TextInputStyle.Short
-            )
-            .setMinLength(2)
-            .setMaxLength(200)
-            .setRequired(true);
-
     const maxPlayersInput =
         new TextInputBuilder()
             .setCustomId(
@@ -113,15 +77,46 @@ function buildEventModal(
             .setMaxLength(4)
             .setRequired(true);
 
+    const rewardInput =
+        new TextInputBuilder()
+            .setCustomId(
+                'event-reward'
+            )
+            .setLabel(
+                'Event Reward'
+            )
+            .setPlaceholder(
+                'Example: Eclipse Champion role'
+            )
+            .setStyle(
+                TextInputStyle.Short
+            )
+            .setMinLength(2)
+            .setMaxLength(200)
+            .setRequired(true);
+
+    const descriptionInput =
+        new TextInputBuilder()
+            .setCustomId(
+                'event-description'
+            )
+            .setLabel(
+                'Event Description'
+            )
+            .setPlaceholder(
+                'Describe the challenge, rules and important details.'
+            )
+            .setStyle(
+                TextInputStyle.Paragraph
+            )
+            .setMinLength(5)
+            .setMaxLength(1000)
+            .setRequired(true);
+
     modal.addComponents(
         new ActionRowBuilder()
             .addComponents(
                 titleInput
-            ),
-
-        new ActionRowBuilder()
-            .addComponents(
-                descriptionInput
             ),
 
         new ActionRowBuilder()
@@ -131,12 +126,17 @@ function buildEventModal(
 
         new ActionRowBuilder()
             .addComponents(
+                maxPlayersInput
+            ),
+
+        new ActionRowBuilder()
+            .addComponents(
                 rewardInput
             ),
 
         new ActionRowBuilder()
             .addComponents(
-                maxPlayersInput
+                descriptionInput
             )
     );
 

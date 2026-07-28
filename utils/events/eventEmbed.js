@@ -9,7 +9,7 @@ const {
 } = require('../embeds');
 
 /**
- * Build the main Umbra event embed.
+ * Build the main Umbra Event embed.
  *
  * @param {Object} eventData
  * @param {import('discord.js').User} host
@@ -69,13 +69,23 @@ function buildEventEmbed(
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                `🕒 **Time:** ${eventData.time}`,
-                `🎁 **Reward:** ${eventData.reward}`,
+                `🕒 **Event Time**`,
+                `${eventData.time}`,
+                '',
+                `👥 **Players**`,
+                `\`${participantDisplay}\``,
+                '',
+                `🎁 **Reward**`,
+                `${eventData.reward}`,
+                '',
+                '━━━━━━━━━━━━━━━━━━━━',
+                '',
                 `⚔️ **Host:** ${host}`,
-                `👥 **Players:** \`${participantDisplay}\``,
                 `${currentStatus.icon} **Status:** ${currentStatus.label}`,
                 '',
                 `🆔 **Event ID:** \`${eventData.id}\``,
+                '',
+                '━━━━━━━━━━━━━━━━━━━━',
                 '',
                 '*Stand together beneath the crimson moon.*'
             ].join('\n'),
@@ -195,8 +205,21 @@ function buildParticipantsEmbed(
             (
                 userId,
                 index
-            ) =>
-                `${index + 1}. <@${userId}>`
+            ) => {
+                let medal = '▫️';
+
+                if (index === 0) {
+                    medal = '🥇';
+                } else if (index === 1) {
+                    medal = '🥈';
+                } else if (index === 2) {
+                    medal = '🥉';
+                }
+
+                return (
+                    `${medal} ${index + 1}. <@${userId}>`
+                );
+            }
         );
 
     if (
@@ -225,15 +248,25 @@ function buildParticipantsEmbed(
             ? `${participantIds.length} / ${maxPlayers}`
             : `${participantIds.length}`;
 
+    const statusConfig = {
+        Active: '🟢 Open',
+        Ended: '🏁 Finished',
+        Cancelled: '🔴 Cancelled'
+    };
+
+    const status =
+        statusConfig[eventData.status] ||
+        eventData.status;
+
     return createEmbed({
         title:
             `👥 Participants • ${eventData.title}`,
 
         description:
             [
+                `📜 **Players:** \`${participantDisplay}\``,
+                `📍 **Status:** ${status}`,
                 `🆔 **Event ID:** \`${eventData.id}\``,
-                `📜 **Total Players:** \`${participantDisplay}\``,
-                `📍 **Status:** ${eventData.status}`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
