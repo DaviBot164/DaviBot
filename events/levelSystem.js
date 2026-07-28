@@ -256,7 +256,10 @@ function isRecentDuplicate(
 }
 
 /**
- * Create a visual XP progress bar.
+ * Create Umbra's visual XP progress bar.
+ *
+ * Example:
+ * ▰▰▰▰▱▱▱▱▱▱
  *
  * @param {number} percentage
  * @param {number} length
@@ -289,8 +292,24 @@ function createProgressBar(
         filledBlocks;
 
     return (
-        '█'.repeat(filledBlocks) +
-        '░'.repeat(emptyBlocks)
+        '▰'.repeat(filledBlocks) +
+        '▱'.repeat(emptyBlocks)
+    );
+}
+
+/**
+ * Format a number using separators.
+ *
+ * @param {number} value
+ * @returns {string}
+ */
+function formatNumber(
+    value
+) {
+    return Number(
+        value || 0
+    ).toLocaleString(
+        'en-US'
     );
 }
 
@@ -330,12 +349,11 @@ function canManageRewardRole(
  * Level reward the Soul has earned.
  *
  * Lower progression roles are removed.
- * Unrelated roles such as Staff, Verified,
- * cosmetic and game roles remain untouched.
+ * Staff, verification, cosmetic and game
+ * roles remain untouched.
  *
  * If several roles are configured for the
- * same highest Level, all of those roles
- * will remain assigned.
+ * same highest Level, all of them remain.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} level
@@ -726,9 +744,8 @@ async function getLevelUpChannel(
 
     return null;
 }
-
 /**
- * Send a detailed Level Up announcement.
+ * Send a polished Level Up announcement.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} levelResult
@@ -782,22 +799,20 @@ async function sendLevelUpMessage(
         );
 
     const descriptionLines = [
-        `Congratulations ${message.author}!`,
+        `Congratulations, ${message.author}!`,
         '',
-        'Your strength has grown beneath the crimson moon.',
+        'Your journey beneath the crimson moon continues.',
+        'A new milestone has been reached.',
         '',
         '━━━━━━━━━━━━━━━━━━━━',
         '',
-        '🌑 **New Level**',
-        `\`${levelResult.newLevel}\``,
-        '',
-        '⭐ **Total XP**',
-        `\`${levelResult.data.xp.toLocaleString('en-US')}\``,
-        '',
-        '🏆 **Server Rank**',
-        serverRank
-            ? `\`#${serverRank}\``
-            : '`Unranked`'
+        `🌑 **Level:** \`${levelResult.newLevel}\``,
+        `⭐ **Total XP:** \`${formatNumber(levelResult.data.xp)}\``,
+        `🏆 **Server Rank:** ${
+            serverRank
+                ? `\`#${serverRank}\``
+                : '`Unranked`'
+        }`
     ];
 
     if (
@@ -808,7 +823,8 @@ async function sendLevelUpMessage(
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '',
-            '🎖️ **New Progression Rank**',
+            '🎖️ **New Rank Unlocked**',
+            '',
             rewardResult.grantedRoles
                 .map(
                     role =>
@@ -838,11 +854,12 @@ async function sendLevelUpMessage(
         '',
         '━━━━━━━━━━━━━━━━━━━━',
         '',
-        `📈 **Progress to Level ${levelResult.newLevel + 1}**`,
+        `📈 **Journey to Level ${levelResult.newLevel + 1}**`,
+        '',
         `\`${progressBar}\` **${progress.progressPercent}%**`,
         '',
-        `⭐ \`${progress.progressXp.toLocaleString('en-US')} / ${progress.requiredForNextLevel.toLocaleString('en-US')} XP\``,
-        `🌙 \`${xpUntilNextLevel.toLocaleString('en-US')} XP\` remaining`,
+        `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
+        `🌙 **Remaining XP:** \`${formatNumber(xpUntilNextLevel)}\``,
         '',
         '━━━━━━━━━━━━━━━━━━━━',
         '',
