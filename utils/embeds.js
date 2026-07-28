@@ -18,6 +18,9 @@ const embedConfig =
  * @param {string} [options.color]
  * @param {Array} [options.fields]
  * @param {string} [options.thumbnail]
+ * @param {string} [options.image]
+ * @param {Object} [options.author]
+ * @param {Object} [options.footer]
  * @returns {EmbedBuilder}
  */
 function createEmbed({
@@ -25,29 +28,53 @@ function createEmbed({
     description = null,
     color = embedConfig.colors.primary,
     fields = [],
-    thumbnail = null
+    thumbnail = null,
+    image = null,
+    author = null,
+    footer = null
 }) {
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTitle(title)
-        .setFooter({
-            text: embedConfig.footer.text
-        })
+        .setFooter(
+            footer || {
+                text:
+                    embedConfig.footer.text
+            }
+        )
         .setTimestamp();
 
     if (description) {
-        embed.setDescription(description);
+        embed.setDescription(
+            description
+        );
     }
 
     if (
         Array.isArray(fields) &&
         fields.length > 0
     ) {
-        embed.addFields(fields);
+        embed.addFields(
+            fields
+        );
     }
 
     if (thumbnail) {
-        embed.setThumbnail(thumbnail);
+        embed.setThumbnail(
+            thumbnail
+        );
+    }
+
+    if (image) {
+        embed.setImage(
+            image
+        );
+    }
+
+    if (author) {
+        embed.setAuthor(
+            author
+        );
     }
 
     return embed;
@@ -67,7 +94,8 @@ function createSuccessEmbed(
     return createEmbed({
         title,
         description,
-        color: embedConfig.colors.success
+        color:
+            embedConfig.colors.success
     });
 }
 
@@ -85,7 +113,8 @@ function createErrorEmbed(
     return createEmbed({
         title,
         description,
-        color: embedConfig.colors.error
+        color:
+            embedConfig.colors.error
     });
 }
 
@@ -103,7 +132,8 @@ function createWarningEmbed(
     return createEmbed({
         title,
         description,
-        color: embedConfig.colors.warning
+        color:
+            embedConfig.colors.warning
     });
 }
 
@@ -128,38 +158,55 @@ function createModerationEmbed({
     reason,
     duration = null
 }) {
-    const executedAt = Math.floor(
-        Date.now() / 1_000
-    );
+    const executedAt =
+        Math.floor(
+            Date.now() / 1_000
+        );
 
     const fields = [
         {
-            name: '🌑 Soul',
+            name:
+                '🌑 Soul',
+
             value:
                 `${user.tag}\n` +
                 `\`${user.id}\``,
-            inline: true
+
+            inline:
+                true
         },
         {
-            name: '🛡️ Shadow Warden',
+            name:
+                '🛡️ Shadow Warden',
+
             value:
                 `${moderator.tag}\n` +
                 `\`${moderator.id}\``,
-            inline: true
+
+            inline:
+                true
         },
         {
-            name: '📜 Reason',
+            name:
+                '📜 Reason',
+
             value:
                 reason ||
                 'No reason was provided.',
-            inline: false
+
+            inline:
+                false
         },
         {
-            name: '🕒 Executed At',
+            name:
+                '🕒 Executed At',
+
             value:
                 `<t:${executedAt}:F>\n` +
                 `(<t:${executedAt}:R>)`,
-            inline: false
+
+            inline:
+                false
         }
     ];
 
@@ -168,22 +215,35 @@ function createModerationEmbed({
             2,
             0,
             {
-                name: '⏳ Duration',
-                value: duration,
-                inline: true
+                name:
+                    '⏳ Duration',
+
+                value:
+                    duration,
+
+                inline:
+                    true
             }
         );
     }
 
     return createEmbed({
-        title: action,
+        title:
+            action,
+
         color:
             embedConfig.colors.moderation,
 
         thumbnail:
             user.displayAvatarURL({
-                extension: 'png',
-                size: 256
+                extension:
+                    'png',
+
+                size:
+                    256,
+
+                forceStatic:
+                    false
             }),
 
         fields
@@ -209,12 +269,14 @@ function createChannelModerationEmbed({
     moderator,
     reason
 }) {
-    const executedAt = Math.floor(
-        Date.now() / 1_000
-    );
+    const executedAt =
+        Math.floor(
+            Date.now() / 1_000
+        );
 
     return createEmbed({
-        title: action,
+        title:
+            action,
 
         color:
             embedConfig.colors.moderation,
@@ -228,39 +290,59 @@ function createChannelModerationEmbed({
 
         fields: [
             {
-                name: '🌑 Channel',
+                name:
+                    '🌑 Channel',
+
                 value:
                     `${channel}\n` +
                     `\`${channel.id}\``,
-                inline: true
+
+                inline:
+                    true
             },
             {
-                name: '🛡️ Shadow Warden',
+                name:
+                    '🛡️ Shadow Warden',
+
                 value:
                     `${moderator}\n` +
                     `\`${moderator.id}\``,
-                inline: true
+
+                inline:
+                    true
             },
             {
-                name: '🏰 Order',
+                name:
+                    '🏰 Order',
+
                 value:
                     `${channel.guild.name}\n` +
                     `\`${channel.guild.id}\``,
-                inline: false
+
+                inline:
+                    false
             },
             {
-                name: '📜 Reason',
+                name:
+                    '📜 Reason',
+
                 value:
                     reason ||
                     'No reason was provided.',
-                inline: false
+
+                inline:
+                    false
             },
             {
-                name: '🕒 Executed At',
+                name:
+                    '🕒 Executed At',
+
                 value:
                     `<t:${executedAt}:F>\n` +
                     `(<t:${executedAt}:R>)`,
-                inline: false
+
+                inline:
+                    false
             }
         ]
     });

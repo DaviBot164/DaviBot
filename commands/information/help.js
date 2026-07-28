@@ -15,16 +15,21 @@ const {
  */
 const commandCategories = {
     general: {
-        title: '🌑 General',
+        title:
+            '🌑 General',
+
         commands: [
             'help',
             'ping',
+            'setup',
             'testwelcome'
         ]
     },
 
     information: {
-        title: '📜 Soul Records',
+        title:
+            '📜 Soul Records',
+
         commands: [
             'avatar',
             'profile',
@@ -34,9 +39,12 @@ const commandCategories = {
     },
 
     moderation: {
-        title: '🛡️ Shadow Wardens',
+        title:
+            '🛡️ Shadow Wardens',
+
         commands: [
             'ban',
+            'cases',
             'clear',
             'kick',
             'lock',
@@ -51,7 +59,9 @@ const commandCategories = {
     },
 
     tickets: {
-        title: '🎫 Order Support',
+        title:
+            '🎫 Order Support',
+
         commands: [
             'ticket',
             'ticketpanel',
@@ -63,19 +73,17 @@ const commandCategories = {
 /**
  * Determine which category a command belongs to.
  *
- * If the command exports a valid category property,
- * that category is used first.
- *
- * Otherwise, the command name is compared with the
- * command lists above.
- *
  * @param {Object} command
  * @returns {string}
  */
-function getCommandCategory(command) {
+function getCommandCategory(
+    command
+) {
     if (
         command.category &&
-        commandCategories[command.category]
+        commandCategories[
+            command.category
+        ]
     ) {
         return command.category;
     }
@@ -84,8 +92,13 @@ function getCommandCategory(command) {
         command.data.name;
 
     for (
-        const [categoryName, category]
-        of Object.entries(commandCategories)
+        const [
+            categoryName,
+            category
+        ]
+        of Object.entries(
+            commandCategories
+        )
     ) {
         if (
             category.commands.includes(
@@ -130,7 +143,8 @@ function splitFieldValue(
                 );
             }
 
-            currentChunk = line;
+            currentChunk =
+                line;
         } else {
             currentChunk =
                 nextValue;
@@ -147,13 +161,17 @@ function splitFieldValue(
 }
 
 module.exports = {
-    category: 'general',
+    category:
+        'general',
 
-    data: new SlashCommandBuilder()
-        .setName('help')
-        .setDescription(
-            'Displays all available Umbra commands.'
-        ),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'help'
+            )
+            .setDescription(
+                'Displays all available Umbra commands.'
+            ),
 
     /**
      * Execute the /help command.
@@ -161,7 +179,9 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
             const clientCommands =
                 interaction.client.commands;
@@ -214,15 +234,14 @@ module.exports = {
                 groupedCommands[
                     category
                 ].push({
-                    name: commandName,
+                    name:
+                        commandName,
+
                     description:
                         commandDescription
                 });
             }
 
-            /*
-             * Sort every category alphabetically.
-             */
             for (
                 const commands
                 of Object.values(
@@ -230,7 +249,10 @@ module.exports = {
                 )
             ) {
                 commands.sort(
-                    (firstCommand, secondCommand) =>
+                    (
+                        firstCommand,
+                        secondCommand
+                    ) =>
                         firstCommand.name.localeCompare(
                             secondCommand.name
                         )
@@ -309,6 +331,31 @@ module.exports = {
                         command?.data?.name
                 ).length;
 
+            const botAvatar =
+                interaction.client.user
+                    .displayAvatarURL({
+                        extension:
+                            'png',
+
+                        size:
+                            1024,
+
+                        forceStatic:
+                            false
+                    });
+
+            const guildIcon =
+                interaction.guild?.iconURL({
+                    extension:
+                        'png',
+
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                });
+
             const embed =
                 createEmbed({
                     title:
@@ -318,7 +365,8 @@ module.exports = {
                         [
                             '**Guardian of Crimson Eclipse**',
                             '',
-                            'Welcome, Soul.',
+                            `Welcome, ${interaction.user}.`,
+                            '',
                             'Below are the commands currently available within the Order.',
                             '',
                             `📜 **Total Commands:** \`${commandCount}\``,
@@ -326,11 +374,32 @@ module.exports = {
                             '*Use each command responsibly beneath the crimson moon.*'
                         ].join('\n'),
 
+                    thumbnail:
+                        botAvatar,
+
+                    author: {
+                        name:
+                            'Umbra • Command Archive',
+
+                        iconURL:
+                            botAvatar
+                    },
+
+                    footer: {
+                        text:
+                            '🌑 Crimson Eclipse • Umbra Command Codex',
+
+                        iconURL:
+                            guildIcon ||
+                            botAvatar
+                    },
+
                     fields
                 });
 
             await interaction.reply({
-                embeds: [embed],
+                embeds:
+                    [embed],
 
                 flags:
                     MessageFlags.Ephemeral
