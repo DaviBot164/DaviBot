@@ -1,189 +1,92 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    MessageFlags,
-    ChannelType,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
+    MessageFlags
 } = require('discord.js');
 
 const {
-    randomUUID
-} = require('crypto');
-
-const {
-    createEmbed,
     createSuccessEmbed,
     createErrorEmbed
 } = require('../../utils/embeds');
 
-/**
- * Ensure the Event System storage exists.
- *
- * Events are temporarily stored in memory.
- * PostgreSQL persistence will be added later.
- *
- * @param {import('discord.js').Client} client
- * @returns {Map<string, Object>}
- */
-function getEventStorage(client) {
-    if (
-        !client.umbraEvents ||
-        !(client.umbraEvents instanceof Map)
-    ) {
-        client.umbraEvents =
-            new Map();
-    }
+const {
+    getEventStorage,
+    findGuildEvent
+} = require('../../utils/events/eventStorage');
 
-    return client.umbraEvents;
-}
+const {
+    buildEventEmbed,
+    buildEventButtons,
+    buildParticipantsEmbed
+} = require('../../utils/events/eventEmbed');
+
+const {
+    buildEventModal
+} = require('../../utils/events/eventModal');
 
 /**
- * Generate a short readable event ID.
- *
- * @returns {string}
+ * Official Crimson Eclipse Events channel.
  */
-function createEventId() {
-    return randomUUID()
-        .replaceAll('-', '')
-        .slice(0, 10);
-}
+const EVENT_CHANNEL_ID =
+    '1531706846531031060';
 
 /**
- * Find an event by ID inside the current guild.
+ * Fetch the original Discord message
+ * belonging to an event.
  *
- * @param {Map<string, Object>} storage
- * @param {string} eventId
- * @param {string} guildId
- * @returns {Object|null}
+ * @param {import('discord.js').Guild} guild
+ * @param {Object} eventData
+ * @returns {Promise<import('discord.js').Message|null>}
  */
-function findGuildEvent(
-    storage,
-    eventId,
-    guildId
+async function fetchEventMessage(
+    guild,
+    eventData
 ) {
-    const eventData =
-        storage.get(eventId);
+    const eventChannel =
+        await guild.channels
+            .fetch(
+                eventData.channelId
+            )
+            .catch(
+                () => null
+            );
 
     if (
-        !eventData ||
-        eventData.guildId !== guildId
+        !eventChannel ||
+        !eventChannel.isTextBased()
     ) {
         return null;
     }
 
-    return eventData;
-}
-
-/**
- * Create the buttons used beneath an event.
- *
- * @param {string} eventId
- * @param {boolean} disabled
- * @returns {ActionRowBuilder}
- */
-function createEventButtons(
-    eventId,
-    disabled = false
-) {
-    return new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId(
-                    `umbra:event:join:${eventId}`
-                )
-                .setLabel(
-                    'Join Event'
-                )
-                .setEmoji('✅')
-                .setStyle(
-                    ButtonStyle.Success
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    `umbra:event:leave:${eventId}`
-                )
-                .setLabel(
-                    'Leave Event'
-                )
-                .setEmoji('❌')
-                .setStyle(
-                    ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    `umbra:event:participants:${eventId}`
-                )
-                .setLabel(
-                    'Participants'
-                )
-                .setEmoji('👥')
-                .setStyle(
-                    ButtonStyle.Primary
-                )
+    return eventChannel.messages
+        .fetch(
+            eventData.messageId
+        )
+        .catch(
+            () => null
         );
 }
 
 /**
- * Build the main Event embed.
+ * Fetch the event host.
  *
- * @param {Object} options
- * @returns {import('discord.js').EmbedBuilder}
+ * @param {import('discord.js').Client} client
+ * @param {Object} eventData
+ * @param {import('discord.js').User} fallbackUser
+ * @returns {Promise<import('discord.js').User>}
  */
-function buildEventEmbed({
-    eventId,
-    title,
-    description,
-    time,
-    reward,
-    host,
-    participantCount = 0,
-    status = 'Active'
-}) {
-    const statusIcon =
-        status === 'Active'
-            ? '🟢'
-            : status === 'Ended'
-                ? '🏁'
-                : '🔴';
-
-    return createEmbed({
-        title:
-            `🎉 ${title}`,
-
-        description:
-            [
-                description,
-                '',
-                '━━━━━━━━━━━━━━━━━━━━',
-                '',
-                `🕒 **Time:** ${time}`,
-                `🎁 **Reward:** ${reward}`,
-                `⚔️ **Host:** ${host}`,
-                `👥 **Participants:** \`${participantCount}\``,
-                `${statusIcon} **Status:** ${status}`,
-                '',
-                `🆔 **Event ID:** \`${eventId}\``,
-                '',
-                '*Stand together beneath the crimson moon.*'
-            ].join('\n'),
-
-        thumbnail:
-            host.displayAvatarURL({
-                extension: 'png',
-                size: 512,
-                forceStatic: false
-            })
-    });
+async function fetchEventHost(
+    client,
+    eventData,
+    fallbackUser
+) {
+    return client.users
+        .fetch(
+            eventData.hostId
+        )
+        .catch(
+            () => fallbackUser
+        );
 }
 
 module.exports = {
@@ -205,60 +108,7 @@ module.exports = {
                 subcommand
                     .setName('create')
                     .setDescription(
-                        'Create a new Crimson Eclipse event.'
-                    )
-
-                    .addStringOption(option =>
-                        option
-                            .setName('title')
-                            .setDescription(
-                                'The title of the event'
-                            )
-                            .setMaxLength(100)
-                            .setRequired(true)
-                    )
-
-                    .addStringOption(option =>
-                        option
-                            .setName('description')
-                            .setDescription(
-                                'Explain what will happen during the event'
-                            )
-                            .setMaxLength(1000)
-                            .setRequired(true)
-                    )
-
-                    .addStringOption(option =>
-                        option
-                            .setName('time')
-                            .setDescription(
-                                'When the event will begin'
-                            )
-                            .setMaxLength(100)
-                            .setRequired(true)
-                    )
-
-                    .addStringOption(option =>
-                        option
-                            .setName('reward')
-                            .setDescription(
-                                'The reward for the event'
-                            )
-                            .setMaxLength(200)
-                            .setRequired(true)
-                    )
-
-                    .addChannelOption(option =>
-                        option
-                            .setName('channel')
-                            .setDescription(
-                                'The channel where the event will be published'
-                            )
-                            .addChannelTypes(
-                                ChannelType.GuildText,
-                                ChannelType.GuildAnnouncement
-                            )
-                            .setRequired(false)
+                        'Open the Crimson Eclipse Event creation form.'
                     )
             )
 
@@ -340,11 +190,6 @@ module.exports = {
                 return;
             }
 
-            const storage =
-                getEventStorage(
-                    interaction.client
-                );
-
             const subcommand =
                 interaction.options
                     .getSubcommand();
@@ -353,50 +198,28 @@ module.exports = {
              * CREATE EVENT
              */
             if (subcommand === 'create') {
-                const title =
-                    interaction.options
-                        .getString(
-                            'title',
-                            true
+                const eventChannel =
+                    await interaction.guild.channels
+                        .fetch(
+                            EVENT_CHANNEL_ID
+                        )
+                        .catch(
+                            () => null
                         );
-
-                const description =
-                    interaction.options
-                        .getString(
-                            'description',
-                            true
-                        );
-
-                const time =
-                    interaction.options
-                        .getString(
-                            'time',
-                            true
-                        );
-
-                const reward =
-                    interaction.options
-                        .getString(
-                            'reward',
-                            true
-                        );
-
-                const targetChannel =
-                    interaction.options
-                        .getChannel(
-                            'channel'
-                        ) ||
-                    interaction.channel;
 
                 if (
-                    !targetChannel ||
-                    !targetChannel.isTextBased()
+                    !eventChannel ||
+                    !eventChannel.isTextBased()
                 ) {
                     await interaction.reply({
                         embeds: [
                             createErrorEmbed(
-                                '❌ Invalid Event Channel',
-                                'Umbra could not publish the event in that channel.'
+                                '❌ Event Channel Not Found',
+                                [
+                                    'Umbra could not find the official Events channel.',
+                                    '',
+                                    `Configured Channel ID: \`${EVENT_CHANNEL_ID}\``
+                                ].join('\n')
                             )
                         ],
 
@@ -411,7 +234,7 @@ module.exports = {
                     interaction.guild.members.me;
 
                 const permissions =
-                    targetChannel.permissionsFor(
+                    eventChannel.permissionsFor(
                         botMember
                     );
 
@@ -425,8 +248,15 @@ module.exports = {
                     await interaction.reply({
                         embeds: [
                             createErrorEmbed(
-                                '❌ Missing Permissions',
-                                `Umbra needs **View Channel**, **Send Messages**, and **Embed Links** permissions in ${targetChannel}.`
+                                '❌ Missing Event Permissions',
+                                [
+                                    `Umbra cannot publish Events in ${eventChannel}.`,
+                                    '',
+                                    'Required permissions:',
+                                    '• View Channel',
+                                    '• Send Messages',
+                                    '• Embed Links'
+                                ].join('\n')
                             )
                         ],
 
@@ -437,118 +267,22 @@ module.exports = {
                     return;
                 }
 
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                const modal =
+                    buildEventModal(
+                        interaction.user.id
+                    );
 
-                const eventId =
-                    createEventId();
-
-                const eventEmbed =
-                    buildEventEmbed({
-                        eventId,
-                        title,
-                        description,
-                        time,
-                        reward,
-                        host:
-                            interaction.user,
-                        participantCount:
-                            0,
-                        status:
-                            'Active'
-                    });
-
-                const eventMessage =
-                    await targetChannel.send({
-                        embeds:
-                            [eventEmbed],
-
-                        components: [
-                            createEventButtons(
-                                eventId
-                            )
-                        ]
-                    });
-
-                storage.set(
-                    eventId,
-                    {
-                        id:
-                            eventId,
-
-                        guildId:
-                            interaction.guild.id,
-
-                        channelId:
-                            targetChannel.id,
-
-                        messageId:
-                            eventMessage.id,
-
-                        hostId:
-                            interaction.user.id,
-
-                        title,
-                        description,
-                        time,
-                        reward,
-
-                        status:
-                            'Active',
-
-                        participants:
-                            new Set(),
-
-                        createdAt:
-                            Date.now()
-                    }
-                );
-
-                await interaction.editReply({
-                    embeds: [
-                        createSuccessEmbed(
-                            '✅ Event Published',
-                            [
-                                `The event **${title}** was published successfully in ${targetChannel}.`,
-                                '',
-                                `🆔 Event ID: \`${eventId}\``
-                            ].join('\n')
-                        )
-                    ]
-                });
-
-                console.log(
-                    '======================================'
-                );
-
-                console.log(
-                    '🎉 Crimson Eclipse Event Created'
-                );
-
-                console.log(
-                    `🆔 Event ID: ${eventId}`
-                );
-
-                console.log(
-                    `🏰 Server: ${interaction.guild.name}`
-                );
-
-                console.log(
-                    `⚔️ Host: ${interaction.user.tag}`
-                );
-
-                console.log(
-                    `📍 Channel: ${targetChannel.name}`
-                );
-
-                console.log(
-                    '======================================'
+                await interaction.showModal(
+                    modal
                 );
 
                 return;
             }
+
+            const storage =
+                getEventStorage(
+                    interaction.client
+                );
 
             const eventId =
                 interaction.options
@@ -571,7 +305,11 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Event Not Found',
-                            `No Crimson Eclipse event was found with ID \`${eventId}\`.`
+                            [
+                                `No Crimson Eclipse event was found with ID \`${eventId}\`.`,
+                                '',
+                                'The event may have been removed, or Umbra may have restarted.'
+                            ].join('\n')
                         )
                     ],
 
@@ -589,37 +327,34 @@ module.exports = {
                 subcommand ===
                 'participants'
             ) {
-                const participantIds =
-                    Array.from(
-                        eventData.participants
-                    );
+                const thumbnail =
+                    interaction.guild.iconURL({
+                        extension:
+                            'png',
 
-                const participantList =
-                    participantIds.length > 0
-                        ? participantIds
-                            .map(
-                                (
-                                    userId,
-                                    index
-                                ) =>
-                                    `${index + 1}. <@${userId}>`
-                            )
-                            .join('\n')
-                        : 'No Souls have joined this event yet.';
+                        size:
+                            256,
+
+                        forceStatic:
+                            false
+                    }) ||
+                    interaction.client.user
+                        .displayAvatarURL({
+                            extension:
+                                'png',
+
+                            size:
+                                256,
+
+                            forceStatic:
+                                false
+                        });
 
                 const participantsEmbed =
-                    createEmbed({
-                        title:
-                            `👥 Participants • ${eventData.title}`,
-
-                        description:
-                            [
-                                `🆔 **Event ID:** \`${eventData.id}\``,
-                                `📜 **Total Participants:** \`${participantIds.length}\``,
-                                '',
-                                participantList
-                            ].join('\n')
-                    });
+                    buildParticipantsEmbed(
+                        eventData,
+                        thumbnail
+                    );
 
                 await interaction.reply({
                     embeds:
@@ -633,7 +368,7 @@ module.exports = {
             }
 
             /*
-             * END OR CANCEL EVENT
+             * EVENT STATUS CHECK
              */
             if (
                 eventData.status !==
@@ -654,6 +389,9 @@ module.exports = {
                 return;
             }
 
+            /*
+             * END OR CANCEL EVENT
+             */
             const newStatus =
                 subcommand === 'end'
                     ? 'Ended'
@@ -662,110 +400,105 @@ module.exports = {
             eventData.status =
                 newStatus;
 
-            const eventChannel =
-                await interaction.guild.channels
-                    .fetch(
-                        eventData.channelId
-                    )
-                    .catch(
-                        () => null
-                    );
-
             const eventMessage =
-                eventChannel?.isTextBased()
-                    ? await eventChannel.messages
-                        .fetch(
-                            eventData.messageId
-                        )
-                        .catch(
-                            () => null
-                        )
-                    : null;
+                await fetchEventMessage(
+                    interaction.guild,
+                    eventData
+                );
 
             const host =
-                await interaction.client.users
-                    .fetch(
-                        eventData.hostId
-                    )
-                    .catch(
-                        () =>
-                            interaction.user
-                    );
+                await fetchEventHost(
+                    interaction.client,
+                    eventData,
+                    interaction.user
+                );
 
             if (eventMessage) {
                 const updatedEmbed =
-                    buildEventEmbed({
-                        eventId:
-                            eventData.id,
+                    buildEventEmbed(
+                        eventData,
+                        host
+                    );
 
-                        title:
-                            eventData.title,
-
-                        description:
-                            eventData.description,
-
-                        time:
-                            eventData.time,
-
-                        reward:
-                            eventData.reward,
-
-                        host,
-
-                        participantCount:
-                            eventData
-                                .participants
-                                .size,
-
-                        status:
-                            newStatus
-                    });
+                const updatedButtons =
+                    buildEventButtons(
+                        eventData
+                    );
 
                 await eventMessage.edit({
                     embeds:
                         [updatedEmbed],
 
-                    components: [
-                        createEventButtons(
-                            eventData.id,
-                            true
-                        )
-                    ]
+                    components:
+                        [updatedButtons]
                 });
             }
 
-            const resultTitle =
+            if (newStatus === 'Ended') {
+                await interaction.reply({
+                    embeds: [
+                        createSuccessEmbed(
+                            '🏁 Event Ended',
+                            [
+                                `The event **${eventData.title}** has officially ended.`,
+                                '',
+                                `👥 Final Participants: \`${eventData.participants.size}\``,
+                                `🆔 Event ID: \`${eventData.id}\``
+                            ].join('\n')
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+            } else {
+                await interaction.reply({
+                    embeds: [
+                        createSuccessEmbed(
+                            '🚫 Event Cancelled',
+                            [
+                                `The event **${eventData.title}** has been cancelled.`,
+                                '',
+                                'Members can no longer join this event.',
+                                '',
+                                `🆔 Event ID: \`${eventData.id}\``
+                            ].join('\n')
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+            }
+
+            console.log(
+                '======================================'
+            );
+
+            console.log(
                 newStatus === 'Ended'
-                    ? '🏁 Event Ended'
-                    : '🚫 Event Cancelled';
+                    ? '🏁 Crimson Eclipse Event Ended'
+                    : '🚫 Crimson Eclipse Event Cancelled'
+            );
 
-            const resultDescription =
-                newStatus === 'Ended'
-                    ? [
-                        `The event **${eventData.title}** has officially ended.`,
-                        '',
-                        `👥 Final Participants: \`${eventData.participants.size}\``
-                    ].join('\n')
-                    : [
-                        `The event **${eventData.title}** has been cancelled.`,
-                        '',
-                        'Members can no longer join this event.'
-                    ].join('\n');
+            console.log(
+                `🆔 Event ID: ${eventData.id}`
+            );
 
-            await interaction.reply({
-                embeds: [
-                    createSuccessEmbed(
-                        resultTitle,
-                        resultDescription
-                    )
-                ],
+            console.log(
+                `🏰 Server: ${interaction.guild.name}`
+            );
 
-                flags:
-                    MessageFlags.Ephemeral
-            });
+            console.log(
+                `🛡️ Managed By: ${interaction.user.tag}`
+            );
+
+            console.log(
+                '======================================'
+            );
         } catch (error) {
             console.error(
-                '❌ Umbra Event System error:',
+                '❌ Umbra Event command error:',
                 error
             );
 
@@ -775,10 +508,7 @@ module.exports = {
                     'Umbra could not complete this event action. Please try again.'
                 );
 
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
+            if (interaction.replied) {
                 await interaction
                     .followUp({
                         embeds:
@@ -786,6 +516,22 @@ module.exports = {
 
                         flags:
                             MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds:
+                            [errorEmbed],
+
+                        components:
+                            []
                     })
                     .catch(
                         () => null
