@@ -33,6 +33,15 @@ const EVENT_CHANNEL_ID =
     '1531706846531031060';
 
 /**
+ * Interactions currently being processed.
+ *
+ * Prevents accidental duplicate handling
+ * inside the same Umbra process.
+ */
+const processingInteractions =
+    new Set();
+
+/**
  * Generate a short readable Event ID.
  *
  * @returns {string}
@@ -54,14 +63,11 @@ function parseMaxPlayers(
     rawValue
 ) {
     const normalizedValue =
-        rawValue
-            ?.trim();
+        rawValue?.trim();
 
     if (
         !normalizedValue ||
-        !/^\d+$/.test(
-            normalizedValue
-        )
+        !/^\d+$/.test(normalizedValue)
     ) {
         return null;
     }
@@ -73,9 +79,7 @@ function parseMaxPlayers(
         );
 
     if (
-        !Number.isInteger(
-            maxPlayers
-        ) ||
+        !Number.isInteger(maxPlayers) ||
         maxPlayers < 1 ||
         maxPlayers > 9999
     ) {
@@ -96,12 +100,8 @@ async function fetchEventChannel(
 ) {
     const channel =
         await guild.channels
-            .fetch(
-                EVENT_CHANNEL_ID
-            )
-            .catch(
-                () => null
-            );
+            .fetch(EVENT_CHANNEL_ID)
+            .catch(() => null);
 
     if (
         !channel ||
@@ -133,7 +133,8 @@ function hasEventChannelPermissions(
         permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ReadMessageHistory
         ])
     );
 }
@@ -151,9 +152,7 @@ async function updateEventMessage(
 ) {
     const host =
         await interaction.client.users
-            .fetch(
-                eventData.hostId
-            )
+            .fetch(eventData.hostId)
             .catch(
                 () => interaction.user
             );
@@ -188,9 +187,7 @@ async function handleCreateModal(
     interaction
 ) {
     const customIdParts =
-        interaction.customId.split(
-            ':'
-        );
+        interaction.customId.split(':');
 
     const creatorId =
         customIdParts[3];
@@ -230,6 +227,9 @@ async function handleCreateModal(
         return;
     }
 
+    /*
+     * Read the Modal values immediately.
+     */
     const title =
         interaction.fields
             .getTextInputValue(
@@ -290,13 +290,28 @@ async function handleCreateModal(
         return;
     }
 
+    /*
+     * Acknowledge the Modal immediately.
+     *
+     * Discord requires Modal submissions to be
+     * acknowledged within approximately 3 seconds.
+     */
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    /*
+     * Perform slower network requests only
+     * after the interaction has been deferred.
+     */
     const eventChannel =
         await fetchEventChannel(
             interaction.guild
         );
 
     if (!eventChannel) {
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [
                 createErrorEmbed(
                     '❌ Event Channel Not Found',
@@ -308,8 +323,8 @@ async function handleCreateModal(
                 )
             ],
 
-            flags:
-                MessageFlags.Ephemeral
+            components:
+                []
         });
 
         return;
@@ -325,7 +340,7 @@ async function handleCreateModal(
             botMember
         )
     ) {
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Event Permissions',
@@ -335,22 +350,18 @@ async function handleCreateModal(
                         'Required permissions:',
                         '• View Channel',
                         '• Send Messages',
-                        '• Embed Links'
+                        '• Embed Links',
+                        '• Read Message History'
                     ].join('\n')
                 )
             ],
 
-            flags:
-                MessageFlags.Ephemeral
+            components:
+                []
         });
 
         return;
     }
-
-    await interaction.deferReply({
-        flags:
-            MessageFlags.Ephemeral
-    });
 
     const eventId =
         createEventId();
@@ -425,13 +436,16 @@ async function handleCreateModal(
             createSuccessEmbed(
                 '✅ Event Published',
                 [
-                    `The event **${title}** was published successfully in ${eventChannel}.`,
+                    `The Event **${title}** was published successfully in ${eventChannel}.`,
                     '',
                     `👥 Maximum Players: \`${maxPlayers}\``,
                     `🆔 Event ID: \`${eventId}\``
                 ].join('\n')
             )
-        ]
+        ],
+
+        components:
+            []
     });
 
     console.log(
@@ -477,9 +491,7 @@ async function handleEventButton(
     interaction
 ) {
     const customIdParts =
-        interaction.customId.split(
-            ':'
-        );
+        interaction.customId.split(':');
 
     const action =
         customIdParts[2];
@@ -846,6 +858,26 @@ module.exports = {
             return;
         }
 
+        /*
+         * Ignore duplicate handling of the exact
+         * same Discord interaction.
+         */
+        if (
+            processingInteractions.has(
+                interaction.id
+            )
+        ) {
+            console.warn(
+                `⚠️ Duplicate Event interaction ignored: ${interaction.id}`
+            );
+
+            return;
+        }
+
+        processingInteractions.add(
+            interaction.id
+        );
+
         try {
             if (isEventModal) {
                 await handleCreateModal(
@@ -860,31 +892,16 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Umbra Event interaction error:',
-                error
+                '❌ Umbra Event interaction error:'
             );
+
+            console.error(error);
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Event Action Failed',
                     'Umbra could not complete this Event action. Please try again.'
                 );
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds:
-                            [errorEmbed],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
 
             if (interaction.deferred) {
                 await interaction
@@ -894,6 +911,22 @@ module.exports = {
 
                         components:
                             []
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds:
+                            [errorEmbed],
+
+                        flags:
+                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null
@@ -913,6 +946,15 @@ module.exports = {
                 .catch(
                     () => null
                 );
+        } finally {
+            setTimeout(
+                () => {
+                    processingInteractions.delete(
+                        interaction.id
+                    );
+                },
+                15_000
+            );
         }
     }
 };
