@@ -16,6 +16,9 @@ const autoModCaseDatabase =
 const raidCaseDatabase =
     require('./raidCases');
 
+const eventDatabase =
+    require('./events');
+
 /**
  * Connect to PostgreSQL and initialize all required tables.
  *
@@ -62,30 +65,56 @@ async function initializeDatabase() {
         '======================================'
     );
 
-    await testConnection();
+    try {
+        await testConnection();
 
-    console.log(
-        '✅ Connected to PostgreSQL.'
-    );
+        console.log(
+            '✅ Connected to PostgreSQL.'
+        );
 
-    await initializeSchema();
+        await initializeSchema();
 
-    console.log(
-        '✅ Database schema initialized.'
-    );
+        console.log(
+            '✅ Database schema initialized.'
+        );
 
-    console.log(
-        '======================================'
-    );
+        console.log(
+            '✅ Event database initialized.'
+        );
 
-    return true;
+        console.log(
+            '======================================'
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            '❌ PostgreSQL initialization failed:'
+        );
+
+        console.error(error);
+
+        console.error(
+            '======================================'
+        );
+
+        throw error;
+    }
 }
 
 module.exports = {
     initializeDatabase,
     closeConnection,
 
-    warnings: warningDatabase,
-    automodCases: autoModCaseDatabase,
-    raidCases: raidCaseDatabase
+    warnings:
+        warningDatabase,
+
+    automodCases:
+        autoModCaseDatabase,
+
+    raidCases:
+        raidCaseDatabase,
+
+    events:
+        eventDatabase
 };

@@ -1,4 +1,6 @@
-const { query } = require('./connection');
+const {
+    query
+} = require('./connection');
 
 /**
  * Create all required database tables and indexes.
@@ -12,10 +14,13 @@ async function initializeSchema() {
     await query(`
         CREATE TABLE IF NOT EXISTS warnings (
             id BIGSERIAL PRIMARY KEY,
+
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
             moderator_id VARCHAR(32) NOT NULL,
+
             reason VARCHAR(500) NOT NULL,
+
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
     `);
@@ -107,6 +112,100 @@ async function initializeSchema() {
     await query(`
         CREATE INDEX IF NOT EXISTS raid_cases_detected_at_index
         ON raid_cases (detected_at DESC);
+    `);
+
+    /*
+     * Crimson Eclipse Event System
+     *
+     * Stores the main information for every
+     * Event created through Umbra.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS events (
+            event_id VARCHAR(32) PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+            channel_id VARCHAR(32) NOT NULL,
+            message_id VARCHAR(32) NOT NULL,
+            host_id VARCHAR(32) NOT NULL,
+
+            title VARCHAR(100) NOT NULL,
+            description TEXT NOT NULL,
+
+            event_time VARCHAR(100) NOT NULL,
+            reward VARCHAR(200) NOT NULL,
+
+            max_players INTEGER NOT NULL,
+
+            status VARCHAR(20) NOT NULL DEFAULT 'Active',
+
+            winner_id VARCHAR(32),
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            ended_at TIMESTAMPTZ,
+            cancelled_at TIMESTAMPTZ
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS events_guild_status_index
+        ON events (guild_id, status);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS events_guild_created_at_index
+        ON events (guild_id, created_at DESC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS events_host_index
+        ON events (guild_id, host_id);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS events_message_index
+        ON events (guild_id, message_id);
+    `);
+
+    /*
+     * Event Participants
+     *
+     * Stores every Soul who joins an Event.
+     *
+     * The composite primary key prevents the
+     * same user from joining the same Event twice.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS event_participants (
+            event_id VARCHAR(32) NOT NULL,
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (event_id, user_id),
+
+            CONSTRAINT event_participants_event_foreign_key
+                FOREIGN KEY (event_id)
+                REFERENCES events (event_id)
+                ON DELETE CASCADE
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS event_participants_event_index
+        ON event_participants (event_id, joined_at ASC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS event_participants_guild_user_index
+        ON event_participants (guild_id, user_id);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS event_participants_joined_at_index
+        ON event_participants (joined_at DESC);
     `);
 }
 

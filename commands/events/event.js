@@ -10,11 +10,6 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    getEventStorage,
-    findGuildEvent
-} = require('../../utils/events/eventStorage');
-
-const {
     buildEventEmbed,
     buildEventButtons,
     buildParticipantsEmbed
@@ -24,6 +19,10 @@ const {
     buildEventModal
 } = require('../../utils/events/eventModal');
 
+const {
+    events: eventDatabase
+} = require('../../database');
+
 /**
  * Official Crimson Eclipse Events channel.
  */
@@ -32,16 +31,14 @@ const EVENT_CHANNEL_ID =
 
 /**
  * Discord error code returned when an interaction
- * has already received a reply, defer or Modal.
+ * was already acknowledged.
  */
 const INTERACTION_ALREADY_ACKNOWLEDGED =
     40060;
 
 /**
- * Temporarily record Modal openings.
- *
- * This prevents the same Slash Command interaction
- * from attempting to open the Modal more than once.
+ * Prevent duplicate Modal openings inside
+ * the same Umbra process.
  */
 const openingModalInteractions =
     new Set();
@@ -150,7 +147,7 @@ async function safelyShowEventModal(
             INTERACTION_ALREADY_ACKNOWLEDGED
         ) {
             console.warn(
-                '⚠️ The Event Modal interaction was already acknowledged. Duplicate execution was ignored.'
+                '⚠️ Duplicate Event Modal execution was ignored.'
             );
 
             return false;
@@ -158,10 +155,6 @@ async function safelyShowEventModal(
 
         throw error;
     } finally {
-        /*
-         * Keep the interaction ID briefly so another
-         * listener cannot immediately process it again.
-         */
         setTimeout(
             () => {
                 openingModalInteractions.delete(
@@ -174,7 +167,7 @@ async function safelyShowEventModal(
 }
 
 /**
- * Send an Event command error safely.
+ * Safely send an Event command error.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {import('discord.js').EmbedBuilder} errorEmbed
@@ -222,14 +215,14 @@ async function sendEventCommandError(
             INTERACTION_ALREADY_ACKNOWLEDGED
         ) {
             console.warn(
-                '⚠️ Event error response skipped because the interaction was already acknowledged.'
+                '⚠️ Event command error response was already acknowledged.'
             );
 
             return;
         }
 
         console.error(
-            '❌ Failed to send the Event command error response:'
+            '❌ Failed to send Event command error response:'
         );
 
         console.error(error);
@@ -263,7 +256,7 @@ module.exports = {
                 subcommand
                     .setName('end')
                     .setDescription(
-                        'End an active Crimson Eclipse event.'
+                        'End an active Crimson Eclipse Event.'
                     )
 
                     .addStringOption(option =>
@@ -272,7 +265,7 @@ module.exports = {
                             .setDescription(
                                 'The ID shown inside the Event embed'
                             )
-                            .setMaxLength(20)
+                            .setMaxLength(32)
                             .setRequired(true)
                     )
             )
@@ -281,7 +274,7 @@ module.exports = {
                 subcommand
                     .setName('cancel')
                     .setDescription(
-                        'Cancel an active Crimson Eclipse event.'
+                        'Cancel an active Crimson Eclipse Event.'
                     )
 
                     .addStringOption(option =>
@@ -290,7 +283,7 @@ module.exports = {
                             .setDescription(
                                 'The ID shown inside the Event embed'
                             )
-                            .setMaxLength(20)
+                            .setMaxLength(32)
                             .setRequired(true)
                     )
             )
@@ -308,7 +301,7 @@ module.exports = {
                             .setDescription(
                                 'The ID shown inside the Event embed'
                             )
-                            .setMaxLength(20)
+                            .setMaxLength(32)
                             .setRequired(true)
                     )
             ),
@@ -322,13 +315,6 @@ module.exports = {
     async execute(interaction) {
         try {
             if (!interaction.inGuild()) {
-                if (
-                    interaction.replied ||
-                    interaction.deferred
-                ) {
-                    return;
-                }
-
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
@@ -352,10 +338,6 @@ module.exports = {
              * CREATE EVENT
              */
             if (subcommand === 'create') {
-                /*
-                 * Stop immediately if another listener has
-                 * already answered this Slash Command.
-                 */
                 if (
                     interaction.replied ||
                     interaction.deferred
@@ -372,10 +354,6 @@ module.exports = {
                             () => null
                         );
 
-                /*
-                 * The channel fetch takes time, so check again
-                 * in case another listener answered meanwhile.
-                 */
                 if (
                     interaction.replied ||
                     interaction.deferred
@@ -454,11 +432,9 @@ module.exports = {
                 return;
             }
 
-            const storage =
-                getEventStorage(
-                    interaction.client
-                );
-
+            /*
+             * Commands below require an Event ID.
+             */
             const eventId =
                 interaction.options
                     .getString(
@@ -468,9 +444,12 @@ module.exports = {
                     .trim()
                     .toLowerCase();
 
-            const eventData =
-                findGuildEvent(
-                    storage,
+            /*
+             * Load the Event and participants
+             * directly from PostgreSQL.
+             */
+            let eventData =
+                await eventDatabase.getEvent(
                     eventId,
                     interaction.guild.id
                 );
@@ -483,7 +462,7 @@ module.exports = {
                             [
                                 `No Crimson Eclipse Event was found with ID \`${eventId}\`.`,
                                 '',
-                                'The Event may have been removed, or Umbra may have restarted.'
+                                'The Event may have been deleted from PostgreSQL.'
                             ].join('\n')
                         )
                     ],
@@ -565,15 +544,43 @@ module.exports = {
             }
 
             /*
-             * END OR CANCEL EVENT
+             * Acknowledge before database and Discord requests.
              */
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
             const newStatus =
                 subcommand === 'end'
                     ? 'Ended'
                     : 'Cancelled';
 
-            eventData.status =
-                newStatus;
+            /*
+             * Save the new Event status permanently.
+             */
+            eventData =
+                await eventDatabase.updateEventStatus(
+                    eventData.id,
+                    eventData.guildId,
+                    newStatus
+                );
+
+            if (!eventData) {
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Event Update Failed',
+                            'Umbra could not update this Event in PostgreSQL.'
+                        )
+                    ],
+
+                    components:
+                        []
+                });
+
+                return;
+            }
 
             const eventMessage =
                 await fetchEventMessage(
@@ -610,7 +617,7 @@ module.exports = {
             }
 
             if (newStatus === 'Ended') {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [
                         createSuccessEmbed(
                             '🏁 Event Ended',
@@ -618,16 +625,18 @@ module.exports = {
                                 `The Event **${eventData.title}** has officially ended.`,
                                 '',
                                 `👥 Final Participants: \`${eventData.participants.size}\``,
-                                `🆔 Event ID: \`${eventData.id}\``
+                                `🆔 Event ID: \`${eventData.id}\``,
+                                '',
+                                '💾 The Event status was saved permanently.'
                             ].join('\n')
                         )
                     ],
 
-                    flags:
-                        MessageFlags.Ephemeral
+                    components:
+                        []
                 });
             } else {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [
                         createSuccessEmbed(
                             '🚫 Event Cancelled',
@@ -636,13 +645,15 @@ module.exports = {
                                 '',
                                 'Members can no longer join this Event.',
                                 '',
-                                `🆔 Event ID: \`${eventData.id}\``
+                                `🆔 Event ID: \`${eventData.id}\``,
+                                '',
+                                '💾 The Event status was saved permanently.'
                             ].join('\n')
                         )
                     ],
 
-                    flags:
-                        MessageFlags.Ephemeral
+                    components:
+                        []
                 });
             }
 
@@ -669,19 +680,23 @@ module.exports = {
             );
 
             console.log(
+                `👥 Participants: ${eventData.participants.size}`
+            );
+
+            console.log(
+                '💾 Event status saved to PostgreSQL'
+            );
+
+            console.log(
                 '======================================'
             );
         } catch (error) {
-            /*
-             * A duplicate command listener may try to open
-             * the same Modal again. Ignore that second attempt.
-             */
             if (
                 error.code ===
                 INTERACTION_ALREADY_ACKNOWLEDGED
             ) {
                 console.warn(
-                    '⚠️ Duplicate /event interaction was ignored because it had already been acknowledged.'
+                    '⚠️ Duplicate /event interaction was ignored.'
                 );
 
                 return;
@@ -696,7 +711,11 @@ module.exports = {
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Event System Failed',
-                    'Umbra could not complete this Event action. Please try again.'
+                    [
+                        'Umbra could not complete this Event action.',
+                        '',
+                        'Please check the PostgreSQL connection and try again.'
+                    ].join('\n')
                 );
 
             await sendEventCommandError(
