@@ -289,28 +289,79 @@ function createProgressBar(
 }
 
 /**
- * Grant every Level reward the member
- * has earned but does not currently have.
+ * Check whether Umbra can manage a role.
+ *
+ * @param {import('discord.js').Role} role
+ * @param {import('discord.js').GuildMember} botMember
+ * @returns {boolean}
+ */
+function canManageRewardRole(
+    role,
+    botMember
+) {
+    if (
+        !role ||
+        role.managed
+    ) {
+        return false;
+    }
+
+    if (
+        !role.editable ||
+        role.position >=
+            botMember.roles.highest.position
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Synchronize a Soul's progression roles.
+ *
+ * Umbra keeps only the highest configured
+ * Level reward the Soul has earned.
+ *
+ * Lower progression roles are removed.
+ * Unrelated roles such as Staff, Verified,
+ * cosmetic and game roles remain untouched.
+ *
+ * If several roles are configured for the
+ * same highest Level, all of those roles
+ * will remain assigned.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} level
- * @returns {Promise<import('discord.js').Role[]>}
+ * @returns {Promise<{
+ *     grantedRoles: import('discord.js').Role[],
+ *     removedRoles: import('discord.js').Role[],
+ *     highestRewardLevel: number|null
+ * }>}
  */
-async function grantLevelRewards(
+async function synchronizeLevelRewards(
     member,
     level
 ) {
-    const earnedRewards =
+    const allRewards =
         await levelDatabase
-            .getEarnedLevelRewards(
-                member.guild.id,
-                level
+            .getLevelRewards(
+                member.guild.id
             );
 
     if (
-        earnedRewards.length === 0
+        allRewards.length === 0
     ) {
-        return [];
+        return {
+            grantedRoles:
+                [],
+
+            removedRoles:
+                [],
+
+            highestRewardLevel:
+                null
+        };
     }
 
     const botMember =
@@ -323,17 +374,223 @@ async function grantLevelRewards(
         )
     ) {
         console.warn(
-            '⚠️ Umbra cannot grant Level rewards because Manage Roles is missing.'
+            '⚠️ Umbra cannot synchronize Level rewards because Manage Roles is missing.'
         );
 
-        return [];
+        return {
+            grantedRoles:
+                [],
+
+            removedRoles:
+                [],
+
+            highestRewardLevel:
+                null
+        };
     }
 
-    const grantedRoles = [];
+    /*
+     * Only roles stored in level_rewards
+     * are considered progression roles.
+     */
+    const configuredRewardRoleIds =
+        new Set(
+            allRewards.map(
+                reward =>
+                    reward.roleId
+            )
+        );
 
+    /*
+     * Find every reward currently earned
+     * by this Soul.
+     */
+    const earnedRewards =
+        allRewards.filter(
+            reward =>
+                reward.level <= level
+        );
+
+    const grantedRoles = [];
+    const removedRoles = [];
+
+    /*
+     * A Soul below the first reward Level
+     * should not have any progression role.
+     */
+    if (
+        earnedRewards.length === 0
+    ) {
+        for (
+            const roleId
+            of configuredRewardRoleIds
+        ) {
+            const role =
+                member.guild.roles.cache.get(
+                    roleId
+                );
+
+            if (
+                !role ||
+                !member.roles.cache.has(
+                    role.id
+                )
+            ) {
+                continue;
+            }
+
+            if (
+                !canManageRewardRole(
+                    role,
+                    botMember
+                )
+            ) {
+                console.warn(
+                    `⚠️ Umbra cannot remove Level reward role: ${role.name}`
+                );
+
+                continue;
+            }
+
+            try {
+                await member.roles.remove(
+                    role,
+                    `Umbra Level Progression Sync • Current Level ${level}`
+                );
+
+                removedRoles.push(
+                    role
+                );
+
+                console.log(
+                    `🗑️ Removed progression role ${role.name} from ${member.user.tag}.`
+                );
+            } catch (error) {
+                console.error(
+                    `❌ Failed to remove Level reward role ${role.name}:`
+                );
+
+                console.error(
+                    error
+                );
+            }
+        }
+
+        return {
+            grantedRoles,
+            removedRoles,
+
+            highestRewardLevel:
+                null
+        };
+    }
+
+    /*
+     * Determine the highest configured reward
+     * Level earned by the member.
+     */
+    const highestRewardLevel =
+        Math.max(
+            ...earnedRewards.map(
+                reward =>
+                    reward.level
+            )
+        );
+
+    /*
+     * Multiple rewards at the same highest
+     * Level remain supported.
+     */
+    const highestRewards =
+        earnedRewards.filter(
+            reward =>
+                reward.level ===
+                highestRewardLevel
+        );
+
+    const highestRewardRoleIds =
+        new Set(
+            highestRewards.map(
+                reward =>
+                    reward.roleId
+            )
+        );
+
+    /*
+     * Remove all configured progression roles
+     * except those belonging to the highest
+     * currently earned reward Level.
+     */
+    for (
+        const roleId
+        of configuredRewardRoleIds
+    ) {
+        if (
+            highestRewardRoleIds.has(
+                roleId
+            )
+        ) {
+            continue;
+        }
+
+        const role =
+            member.guild.roles.cache.get(
+                roleId
+            );
+
+        if (
+            !role ||
+            !member.roles.cache.has(
+                role.id
+            )
+        ) {
+            continue;
+        }
+
+        if (
+            !canManageRewardRole(
+                role,
+                botMember
+            )
+        ) {
+            console.warn(
+                `⚠️ Umbra cannot remove Level reward role: ${role.name}`
+            );
+
+            continue;
+        }
+
+        try {
+            await member.roles.remove(
+                role,
+                `Umbra Level Progression Sync • Current Level ${level}`
+            );
+
+            removedRoles.push(
+                role
+            );
+
+            console.log(
+                `🗑️ Removed lower progression role ${role.name} from ${member.user.tag}.`
+            );
+        } catch (error) {
+            console.error(
+                `❌ Failed to remove Level reward role ${role.name}:`
+            );
+
+            console.error(
+                error
+            );
+        }
+    }
+
+    /*
+     * Grant every role configured at the
+     * highest currently earned reward Level.
+     */
     for (
         const reward
-        of earnedRewards
+        of highestRewards
     ) {
         const role =
             member.guild.roles.cache.get(
@@ -357,9 +614,10 @@ async function grantLevelRewards(
         }
 
         if (
-            !role.editable ||
-            role.position >=
-                botMember.roles.highest.position
+            !canManageRewardRole(
+                role,
+                botMember
+            )
         ) {
             console.warn(
                 `⚠️ Umbra cannot grant Level reward role: ${role.name}`
@@ -377,16 +635,26 @@ async function grantLevelRewards(
             grantedRoles.push(
                 role
             );
+
+            console.log(
+                `🎖️ Granted progression role ${role.name} to ${member.user.tag}.`
+            );
         } catch (error) {
             console.error(
                 `❌ Failed to grant Level reward role ${role.name}:`
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
         }
     }
 
-    return grantedRoles;
+    return {
+        grantedRoles,
+        removedRoles,
+        highestRewardLevel
+    };
 }
 
 /**
@@ -394,13 +662,16 @@ async function grantLevelRewards(
  *
  * @param {import('discord.js').Message} message
  * @param {Object} levelResult
- * @param {import('discord.js').Role[]} grantedRoles
+ * @param {Object} rewardResult
+ * @param {import('discord.js').Role[]} rewardResult.grantedRoles
+ * @param {import('discord.js').Role[]} rewardResult.removedRoles
+ * @param {number|null} rewardResult.highestRewardLevel
  * @returns {Promise<void>}
  */
 async function sendLevelUpMessage(
     message,
     levelResult,
-    grantedRoles
+    rewardResult
 ) {
     if (
         !message.channel.isTextBased()
@@ -420,23 +691,37 @@ async function sendLevelUpMessage(
         `${message.author}, your strength has grown beneath the crimson moon.`,
         '',
         `🌑 **New Level:** \`${levelResult.newLevel}\``,
-        `⭐ **Total XP:** \`${levelResult.data.xp.toLocaleString()}\``,
+        `⭐ **Total XP:** \`${levelResult.data.xp.toLocaleString('en-US')}\``,
         '',
         `\`${progressBar}\``,
         `Next Level Progress: **${progress.progressPercent}%**`
     ];
 
     if (
-        grantedRoles.length > 0
+        rewardResult.grantedRoles.length >
+        0
     ) {
         descriptionLines.push(
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '',
-            '🎖️ **Reward Unlocked**',
-            grantedRoles
-                .map(role => `${role}`)
+            '🎖️ **Progression Rank Unlocked**',
+            rewardResult.grantedRoles
+                .map(
+                    role =>
+                        `${role}`
+                )
                 .join('\n')
+        );
+    }
+
+    if (
+        rewardResult.removedRoles.length >
+        0
+    ) {
+        descriptionLines.push(
+            '',
+            `🌘 Previous progression rank${rewardResult.removedRoles.length > 1 ? 's were' : ' was'} replaced.`
         );
     }
 
@@ -482,7 +767,9 @@ async function sendLevelUpMessage(
             '❌ Failed to send Umbra Level Up message:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
     }
 }
 
@@ -575,8 +862,8 @@ async function processLevelMessage(
         return;
     }
 
-    const grantedRoles =
-        await grantLevelRewards(
+    const rewardResult =
+        await synchronizeLevelRewards(
             message.member,
             levelResult.newLevel
         );
@@ -584,7 +871,7 @@ async function processLevelMessage(
     await sendLevelUpMessage(
         message,
         levelResult,
-        grantedRoles
+        rewardResult
     );
 
     console.log(
@@ -608,8 +895,20 @@ async function processLevelMessage(
     );
 
     console.log(
-        `🎖️ Rewards Granted: ${grantedRoles.length}`
+        `🎖️ Rewards Granted: ${rewardResult.grantedRoles.length}`
     );
+
+    console.log(
+        `🗑️ Lower Rewards Removed: ${rewardResult.removedRoles.length}`
+    );
+
+    if (
+        rewardResult.highestRewardLevel
+    ) {
+        console.log(
+            `🌑 Highest Reward Level: ${rewardResult.highestRewardLevel}`
+        );
+    }
 
     console.log(
         '======================================'
@@ -640,7 +939,9 @@ module.exports = {
                 '❌ Umbra Level System error:'
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
         }
     }
 };
@@ -674,6 +975,7 @@ const cleanupTimer =
                 }
             }
         },
+
         10 * 60 * 1000
     );
 
