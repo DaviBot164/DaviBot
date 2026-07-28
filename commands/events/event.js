@@ -31,8 +31,24 @@ const EVENT_CHANNEL_ID =
     '1531706846531031060';
 
 /**
+ * Discord error code returned when an interaction
+ * has already received a reply, defer or Modal.
+ */
+const INTERACTION_ALREADY_ACKNOWLEDGED =
+    40060;
+
+/**
+ * Temporarily record Modal openings.
+ *
+ * This prevents the same Slash Command interaction
+ * from attempting to open the Modal more than once.
+ */
+const openingModalInteractions =
+    new Set();
+
+/**
  * Fetch the original Discord message
- * belonging to an event.
+ * belonging to an Event.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object} eventData
@@ -68,7 +84,7 @@ async function fetchEventMessage(
 }
 
 /**
- * Fetch the event host.
+ * Fetch the Event host.
  *
  * @param {import('discord.js').Client} client
  * @param {Object} eventData
@@ -87,6 +103,137 @@ async function fetchEventHost(
         .catch(
             () => fallbackUser
         );
+}
+
+/**
+ * Safely open the Event creation Modal.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {Promise<boolean>}
+ */
+async function safelyShowEventModal(
+    interaction
+) {
+    if (
+        interaction.replied ||
+        interaction.deferred
+    ) {
+        return false;
+    }
+
+    if (
+        openingModalInteractions.has(
+            interaction.id
+        )
+    ) {
+        return false;
+    }
+
+    openingModalInteractions.add(
+        interaction.id
+    );
+
+    try {
+        const modal =
+            buildEventModal(
+                interaction.user.id
+            );
+
+        await interaction.showModal(
+            modal
+        );
+
+        return true;
+    } catch (error) {
+        if (
+            error.code ===
+            INTERACTION_ALREADY_ACKNOWLEDGED
+        ) {
+            console.warn(
+                '⚠️ The Event Modal interaction was already acknowledged. Duplicate execution was ignored.'
+            );
+
+            return false;
+        }
+
+        throw error;
+    } finally {
+        /*
+         * Keep the interaction ID briefly so another
+         * listener cannot immediately process it again.
+         */
+        setTimeout(
+            () => {
+                openingModalInteractions.delete(
+                    interaction.id
+                );
+            },
+            15_000
+        );
+    }
+}
+
+/**
+ * Send an Event command error safely.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {import('discord.js').EmbedBuilder} errorEmbed
+ * @returns {Promise<void>}
+ */
+async function sendEventCommandError(
+    interaction,
+    errorEmbed
+) {
+    try {
+        if (interaction.deferred) {
+            await interaction.editReply({
+                embeds:
+                    [errorEmbed],
+
+                components:
+                    []
+            });
+
+            return;
+        }
+
+        if (interaction.replied) {
+            await interaction.followUp({
+                embeds:
+                    [errorEmbed],
+
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            return;
+        }
+
+        await interaction.reply({
+            embeds:
+                [errorEmbed],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+    } catch (error) {
+        if (
+            error.code ===
+            INTERACTION_ALREADY_ACKNOWLEDGED
+        ) {
+            console.warn(
+                '⚠️ Event error response skipped because the interaction was already acknowledged.'
+            );
+
+            return;
+        }
+
+        console.error(
+            '❌ Failed to send the Event command error response:'
+        );
+
+        console.error(error);
+    }
 }
 
 module.exports = {
@@ -123,7 +270,7 @@ module.exports = {
                         option
                             .setName('event_id')
                             .setDescription(
-                                'The ID shown inside the event embed'
+                                'The ID shown inside the Event embed'
                             )
                             .setMaxLength(20)
                             .setRequired(true)
@@ -141,7 +288,7 @@ module.exports = {
                         option
                             .setName('event_id')
                             .setDescription(
-                                'The ID shown inside the event embed'
+                                'The ID shown inside the Event embed'
                             )
                             .setMaxLength(20)
                             .setRequired(true)
@@ -152,14 +299,14 @@ module.exports = {
                 subcommand
                     .setName('participants')
                     .setDescription(
-                        'View the participants of an event.'
+                        'View the participants of an Event.'
                     )
 
                     .addStringOption(option =>
                         option
                             .setName('event_id')
                             .setDescription(
-                                'The ID shown inside the event embed'
+                                'The ID shown inside the Event embed'
                             )
                             .setMaxLength(20)
                             .setRequired(true)
@@ -175,6 +322,13 @@ module.exports = {
     async execute(interaction) {
         try {
             if (!interaction.inGuild()) {
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+                    return;
+                }
+
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
@@ -198,6 +352,17 @@ module.exports = {
              * CREATE EVENT
              */
             if (subcommand === 'create') {
+                /*
+                 * Stop immediately if another listener has
+                 * already answered this Slash Command.
+                 */
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+                    return;
+                }
+
                 const eventChannel =
                     await interaction.guild.channels
                         .fetch(
@@ -206,6 +371,17 @@ module.exports = {
                         .catch(
                             () => null
                         );
+
+                /*
+                 * The channel fetch takes time, so check again
+                 * in case another listener answered meanwhile.
+                 */
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+                    return;
+                }
 
                 if (
                     !eventChannel ||
@@ -234,15 +410,18 @@ module.exports = {
                     interaction.guild.members.me;
 
                 const permissions =
-                    eventChannel.permissionsFor(
-                        botMember
-                    );
+                    botMember
+                        ? eventChannel.permissionsFor(
+                            botMember
+                        )
+                        : null;
 
                 if (
                     !permissions?.has([
                         PermissionFlagsBits.ViewChannel,
                         PermissionFlagsBits.SendMessages,
-                        PermissionFlagsBits.EmbedLinks
+                        PermissionFlagsBits.EmbedLinks,
+                        PermissionFlagsBits.ReadMessageHistory
                     ])
                 ) {
                     await interaction.reply({
@@ -255,7 +434,8 @@ module.exports = {
                                     'Required permissions:',
                                     '• View Channel',
                                     '• Send Messages',
-                                    '• Embed Links'
+                                    '• Embed Links',
+                                    '• Read Message History'
                                 ].join('\n')
                             )
                         ],
@@ -267,13 +447,8 @@ module.exports = {
                     return;
                 }
 
-                const modal =
-                    buildEventModal(
-                        interaction.user.id
-                    );
-
-                await interaction.showModal(
-                    modal
+                await safelyShowEventModal(
+                    interaction
                 );
 
                 return;
@@ -306,9 +481,9 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Event Not Found',
                             [
-                                `No Crimson Eclipse event was found with ID \`${eventId}\`.`,
+                                `No Crimson Eclipse Event was found with ID \`${eventId}\`.`,
                                 '',
-                                'The event may have been removed, or Umbra may have restarted.'
+                                'The Event may have been removed, or Umbra may have restarted.'
                             ].join('\n')
                         )
                     ],
@@ -378,7 +553,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Event Already Closed',
-                            `This event is already marked as **${eventData.status}**.`
+                            `This Event is already marked as **${eventData.status}**.`
                         )
                     ],
 
@@ -440,7 +615,7 @@ module.exports = {
                         createSuccessEmbed(
                             '🏁 Event Ended',
                             [
-                                `The event **${eventData.title}** has officially ended.`,
+                                `The Event **${eventData.title}** has officially ended.`,
                                 '',
                                 `👥 Final Participants: \`${eventData.participants.size}\``,
                                 `🆔 Event ID: \`${eventData.id}\``
@@ -457,9 +632,9 @@ module.exports = {
                         createSuccessEmbed(
                             '🚫 Event Cancelled',
                             [
-                                `The event **${eventData.title}** has been cancelled.`,
+                                `The Event **${eventData.title}** has been cancelled.`,
                                 '',
-                                'Members can no longer join this event.',
+                                'Members can no longer join this Event.',
                                 '',
                                 `🆔 Event ID: \`${eventData.id}\``
                             ].join('\n')
@@ -497,60 +672,37 @@ module.exports = {
                 '======================================'
             );
         } catch (error) {
+            /*
+             * A duplicate command listener may try to open
+             * the same Modal again. Ignore that second attempt.
+             */
+            if (
+                error.code ===
+                INTERACTION_ALREADY_ACKNOWLEDGED
+            ) {
+                console.warn(
+                    '⚠️ Duplicate /event interaction was ignored because it had already been acknowledged.'
+                );
+
+                return;
+            }
+
             console.error(
-                '❌ Umbra Event command error:',
-                error
+                '❌ Umbra Event command error:'
             );
+
+            console.error(error);
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Event System Failed',
-                    'Umbra could not complete this event action. Please try again.'
+                    'Umbra could not complete this Event action. Please try again.'
                 );
 
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds:
-                            [errorEmbed],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds:
-                            [errorEmbed],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds:
-                        [errorEmbed],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await sendEventCommandError(
+                interaction,
+                errorEmbed
+            );
         }
     }
 };
