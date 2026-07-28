@@ -26,7 +26,7 @@ const eventDatabase =
  */
 async function initializeDatabase() {
     const databaseUrl =
-        process.env.NF_Umbra_DATABASE_POSTGRES_URI ||
+        process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI ||
         process.env.DATABASE_URL;
 
     if (!databaseUrl) {
