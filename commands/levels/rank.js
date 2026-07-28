@@ -52,7 +52,7 @@ function createProgressBar(
 }
 
 /**
- * Format a number using separators.
+ * Format a number with separators.
  *
  * @param {number} value
  * @returns {string}
@@ -67,6 +67,96 @@ function formatNumber(
     );
 }
 
+/**
+ * Find the highest progression reward
+ * earned by the selected Soul.
+ *
+ * @param {Object[]} rewards
+ * @param {number} currentLevel
+ * @returns {Object|null}
+ */
+function findCurrentReward(
+    rewards,
+    currentLevel
+) {
+    const earnedRewards =
+        rewards
+            .filter(
+                reward =>
+                    reward.level <=
+                    currentLevel
+            )
+            .sort(
+                (
+                    firstReward,
+                    secondReward
+                ) =>
+                    secondReward.level -
+                    firstReward.level
+            );
+
+    return (
+        earnedRewards[0] ||
+        null
+    );
+}
+
+/**
+ * Find the next progression reward.
+ *
+ * @param {Object[]} rewards
+ * @param {number} currentLevel
+ * @returns {Object|null}
+ */
+function findNextReward(
+    rewards,
+    currentLevel
+) {
+    const upcomingRewards =
+        rewards
+            .filter(
+                reward =>
+                    reward.level >
+                    currentLevel
+            )
+            .sort(
+                (
+                    firstReward,
+                    secondReward
+                ) =>
+                    firstReward.level -
+                    secondReward.level
+            );
+
+    return (
+        upcomingRewards[0] ||
+        null
+    );
+}
+
+/**
+ * Resolve one configured reward role.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {Object|null} reward
+ * @returns {import('discord.js').Role|null}
+ */
+function resolveRewardRole(
+    guild,
+    reward
+) {
+    if (!reward) {
+        return null;
+    }
+
+    return (
+        guild.roles.cache.get(
+            reward.roleId
+        ) ||
+        null
+    );
+}
+
 module.exports = {
     category:
         'levels',
@@ -75,7 +165,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('rank')
             .setDescription(
-                'View a Soul’s Level, XP and position within the Order.'
+                'View a Soul’s Level, XP and progression within the Order.'
             )
             .setDMPermission(false)
 
@@ -150,12 +240,21 @@ module.exports = {
                         );
             }
 
-            const rankPosition =
-                await levelDatabase
+            const [
+                rankPosition,
+                configuredRewards
+            ] = await Promise.all([
+                levelDatabase
                     .getUserRank(
                         interaction.guild.id,
                         targetUser.id
-                    );
+                    ),
+
+                levelDatabase
+                    .getLevelRewards(
+                        interaction.guild.id
+                    )
+            ]);
 
             const progress =
                 levelData.progress;
@@ -171,6 +270,76 @@ module.exports = {
                     progress.nextLevelXp -
                     levelData.xp
                 );
+
+            const currentReward =
+                findCurrentReward(
+                    configuredRewards,
+                    levelData.level
+                );
+
+            const nextReward =
+                findNextReward(
+                    configuredRewards,
+                    levelData.level
+                );
+
+            const currentRewardRole =
+                resolveRewardRole(
+                    interaction.guild,
+                    currentReward
+                );
+
+            const nextRewardRole =
+                resolveRewardRole(
+                    interaction.guild,
+                    nextReward
+                );
+
+            const currentRankDisplay =
+                currentRewardRole
+                    ? `${currentRewardRole}`
+                    : 'No progression rank yet';
+
+            let nextRewardSection;
+
+            if (nextReward) {
+                const requiredTotalXp =
+                    levelDatabase
+                        .getTotalXpForLevel(
+                            nextReward.level
+                        );
+
+                const remainingLevels =
+                    Math.max(
+                        0,
+                        nextReward.level -
+                        levelData.level
+                    );
+
+                const remainingRewardXp =
+                    Math.max(
+                        0,
+                        requiredTotalXp -
+                        levelData.xp
+                    );
+
+                nextRewardSection = [
+                    `🎖️ **Next Rank:** ${
+                        nextRewardRole
+                            ? `${nextRewardRole}`
+                            : `Deleted Role \`${nextReward.roleId}\``
+                    }`,
+                    `🌑 **Required Level:** \`${nextReward.level}\``,
+                    `📈 **Levels Remaining:** \`${remainingLevels}\``,
+                    `⭐ **XP Remaining:** \`${formatNumber(remainingRewardXp)}\``
+                ].join('\n');
+            } else {
+                nextRewardSection = [
+                    '🏆 **Highest Progression Reached**',
+                    '',
+                    'This Soul has unlocked the highest configured rank within the Order.'
+                ].join('\n');
+            }
 
             const rankEmbed =
                 createEmbed({
@@ -188,6 +357,9 @@ module.exports = {
                             `⭐ **Total XP:** \`${formatNumber(levelData.xp)}\``,
                             `💬 **Messages Recorded:** \`${formatNumber(levelData.messageCount)}\``,
                             '',
+                            `🎭 **Current Progression Rank:**`,
+                            currentRankDisplay,
+                            '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
                             `📈 **Progress to Level ${levelData.level + 1}**`,
@@ -195,6 +367,10 @@ module.exports = {
                             '',
                             `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
                             `🌙 \`${formatNumber(xpUntilNextLevel)} XP\` remaining`,
+                            '',
+                            '━━━━━━━━━━━━━━━━━━━━',
+                            '',
+                            nextRewardSection,
                             '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
@@ -224,7 +400,9 @@ module.exports = {
                 '❌ Umbra /rank command error:'
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             const errorEmbed =
                 createErrorEmbed(
@@ -232,7 +410,7 @@ module.exports = {
                     [
                         'Umbra could not retrieve this Soul’s Level record.',
                         '',
-                        'Please try again after the PostgreSQL connection is available.'
+                        'Please check the PostgreSQL connection and try again.'
                     ].join('\n')
                 );
 
