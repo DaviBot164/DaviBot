@@ -19,6 +19,9 @@ const raidCaseDatabase =
 const eventDatabase =
     require('./events');
 
+const giveawayDatabase =
+    require('./giveaways');
+
 /**
  * Connect to PostgreSQL and initialize all required tables.
  *
@@ -83,6 +86,10 @@ async function initializeDatabase() {
         );
 
         console.log(
+            '✅ Giveaway database initialized.'
+        );
+
+        console.log(
             '======================================'
         );
 
@@ -116,5 +123,8 @@ module.exports = {
         raidCaseDatabase,
 
     events:
-        eventDatabase
+        eventDatabase,
+
+    giveaways:
+        giveawayDatabase
 };

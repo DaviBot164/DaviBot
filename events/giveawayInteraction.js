@@ -18,6 +18,11 @@ const {
     createWarningEmbed
 } = require('../utils/embeds');
 
+const {
+    giveaways:
+        giveawayDatabase
+} = require('../database');
+
 /**
  * Official Crimson Eclipse Giveaways channel.
  */
@@ -35,38 +40,25 @@ const MAX_GIVEAWAY_DURATION_MS =
 /**
  * Minimum supported Giveaway duration.
  *
- * 10 seconds allows safe testing.
+ * 10 seconds is allowed for testing.
  */
 const MIN_GIVEAWAY_DURATION_MS =
     10 * 1000;
 
 /**
- * Prevent duplicate processing of the
- * same Discord interaction.
+ * Prevent duplicate interaction execution.
  */
 const processingInteractions =
     new Set();
 
 /**
- * Return Umbra's temporary Giveaway storage.
+ * Store active timers for the current process.
  *
- * PostgreSQL persistence will be added
- * after the basic system is tested.
- *
- * @param {import('discord.js').Client} client
- * @returns {Map<string, Object>}
+ * The Giveaway data itself is stored permanently
+ * inside PostgreSQL.
  */
-function getGiveawayStorage(client) {
-    if (
-        !client.umbraGiveaways ||
-        !(client.umbraGiveaways instanceof Map)
-    ) {
-        client.umbraGiveaways =
-            new Map();
-    }
-
-    return client.umbraGiveaways;
-}
+const giveawayTimers =
+    new Map();
 
 /**
  * Generate a short Giveaway ID.
@@ -84,15 +76,14 @@ function createGiveawayId() {
  * Parse a Giveaway duration.
  *
  * Supported examples:
- * 10s
- * 30m
- * 2h
- * 1d
+ * 10s, 30m, 2h, 1d
  *
  * @param {string} rawDuration
  * @returns {number|null}
  */
-function parseDuration(rawDuration) {
+function parseDuration(
+    rawDuration
+) {
     const normalizedDuration =
         rawDuration
             ?.trim()
@@ -139,7 +130,9 @@ function parseDuration(rawDuration) {
         unitMultipliers[unit];
 
     if (
-        !Number.isSafeInteger(durationMs) ||
+        !Number.isSafeInteger(
+            durationMs
+        ) ||
         durationMs <
             MIN_GIVEAWAY_DURATION_MS ||
         durationMs >
@@ -152,7 +145,7 @@ function parseDuration(rawDuration) {
 }
 
 /**
- * Parse the number of winners.
+ * Parse the number of Giveaway winners.
  *
  * @param {string} rawWinnerCount
  * @returns {number|null}
@@ -166,7 +159,9 @@ function parseWinnerCount(
 
     if (
         !normalizedValue ||
-        !/^\d+$/.test(normalizedValue)
+        !/^\d+$/.test(
+            normalizedValue
+        )
     ) {
         return null;
     }
@@ -178,7 +173,9 @@ function parseWinnerCount(
         );
 
     if (
-        !Number.isInteger(winnerCount) ||
+        !Number.isInteger(
+            winnerCount
+        ) ||
         winnerCount < 1 ||
         winnerCount > 20
     ) {
@@ -267,19 +264,32 @@ function buildGiveawayEmbed(
             1000
         );
 
+    const statusConfig = {
+        Active:
+            '🟢 Active',
+
+        Ended:
+            '🏁 Ended',
+
+        Cancelled:
+            '🔴 Cancelled'
+    };
+
     const statusDisplay =
-        giveawayData.status ===
-        'Active'
-            ? '🟢 Active'
-            : '🏁 Ended';
+        statusConfig[
+            giveawayData.status
+        ] ||
+        giveawayData.status;
 
     const requirement =
         giveawayData.requirement ||
         'No special requirement.';
 
     const winnerDisplay =
-        giveawayData.winners
-            ?.length > 0
+        Array.isArray(
+            giveawayData.winners
+        ) &&
+        giveawayData.winners.length > 0
             ? giveawayData.winners
                 .map(
                     userId =>
@@ -296,7 +306,7 @@ function buildGiveawayEmbed(
         '🎁 **Prize**',
         giveawayData.prize,
         '',
-        '🏆 **Winners**',
+        '🏆 **Number of Winners**',
         `\`${giveawayData.winnerCount}\``,
         '',
         '📜 **Entry Requirement**',
@@ -420,7 +430,7 @@ function buildGiveawayButtons(
 }
 
 /**
- * Build the Giveaway participant list.
+ * Build the Giveaway entries embed.
  *
  * @param {Object} giveawayData
  * @param {string|null} thumbnail
@@ -521,13 +531,9 @@ function selectWinners(
 
         [
             shuffledParticipants[index],
-            shuffledParticipants[
-                randomIndex
-            ]
+            shuffledParticipants[randomIndex]
         ] = [
-            shuffledParticipants[
-                randomIndex
-            ],
+            shuffledParticipants[randomIndex],
             shuffledParticipants[index]
         ];
     }
@@ -591,25 +597,24 @@ async function fetchGiveawayMessage(
 }
 
 /**
- * End a Giveaway automatically.
+ * End a Giveaway and save winners permanently.
  *
  * @param {import('discord.js').Client} client
  * @param {string} giveawayId
+ * @param {string} guildId
  * @returns {Promise<void>}
  */
 async function endGiveaway(
     client,
-    giveawayId
+    giveawayId,
+    guildId
 ) {
-    const storage =
-        getGiveawayStorage(
-            client
-        );
-
-    const giveawayData =
-        storage.get(
-            giveawayId
-        );
+    let giveawayData =
+        await giveawayDatabase
+            .getGiveaway(
+                giveawayId,
+                guildId
+            );
 
     if (
         !giveawayData ||
@@ -619,22 +624,30 @@ async function endGiveaway(
         return;
     }
 
-    giveawayData.status =
-        'Ended';
-
-    giveawayData.winners =
+    const winners =
         selectWinners(
             giveawayData.participants,
             giveawayData.winnerCount
         );
 
-    giveawayData.endedAt =
-        Date.now();
+    await giveawayDatabase
+        .saveGiveawayWinners(
+            giveawayData.id,
+            giveawayData.guildId,
+            winners
+        );
 
-    storage.set(
-        giveawayData.id,
-        giveawayData
-    );
+    giveawayData =
+        await giveawayDatabase
+            .updateGiveawayStatus(
+                giveawayData.id,
+                giveawayData.guildId,
+                'Ended'
+            );
+
+    if (!giveawayData) {
+        return;
+    }
 
     const giveawayMessage =
         await fetchGiveawayMessage(
@@ -689,7 +702,9 @@ async function endGiveaway(
                         [
                             `${winnerMentions} won **${giveawayData.prize}**!`,
                             '',
-                            `🆔 Giveaway ID: \`${giveawayData.id}\``
+                            `🆔 Giveaway ID: \`${giveawayData.id}\``,
+                            '',
+                            '💾 The winner was saved permanently.'
                         ].join('\n')
                     )
                 ],
@@ -713,6 +728,19 @@ async function endGiveaway(
                 ]
             });
         }
+    }
+
+    const timer =
+        giveawayTimers.get(
+            giveawayData.id
+        );
+
+    if (timer) {
+        clearTimeout(timer);
+
+        giveawayTimers.delete(
+            giveawayData.id
+        );
     }
 
     console.log(
@@ -740,7 +768,67 @@ async function endGiveaway(
     );
 
     console.log(
+        '💾 Giveaway saved in PostgreSQL'
+    );
+
+    console.log(
         '======================================'
+    );
+}
+
+/**
+ * Schedule a Giveaway ending.
+ *
+ * @param {import('discord.js').Client} client
+ * @param {Object} giveawayData
+ */
+function scheduleGiveaway(
+    client,
+    giveawayData
+) {
+    const existingTimer =
+        giveawayTimers.get(
+            giveawayData.id
+        );
+
+    if (existingTimer) {
+        clearTimeout(
+            existingTimer
+        );
+    }
+
+    const remainingTime =
+        Math.max(
+            giveawayData.endsAt -
+            Date.now(),
+            0
+        );
+
+    const timer =
+        setTimeout(
+            () => {
+                endGiveaway(
+                    client,
+                    giveawayData.id,
+                    giveawayData.guildId
+                ).catch(
+                    error => {
+                        console.error(
+                            '❌ Automatic Giveaway ending failed:'
+                        );
+
+                        console.error(
+                            error
+                        );
+                    }
+                );
+            },
+            remainingTime
+        );
+
+    giveawayTimers.set(
+        giveawayData.id,
+        timer
     );
 }
 
@@ -964,7 +1052,6 @@ async function handleCreateModal(
         prize,
         description,
         requirement,
-        durationMs,
         winnerCount,
 
         status:
@@ -998,51 +1085,42 @@ async function handleCreateModal(
             giveawayData
         );
 
-    const giveawayMessage =
-        await giveawayChannel.send({
-            embeds:
-                [giveawayEmbed],
+    let giveawayMessage =
+        null;
 
-            components:
-                [giveawayButtons]
-        });
+    try {
+        giveawayMessage =
+            await giveawayChannel.send({
+                embeds:
+                    [giveawayEmbed],
 
-    giveawayData.messageId =
-        giveawayMessage.id;
+                components:
+                    [giveawayButtons]
+            });
 
-    const storage =
-        getGiveawayStorage(
-            interaction.client
-        );
+        giveawayData.messageId =
+            giveawayMessage.id;
 
-    storage.set(
-        giveawayData.id,
+        await giveawayDatabase
+            .createGiveaway(
+                giveawayData
+            );
+    } catch (error) {
+        if (giveawayMessage) {
+            await giveawayMessage
+                .delete()
+                .catch(
+                    () => null
+                );
+        }
+
+        throw error;
+    }
+
+    scheduleGiveaway(
+        interaction.client,
         giveawayData
     );
-
-    const giveawayTimer =
-        setTimeout(
-            () => {
-                endGiveaway(
-                    interaction.client,
-                    giveawayData.id
-                ).catch(
-                    error => {
-                        console.error(
-                            '❌ Automatic Giveaway ending failed:'
-                        );
-
-                        console.error(
-                            error
-                        );
-                    }
-                );
-            },
-            durationMs
-        );
-
-    giveawayData.timer =
-        giveawayTimer;
 
     await interaction.editReply({
         embeds: [
@@ -1053,7 +1131,9 @@ async function handleCreateModal(
                     '',
                     `⏳ Duration: \`${rawDuration}\``,
                     `🏆 Winners: \`${winnerCount}\``,
-                    `🆔 Giveaway ID: \`${giveawayId}\``
+                    `🆔 Giveaway ID: \`${giveawayId}\``,
+                    '',
+                    '💾 The Giveaway was saved permanently in PostgreSQL.'
                 ].join('\n')
             )
         ]
@@ -1088,6 +1168,10 @@ async function handleCreateModal(
     );
 
     console.log(
+        '💾 Saved to PostgreSQL'
+    );
+
+    console.log(
         '======================================'
     );
 }
@@ -1114,15 +1198,35 @@ async function handleGiveawayButton(
             ?.trim()
             .toLowerCase();
 
-    const storage =
-        getGiveawayStorage(
-            interaction.client
-        );
+    if (
+        !action ||
+        !giveawayId
+    ) {
+        await interaction.reply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Invalid Giveaway Action',
+                    'Umbra could not identify this Giveaway action.'
+                )
+            ],
 
-    const giveawayData =
-        storage.get(
-            giveawayId
-        );
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    if (!interaction.inGuild()) {
+        return;
+    }
+
+    let giveawayData =
+        await giveawayDatabase
+            .getGiveaway(
+                giveawayId,
+                interaction.guildId
+            );
 
     if (!giveawayData) {
         await interaction.reply({
@@ -1130,11 +1234,9 @@ async function handleGiveawayButton(
                 createWarningEmbed(
                     '⚠️ Giveaway Data Unavailable',
                     [
-                        'Umbra no longer has this Giveaway in temporary memory.',
+                        `No Giveaway was found with ID \`${giveawayId}\`.`,
                         '',
-                        'This can happen after a bot restart.',
-                        '',
-                        'PostgreSQL persistence will be added after testing.'
+                        'The Giveaway may have been deleted from PostgreSQL.'
                     ].join('\n')
                 )
             ],
@@ -1146,13 +1248,6 @@ async function handleGiveawayButton(
         return;
     }
 
-    if (
-        giveawayData.guildId !==
-        interaction.guildId
-    ) {
-        return;
-    }
-
     /*
      * VIEW ENTRIES
      */
@@ -1161,17 +1256,16 @@ async function handleGiveawayButton(
         'participants'
     ) {
         const thumbnail =
-            interaction.guild
-                ?.iconURL({
-                    extension:
-                        'png',
+            interaction.guild.iconURL({
+                extension:
+                    'png',
 
-                    size:
-                        256,
+                size:
+                    256,
 
-                    forceStatic:
-                        false
-                }) ||
+                forceStatic:
+                    false
+            }) ||
             interaction.client.user
                 .displayAvatarURL({
                     extension:
@@ -1222,11 +1316,15 @@ async function handleGiveawayButton(
      * ENTER GIVEAWAY
      */
     if (action === 'join') {
-        if (
-            giveawayData.participants.has(
-                interaction.user.id
-            )
-        ) {
+        const participantAdded =
+            await giveawayDatabase
+                .addGiveawayParticipant(
+                    giveawayData.id,
+                    giveawayData.guildId,
+                    interaction.user.id
+                );
+
+        if (!participantAdded) {
             await interaction.reply({
                 embeds: [
                     createWarningEmbed(
@@ -1242,14 +1340,12 @@ async function handleGiveawayButton(
             return;
         }
 
-        giveawayData.participants.add(
-            interaction.user.id
-        );
-
-        storage.set(
-            giveawayData.id,
-            giveawayData
-        );
+        giveawayData =
+            await giveawayDatabase
+                .getGiveaway(
+                    giveawayData.id,
+                    giveawayData.guildId
+                );
 
         await interaction.deferUpdate();
 
@@ -1286,7 +1382,7 @@ async function handleGiveawayButton(
                         '',
                         `👥 Current Entries: \`${giveawayData.participants.size}\``,
                         '',
-                        '*May fortune find you beneath the crimson moon.*'
+                        '💾 Your entry was saved permanently.'
                     ].join('\n')
                 )
             ],
@@ -1302,11 +1398,15 @@ async function handleGiveawayButton(
      * LEAVE GIVEAWAY
      */
     if (action === 'leave') {
-        if (
-            !giveawayData.participants.has(
-                interaction.user.id
-            )
-        ) {
+        const participantRemoved =
+            await giveawayDatabase
+                .removeGiveawayParticipant(
+                    giveawayData.id,
+                    giveawayData.guildId,
+                    interaction.user.id
+                );
+
+        if (!participantRemoved) {
             await interaction.reply({
                 embeds: [
                     createWarningEmbed(
@@ -1322,14 +1422,12 @@ async function handleGiveawayButton(
             return;
         }
 
-        giveawayData.participants.delete(
-            interaction.user.id
-        );
-
-        storage.set(
-            giveawayData.id,
-            giveawayData
-        );
+        giveawayData =
+            await giveawayDatabase
+                .getGiveaway(
+                    giveawayData.id,
+                    giveawayData.guildId
+                );
 
         await interaction.deferUpdate();
 
@@ -1364,7 +1462,9 @@ async function handleGiveawayButton(
                     [
                         `You left the Giveaway for **${giveawayData.prize}**.`,
                         '',
-                        `👥 Current Entries: \`${giveawayData.participants.size}\``
+                        `👥 Current Entries: \`${giveawayData.participants.size}\``,
+                        '',
+                        '💾 The database was updated successfully.'
                     ].join('\n')
                 )
             ],
@@ -1456,7 +1556,11 @@ module.exports = {
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Giveaway Action Failed',
-                    'Umbra could not complete this Giveaway action.'
+                    [
+                        'Umbra could not complete this Giveaway action.',
+                        '',
+                        'Please check the PostgreSQL connection and try again.'
+                    ].join('\n')
                 );
 
             if (interaction.deferred) {
@@ -1512,5 +1616,8 @@ module.exports = {
                 15_000
             );
         }
-    }
+    },
+
+    endGiveaway,
+    scheduleGiveaway
 };

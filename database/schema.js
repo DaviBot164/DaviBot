@@ -116,9 +116,6 @@ async function initializeSchema() {
 
     /*
      * Crimson Eclipse Event System
-     *
-     * Stores the main information for every
-     * Event created through Umbra.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS events (
@@ -170,11 +167,6 @@ async function initializeSchema() {
 
     /*
      * Event Participants
-     *
-     * Stores every Soul who joins an Event.
-     *
-     * The composite primary key prevents the
-     * same user from joining the same Event twice.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS event_participants (
@@ -206,6 +198,145 @@ async function initializeSchema() {
     await query(`
         CREATE INDEX IF NOT EXISTS event_participants_joined_at_index
         ON event_participants (joined_at DESC);
+    `);
+
+    /*
+     * Crimson Eclipse Giveaway System
+     *
+     * Stores every Giveaway created through Umbra.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS giveaways (
+            giveaway_id VARCHAR(32) PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+            channel_id VARCHAR(32) NOT NULL,
+            message_id VARCHAR(32) NOT NULL,
+            host_id VARCHAR(32) NOT NULL,
+
+            prize VARCHAR(200) NOT NULL,
+            description TEXT NOT NULL,
+            requirement VARCHAR(200),
+
+            winner_count INTEGER NOT NULL,
+
+            status VARCHAR(20) NOT NULL DEFAULT 'Active',
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            ends_at TIMESTAMPTZ NOT NULL,
+            ended_at TIMESTAMPTZ,
+            cancelled_at TIMESTAMPTZ
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaways_guild_status_index
+        ON giveaways (guild_id, status);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaways_guild_created_at_index
+        ON giveaways (guild_id, created_at DESC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaways_host_index
+        ON giveaways (guild_id, host_id);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaways_ends_at_index
+        ON giveaways (status, ends_at ASC);
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaways_message_index
+        ON giveaways (guild_id, message_id);
+    `);
+
+    /*
+     * Giveaway Participants
+     *
+     * Prevents the same Soul from entering
+     * the same Giveaway more than once.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS giveaway_participants (
+            giveaway_id VARCHAR(32) NOT NULL,
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (giveaway_id, user_id),
+
+            CONSTRAINT giveaway_participants_giveaway_foreign_key
+                FOREIGN KEY (giveaway_id)
+                REFERENCES giveaways (giveaway_id)
+                ON DELETE CASCADE
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaway_participants_giveaway_index
+        ON giveaway_participants (
+            giveaway_id,
+            joined_at ASC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaway_participants_guild_user_index
+        ON giveaway_participants (
+            guild_id,
+            user_id
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaway_participants_joined_at_index
+        ON giveaway_participants (
+            joined_at DESC
+        );
+    `);
+
+    /*
+     * Giveaway Winners
+     *
+     * Stores the selected winners permanently.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS giveaway_winners (
+            giveaway_id VARCHAR(32) NOT NULL,
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            selected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (giveaway_id, user_id),
+
+            CONSTRAINT giveaway_winners_giveaway_foreign_key
+                FOREIGN KEY (giveaway_id)
+                REFERENCES giveaways (giveaway_id)
+                ON DELETE CASCADE
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaway_winners_giveaway_index
+        ON giveaway_winners (
+            giveaway_id,
+            selected_at ASC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS giveaway_winners_guild_user_index
+        ON giveaway_winners (
+            guild_id,
+            user_id
+        );
     `);
 }
 
