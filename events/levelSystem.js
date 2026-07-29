@@ -15,7 +15,7 @@ const {
  * Official Crimson Eclipse Level Up channel.
  */
 const LEVEL_UP_CHANNEL_ID =
-    '1531777201303978145';
+    '1528399925866532906';
 
 /**
  * Level System configuration.
