@@ -71,10 +71,6 @@ function createWelcomeEmbed(
             1_000
         );
 
-    /*
-     * Find the official verification channel
-     * using the centralized channel configuration.
-     */
     const verifyChannel =
         guild.channels.cache.get(
             channels.verifyChannelId
@@ -85,6 +81,9 @@ function createWelcomeEmbed(
         verifyChannel.isTextBased()
             ? `Complete verification in ${verifyChannel} to enter the Order.`
             : 'Complete verification to enter the Order.';
+
+    const soulNumber =
+        guild.memberCount;
 
     return new EmbedBuilder()
         .setColor(
@@ -100,22 +99,23 @@ function createWelcomeEmbed(
         })
 
         .setTitle(
-            '🌑 A New Soul Has Arrived'
+            `🌑 Soul #${soulNumber} Has Arrived`
         )
 
         .setDescription(
             [
+                '━━━━━━━━━━━━━━━━━━━━',
+                '',
                 `Welcome, ${member}.`,
                 '',
-                `You are **Soul #${guild.memberCount}** of **${guild.name}**.`,
-                '',
-                'The crimson moon has accepted another Soul.',
+                'A new Soul has stepped beneath the Crimson Moon.',
+                `Your journey through **${guild.name}** begins now.`,
                 '',
                 `**${verificationText}**`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '🌑 *Beneath the crimson moon, your journey begins.*'
+                '*The Order grows stronger beneath the crimson moon.*'
             ].join(
                 '\n'
             )
@@ -128,9 +128,9 @@ function createWelcomeEmbed(
 
                 value:
                     [
-                        `**Soul:** ${member}`,
-                        `**Soul Number:** \`#${guild.memberCount}\``,
-                        `**Joined:** <t:${joinedTimestamp}:R>`
+                        `🌑 **Soul:** ${member}`,
+                        `🏅 **Number:** \`#${soulNumber}\``,
+                        `📅 **Joined:** <t:${joinedTimestamp}:R>`
                     ].join(
                         '\n'
                     ),
@@ -144,10 +144,6 @@ function createWelcomeEmbed(
             memberAvatar
         )
 
-        /*
-         * The file itself will be attached
-         * by guildMemberAdd.js.
-         */
         .setImage(
             `attachment://${WELCOME_BANNER_NAME}`
         )
