@@ -11,11 +11,17 @@ const {
     levels: levelDatabase
 } = require('../database');
 
+const channels =
+    require('../config/channels');
+
 /**
  * Official Crimson Eclipse Level Up channel.
+ *
+ * Level Up announcements are published
+ * in the main Eclipse Chat channel.
  */
 const LEVEL_UP_CHANNEL_ID =
-    '1528399925866532906';
+    channels.eclipseChatChannelId;
 
 /**
  * Level System configuration.
@@ -340,9 +346,7 @@ function canManageRewardRole(
     }
 
     return true;
-}
-
-/**
+}/**
  * Synchronize a Soul's progression roles.
  *
  * Umbra keeps only the highest configured
@@ -685,7 +689,7 @@ async function synchronizeLevelRewards(
  * Resolve the channel that should receive
  * Level Up announcements.
  *
- * The dedicated Level Up channel is preferred.
+ * The configured Eclipse Chat channel is preferred.
  * The original message channel is used as
  * a fallback when the configured channel
  * cannot be found or used.
@@ -744,6 +748,7 @@ async function getLevelUpChannel(
 
     return null;
 }
+
 /**
  * Send a polished Level Up announcement.
  *
@@ -912,9 +917,7 @@ async function sendLevelUpMessage(
             error
         );
     }
-}
-
-/**
+}/**
  * Process XP for one message.
  *
  * @param {import('discord.js').Message} message
