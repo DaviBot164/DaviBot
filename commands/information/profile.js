@@ -22,7 +22,7 @@ const {
 
 /**
  * Format a timestamp using Discord's
- * date display system.
+ * native date system.
  *
  * @param {number|null} timestamp
  * @returns {string}
@@ -40,14 +40,14 @@ function formatDiscordDate(
             1000
         );
 
-    return (
-        `<t:${unixTimestamp}:F>\n` +
+    return [
+        `<t:${unixTimestamp}:F>`,
         `-# <t:${unixTimestamp}:R>`
-    );
+    ].join('\n');
 }
 
 /**
- * Format a number with separators.
+ * Format a number using separators.
  *
  * @param {number|string|null} value
  * @returns {string}
@@ -72,10 +72,7 @@ function formatNumber(
 }
 
 /**
- * Create Umbra's visual XP progress bar.
- *
- * Example:
- * ▰▰▰▰▰▱▱▱▱▱
+ * Create Umbra's visual XP bar.
  *
  * @param {number} percentage
  * @param {number} length
@@ -83,7 +80,7 @@ function formatNumber(
  */
 function createProgressBar(
     percentage,
-    length = 10
+    length = 12
 ) {
     const safePercentage =
         Math.min(
@@ -130,7 +127,7 @@ function getTimeoutStatus(
         !member
             .isCommunicationDisabled()
     ) {
-        return '🟢 No Active Timeout';
+        return '🟢 Clear';
     }
 
     const timeoutTimestamp =
@@ -138,7 +135,7 @@ function getTimeoutStatus(
             .communicationDisabledUntilTimestamp;
 
     if (!timeoutTimestamp) {
-        return '🔇 Timeout Active';
+        return '🔇 Active';
     }
 
     const unixTimestamp =
@@ -148,8 +145,8 @@ function getTimeoutStatus(
         );
 
     return (
-        '🔇 Timeout Active\n' +
-        `Ends <t:${unixTimestamp}:R>`
+        `🔇 Active until ` +
+        `<t:${unixTimestamp}:R>`
     );
 }
 
@@ -170,7 +167,7 @@ function formatWarningCount(
     }
 
     if (warningCount === 0) {
-        return '🟢 No Warnings';
+        return '🟢 Clear';
     }
 
     if (warningCount === 1) {
@@ -183,7 +180,7 @@ function formatWarningCount(
 }
 
 /**
- * Get the Soul's account type.
+ * Get the account type.
  *
  * @param {import('discord.js').User} user
  * @returns {string}
@@ -203,8 +200,8 @@ function getAccountType(
 }
 
 /**
- * Get an Order badge based on
- * server ownership and permissions.
+ * Get an Order badge based on ownership
+ * and server permissions.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
@@ -273,8 +270,7 @@ function getHighestRole(
 }
 
 /**
- * Get the member's role count
- * without the @everyone role.
+ * Count roles without @everyone.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {number}
@@ -290,11 +286,106 @@ function getRoleCount(
 }
 
 /**
- * Get the current progression reward role.
+ * Safely get the member's warnings.
  *
- * Umbra checks every configured reward role
- * and returns the highest reward role that
- * the member currently owns.
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number|string>}
+ */
+async function getWarningCount(
+    guildId,
+    userId
+) {
+    try {
+        return await warningDatabase
+            .countWarnings(
+                guildId,
+                userId
+            );
+    } catch (error) {
+        console.warn(
+            `⚠️ Profile warning count unavailable: ${error.message}`
+        );
+
+        return 'Unavailable';
+    }
+}
+
+/**
+ * Safely get a Soul's Level record.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<Object>}
+ */
+async function getLevelRecord(
+    guildId,
+    userId
+) {
+    try {
+        const levelRecord =
+            await levelDatabase
+                .getUserLevel(
+                    guildId,
+                    userId
+                );
+
+        if (levelRecord) {
+            return levelRecord;
+        }
+    } catch (error) {
+        console.warn(
+            `⚠️ Profile Level record unavailable: ${error.message}`
+        );
+    }
+
+    return {
+        xp:
+            0,
+
+        level:
+            0,
+
+        messageCount:
+            0,
+
+        progress:
+            levelDatabase
+                .calculateLevelProgress(
+                    0
+                )
+    };
+}
+
+/**
+ * Safely get a Soul's server Rank.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number|null>}
+ */
+async function getServerRank(
+    guildId,
+    userId
+) {
+    try {
+        return await levelDatabase
+            .getUserRank(
+                guildId,
+                userId
+            );
+    } catch (error) {
+        console.warn(
+            `⚠️ Profile server Rank unavailable: ${error.message}`
+        );
+
+        return null;
+    }
+}
+
+/**
+ * Get the highest progression role currently
+ * owned by the member.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} level
@@ -311,15 +402,6 @@ async function getProgressionRole(
                     member.guild.id,
                     level
                 );
-
-        if (
-            !Array.isArray(
-                earnedRewards
-            ) ||
-            earnedRewards.length === 0
-        ) {
-            return '🌑 No Progression Rank';
-        }
 
         const sortedRewards =
             [...earnedRewards].sort(
@@ -348,145 +430,29 @@ async function getProgressionRole(
             ) {
                 return (
                     `${role} ` +
-                    `-# Level ${reward.level}`
+                    `• Level ${reward.level}`
                 );
             }
         }
 
-        return '🌑 No Progression Rank';
+        return '🌑 None Unlocked';
     } catch (error) {
         console.warn(
-            `⚠️ Umbra profile progression role unavailable: ${error.message}`
+            `⚠️ Profile progression role unavailable: ${error.message}`
         );
 
-        return '⚠️ Progression Rank Unavailable';
+        return '⚠️ Unavailable';
     }
 }
 
 /**
- * Safely get the number of warnings.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<number|string>}
- */
-async function getWarningCount(
-    guildId,
-    userId
-) {
-    try {
-        return await warningDatabase
-            .countWarnings(
-                guildId,
-                userId
-            );
-    } catch (error) {
-        console.warn(
-            `⚠️ Umbra profile warning count unavailable: ${error.message}`
-        );
-
-        return 'Unavailable';
-    }
-}
-
-/**
- * Safely get a Soul's Level record.
- *
- * A member without an existing Level record
- * is displayed as Level 0 with zero XP.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<{
- *     xp: number,
- *     level: number,
- *     messageCount: number,
- *     progress: {
- *         level: number,
- *         totalXp: number,
- *         currentLevelXp: number,
- *         nextLevelXp: number,
- *         requiredForNextLevel: number,
- *         progressXp: number,
- *         progressPercent: number
- *     }
- * }>}
- */
-async function getLevelRecord(
-    guildId,
-    userId
-) {
-    try {
-        const levelRecord =
-            await levelDatabase
-                .getUserLevel(
-                    guildId,
-                    userId
-                );
-
-        if (levelRecord) {
-            return levelRecord;
-        }
-    } catch (error) {
-        console.warn(
-            `⚠️ Umbra profile Level record unavailable: ${error.message}`
-        );
-    }
-
-    const progress =
-        levelDatabase
-            .calculateLevelProgress(
-                0
-            );
-
-    return {
-        xp:
-            0,
-
-        level:
-            0,
-
-        messageCount:
-            0,
-
-        progress
-    };
-}
-
-/**
- * Safely get a Soul's server Rank.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<number|null>}
- */
-async function getServerRank(
-    guildId,
-    userId
-) {
-    try {
-        return await levelDatabase
-            .getUserRank(
-                guildId,
-                userId
-            );
-    } catch (error) {
-        console.warn(
-            `⚠️ Umbra profile server Rank unavailable: ${error.message}`
-        );
-
-        return null;
-    }
-}
-
-/**
- * Build the Level progress display.
+ * Build the redesigned progression block.
  *
  * @param {Object} levelRecord
  * @param {number|null} serverRank
  * @returns {string}
  */
-function buildLevelDisplay(
+function buildProgressionDisplay(
     levelRecord,
     serverRank
 ) {
@@ -515,16 +481,16 @@ function buildLevelDisplay(
             : 'Unranked';
 
     return [
-        `**Level:** \`${levelRecord.level}\``,
-        `**Server Rank:** \`${rankDisplay}\``,
-        `**Total XP:** \`${formatNumber(levelRecord.xp)}\``,
-        `**Eligible Messages:** \`${formatNumber(levelRecord.messageCount)}\``,
+        `⭐ **Level ${levelRecord.level}**`,
+        `🏆 **Server Rank:** \`${rankDisplay}\``,
+        `✨ **Total XP:** \`${formatNumber(levelRecord.xp)}\``,
+        `💬 **Messages Counted:** \`${formatNumber(levelRecord.messageCount)}\``,
         '',
+        `**Level ${levelRecord.level} → ${levelRecord.level + 1}**`,
         `\`${progressBar}\` **${progress.progressPercent}%**`,
         '',
         `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
-        `🌙 **Remaining XP:** \`${formatNumber(remainingXp)}\``,
-        `📈 **Next Level:** \`${levelRecord.level + 1}\``
+        `🌙 **Remaining:** \`${formatNumber(remainingXp)} XP\``
     ].join('\n');
 }module.exports = {
     category:
@@ -536,7 +502,7 @@ function buildLevelDisplay(
                 'profile'
             )
             .setDescription(
-                'View the complete Order profile of a server member.'
+                'View the complete RPG-style profile of a server member.'
             )
             .addUserOption(option =>
                 option
@@ -632,12 +598,6 @@ function buildLevelDisplay(
                         false
                 });
 
-            /*
-             * If the Soul has a banner, use it
-             * as the large profile image.
-             *
-             * Otherwise, use the Soul's avatar.
-             */
             const profileImageURL =
                 bannerURL ??
                 avatarURL;
@@ -670,11 +630,11 @@ function buildLevelDisplay(
 
             const bannerStatus =
                 bannerURL
-                    ? '🌌 Banner Forged'
-                    : '🌑 No Banner Forged';
+                    ? '🌌 Profile Banner Available'
+                    : '🌑 No Profile Banner';
 
-            const levelDisplay =
-                buildLevelDisplay(
+            const progressionDisplay =
+                buildProgressionDisplay(
                     levelRecord,
                     serverRank
                 );
@@ -687,6 +647,8 @@ function buildLevelDisplay(
                     description:
                         [
                             `Umbra has opened the complete Order record of ${fullUser}.`,
+                            '',
+                            '━━━━━━━━━━━━━━━━━━━━',
                             '',
                             '*Every Soul leaves a mark beneath the crimson moon.*'
                         ].join(
@@ -702,7 +664,7 @@ function buildLevelDisplay(
                     fields: [
                         {
                             name:
-                                '🌑 Soul Identity',
+                                '👤 Soul Identity',
 
                             value:
                                 [
@@ -722,14 +684,14 @@ function buildLevelDisplay(
                                 '⭐ Soul Progression',
 
                             value:
-                                levelDisplay,
+                                progressionDisplay,
 
                             inline:
                                 false
                         },
                         {
                             name:
-                                '🎖️ Order Status',
+                                '🎖️ Order Standing',
 
                             value:
                                 [
@@ -757,41 +719,44 @@ function buildLevelDisplay(
                                 ),
 
                             inline:
-                                true
+                                false
                         },
                         {
                             name:
-                                '🌌 Soul Banner',
+                                '🌌 Profile Appearance',
 
                             value:
-                                bannerStatus,
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '📅 Soul Created',
-
-                            value:
-                                formatDiscordDate(
-                                    fullUser.createdTimestamp
+                                [
+                                    `**Banner:** ${bannerStatus}`,
+                                    `**Avatar:** 🖼️ Available`
+                                ].join(
+                                    '\n'
                                 ),
 
                             inline:
-                                true
+                                false
                         },
                         {
                             name:
-                                '📥 Entered the Order',
+                                '📅 Soul History',
 
                             value:
-                                formatDiscordDate(
-                                    member.joinedTimestamp
+                                [
+                                    '**Account Created**',
+                                    formatDiscordDate(
+                                        fullUser.createdTimestamp
+                                    ),
+                                    '',
+                                    '**Entered the Order**',
+                                    formatDiscordDate(
+                                        member.joinedTimestamp
+                                    )
+                                ].join(
+                                    '\n'
                                 ),
 
                             inline:
-                                true
+                                false
                         }
                     ]
                 });
@@ -821,11 +786,6 @@ function buildLevelDisplay(
 
             profileEmbed.setTimestamp();
 
-            /*
-             * This guarantees that a large image
-             * appears even when the Soul has no
-             * Discord profile banner.
-             */
             profileEmbed.setImage(
                 profileImageURL
             );
@@ -848,14 +808,6 @@ function buildLevelDisplay(
                             )
                     );
 
-            /*
-             * Discord link buttons require a
-             * valid URL.
-             *
-             * The Banner button is therefore
-             * only added when the Soul actually
-             * has a profile banner.
-             */
             if (bannerURL) {
                 buttons.addComponents(
                     new ButtonBuilder()
