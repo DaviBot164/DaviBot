@@ -27,7 +27,7 @@ const {
  * Official Crimson Eclipse Giveaways channel.
  */
 const GIVEAWAY_CHANNEL_ID =
-    '1531737543156961431';
+    '1528401988272914463';
 
 /**
  * Maximum supported Giveaway duration.
