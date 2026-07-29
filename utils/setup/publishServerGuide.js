@@ -8,11 +8,11 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
-const SERVER_GUIDE_CHANNEL_ID =
-    '1530978474637135963';
+const setupChannels =
+    require('../../config/setupChannels');
 
 /**
- * Get and validate the Server Guide channel.
+ * Get and validate the Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -22,7 +22,8 @@ async function getServerGuideChannel(
 ) {
     const guideChannel =
         await interaction.guild.channels.fetch(
-            SERVER_GUIDE_CHANNEL_ID
+            setupChannels
+                .informationChannelId
         );
 
     if (
@@ -32,8 +33,8 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Server Guide Channel Missing',
-                    'Umbra could not find the configured Server Guide channel.'
+                    '❌ Information Channel Missing',
+                    'Umbra could not find the configured Information channel.'
                 )
             ],
 
@@ -77,7 +78,7 @@ async function getServerGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Server Guide channel.'
+                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Information channel.'
                 )
             ],
 
@@ -211,7 +212,7 @@ async function publishServerGuide(
                             '🎵 **Music** — Share songs and playlists',
                             '🖼️ **Gallery** — Share images, clips, and artwork',
                             '📢 **Decrees** — Read official announcements',
-                            '📜 **Sacred Laws** — Review server rules',
+                            '📜 **Information** — Review server information and official guidance',
                             '',
                             'More systems may become available as the Order grows.'
                         ].join('\n'),

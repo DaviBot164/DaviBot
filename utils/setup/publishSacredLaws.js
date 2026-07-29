@@ -8,32 +8,44 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
-const SACRED_LAWS_CHANNEL_ID =
-    '1528401946363433180';
+const setupChannels =
+    require('../../config/setupChannels');
 
 /**
- * Get and validate the Sacred Laws channel.
+ * Get and validate the main Information channel.
+ *
+ * Sacred Laws, Server Guide, Role Information
+ * and FAQ are published inside this channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
  */
-async function getSacredLawsChannel(
+async function getInformationChannel(
     interaction
 ) {
-    const rulesChannel =
-        await interaction.guild.channels.fetch(
-            SACRED_LAWS_CHANNEL_ID
-        );
+    const informationChannel =
+        await interaction.guild.channels
+            .fetch(
+                setupChannels
+                    .informationChannelId
+            )
+            .catch(
+                () => null
+            );
 
     if (
-        !rulesChannel ||
-        !rulesChannel.isTextBased()
+        !informationChannel ||
+        !informationChannel.isTextBased()
     ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Sacred Laws Channel Missing',
-                    'Umbra could not find the configured Sacred Laws channel.'
+                    '❌ Information Channel Missing',
+                    [
+                        'Umbra could not find the configured Information channel.',
+                        '',
+                        `Configured Channel ID: \`${setupChannels.informationChannelId}\``
+                    ].join('\n')
                 )
             ],
 
@@ -62,7 +74,7 @@ async function getSacredLawsChannel(
     }
 
     const channelPermissions =
-        rulesChannel.permissionsFor(
+        informationChannel.permissionsFor(
             botMember
         );
 
@@ -77,7 +89,14 @@ async function getSacredLawsChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Sacred Laws channel.'
+                    [
+                        `Umbra cannot publish the Sacred Laws in ${informationChannel}.`,
+                        '',
+                        'Required permissions:',
+                        '• **View Channel**',
+                        '• **Send Messages**',
+                        '• **Embed Links**'
+                    ].join('\n')
                 )
             ],
 
@@ -87,11 +106,12 @@ async function getSacredLawsChannel(
         return null;
     }
 
-    return rulesChannel;
+    return informationChannel;
 }
 
 /**
- * Publish the Sacred Laws embed.
+ * Publish the Sacred Laws embed inside
+ * the main Crimson Eclipse Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -99,12 +119,12 @@ async function getSacredLawsChannel(
 async function publishSacredLaws(
     interaction
 ) {
-    const rulesChannel =
-        await getSacredLawsChannel(
+    const informationChannel =
+        await getInformationChannel(
             interaction
         );
 
-    if (!rulesChannel) {
+    if (!informationChannel) {
         return;
     }
 
@@ -124,13 +144,20 @@ async function publishSacredLaws(
 
             thumbnail:
                 interaction.guild.iconURL({
-                    size: 512,
-                    forceStatic: false
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
                 }) ??
-                interaction.client.user.displayAvatarURL({
-                    size: 512,
-                    forceStatic: false
-                }),
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            512,
+
+                        forceStatic:
+                            false
+                    }),
 
             fields: [
                 {
@@ -286,10 +313,14 @@ async function publishSacredLaws(
             'Umbra • Guardian of Crimson Eclipse',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     rulesEmbed.setFooter({
@@ -298,23 +329,31 @@ async function publishSacredLaws(
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     rulesEmbed.setTimestamp();
 
-    await rulesChannel.send({
+    await informationChannel.send({
         embeds:
             [rulesEmbed],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
@@ -322,7 +361,7 @@ async function publishSacredLaws(
         embeds: [
             createSuccessEmbed(
                 '✅ Sacred Laws Published',
-                `Umbra successfully published the Sacred Laws in ${rulesChannel}.`
+                `Umbra successfully published the Sacred Laws in ${informationChannel}.`
             )
         ],
 
@@ -338,7 +377,7 @@ async function publishSacredLaws(
     );
 
     console.log(
-        `📍 Channel: ${rulesChannel.name}`
+        `📍 Channel: ${informationChannel.name}`
     );
 
     console.log(

@@ -8,77 +8,11 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
-const ROLE_INFORMATION_CHANNEL_ID =
-    '1530981738434527493';
+const setupChannels =
+    require('../../config/setupChannels');
 
 /**
- * Find a role by its readable name.
- *
- * This allows the role to keep its emoji prefix.
- *
- * @param {import('discord.js').Guild} guild
- * @param {string} roleName
- * @returns {import('discord.js').Role|null}
- */
-function findRoleByName(
-    guild,
-    roleName
-) {
-    const normalizedTarget =
-        roleName.toLowerCase();
-
-    return (
-        guild.roles.cache.find(role =>
-            role.name
-                .toLowerCase()
-                .includes(
-                    normalizedTarget
-                )
-        ) ??
-        null
-    );
-}
-
-/**
- * Return a readable member count.
- *
- * @param {import('discord.js').Role|null} role
- * @returns {string}
- */
-function getRoleMemberCount(role) {
-    if (!role) {
-        return 'Role not found';
-    }
-
-    const memberCount =
-        role.members.size;
-
-    return (
-        `${memberCount} ` +
-        `${memberCount === 1 ? 'Member' : 'Members'}`
-    );
-}
-
-/**
- * Return a readable role mention.
- *
- * @param {import('discord.js').Role|null} role
- * @param {string} fallbackName
- * @returns {string}
- */
-function getRoleDisplay(
-    role,
-    fallbackName
-) {
-    if (!role) {
-        return `**${fallbackName}**`;
-    }
-
-    return role.toString();
-}
-
-/**
- * Get and validate the Role Information channel.
+ * Get and validate the Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -86,20 +20,21 @@ function getRoleDisplay(
 async function getRoleInformationChannel(
     interaction
 ) {
-    const roleChannel =
+    const informationChannel =
         await interaction.guild.channels.fetch(
-            ROLE_INFORMATION_CHANNEL_ID
+            setupChannels
+                .informationChannelId
         );
 
     if (
-        !roleChannel ||
-        !roleChannel.isTextBased()
+        !informationChannel ||
+        !informationChannel.isTextBased()
     ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Role Information Channel Missing',
-                    'Umbra could not find the configured Role Information channel.'
+                    '❌ Information Channel Missing',
+                    'Umbra could not find the configured Information channel.'
                 )
             ],
 
@@ -128,7 +63,7 @@ async function getRoleInformationChannel(
     }
 
     const channelPermissions =
-        roleChannel.permissionsFor(
+        informationChannel.permissionsFor(
             botMember
         );
 
@@ -143,7 +78,7 @@ async function getRoleInformationChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Role Information channel.'
+                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Information channel.'
                 )
             ],
 
@@ -153,11 +88,11 @@ async function getRoleInformationChannel(
         return null;
     }
 
-    return roleChannel;
+    return informationChannel;
 }
 
 /**
- * Publish the Crimson Eclipse Role Information archive.
+ * Publish Crimson Eclipse role information.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -165,76 +100,14 @@ async function getRoleInformationChannel(
 async function publishRoleInformation(
     interaction
 ) {
-    const roleChannel =
+    const informationChannel =
         await getRoleInformationChannel(
             interaction
         );
 
-    if (!roleChannel) {
+    if (!informationChannel) {
         return;
     }
-
-    /*
-     * Refresh the guild member cache before counting
-     * how many members have each role.
-     */
-    await interaction.guild.members
-        .fetch()
-        .catch(error => {
-            console.warn(
-                '⚠️ Umbra could not refresh all guild members:',
-                error.message
-            );
-        });
-
-    const crimsonLordRole =
-        findRoleByName(
-            interaction.guild,
-            'Crimson Lord'
-        );
-
-    const eclipseKeeperRole =
-        findRoleByName(
-            interaction.guild,
-            'Eclipse Keeper'
-        );
-
-    const shadowWardenRole =
-        findRoleByName(
-            interaction.guild,
-            'Shadow Warden'
-        );
-
-    const umbraRole =
-        findRoleByName(
-            interaction.guild,
-            'Umbra'
-        );
-
-    const verifiedRole =
-        findRoleByName(
-            interaction.guild,
-            'Verified'
-        );
-
-    /*
-     * Search for the first role specifically named Unverified.
-     * Bloxlink may create another similarly named role.
-     */
-    const unverifiedRole =
-        interaction.guild.roles.cache.find(role =>
-            role.name
-                .toLowerCase()
-                .includes(
-                    'unverified'
-                )
-        ) ??
-        null;
-
-    const publishedAt =
-        Math.floor(
-            Date.now() / 1000
-        );
 
     const roleEmbed =
         createEmbed({
@@ -243,11 +116,11 @@ async function publishRoleInformation(
 
             description:
                 [
-                    'Umbra has opened the official Role Archive of the Order.',
+                    'Every rank within Crimson Eclipse has its own purpose and responsibility.',
                     '',
-                    'Every rank carries a purpose, and every position exists to protect or strengthen the community.',
+                    'Roles may represent leadership, moderation authority, community progress, special recognition, or system access.',
                     '',
-                    '*Power within Crimson Eclipse is a responsibility, not a privilege.*'
+                    'Read the information below to understand the structure of the Order.'
                 ].join('\n'),
 
             thumbnail:
@@ -263,27 +136,44 @@ async function publishRoleInformation(
             fields: [
                 {
                     name:
-                        '👑 Leadership',
+                        '👑 Crimson Lord',
 
                     value:
                         [
-                            `${getRoleDisplay(crimsonLordRole, 'Crimson Lord')}`,
-                            `-# ${getRoleMemberCount(crimsonLordRole)}`,
+                            'The highest authority within Crimson Eclipse.',
                             '',
-                            'The founder and highest authority of Crimson Eclipse.',
+                            'The Crimson Lord is responsible for:',
                             '',
-                            '• Defines the future of the Order',
-                            '• Makes final administrative decisions',
-                            '• Oversees the entire community',
+                            '• Leading the Order',
+                            '• Making final server decisions',
+                            '• Managing senior leadership',
+                            '• Approving major changes',
+                            '• Protecting the future of the community',
                             '',
-                            `${getRoleDisplay(eclipseKeeperRole, 'Eclipse Keeper')}`,
-                            `-# ${getRoleMemberCount(eclipseKeeperRole)}`,
+                            'Decisions made by the Crimson Lord must be respected unless they violate Discord rules or community safety.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '⚜️ Eclipse Keepers',
+
+                    value:
+                        [
+                            'Senior administrators trusted with the management of Crimson Eclipse.',
                             '',
-                            'Senior administrators trusted with managing the Order.',
+                            'Eclipse Keepers may:',
                             '',
                             '• Manage server systems',
-                            '• Assist with major decisions',
-                            '• Oversee staff and community organization'
+                            '• Oversee Shadow Wardens',
+                            '• Review serious reports',
+                            '• Organize server changes',
+                            '• Assist the Crimson Lord',
+                            '• Handle important community decisions',
+                            '',
+                            'This rank carries significant authority and responsibility.'
                         ].join('\n'),
 
                     inline:
@@ -291,20 +181,22 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🛡️ Guardians of the Order',
+                        '🛡️ Shadow Wardens',
 
                     value:
                         [
-                            `${getRoleDisplay(shadowWardenRole, 'Shadow Warden')}`,
-                            `-# ${getRoleMemberCount(shadowWardenRole)}`,
+                            'The moderation and support team of Crimson Eclipse.',
                             '',
-                            'The moderation and support guardians of Crimson Eclipse.',
+                            'Shadow Wardens are responsible for:',
                             '',
-                            '• Enforce the Sacred Laws',
-                            '• Review reports and evidence',
-                            '• Assist members through tickets',
-                            '• Protect the community from harmful behavior',
-                            '• Carry out fair moderation actions'
+                            '• Enforcing the Sacred Laws',
+                            '• Responding to tickets',
+                            '• Reviewing member reports',
+                            '• Managing disruptive behavior',
+                            '• Protecting community channels',
+                            '• Helping new members',
+                            '',
+                            'Shadow Wardens must use their permissions fairly and provide clear reasons for moderation actions.'
                         ].join('\n'),
 
                     inline:
@@ -312,21 +204,22 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🤖 Guardian System',
+                        '🌑 Souls',
 
                     value:
                         [
-                            `${getRoleDisplay(umbraRole, 'Umbra')}`,
-                            `-# ${getRoleMemberCount(umbraRole)}`,
+                            'Verified members of the Crimson Eclipse community.',
                             '',
-                            'The official Guardian of Crimson Eclipse.',
+                            'Souls may:',
                             '',
-                            '• Protects the server through Guardian systems',
-                            '• Manages support tickets',
-                            '• Publishes official information',
-                            '• Welcomes and guides new members',
-                            '• Records moderation activity',
-                            '• Maintains order beneath the crimson moon'
+                            '• Access community channels',
+                            '• Participate in conversations',
+                            '• Join gaming activities',
+                            '• Share images and clips',
+                            '• Attend community events',
+                            '• Earn progression roles',
+                            '',
+                            'Every Soul is expected to respect the Sacred Laws and other members.'
                         ].join('\n'),
 
                     inline:
@@ -334,26 +227,21 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🌑 Community Ranks',
+                        '🎖️ Progression Roles',
 
                     value:
                         [
-                            `${getRoleDisplay(verifiedRole, 'Verified')}`,
-                            `-# ${getRoleMemberCount(verifiedRole)}`,
+                            'Progression roles represent activity and growth within Crimson Eclipse.',
                             '',
-                            'Verified members who have unlocked access to the community.',
+                            'They may be earned through:',
                             '',
-                            '• Join public conversations',
-                            '• Participate in community activities',
-                            '• Access gaming and voice channels',
-                            '• Request assistance through tickets',
+                            '• Community activity',
+                            '• Umbra’s Level System',
+                            '• Event participation',
+                            '• Special achievements',
+                            '• Contributions to the Order',
                             '',
-                            `${getRoleDisplay(unverifiedRole, 'Unverified')}`,
-                            `-# ${getRoleMemberCount(unverifiedRole)}`,
-                            '',
-                            'New members who have not completed verification.',
-                            '',
-                            'Complete the verification process to unlock the Order.'
+                            'Progression roles do not automatically grant moderation authority.'
                         ].join('\n'),
 
                     inline:
@@ -361,22 +249,22 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '📜 Promotion Philosophy',
+                        '🏆 Special Recognition Roles',
 
                     value:
                         [
-                            'Authority inside Crimson Eclipse must be earned.',
+                            'Some roles may be granted as special recognition.',
                             '',
-                            'Promotions are based on:',
+                            'These roles may represent:',
                             '',
-                            '• Trust',
-                            '• Respect',
-                            '• Activity',
-                            '• Maturity',
-                            '• Contribution',
-                            '• Knowledge of the Sacred Laws',
+                            '• Event victories',
+                            '• Community contributions',
+                            '• Trusted membership',
+                            '• Partnerships',
+                            '• Support for the server',
+                            '• Limited-time achievements',
                             '',
-                            '**Asking repeatedly for authority will not guarantee promotion.**'
+                            'Special roles may be changed, retired, or replaced as the server develops.'
                         ].join('\n'),
 
                     inline:
@@ -384,21 +272,64 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🌙 Final Record',
+                        '🤖 Umbra',
 
                     value:
                         [
-                            'Every rank exists to serve the community.',
+                            'Umbra is the Guardian of Crimson Eclipse.',
                             '',
-                            'Leadership guides.',
-                            'Shadow Wardens protect.',
-                            'Umbra watches.',
-                            'Verified members strengthen the Order.',
+                            'Umbra manages several server systems, including:',
                             '',
-                            `**Archive updated:** <t:${publishedAt}:F>`,
-                            `-# <t:${publishedAt}:R>`,
+                            '• Welcome messages',
+                            '• Verification guidance',
+                            '• Setup publications',
+                            '• Moderation commands',
+                            '• Guardian AutoMod',
+                            '• Ticket support',
+                            '• Level progression',
+                            '• Server records',
                             '',
-                            '*Every Soul leaves a mark beneath the crimson moon.*'
+                            'Umbra is a system role and should remain above every role that the bot must manage.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '⚠️ Role Authority',
+
+                    value:
+                        [
+                            'A decorative or progression role does not grant staff authority.',
+                            '',
+                            'Only authorized leadership and moderation roles may:',
+                            '',
+                            '• Punish members',
+                            '• Manage server channels',
+                            '• Review private reports',
+                            '• Speak officially for the Order',
+                            '• Use restricted staff systems',
+                            '',
+                            'Impersonating staff or falsely claiming authority may result in moderation action.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🌙 Respect the Order',
+
+                    value:
+                        [
+                            'Every rank exists to support the community.',
+                            '',
+                            'Higher roles must not misuse their power, and members must not harass staff for performing legitimate duties.',
+                            '',
+                            'Concerns about staff behavior should be reported privately through the Ticket System.',
+                            '',
+                            '*Strength earns recognition. Loyalty preserves the Order.*'
                         ].join('\n'),
 
                     inline:
@@ -420,7 +351,7 @@ async function publishRoleInformation(
 
     roleEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Role Archive',
+            '🌑 Crimson Eclipse • Role Information',
 
         iconURL:
             interaction.guild.iconURL({
@@ -435,7 +366,7 @@ async function publishRoleInformation(
 
     roleEmbed.setTimestamp();
 
-    await roleChannel.send({
+    await informationChannel.send({
         embeds:
             [roleEmbed],
 
@@ -447,8 +378,8 @@ async function publishRoleInformation(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Role Archive Published',
-                `Umbra successfully published the Role Information archive in ${roleChannel}.`
+                '✅ Role Information Published',
+                `Umbra successfully published the Role Information in ${informationChannel}.`
             )
         ],
 
@@ -464,7 +395,7 @@ async function publishRoleInformation(
     );
 
     console.log(
-        `📍 Channel: ${roleChannel.name}`
+        `📍 Channel: ${informationChannel.name}`
     );
 
     console.log(

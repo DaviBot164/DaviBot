@@ -41,6 +41,12 @@ function wait(milliseconds) {
 /**
  * Publish every available Umbra setup module.
  *
+ * Information modules are published in the configured
+ * Information channel.
+ *
+ * The Ticket Guide remains in its configured
+ * Ticket Guide channel.
+ *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
  */
@@ -53,17 +59,20 @@ async function publishFullSetup(
                 createSuccessEmbed(
                     '🚀 Full Server Setup Started',
                     [
-                        'Umbra is preparing the Crimson Eclipse Knowledge Center.',
+                        'Umbra is preparing the official Crimson Eclipse information.',
                         '',
-                        'The following modules will be published:',
+                        'The following modules will be published in the Information channel:',
                         '',
                         '📜 Sacred Laws',
                         '📖 Server Guide',
                         '🎖️ Role Information',
                         '❓ Frequently Asked Questions',
+                        '',
+                        'The following module will remain in the Ticket Guide channel:',
+                        '',
                         '🎫 Ticket Guide',
                         '',
-                        'Please wait while each archive is prepared.'
+                        'Please wait while each module is prepared.'
                     ].join('\n')
                 )
             ],
@@ -134,13 +143,18 @@ async function publishFullSetup(
                     [
                         'Umbra successfully published every available setup module.',
                         '',
+                        'Published in the Information channel:',
+                        '',
                         '✅ Sacred Laws',
                         '✅ Server Guide',
                         '✅ Role Information',
                         '✅ Frequently Asked Questions',
+                        '',
+                        'Published in the Ticket Guide channel:',
+                        '',
                         '✅ Ticket Guide',
                         '',
-                        'The Crimson Eclipse Knowledge Center is now ready.'
+                        'The official Crimson Eclipse information is now ready.'
                     ].join('\n')
                 )
             ],
@@ -185,7 +199,7 @@ async function publishFullSetup(
                         '',
                         'Some modules may already have been published before the error occurred.',
                         '',
-                        'Check the configured channels, Umbra permissions, and Northflank logs.'
+                        'Check the configured channel IDs, Umbra permissions, and Northflank logs.'
                     ].join('\n')
                 )
             ],
