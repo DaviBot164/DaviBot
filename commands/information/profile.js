@@ -15,23 +15,105 @@ const {
 const warningDatabase =
     require('../../database/warnings');
 
+const {
+    levels:
+        levelDatabase
+} = require('../../database');
+
 /**
- * Format a timestamp using Discord's date system.
+ * Format a timestamp using Discord's
+ * date display system.
  *
  * @param {number|null} timestamp
  * @returns {string}
  */
-function formatDiscordDate(timestamp) {
+function formatDiscordDate(
+    timestamp
+) {
     if (!timestamp) {
         return 'Unknown';
     }
 
     const unixTimestamp =
-        Math.floor(timestamp / 1000);
+        Math.floor(
+            timestamp /
+            1000
+        );
 
     return (
         `<t:${unixTimestamp}:F>\n` +
         `-# <t:${unixTimestamp}:R>`
+    );
+}
+
+/**
+ * Format a number with separators.
+ *
+ * @param {number|string|null} value
+ * @returns {string}
+ */
+function formatNumber(
+    value
+) {
+    const numericValue =
+        Number(value);
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+        return '0';
+    }
+
+    return numericValue.toLocaleString(
+        'en-US'
+    );
+}
+
+/**
+ * Create Umbra's visual XP progress bar.
+ *
+ * Example:
+ * ▰▰▰▰▰▱▱▱▱▱
+ *
+ * @param {number} percentage
+ * @param {number} length
+ * @returns {string}
+ */
+function createProgressBar(
+    percentage,
+    length = 10
+) {
+    const safePercentage =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                Number(percentage) || 0
+            )
+        );
+
+    const filledBlocks =
+        Math.round(
+            (
+                safePercentage /
+                100
+            ) *
+            length
+        );
+
+    const emptyBlocks =
+        length -
+        filledBlocks;
+
+    return (
+        '▰'.repeat(
+            filledBlocks
+        ) +
+        '▱'.repeat(
+            emptyBlocks
+        )
     );
 }
 
@@ -41,20 +123,29 @@ function formatDiscordDate(timestamp) {
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function getTimeoutStatus(member) {
-    if (!member.isCommunicationDisabled()) {
+function getTimeoutStatus(
+    member
+) {
+    if (
+        !member
+            .isCommunicationDisabled()
+    ) {
         return '🟢 No Active Timeout';
     }
 
     const timeoutTimestamp =
-        member.communicationDisabledUntilTimestamp;
+        member
+            .communicationDisabledUntilTimestamp;
 
     if (!timeoutTimestamp) {
         return '🔇 Timeout Active';
     }
 
     const unixTimestamp =
-        Math.floor(timeoutTimestamp / 1000);
+        Math.floor(
+            timeoutTimestamp /
+            1000
+        );
 
     return (
         '🔇 Timeout Active\n' +
@@ -68,8 +159,13 @@ function getTimeoutStatus(member) {
  * @param {number|string} warningCount
  * @returns {string}
  */
-function formatWarningCount(warningCount) {
-    if (typeof warningCount !== 'number') {
+function formatWarningCount(
+    warningCount
+) {
+    if (
+        typeof warningCount !==
+        'number'
+    ) {
         return '⚠️ Unavailable';
     }
 
@@ -81,7 +177,9 @@ function formatWarningCount(warningCount) {
         return '⚠️ 1 Warning';
     }
 
-    return `⚠️ ${warningCount} Warnings`;
+    return (
+        `⚠️ ${warningCount} Warnings`
+    );
 }
 
 /**
@@ -90,7 +188,9 @@ function formatWarningCount(warningCount) {
  * @param {import('discord.js').User} user
  * @returns {string}
  */
-function getAccountType(user) {
+function getAccountType(
+    user
+) {
     if (user.bot) {
         return '🤖 Bot Account';
     }
@@ -103,14 +203,21 @@ function getAccountType(user) {
 }
 
 /**
- * Get an Order badge based on server permissions.
+ * Get an Order badge based on
+ * server ownership and permissions.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
  * @returns {string}
  */
-function getMemberBadge(member, guild) {
-    if (member.id === guild.ownerId) {
+function getMemberBadge(
+    member,
+    guild
+) {
+    if (
+        member.id ===
+        guild.ownerId
+    ) {
         return '👑 Crimson Lord';
     }
 
@@ -149,7 +256,9 @@ function getMemberBadge(member, guild) {
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function getHighestRole(member) {
+function getHighestRole(
+    member
+) {
     if (
         member.roles.highest.id ===
         member.guild.id
@@ -157,21 +266,101 @@ function getHighestRole(member) {
         return 'None';
     }
 
-    return member.roles.highest.toString();
+    return member
+        .roles
+        .highest
+        .toString();
 }
 
 /**
- * Get the member's role count without @everyone.
+ * Get the member's role count
+ * without the @everyone role.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {number}
  */
-function getRoleCount(member) {
+function getRoleCount(
+    member
+) {
     return member.roles.cache.filter(
         role =>
             role.id !==
             member.guild.id
     ).size;
+}
+
+/**
+ * Get the current progression reward role.
+ *
+ * Umbra checks every configured reward role
+ * and returns the highest reward role that
+ * the member currently owns.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {number} level
+ * @returns {Promise<string>}
+ */
+async function getProgressionRole(
+    member,
+    level
+) {
+    try {
+        const earnedRewards =
+            await levelDatabase
+                .getEarnedLevelRewards(
+                    member.guild.id,
+                    level
+                );
+
+        if (
+            !Array.isArray(
+                earnedRewards
+            ) ||
+            earnedRewards.length === 0
+        ) {
+            return '🌑 No Progression Rank';
+        }
+
+        const sortedRewards =
+            [...earnedRewards].sort(
+                (
+                    firstReward,
+                    secondReward
+                ) =>
+                    secondReward.level -
+                    firstReward.level
+            );
+
+        for (
+            const reward
+            of sortedRewards
+        ) {
+            const role =
+                member.guild.roles.cache.get(
+                    reward.roleId
+                );
+
+            if (
+                role &&
+                member.roles.cache.has(
+                    role.id
+                )
+            ) {
+                return (
+                    `${role} ` +
+                    `-# Level ${reward.level}`
+                );
+            }
+        }
+
+        return '🌑 No Progression Rank';
+    } catch (error) {
+        console.warn(
+            `⚠️ Umbra profile progression role unavailable: ${error.message}`
+        );
+
+        return '⚠️ Progression Rank Unavailable';
+    }
 }
 
 /**
@@ -186,10 +375,11 @@ async function getWarningCount(
     userId
 ) {
     try {
-        return await warningDatabase.countWarnings(
-            guildId,
-            userId
-        );
+        return await warningDatabase
+            .countWarnings(
+                guildId,
+                userId
+            );
     } catch (error) {
         console.warn(
             `⚠️ Umbra profile warning count unavailable: ${error.message}`
@@ -199,23 +389,170 @@ async function getWarningCount(
     }
 }
 
-module.exports = {
-    category: 'information',
+/**
+ * Safely get a Soul's Level record.
+ *
+ * A member without an existing Level record
+ * is displayed as Level 0 with zero XP.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<{
+ *     xp: number,
+ *     level: number,
+ *     messageCount: number,
+ *     progress: {
+ *         level: number,
+ *         totalXp: number,
+ *         currentLevelXp: number,
+ *         nextLevelXp: number,
+ *         requiredForNextLevel: number,
+ *         progressXp: number,
+ *         progressPercent: number
+ *     }
+ * }>}
+ */
+async function getLevelRecord(
+    guildId,
+    userId
+) {
+    try {
+        const levelRecord =
+            await levelDatabase
+                .getUserLevel(
+                    guildId,
+                    userId
+                );
 
-    data: new SlashCommandBuilder()
-        .setName('profile')
-        .setDescription(
-            'View the Order profile of a server member.'
-        )
-        .addUserOption(option =>
-            option
-                .setName('user')
-                .setDescription(
-                    'Select the Soul whose profile you want to view'
-                )
-                .setRequired(false)
-        )
-        .setDMPermission(false),
+        if (levelRecord) {
+            return levelRecord;
+        }
+    } catch (error) {
+        console.warn(
+            `⚠️ Umbra profile Level record unavailable: ${error.message}`
+        );
+    }
+
+    const progress =
+        levelDatabase
+            .calculateLevelProgress(
+                0
+            );
+
+    return {
+        xp:
+            0,
+
+        level:
+            0,
+
+        messageCount:
+            0,
+
+        progress
+    };
+}
+
+/**
+ * Safely get a Soul's server Rank.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number|null>}
+ */
+async function getServerRank(
+    guildId,
+    userId
+) {
+    try {
+        return await levelDatabase
+            .getUserRank(
+                guildId,
+                userId
+            );
+    } catch (error) {
+        console.warn(
+            `⚠️ Umbra profile server Rank unavailable: ${error.message}`
+        );
+
+        return null;
+    }
+}
+
+/**
+ * Build the Level progress display.
+ *
+ * @param {Object} levelRecord
+ * @param {number|null} serverRank
+ * @returns {string}
+ */
+function buildLevelDisplay(
+    levelRecord,
+    serverRank
+) {
+    const progress =
+        levelRecord.progress ??
+        levelDatabase
+            .calculateLevelProgress(
+                levelRecord.xp
+            );
+
+    const progressBar =
+        createProgressBar(
+            progress.progressPercent
+        );
+
+    const remainingXp =
+        Math.max(
+            0,
+            progress.nextLevelXp -
+            levelRecord.xp
+        );
+
+    const rankDisplay =
+        serverRank
+            ? `#${serverRank}`
+            : 'Unranked';
+
+    return [
+        `**Level:** \`${levelRecord.level}\``,
+        `**Server Rank:** \`${rankDisplay}\``,
+        `**Total XP:** \`${formatNumber(levelRecord.xp)}\``,
+        `**Eligible Messages:** \`${formatNumber(levelRecord.messageCount)}\``,
+        '',
+        `\`${progressBar}\` **${progress.progressPercent}%**`,
+        '',
+        `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
+        `🌙 **Remaining XP:** \`${formatNumber(remainingXp)}\``,
+        `📈 **Next Level:** \`${levelRecord.level + 1}\``
+    ].join('\n');
+}module.exports = {
+    category:
+        'information',
+
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'profile'
+            )
+            .setDescription(
+                'View the complete Order profile of a server member.'
+            )
+            .addUserOption(option =>
+                option
+                    .setName(
+                        'user'
+                    )
+                    .setDescription(
+                        'Select the Soul whose profile you want to view'
+                    )
+                    .setRequired(
+                        false
+                    )
+            )
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /profile command.
@@ -223,7 +560,9 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
             await interaction.deferReply();
 
@@ -233,35 +572,70 @@ module.exports = {
                 ) ??
                 interaction.user;
 
-            const [fullUser, member] =
+            const [
+                fullUser,
+                member
+            ] =
                 await Promise.all([
-                    selectedUser.fetch(true),
+                    selectedUser.fetch(
+                        true
+                    ),
 
                     interaction.guild.members.fetch(
                         selectedUser.id
                     )
                 ]);
 
-            const warningCount =
-                await getWarningCount(
-                    interaction.guild.id,
-                    selectedUser.id
+            const [
+                warningCount,
+                levelRecord,
+                serverRank
+            ] =
+                await Promise.all([
+                    getWarningCount(
+                        interaction.guild.id,
+                        selectedUser.id
+                    ),
+
+                    getLevelRecord(
+                        interaction.guild.id,
+                        selectedUser.id
+                    ),
+
+                    getServerRank(
+                        interaction.guild.id,
+                        selectedUser.id
+                    )
+                ]);
+
+            const progressionRole =
+                await getProgressionRole(
+                    member,
+                    levelRecord.level
                 );
 
             const avatarURL =
                 fullUser.displayAvatarURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
 
             const bannerURL =
                 fullUser.bannerURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
 
             /*
-             * If the Soul has a banner, use it as the large image.
+             * If the Soul has a banner, use it
+             * as the large profile image.
+             *
              * Otherwise, use the Soul's avatar.
              */
             const profileImageURL =
@@ -299,17 +673,25 @@ module.exports = {
                     ? '🌌 Banner Forged'
                     : '🌑 No Banner Forged';
 
-            const embed =
+            const levelDisplay =
+                buildLevelDisplay(
+                    levelRecord,
+                    serverRank
+                );
+
+            const profileEmbed =
                 createEmbed({
                     title:
-                        `🌑 ${fullUser.username}'s Soul Record`,
+                        `🌑 ${fullUser.username}'s Soul Profile`,
 
                     description:
                         [
-                            `Umbra has opened the Order record of ${fullUser}.`,
+                            `Umbra has opened the complete Order record of ${fullUser}.`,
                             '',
                             '*Every Soul leaves a mark beneath the crimson moon.*'
-                        ].join('\n'),
+                        ].join(
+                            '\n'
+                        ),
 
                     thumbnail:
                         avatarURL,
@@ -320,13 +702,27 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '🌑 Soul Information',
+                                '🌑 Soul Identity',
 
                             value:
-                                `**Username:** ${fullUser.username}\n` +
-                                `**Display Name:** ${member.displayName}\n` +
-                                `**Account Type:** ${accountType}\n` +
-                                `**Soul ID:** \`${fullUser.id}\``,
+                                [
+                                    `**Username:** ${fullUser.username}`,
+                                    `**Display Name:** ${member.displayName}`,
+                                    `**Account Type:** ${accountType}`,
+                                    `**Soul ID:** \`${fullUser.id}\``
+                                ].join(
+                                    '\n'
+                                ),
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '⭐ Soul Progression',
+
+                            value:
+                                levelDisplay,
 
                             inline:
                                 false
@@ -336,20 +732,29 @@ module.exports = {
                                 '🎖️ Order Status',
 
                             value:
-                                `**Rank:** ${memberBadge}\n` +
-                                `**Highest Role:** ${highestRole}\n` +
-                                `**Total Roles:** \`${roleCount}\``,
+                                [
+                                    `**Order Badge:** ${memberBadge}`,
+                                    `**Progression Rank:** ${progressionRole}`,
+                                    `**Highest Role:** ${highestRole}`,
+                                    `**Total Roles:** \`${roleCount}\``
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
-                                true
+                                false
                         },
                         {
                             name:
                                 '🛡️ Guardian Record',
 
                             value:
-                                `**Warnings:** ${warningDisplay}\n` +
-                                `**Timeout:** ${getTimeoutStatus(member)}`,
+                                [
+                                    `**Warnings:** ${warningDisplay}`,
+                                    `**Timeout:** ${getTimeoutStatus(member)}`
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 true
@@ -391,30 +796,37 @@ module.exports = {
                     ]
                 });
 
-            embed.setAuthor({
+            profileEmbed.setAuthor({
                 name:
-                    `${fullUser.username} • Soul Record`,
+                    `${fullUser.username} • Soul Profile`,
 
                 iconURL:
                     avatarURL
             });
 
-            embed.setFooter({
+            profileEmbed.setFooter({
                 text:
                     `🌑 Umbra Profile System • Requested by ${interaction.user.username}`,
 
                 iconURL:
-                    interaction.client.user.displayAvatarURL({
-                        size: 128,
-                        forceStatic: false
-                    })
+                    interaction.client.user
+                        .displayAvatarURL({
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
+                        })
             });
 
+            profileEmbed.setTimestamp();
+
             /*
-             * This guarantees that a large image appears even if
-             * the user does not have a Discord banner.
+             * This guarantees that a large image
+             * appears even when the Soul has no
+             * Discord profile banner.
              */
-            embed.setImage(
+            profileEmbed.setImage(
                 profileImageURL
             );
 
@@ -425,7 +837,9 @@ module.exports = {
                             .setLabel(
                                 'Open Avatar'
                             )
-                            .setEmoji('🖼️')
+                            .setEmoji(
+                                '🖼️'
+                            )
                             .setStyle(
                                 ButtonStyle.Link
                             )
@@ -435,9 +849,12 @@ module.exports = {
                     );
 
             /*
-             * A Discord link button requires a valid URL.
-             * Therefore, the Banner button is only added
-             * when the user actually has a banner.
+             * Discord link buttons require a
+             * valid URL.
+             *
+             * The Banner button is therefore
+             * only added when the Soul actually
+             * has a profile banner.
              */
             if (bannerURL) {
                 buttons.addComponents(
@@ -445,7 +862,9 @@ module.exports = {
                         .setLabel(
                             'Open Banner'
                         )
-                        .setEmoji('🌌')
+                        .setEmoji(
+                            '🌌'
+                        )
                         .setStyle(
                             ButtonStyle.Link
                         )
@@ -456,30 +875,43 @@ module.exports = {
             }
 
             await interaction.editReply({
-                embeds: [embed],
-                components: [buttons]
+                embeds:
+                    [profileEmbed],
+
+                components:
+                    [buttons]
             });
         } catch (error) {
             console.error(
-                '❌ Umbra profile command error:',
+                '❌ Umbra profile command error:'
+            );
+
+            console.error(
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Soul Record Unavailable',
-
-                    'Umbra could not open the requested Soul record. Please try again later.'
+                    '❌ Soul Profile Unavailable',
+                    [
+                        'Umbra could not open the requested Soul profile.',
+                        '',
+                        'Please verify that the selected user is still a member of this server and try again.'
+                    ].join(
+                        '\n'
+                    )
                 );
 
-            if (interaction.deferred) {
+            if (
+                interaction.deferred
+            ) {
                 await interaction
                     .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
+                        embeds:
+                            [errorEmbed],
 
-                        components: []
+                        components:
+                            []
                     })
                     .catch(
                         () => null
@@ -488,12 +920,13 @@ module.exports = {
                 return;
             }
 
-            if (interaction.replied) {
+            if (
+                interaction.replied
+            ) {
                 await interaction
                     .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
+                        embeds:
+                            [errorEmbed],
 
                         flags:
                             MessageFlags.Ephemeral
@@ -507,9 +940,8 @@ module.exports = {
 
             await interaction
                 .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
+                    embeds:
+                        [errorEmbed],
 
                     flags:
                         MessageFlags.Ephemeral
