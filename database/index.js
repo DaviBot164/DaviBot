@@ -28,9 +28,12 @@ const levelDatabase =
 const soulDatabase =
     require('./souls');
 
+const achievementDatabase =
+    require('./achievements');
+
 /**
  * Connect to PostgreSQL and initialize
- * all required database tables.
+ * all required database tables and systems.
  *
  * @returns {Promise<boolean>}
  */
@@ -116,6 +119,14 @@ async function initializeDatabase() {
             '✅ Soul Record core initialized.'
         );
 
+        const achievementCount =
+            await achievementDatabase
+                .initializeAchievements();
+
+        console.log(
+            `✅ Achievement database initialized with ${achievementCount} definitions.`
+        );
+
         console.log(
             '======================================'
         );
@@ -161,5 +172,8 @@ module.exports = {
         levelDatabase,
 
     souls:
-        soulDatabase
+        soulDatabase,
+
+    achievements:
+        achievementDatabase
 };

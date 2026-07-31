@@ -491,6 +491,80 @@ async function initializeSchema() {
             role_id
         );
     `);
+
+    /*
+     * Umbra Achievement Definitions
+     *
+     * Stores every Achievement available
+     * inside Umbra.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS achievements (
+            achievement_id VARCHAR(100) PRIMARY KEY,
+
+            name VARCHAR(100) NOT NULL,
+            description TEXT NOT NULL,
+
+            icon VARCHAR(20) NOT NULL,
+            category VARCHAR(50) NOT NULL,
+
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS achievements_category_index
+        ON achievements (
+            category
+        );
+    `);
+
+    /*
+     * Soul Achievements
+     *
+     * Stores every Achievement unlocked
+     * by each Soul inside each server.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS soul_achievements (
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            achievement_id VARCHAR(100) NOT NULL,
+
+            unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+            PRIMARY KEY (
+                guild_id,
+                user_id,
+                achievement_id
+            ),
+
+            CONSTRAINT soul_achievements_achievement_foreign_key
+                FOREIGN KEY (
+                    achievement_id
+                )
+                REFERENCES achievements (
+                    achievement_id
+                )
+                ON DELETE CASCADE
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_achievements_guild_user_index
+        ON soul_achievements (
+            guild_id,
+            user_id
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_achievements_unlocked_at_index
+        ON soul_achievements (
+            unlocked_at DESC
+        );
+    `);
 }
 
 module.exports = {

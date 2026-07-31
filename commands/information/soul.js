@@ -42,19 +42,34 @@ function formatNumber(
 /**
  * Format a Discord timestamp.
  *
- * @param {number|null} timestamp
+ * @param {number|Date|null} value
  * @returns {string}
  */
 function formatDiscordDate(
-    timestamp
+    value
 ) {
-    if (!timestamp) {
+    if (!value) {
+        return 'Unknown';
+    }
+
+    const date =
+        value instanceof Date
+            ? value
+            : new Date(
+                value
+            );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
         return 'Unknown';
     }
 
     const unixTimestamp =
         Math.floor(
-            timestamp /
+            date.getTime() /
             1000
         );
 
@@ -155,7 +170,7 @@ function getOrderStanding(
 }
 
 /**
- * Get the highest visible role.
+ * Get the highest visible Discord role.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -254,6 +269,178 @@ function buildProgressionDisplay(
     ].join('\n');
 }
 
+/**
+ * Format one unlocked Achievement.
+ *
+ * @param {Object} achievement
+ * @returns {string}
+ */
+function formatAchievement(
+    achievement
+) {
+    const icon =
+        achievement.icon ||
+        '🏆';
+
+    const name =
+        achievement.name ||
+        'Unknown Achievement';
+
+    const description =
+        achievement.description ||
+        'No description available.';
+
+    const unlockedAt =
+        achievement.unlockedAt
+            ? Math.floor(
+                new Date(
+                    achievement.unlockedAt
+                ).getTime() /
+                1000
+            )
+            : null;
+
+    const unlockedDisplay =
+        unlockedAt
+            ? `<t:${unlockedAt}:R>`
+            : 'Unknown';
+
+    return [
+        `${icon} **${name}**`,
+        `-# ${description}`,
+        `-# Unlocked ${unlockedDisplay}`
+    ].join('\n');
+}
+
+/**
+ * Build the Achievement section.
+ *
+ * @param {Object} achievementData
+ * @returns {string}
+ */
+function buildAchievementDisplay(
+    achievementData
+) {
+    const unlocked =
+        Number(
+            achievementData.unlocked || 0
+        );
+
+    const total =
+        Number(
+            achievementData.total || 0
+        );
+
+    const recent =
+        Array.isArray(
+            achievementData.recent
+        )
+            ? achievementData.recent
+            : [];
+
+    const progressPercent =
+        total > 0
+            ? Math.min(
+                100,
+                Math.floor(
+                    (
+                        unlocked /
+                        total
+                    ) *
+                    100
+                )
+            )
+            : 0;
+
+    const progressBar =
+        createProgressBar(
+            progressPercent,
+            10
+        );
+
+    const lines = [
+        `🏆 **Unlocked:** \`${formatNumber(unlocked)} / ${formatNumber(total)}\``,
+        `\`${progressBar}\` **${progressPercent}%**`
+    ];
+
+    if (
+        recent.length === 0
+    ) {
+        lines.push(
+            '',
+            '🌑 No Achievements have been unlocked yet.'
+        );
+
+        return lines.join('\n');
+    }
+
+    lines.push(
+        '',
+        '**Recently Unlocked**',
+        ''
+    );
+
+    for (
+        const achievement
+        of recent
+    ) {
+        lines.push(
+            formatAchievement(
+                achievement
+            ),
+            ''
+        );
+    }
+
+    return lines
+        .join('\n')
+        .trim();
+}
+
+/**
+ * Build the future Chronicle section.
+ *
+ * @param {Object} chronicleData
+ * @returns {string}
+ */
+function buildChronicleDisplay(
+    chronicleData
+) {
+    const total =
+        Number(
+            chronicleData.total || 0
+        );
+
+    const recent =
+        Array.isArray(
+            chronicleData.recent
+        )
+            ? chronicleData.recent
+            : [];
+
+    if (
+        recent.length === 0
+    ) {
+        return [
+            `**Recorded Entries:** \`${formatNumber(total)}\``,
+            '',
+            '📖 No Chronicle entries have been written yet.'
+        ].join('\n');
+    }
+
+    return [
+        `**Recorded Entries:** \`${formatNumber(total)}\``,
+        '',
+        ...recent.map(
+            entry =>
+                typeof entry ===
+                'string'
+                    ? entry
+                    : String(entry)
+        )
+    ].join('\n');
+}
+
 module.exports = {
     category:
         'information',
@@ -338,9 +525,23 @@ module.exports = {
                         false
                 });
 
+            const profileImageURL =
+                bannerURL ??
+                avatarURL;
+
             const progressionDisplay =
                 buildProgressionDisplay(
                     soulRecord.progression
+                );
+
+            const achievementDisplay =
+                buildAchievementDisplay(
+                    soulRecord.achievements
+                );
+
+            const chronicleDisplay =
+                buildChronicleDisplay(
+                    soulRecord.chronicles
                 );
 
             const guardianDisplay =
@@ -361,7 +562,8 @@ module.exports = {
 
             const titleDisplay =
                 soulRecord.title
-                    .displayName;
+                    ?.displayName ||
+                '🌑 Nameless Soul';
 
             const soulEmbed =
                 createEmbed({
@@ -383,8 +585,7 @@ module.exports = {
                         avatarURL,
 
                     image:
-                        bannerURL ??
-                        avatarURL,
+                        profileImageURL,
 
                     fields: [
                         {
@@ -435,16 +636,7 @@ module.exports = {
                                 '🏆 Achievements',
 
                             value:
-                                [
-                                    `**Unlocked:** \`${formatNumber(soulRecord.achievements.unlocked)}\``,
-                                    `**Known Achievements:** \`${formatNumber(soulRecord.achievements.total)}\``,
-                                    '',
-                                    soulRecord.achievements.recent.length > 0
-                                        ? soulRecord.achievements.recent.join('\n')
-                                        : '🌑 No achievements have been recorded yet.'
-                                ].join(
-                                    '\n'
-                                ),
+                                achievementDisplay,
 
                             inline:
                                 false
@@ -469,15 +661,7 @@ module.exports = {
                                 '📖 Chronicles',
 
                             value:
-                                [
-                                    `**Recorded Entries:** \`${formatNumber(soulRecord.chronicles.total)}\``,
-                                    '',
-                                    soulRecord.chronicles.recent.length > 0
-                                        ? soulRecord.chronicles.recent.join('\n')
-                                        : '📖 No Chronicle entries have been written yet.'
-                                ].join(
-                                    '\n'
-                                ),
+                                chronicleDisplay,
 
                             inline:
                                 false

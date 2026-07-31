@@ -4,48 +4,105 @@ const levels =
 const warnings =
     require('./warnings');
 
+const achievements =
+    require('./achievements');
+
 /**
  * Default values reserved for systems
  * that will be added to Umbra later.
  */
 const DEFAULT_SOUL_DATA = {
     title: {
-        id: null,
-        name: 'Nameless Soul',
-        displayName: '🌑 Nameless Soul'
+        id:
+            null,
+
+        name:
+            'Nameless Soul',
+
+        displayName:
+            '🌑 Nameless Soul'
     },
 
     reputation: {
-        total: 0,
-        received: 0,
-        given: 0
-    },
+        total:
+            0,
 
-    achievements: {
-        unlocked: 0,
-        total: 0,
-        recent: []
+        received:
+            0,
+
+        given:
+            0
     },
 
     chronicles: {
-        total: 0,
-        recent: []
+        total:
+            0,
+
+        recent:
+            []
     },
 
     tickets: {
-        created: 0,
-        closed: 0
+        created:
+            0,
+
+        closed:
+            0
     },
 
     events: {
-        joined: 0,
-        completed: 0
+        joined:
+            0,
+
+        completed:
+            0
     },
 
     voice: {
-        totalMinutes: 0
+        totalMinutes:
+            0
     }
 };
+
+/**
+ * Create a safe default Level record.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Object}
+ */
+function createDefaultLevelRecord(
+    guildId,
+    userId
+) {
+    return {
+        guildId,
+        userId,
+
+        xp:
+            0,
+
+        level:
+            0,
+
+        messageCount:
+            0,
+
+        lastXpAt:
+            null,
+
+        createdAt:
+            null,
+
+        updatedAt:
+            null,
+
+        progress:
+            levels.calculateLevelProgress(
+                0
+            )
+    };
+}
 
 /**
  * Safely load a Soul's Level data.
@@ -72,41 +129,19 @@ async function getSoulLevel(
             return levelRecord;
         }
 
-        return {
+        return createDefaultLevelRecord(
             guildId,
-            userId,
-            xp: 0,
-            level: 0,
-            messageCount: 0,
-            lastXpAt: null,
-            createdAt: null,
-            updatedAt: null,
-
-            progress:
-                levels.calculateLevelProgress(
-                    0
-                )
-        };
+            userId
+        );
     } catch (error) {
         console.warn(
             `⚠️ Soul Level unavailable for ${userId}: ${error.message}`
         );
 
-        return {
+        return createDefaultLevelRecord(
             guildId,
-            userId,
-            xp: 0,
-            level: 0,
-            messageCount: 0,
-            lastXpAt: null,
-            createdAt: null,
-            updatedAt: null,
-
-            progress:
-                levels.calculateLevelProgress(
-                    0
-                )
-        };
+            userId
+        );
     }
 }
 
@@ -166,6 +201,82 @@ async function getSoulWarningCount(
 }
 
 /**
+ * Safely load a Soul's unlocked
+ * Achievement count.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
+async function getSoulAchievementCount(
+    guildId,
+    userId
+) {
+    try {
+        return await achievements
+            .countSoulAchievements(
+                guildId,
+                userId
+            );
+    } catch (error) {
+        console.warn(
+            `⚠️ Soul Achievement count unavailable for ${userId}: ${error.message}`
+        );
+
+        return 0;
+    }
+}
+
+/**
+ * Safely load the total number of
+ * Achievement definitions.
+ *
+ * @returns {Promise<number>}
+ */
+async function getTotalAchievementCount() {
+    try {
+        return await achievements
+            .countAllAchievements();
+    } catch (error) {
+        console.warn(
+            `⚠️ Total Achievement count unavailable: ${error.message}`
+        );
+
+        return 0;
+    }
+}
+
+/**
+ * Safely load a Soul's most recently
+ * unlocked Achievements.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @param {number} limit
+ * @returns {Promise<Object[]>}
+ */
+async function getRecentSoulAchievements(
+    guildId,
+    userId,
+    limit = 3
+) {
+    try {
+        return await achievements
+            .getRecentSoulAchievements(
+                guildId,
+                userId,
+                limit
+            );
+    } catch (error) {
+        console.warn(
+            `⚠️ Recent Soul Achievements unavailable for ${userId}: ${error.message}`
+        );
+
+        return [];
+    }
+}
+
+/**
  * Create a safe copy of Umbra's default
  * future-system data.
  *
@@ -182,16 +293,6 @@ function createDefaultSoulData() {
 
         reputation: {
             ...DEFAULT_SOUL_DATA.reputation
-        },
-
-        achievements: {
-            ...DEFAULT_SOUL_DATA.achievements,
-
-            recent: [
-                ...DEFAULT_SOUL_DATA
-                    .achievements
-                    .recent
-            ]
         },
 
         chronicles: {
@@ -230,11 +331,11 @@ function createDefaultSoulData() {
  * - Server Rank
  * - Message count
  * - Warnings
+ * - Achievements
  *
  * Reserved future systems:
  * - Titles
  * - Reputation
- * - Achievements
  * - Chronicles
  * - Tickets
  * - Events
@@ -263,7 +364,10 @@ async function getSoulRecord(
     const [
         level,
         serverRank,
-        warningCount
+        warningCount,
+        unlockedAchievementCount,
+        totalAchievementCount,
+        recentAchievements
     ] =
         await Promise.all([
             getSoulLevel(
@@ -279,6 +383,19 @@ async function getSoulRecord(
             getSoulWarningCount(
                 guildId,
                 userId
+            ),
+
+            getSoulAchievementCount(
+                guildId,
+                userId
+            ),
+
+            getTotalAchievementCount(),
+
+            getRecentSoulAchievements(
+                guildId,
+                userId,
+                3
             )
         ]);
 
@@ -328,6 +445,17 @@ async function getSoulRecord(
                         : 'Marked'
         },
 
+        achievements: {
+            unlocked:
+                unlockedAchievementCount,
+
+            total:
+                totalAchievementCount,
+
+            recent:
+                recentAchievements
+        },
+
         ...futureSystems
     };
 }
@@ -375,6 +503,18 @@ async function ensureSoulRecord(
     guildId,
     userId
 ) {
+    if (!guildId) {
+        throw new TypeError(
+            'A guild ID is required to ensure a Soul Record.'
+        );
+    }
+
+    if (!userId) {
+        throw new TypeError(
+            'A user ID is required to ensure a Soul Record.'
+        );
+    }
+
     await levels.ensureUserLevel(
         guildId,
         userId
@@ -392,6 +532,10 @@ module.exports = {
     getSoulLevel,
     getSoulRank,
     getSoulWarningCount,
+
+    getSoulAchievementCount,
+    getTotalAchievementCount,
+    getRecentSoulAchievements,
 
     getSoulRecord,
     soulRecordExists,
