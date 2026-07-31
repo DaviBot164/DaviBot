@@ -25,8 +25,12 @@ const giveawayDatabase =
 const levelDatabase =
     require('./levels');
 
+const soulDatabase =
+    require('./souls');
+
 /**
- * Connect to PostgreSQL and initialize all required tables.
+ * Connect to PostgreSQL and initialize
+ * all required database tables.
  *
  * @returns {Promise<boolean>}
  */
@@ -85,6 +89,18 @@ async function initializeDatabase() {
         );
 
         console.log(
+            '✅ Warning database initialized.'
+        );
+
+        console.log(
+            '✅ AutoMod database initialized.'
+        );
+
+        console.log(
+            '✅ Raid database initialized.'
+        );
+
+        console.log(
             '✅ Event database initialized.'
         );
 
@@ -97,6 +113,10 @@ async function initializeDatabase() {
         );
 
         console.log(
+            '✅ Soul Record core initialized.'
+        );
+
+        console.log(
             '======================================'
         );
 
@@ -106,7 +126,9 @@ async function initializeDatabase() {
             '❌ PostgreSQL initialization failed:'
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         console.error(
             '======================================'
@@ -136,5 +158,8 @@ module.exports = {
         giveawayDatabase,
 
     levels:
-        levelDatabase
+        levelDatabase,
+
+    souls:
+        soulDatabase
 };
