@@ -15,6 +15,10 @@ const {
     detectScam
 } = require('../utils/scamDetector');
 
+const {
+    checkMessageAchievements
+} = require('../handlers/achievementHandler');
+
 /**
  * Rapid-message history.
  *
@@ -444,9 +448,7 @@ function getMentionCount(message) {
         roleMentions +
         everyoneMention
     );
-}
-
-/**
+}/**
  * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -948,9 +950,7 @@ async function processViolation(
             savedCase
         )
     ]);
-}
-
-module.exports = {
+}module.exports = {
     name:
         Events.MessageCreate,
 
@@ -965,12 +965,6 @@ module.exports = {
      * @returns {Promise<void>}
      */
     async execute(message) {
-        if (
-            !automodConfig.enabled
-        ) {
-            return;
-        }
-
         if (
             !message.inGuild()
         ) {
@@ -989,16 +983,32 @@ module.exports = {
             return;
         }
 
-        if (
-            shouldBypassAutoMod(
-                message.member
-            )
-        ) {
-            return;
-        }
-
         const content =
             message.content ?? '';
+
+        /*
+         * AutoMod runs only when it is enabled
+         * and the member does not have bypass.
+         *
+         * Achievement checks still run for:
+         * - server owner
+         * - administrators
+         * - Manage Messages members
+         * - everyone when AutoMod is disabled
+         */
+        const shouldRunAutoMod =
+            automodConfig.enabled &&
+            !shouldBypassAutoMod(
+                message.member
+            );
+
+        if (!shouldRunAutoMod) {
+            await checkMessageAchievements(
+                message
+            );
+
+            return;
+        }
 
         /*
          * Umbra Scam Shield
@@ -1037,6 +1047,10 @@ module.exports = {
                     }
                 );
 
+                /*
+                 * No Achievement check:
+                 * scam violation detected.
+                 */
                 return;
             }
         }
@@ -1062,6 +1076,10 @@ module.exports = {
                 }
             );
 
+            /*
+             * No Achievement check:
+             * invite violation detected.
+             */
             return;
         }
 
@@ -1106,6 +1124,10 @@ module.exports = {
                 );
             }
 
+            /*
+             * No Achievement check:
+             * profanity violation detected.
+             */
             return;
         }
 
@@ -1142,6 +1164,10 @@ module.exports = {
                 }
             );
 
+            /*
+             * No Achievement check:
+             * mention spam detected.
+             */
             return;
         }
 
@@ -1174,6 +1200,10 @@ module.exports = {
                 `${message.author.id}`
             );
 
+            /*
+             * No Achievement check:
+             * repeated-message spam detected.
+             */
             return;
         }
 
@@ -1205,11 +1235,26 @@ module.exports = {
                 `${message.guild.id}:` +
                 `${message.author.id}`
             );
-        }
-    }
-};
 
-/**
+            /*
+             * No Achievement check:
+             * rapid-message spam detected.
+             */
+            return;
+        }
+
+        /*
+         * Umbra Achievement System
+         *
+         * This point is reached only when
+         * the message passes every enabled
+         * Guardian / AutoMod check.
+         */
+        await checkMessageAchievements(
+            message
+        );
+    }
+};/**
  * Remove expired spam tracking
  * information from memory.
  */
