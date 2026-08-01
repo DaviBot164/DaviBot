@@ -15,6 +15,41 @@ const {
 } = require('../../database');
 
 /**
+ * Hollow Evolution roles ordered
+ * from the strongest to the weakest.
+ */
+const HOLLOW_EVOLUTION_ROLES = [
+    '⚔️ Arrancar',
+    '👑 Vasto Lorde',
+    '🐺 Adjuchas',
+    '⚪ Gillian',
+    '🦴 Menos Grande',
+    '👁️ Hollow'
+];
+
+/**
+ * Manual Arrancar ranks ordered
+ * from the strongest to the weakest.
+ */
+const ARRANCAR_RANK_ROLES = [
+    '👑 Espada 0',
+    'Ⅰ Espada',
+    'Ⅱ Espada',
+    'Ⅲ Espada',
+    'Ⅳ Espada',
+    'Ⅴ Espada',
+    'Ⅵ Espada',
+    'Ⅶ Espada',
+    'Ⅷ Espada',
+    'Ⅸ Espada',
+    'Ⅹ Espada',
+    '🌘 Privaron Espada',
+    '⚔️ Fracción',
+    '🦴 Numeros',
+    '⚪ Unranked Arrancar'
+];
+
+/**
  * Format a number using separators.
  *
  * @param {number|string|null} value
@@ -123,13 +158,94 @@ function createProgressBar(
 }
 
 /**
- * Get the Soul's Order standing.
+ * Find the first member role matching
+ * one of the supplied role names.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {string[]} roleNames
+ * @returns {import('discord.js').Role|null}
+ */
+function findMemberRole(
+    member,
+    roleNames
+) {
+    for (
+        const roleName
+        of roleNames
+    ) {
+        const role =
+            member.roles.cache.find(
+                cachedRole =>
+                    cachedRole.name ===
+                    roleName
+            );
+
+        if (role) {
+            return role;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get the member's current Hollow
+ * Evolution stage.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function getHollowEvolution(
+    member
+) {
+    const evolutionRole =
+        findMemberRole(
+            member,
+            HOLLOW_EVOLUTION_ROLES
+        );
+
+    if (!evolutionRole) {
+        return '👁️ Hollow';
+    }
+
+    return evolutionRole.name;
+}
+
+/**
+ * Get the member's manually assigned
+ * Arrancar rank.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function getArrancarRank(
+    member
+) {
+    const rankRole =
+        findMemberRole(
+            member,
+            ARRANCAR_RANK_ROLES
+        );
+
+    if (!rankRole) {
+        return '⚪ Unranked Arrancar';
+    }
+
+    return rankRole.name;
+}
+
+/**
+ * Get the member's Las Noches
+ * administrative standing.
+ *
+ * This is separate from Hollow Evolution
+ * and the manual Arrancar rank.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
  * @returns {string}
  */
-function getOrderStanding(
+function getLasNochesStanding(
     member,
     guild
 ) {
@@ -137,7 +253,23 @@ function getOrderStanding(
         member.id ===
         guild.ownerId
     ) {
-        return '👑 Crimson Lord';
+        return '👑 Ruler of Las Noches';
+    }
+
+    const namedStaffRoles = [
+        '⚜️ Head Captain',
+        '🛡️ Captain',
+        '⚔️ Lieutenant'
+    ];
+
+    const namedStaffRole =
+        findMemberRole(
+            member,
+            namedStaffRoles
+        );
+
+    if (namedStaffRole) {
+        return namedStaffRole.name;
     }
 
     if (
@@ -145,7 +277,7 @@ function getOrderStanding(
             PermissionFlagsBits.Administrator
         )
     ) {
-        return '⚜️ Eclipse Keeper';
+        return '🛡️ Captain';
     }
 
     if (
@@ -159,14 +291,14 @@ function getOrderStanding(
             PermissionFlagsBits.BanMembers
         )
     ) {
-        return '🛡️ Shadow Warden';
+        return '⚔️ Lieutenant';
     }
 
     if (member.user.bot) {
-        return '🤖 Order Guardian';
+        return '🌑 Guardian of Las Noches';
     }
 
-    return '🌑 Soul of the Order';
+    return '🌙 Resident of Las Noches';
 }
 
 /**
@@ -189,9 +321,7 @@ function getHighestRole(
         .roles
         .highest
         .toString();
-}
-
-/**
+}/**
  * Get a readable Guardian status.
  *
  * @param {Object} guardian
@@ -243,7 +373,7 @@ function buildProgressionDisplay(
             progress.progressPercent
         );
 
-    const rankDisplay =
+    const serverRankDisplay =
         progression.serverRank
             ? `#${progression.serverRank}`
             : 'Unranked';
@@ -256,16 +386,16 @@ function buildProgressionDisplay(
         );
 
     return [
-        `⭐ **Level:** \`${progression.level}\``,
-        `🏆 **Realm Rank:** \`${rankDisplay}\``,
-        `✨ **Total XP:** \`${formatNumber(progression.xp)}\``,
+        `⭐ **Soul Level:** \`${progression.level}\``,
+        `🏆 **Las Noches Standing:** \`${serverRankDisplay}\``,
+        `✨ **Total Spiritual Power:** \`${formatNumber(progression.xp)} XP\``,
         `💬 **Messages Recorded:** \`${formatNumber(progression.messageCount)}\``,
         '',
         `**Level ${progression.level} → ${progression.level + 1}**`,
         `\`${progressBar}\` **${progress.progressPercent}%**`,
         '',
         `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
-        `🌙 **Remaining:** \`${formatNumber(remainingXp)} XP\``
+        `🌙 **Power Required:** \`${formatNumber(remainingXp)} XP\``
     ].join('\n');
 }
 
@@ -284,7 +414,7 @@ function formatAchievement(
 
     const name =
         achievement.name ||
-        'Unknown Achievement';
+        'Unknown Chronicle';
 
     const description =
         achievement.description ||
@@ -308,7 +438,7 @@ function formatAchievement(
     return [
         `${icon} **${name}**`,
         `-# ${description}`,
-        `-# Unlocked ${unlockedDisplay}`
+        `-# Recorded ${unlockedDisplay}`
     ].join('\n');
 }
 
@@ -359,7 +489,7 @@ function buildAchievementDisplay(
         );
 
     const lines = [
-        `🏆 **Unlocked:** \`${formatNumber(unlocked)} / ${formatNumber(total)}\``,
+        `🏆 **Recorded:** \`${formatNumber(unlocked)} / ${formatNumber(total)}\``,
         `\`${progressBar}\` **${progressPercent}%**`
     ];
 
@@ -368,7 +498,7 @@ function buildAchievementDisplay(
     ) {
         lines.push(
             '',
-            '🌑 No Achievements have been unlocked yet.'
+            '🌑 No Soul Chronicles have been unlocked yet.'
         );
 
         return lines.join('\n');
@@ -376,7 +506,7 @@ function buildAchievementDisplay(
 
     lines.push(
         '',
-        '**Recently Unlocked**',
+        '**Recently Recorded**',
         ''
     );
 
@@ -398,7 +528,7 @@ function buildAchievementDisplay(
 }
 
 /**
- * Build the future Chronicle section.
+ * Build the Chronicle section.
  *
  * @param {Object} chronicleData
  * @returns {string}
@@ -422,14 +552,14 @@ function buildChronicleDisplay(
         recent.length === 0
     ) {
         return [
-            `**Recorded Entries:** \`${formatNumber(total)}\``,
+            `**Archive Entries:** \`${formatNumber(total)}\``,
             '',
-            '📖 No Chronicle entries have been written yet.'
+            '📖 No additional Soul Archive entries have been written yet.'
         ].join('\n');
     }
 
     return [
-        `**Recorded Entries:** \`${formatNumber(total)}\``,
+        `**Archive Entries:** \`${formatNumber(total)}\``,
         '',
         ...recent.map(
             entry =>
@@ -441,7 +571,73 @@ function buildChronicleDisplay(
     ].join('\n');
 }
 
-module.exports = {
+/**
+ * Build the Hollow Evolution display.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function buildEvolutionDisplay(
+    member
+) {
+    const currentEvolution =
+        getHollowEvolution(
+            member
+        );
+
+    const currentIndex =
+        HOLLOW_EVOLUTION_ROLES
+            .indexOf(
+                currentEvolution
+            );
+
+    const nextEvolution =
+        currentIndex > 0
+            ? HOLLOW_EVOLUTION_ROLES[
+                currentIndex - 1
+            ]
+            : null;
+
+    const lines = [
+        `**Current Evolution:** ${currentEvolution}`
+    ];
+
+    if (nextEvolution) {
+        lines.push(
+            `**Next Evolution:** ${nextEvolution}`,
+            '',
+            '-# Evolution advances through Soul Levels and activity.'
+        );
+    } else {
+        lines.push(
+            '',
+            '🌙 This Soul has reached the final Hollow Evolution.'
+        );
+    }
+
+    return lines.join('\n');
+}
+
+/**
+ * Build the manual Arrancar rank display.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function buildArrancarRankDisplay(
+    member
+) {
+    const arrancarRank =
+        getArrancarRank(
+            member
+        );
+
+    return [
+        `**Current Rank:** ${arrancarRank}`,
+        '',
+        '-# Arrancar ranks are granted manually by the Ruler and the High Command of Las Noches.'
+    ].join('\n');
+}module.exports = {
     category:
         'information',
 
@@ -451,7 +647,7 @@ module.exports = {
                 'soul'
             )
             .setDescription(
-                'Open Umbra’s complete record of a Soul.'
+                'Open a Soul Record from the archives of Las Noches.'
             )
             .addUserOption(option =>
                 option
@@ -544,13 +740,23 @@ module.exports = {
                     soulRecord.chronicles
                 );
 
+            const evolutionDisplay =
+                buildEvolutionDisplay(
+                    member
+                );
+
+            const arrancarRankDisplay =
+                buildArrancarRankDisplay(
+                    member
+                );
+
             const guardianDisplay =
                 getGuardianStatus(
                     soulRecord.guardian
                 );
 
-            const orderStanding =
-                getOrderStanding(
+            const lasNochesStanding =
+                getLasNochesStanding(
                     member,
                     interaction.guild
                 );
@@ -568,15 +774,15 @@ module.exports = {
             const soulEmbed =
                 createEmbed({
                     title:
-                        `🌑 ${fullUser.username}'s Soul Record`,
+                        `📖 ${fullUser.username}'s Soul Record`,
 
                     description:
                         [
-                            `Umbra has opened the Chronicle of ${fullUser}.`,
+                            `Umbra has opened the official Soul Archives of ${fullUser}.`,
                             '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
-                            '*Every Soul has a story. Umbra remembers them all.*'
+                            '*Every evolution, achievement and mark is remembered beneath the eternal moon of Las Noches.*'
                         ].join(
                             '\n'
                         ),
@@ -607,7 +813,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '⭐ Soul Progression',
+                                '⭐ Spiritual Progression',
 
                             value:
                                 progressionDisplay,
@@ -617,11 +823,31 @@ module.exports = {
                         },
                         {
                             name:
-                                '👑 Order Standing',
+                                '🩸 Hollow Evolution',
+
+                            value:
+                                evolutionDisplay,
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '⚔️ Arrancar Rank',
+
+                            value:
+                                arrancarRankDisplay,
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '👑 Las Noches Standing',
 
                             value:
                                 [
-                                    `**Standing:** ${orderStanding}`,
+                                    `**Standing:** ${lasNochesStanding}`,
                                     `**Highest Role:** ${highestRole}`,
                                     `**Reputation:** \`${formatNumber(soulRecord.reputation.total)}\``
                                 ].join(
@@ -633,7 +859,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '🏆 Achievements',
+                                '🏆 Soul Chronicles',
 
                             value:
                                 achievementDisplay,
@@ -658,7 +884,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '📖 Chronicles',
+                                '📖 Soul Archives',
 
                             value:
                                 chronicleDisplay,
@@ -668,7 +894,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '🏛️ Order Activity',
+                                '🏰 Las Noches Activity',
 
                             value:
                                 [
@@ -695,7 +921,7 @@ module.exports = {
                                         fullUser.createdTimestamp
                                     ),
                                     '',
-                                    '**Entered the Realm**',
+                                    '**Entered Las Noches**',
                                     formatDiscordDate(
                                         member.joinedTimestamp
                                     )
@@ -711,7 +937,7 @@ module.exports = {
 
             soulEmbed.setAuthor({
                 name:
-                    `${fullUser.username} • Umbra Soul Record`,
+                    `${fullUser.username} • Las Noches Soul Archives`,
 
                 iconURL:
                     avatarURL
@@ -719,7 +945,7 @@ module.exports = {
 
             soulEmbed.setFooter({
                 text:
-                    `🌑 Umbra Core • Record opened by ${interaction.user.username}`,
+                    `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
@@ -753,7 +979,7 @@ module.exports = {
                     [
                         'Umbra could not open the requested Soul Record.',
                         '',
-                        'Please verify that the selected Soul is still inside this Realm and try again.'
+                        'Please verify that the selected Soul is still inside Las Noches and try again.'
                     ].join(
                         '\n'
                     )
