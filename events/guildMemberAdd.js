@@ -1,7 +1,8 @@
 const {
     Events,
     EmbedBuilder,
-    AttachmentBuilder
+    AttachmentBuilder,
+    PermissionFlagsBits
 } = require('discord.js');
 
 const path =
@@ -20,6 +21,19 @@ const {
     addMemberToRaidCase,
     closeRaidCase
 } = require('../database/raidCases');
+
+/**
+ * Official Welcome channel.
+ */
+const WELCOME_CHANNEL_NAME =
+    '👋・arrivals';
+
+/**
+ * Role assigned automatically
+ * when a new member joins.
+ */
+const UNVERIFIED_ROLE_NAME =
+    '🌑 Unverified';
 
 /**
  * Recent member joins for each guild.
@@ -53,6 +67,166 @@ const recentJoins =
  */
 const activeRaids =
     new Map();
+
+/**
+ * Find one guild role using
+ * its exact configured name.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {string} roleName
+ * @returns {import('discord.js').Role|null}
+ */
+function findGuildRole(
+    guild,
+    roleName
+) {
+    return (
+        guild.roles.cache.find(
+            role =>
+                role.name ===
+                roleName
+        ) ||
+        null
+    );
+}
+
+/**
+ * Check whether Umbra can assign
+ * one specific Discord role.
+ *
+ * @param {import('discord.js').GuildMember} botMember
+ * @param {import('discord.js').Role} role
+ * @returns {boolean}
+ */
+function canAssignRole(
+    botMember,
+    role
+) {
+    if (
+        !botMember ||
+        !role
+    ) {
+        return false;
+    }
+
+    if (
+        !botMember.permissions.has(
+            PermissionFlagsBits.ManageRoles
+        )
+    ) {
+        return false;
+    }
+
+    if (
+        role.managed ||
+        !role.editable
+    ) {
+        return false;
+    }
+
+    return (
+        role.position <
+        botMember.roles.highest.position
+    );
+}
+
+/**
+ * Assign the Unverified role
+ * to one newly joined member.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @returns {Promise<boolean>}
+ */
+async function assignUnverifiedRole(
+    member
+) {
+    try {
+        if (
+            member.user.bot
+        ) {
+            return false;
+        }
+
+        const unverifiedRole =
+            findGuildRole(
+                member.guild,
+                UNVERIFIED_ROLE_NAME
+            );
+
+        if (!unverifiedRole) {
+            console.error(
+                `❌ Unverified role "${UNVERIFIED_ROLE_NAME}" was not found in ${member.guild.name}.`
+            );
+
+            return false;
+        }
+
+        const botMember =
+            member.guild.members.me;
+
+        if (!botMember) {
+            console.error(
+                '❌ Umbra could not access its GuildMember record.'
+            );
+
+            return false;
+        }
+
+        if (
+            !botMember.permissions.has(
+                PermissionFlagsBits.ManageRoles
+            )
+        ) {
+            console.error(
+                '❌ Umbra is missing the Manage Roles permission.'
+            );
+
+            return false;
+        }
+
+        if (
+            !canAssignRole(
+                botMember,
+                unverifiedRole
+            )
+        ) {
+            console.error(
+                `❌ Umbra cannot assign ${UNVERIFIED_ROLE_NAME}. Move Umbra above this role.`
+            );
+
+            return false;
+        }
+
+        if (
+            member.roles.cache.has(
+                unverifiedRole.id
+            )
+        ) {
+            return true;
+        }
+
+        await member.roles.add(
+            unverifiedRole,
+            'Umbra Verification System • New member joined'
+        );
+
+        console.log(
+            `🌑 Assigned ${UNVERIFIED_ROLE_NAME} to ${member.user.tag}.`
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            `❌ Failed to assign ${UNVERIFIED_ROLE_NAME} to ${member.user.tag}:`
+        );
+
+        console.error(
+            error
+        );
+
+        return false;
+    }
+}
 
 /**
  * Find the moderation log channel.
@@ -119,7 +293,8 @@ function formatDuration(
         totalSeconds %
         60;
 
-    const parts = [];
+    const parts =
+        [];
 
     if (
         minutes >
@@ -146,8 +321,8 @@ function formatDuration(
 }
 
 /**
- * Convert a timestamp into Discord
- * timestamp syntax.
+ * Convert a timestamp into
+ * Discord timestamp syntax.
  *
  * @param {number} timestamp
  * @returns {string}
@@ -165,14 +340,12 @@ function formatDiscordTimestamp(
         `<t:${unixTimestamp}:F>\n` +
         `(<t:${unixTimestamp}:R>)`
     );
-}
-
-/**
+}/**
  * Send Raid detected log.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object|null} savedRaidCase
- * @param {Array<string>} memberIds
+ * @param {string[]} memberIds
  * @returns {Promise<void>}
  */
 async function sendRaidDetectedLog(
@@ -225,7 +398,6 @@ async function sendRaidDetectedLog(
             .setColor(
                 '#FF0000'
             )
-
             .setAuthor({
                 name:
                     'Umbra Raid Shield',
@@ -240,21 +412,16 @@ async function sendRaidDetectedLog(
                                 256
                         })
             })
-
             .setTitle(
                 '🚨 RAID DETECTED'
             )
-
             .setDescription(
                 [
                     'Umbra detected an unusual number of member joins.',
                     '',
                     '🔴 **Raid Mode has been activated.**'
-                ].join(
-                    '\n'
-                )
+                ].join('\n')
             )
-
             .addFields(
                 {
                     name:
@@ -348,26 +515,23 @@ async function sendRaidDetectedLog(
                             '✅ New joins are being added to this Raid Case',
                             '✅ Moderation logs are active',
                             'ℹ️ Automatic channel lockdown is currently disabled'
-                        ].join(
-                            '\n'
-                        ),
+                        ].join('\n'),
 
                     inline:
                         false
                 }
             )
-
             .setFooter({
                 text:
                     `Umbra Raid Shield • Case ${raidCaseId}`
             })
-
             .setTimestamp();
 
     try {
         await logChannel.send({
-            embeds:
-                [embed]
+            embeds: [
+                embed
+            ]
         });
     } catch (error) {
         console.error(
@@ -378,7 +542,9 @@ async function sendRaidDetectedLog(
             error
         );
     }
-}/**
+}
+
+/**
  * Send Raid Mode ended log.
  *
  * @param {import('discord.js').Guild} guild
@@ -403,7 +569,6 @@ async function sendRaidEndedLog(
             .setColor(
                 '#2ECC71'
             )
-
             .setAuthor({
                 name:
                     'Umbra Raid Shield',
@@ -418,15 +583,12 @@ async function sendRaidEndedLog(
                                 256
                         })
             })
-
             .setTitle(
                 '✅ Raid Mode Ended'
             )
-
             .setDescription(
                 'The Raid Mode monitoring period has ended.'
             )
-
             .addFields(
                 {
                     name:
@@ -461,18 +623,17 @@ async function sendRaidEndedLog(
                         true
                 }
             )
-
             .setFooter({
                 text:
                     'Umbra Raid Shield'
             })
-
             .setTimestamp();
 
     try {
         await logChannel.send({
-            embeds:
-                [embed]
+            embeds: [
+                embed
+            ]
         });
     } catch (error) {
         console.error(
@@ -547,7 +708,7 @@ async function endRaidMode(
  * Activate Raid Mode.
  *
  * @param {import('discord.js').Guild} guild
- * @param {Array<string>} memberIds
+ * @param {string[]} memberIds
  * @returns {Promise<void>}
  */
 async function activateRaidMode(
@@ -663,17 +824,15 @@ async function activateRaidMode(
             () => {
                 endRaidMode(
                     guild
-                ).catch(
-                    error => {
-                        console.error(
-                            '❌ Failed to end Raid Mode:'
-                        );
+                ).catch(error => {
+                    console.error(
+                        '❌ Failed to end Raid Mode:'
+                    );
 
-                        console.error(
-                            error
-                        );
-                    }
-                );
+                    console.error(
+                        error
+                    );
+                });
             },
 
             antiRaid
@@ -686,9 +845,7 @@ async function activateRaidMode(
     ) {
         raidTimer.unref();
     }
-}
-
-/**
+}/**
  * Record a member join and detect raid activity.
  *
  * @param {import('discord.js').GuildMember} member
@@ -814,30 +971,115 @@ async function processRaidDetection(
             memberIds
         );
     }
-}/**
+}
+
+/**
+ * Find the official Welcome channel.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @returns {import('discord.js').GuildTextBasedChannel|null}
+ */
+function findWelcomeChannel(
+    guild
+) {
+    return (
+        guild.channels.cache.find(
+            channel =>
+                channel.isTextBased() &&
+                !channel.isThread() &&
+                channel.name ===
+                    WELCOME_CHANNEL_NAME
+        ) ||
+        null
+    );
+}
+
+/**
+ * Check whether Umbra can send the
+ * Welcome message in one channel.
+ *
+ * @param {import('discord.js').GuildTextBasedChannel} channel
+ * @returns {boolean}
+ */
+function canSendWelcomeMessage(
+    channel
+) {
+    if (
+        !channel ||
+        !channel.guild
+    ) {
+        return false;
+    }
+
+    const botMember =
+        channel.guild.members.me;
+
+    if (!botMember) {
+        return false;
+    }
+
+    const permissions =
+        channel.permissionsFor(
+            botMember
+        );
+
+    if (!permissions) {
+        return false;
+    }
+
+    return (
+        permissions.has(
+            PermissionFlagsBits.ViewChannel
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.SendMessages
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.EmbedLinks
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.AttachFiles
+        )
+    );
+}
+
+/**
  * Send the Umbra Welcome message.
  *
  * @param {import('discord.js').GuildMember} member
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>}
  */
 async function sendWelcomeMessage(
     member
 ) {
     try {
         const welcomeChannel =
-            member.guild.channels.cache.find(
-                channel =>
-                    channel.isTextBased() &&
-                    channel.name ===
-                        '👋・welcome'
+            findWelcomeChannel(
+                member.guild
             );
 
         if (!welcomeChannel) {
             console.error(
-                '❌ Welcome channel "👋・welcome" was not found.'
+                `❌ Welcome channel "${WELCOME_CHANNEL_NAME}" was not found in ${member.guild.name}.`
             );
 
-            return;
+            return false;
+        }
+
+        if (
+            !canSendWelcomeMessage(
+                welcomeChannel
+            )
+        ) {
+            console.error(
+                `❌ Umbra cannot send Welcome messages in #${welcomeChannel.name}.`
+            );
+
+            console.error(
+                'Required channel permissions: View Channel, Send Messages, Embed Links and Attach Files.'
+            );
+
+            return false;
         }
 
         const welcomeBannerPath =
@@ -849,21 +1091,34 @@ async function sendWelcomeMessage(
                 WELCOME_BANNER_NAME
             );
 
-        const welcomeBanner =
-            new AttachmentBuilder(
-                welcomeBannerPath,
-                {
-                    name:
-                        WELCOME_BANNER_NAME
-                }
+        let welcomeBanner =
+            null;
+
+        try {
+            welcomeBanner =
+                new AttachmentBuilder(
+                    welcomeBannerPath,
+                    {
+                        name:
+                            WELCOME_BANNER_NAME
+                    }
+                );
+        } catch (bannerError) {
+            console.error(
+                `⚠️ Welcome banner could not be loaded: ${WELCOME_BANNER_NAME}`
             );
+
+            console.error(
+                bannerError
+            );
+        }
 
         const welcomeEmbed =
             createWelcomeEmbed(
                 member
             );
 
-        await welcomeChannel.send({
+        const messagePayload = {
             content:
                 `${member}`,
 
@@ -871,24 +1126,38 @@ async function sendWelcomeMessage(
                 welcomeEmbed
             ],
 
-            files: [
-                welcomeBanner
-            ],
-
             allowedMentions: {
                 users: [
                     member.id
                 ]
             }
-        });
+        };
+
+        if (
+            welcomeBanner
+        ) {
+            messagePayload.files = [
+                welcomeBanner
+            ];
+        }
+
+        await welcomeChannel.send(
+            messagePayload
+        );
 
         console.log(
             `✅ Umbra welcomed ${member.user.tag} to ${member.guild.name}.`
         );
 
-        console.log(
-            `🖼️ Welcome banner attached: ${WELCOME_BANNER_NAME}`
-        );
+        if (
+            welcomeBanner
+        ) {
+            console.log(
+                `🖼️ Welcome banner attached: ${WELCOME_BANNER_NAME}`
+            );
+        }
+
+        return true;
     } catch (error) {
         console.error(
             `❌ Failed to welcome ${member.user.tag}:`
@@ -897,10 +1166,10 @@ async function sendWelcomeMessage(
         console.error(
             error
         );
-    }
-}
 
-module.exports = {
+        return false;
+    }
+}module.exports = {
     name:
         Events.GuildMemberAdd,
 
@@ -908,7 +1177,15 @@ module.exports = {
         false,
 
     /**
-     * Handle new server members.
+     * Handle newly joined server members.
+     *
+     * Order:
+     * 1. Assign Unverified role
+     * 2. Process Raid Shield
+     * 3. Send Welcome message
+     *
+     * Each system runs independently so
+     * one failure does not stop the others.
      *
      * @param {import('discord.js').GuildMember} member
      * @returns {Promise<void>}
@@ -929,14 +1206,34 @@ module.exports = {
         );
 
         console.log(
+            `🆔 Soul ID: ${member.id}`
+        );
+
+        console.log(
             '======================================'
         );
 
-        /*
-         * Raid detection and Welcome System
-         * are separated so one failure does
-         * not stop the other feature.
-         */
+        let roleAssigned =
+            false;
+
+        let welcomeSent =
+            false;
+
+        try {
+            roleAssigned =
+                await assignUnverifiedRole(
+                    member
+                );
+        } catch (error) {
+            console.error(
+                `❌ Unverified role assignment failed for ${member.user.tag}:`
+            );
+
+            console.error(
+                error
+            );
+        }
+
         try {
             await processRaidDetection(
                 member
@@ -951,14 +1248,54 @@ module.exports = {
             );
         }
 
-        await sendWelcomeMessage(
-            member
+        try {
+            welcomeSent =
+                await sendWelcomeMessage(
+                    member
+                );
+        } catch (error) {
+            console.error(
+                `❌ Welcome System failed while processing ${member.user.tag}:`
+            );
+
+            console.error(
+                error
+            );
+        }
+
+        console.log(
+            '======================================'
+        );
+
+        console.log(
+            `🌑 Unverified Role: ${
+                roleAssigned
+                    ? 'Assigned'
+                    : 'Not Assigned'
+            }`
+        );
+
+        console.log(
+            `👋 Welcome Message: ${
+                welcomeSent
+                    ? 'Sent'
+                    : 'Not Sent'
+            }`
+        );
+
+        console.log(
+            `🛡️ Raid Shield: Processed`
+        );
+
+        console.log(
+            '======================================'
         );
     }
 };
 
 /**
- * Remove old join data from memory.
+ * Remove expired join records
+ * from memory.
  */
 const cleanupTimer =
     setInterval(
@@ -985,7 +1322,8 @@ const cleanupTimer =
                         join =>
                             now -
                                 join.joinedAt <
-                            antiRaid.joinIntervalMilliseconds
+                            antiRaid
+                                .joinIntervalMilliseconds
                     );
 
                 if (
