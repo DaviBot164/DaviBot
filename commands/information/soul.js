@@ -14,6 +14,13 @@ const {
 } = require('../../database');
 
 /**
+ * A long divider helps the embed preserve
+ * a wider appearance on Discord desktop.
+ */
+const WIDE_DIVIDER =
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+/**
  * Hollow Evolution roles ordered
  * from the strongest to the weakest.
  */
@@ -116,7 +123,7 @@ function formatDiscordDate(value) {
  */
 function createProgressBar(
     percentage,
-    length = 12
+    length = 14
 ) {
     const safePercentage =
         Math.min(
@@ -370,14 +377,14 @@ function buildProgressionDisplay(
 
     return [
         `⭐ **Soul Level:** \`${level}\``,
-        `✨ **Spiritual Power:** \`${formatNumber(xp)} XP\``,
-        `🏆 **Server Standing:** \`${serverRankDisplay}\``,
+        `✨ **Total Spiritual Power:** \`${formatNumber(xp)} XP\``,
+        `🏆 **Las Noches Ranking:** \`${serverRankDisplay}\``,
         '',
-        `**Level ${level} → ${level + 1}**`,
+        `**Spiritual Progress • Level ${level} → ${level + 1}**`,
         `\`${progressBar}\` **${progressPercent}%**`,
         '',
-        `🌙 \`${formatNumber(progressXp)} / ${formatNumber(requiredForNextLevel)} XP\``,
-        `-# ${formatNumber(remainingXp)} XP required for the next level.`
+        `🌙 **Current Power:** \`${formatNumber(progressXp)} / ${formatNumber(requiredForNextLevel)} XP\``,
+        `-# ${formatNumber(remainingXp)} additional XP is required to reach the next Soul Level.`
     ].join('\n');
 }
 
@@ -432,7 +439,7 @@ function formatAchievement(
     return [
         `${icon} **${name}**`,
         `-# ${description}`,
-        `-# Recorded ${unlockedDisplay}`
+        `-# Recorded within the Soul Archives ${unlockedDisplay}`
     ].join('\n');
 }
 
@@ -482,7 +489,7 @@ function buildAchievementDisplay(
     const progressBar =
         createProgressBar(
             progressPercent,
-            10
+            12
         );
 
     const lines = [
@@ -495,8 +502,8 @@ function buildAchievementDisplay(
     ) {
         lines.push(
             '',
-            '📖 No Soul Chronicles have been recorded yet.',
-            '-# Continue your journey through Las Noches.'
+            '📖 No Soul Chronicles have been recorded within the archives yet.',
+            '-# Continue your evolution and journey through Las Noches.'
         );
 
         return lines.join('\n');
@@ -504,7 +511,7 @@ function buildAchievementDisplay(
 
     lines.push(
         '',
-        '**Latest Chronicle**',
+        '**Latest Chronicle Recorded**',
         ''
     );
 
@@ -542,19 +549,19 @@ function buildEvolutionDisplay(member) {
             : null;
 
     const lines = [
-        `**Current Evolution:** ${currentEvolution}`
+        `**Current Hollow Evolution:** ${currentEvolution}`
     ];
 
     if (nextEvolution) {
         lines.push(
-            `**Next Evolution:** ${nextEvolution}`,
+            `**Next Evolution Stage:** ${nextEvolution}`,
             '',
-            '-# Evolution advances automatically through Soul Levels and activity.'
+            '-# Hollow Evolution advances automatically through Soul Levels, activity and spiritual growth.'
         );
     } else {
         lines.push(
             '',
-            '🌙 This Soul has reached the final Hollow Evolution.'
+            '🌙 This Soul has reached the final stage of Hollow Evolution.'
         );
     }
 
@@ -574,9 +581,9 @@ function buildArrancarRankDisplay(member) {
         );
 
     return [
-        `**Current Rank:** ${arrancarRank}`,
+        `**Current Arrancar Rank:** ${arrancarRank}`,
         '',
-        '-# Arrancar ranks are granted manually by the High Command of Las Noches.'
+        '-# Arrancar ranks are granted manually by the Ruler and High Command of Las Noches.'
     ].join('\n');
 }
 
@@ -632,10 +639,10 @@ function buildActivityDisplay(
         );
 
     return [
-        `💬 **Messages:** \`${formatNumber(messageCount)}\``,
-        `🎙️ **Voice Time:** \`${formatNumber(voiceMinutes)} minutes\``,
-        `🎮 **Events:** \`${formatNumber(eventsJoined)} joined • ${formatNumber(eventsCompleted)} completed\``,
-        `🎫 **Tickets:** \`${formatNumber(ticketsCreated)} created • ${formatNumber(ticketsClosed)} closed\``
+        `💬 **Messages Recorded:** \`${formatNumber(messageCount)}\``,
+        `🎙️ **Time Within Voice Realms:** \`${formatNumber(voiceMinutes)} minutes\``,
+        `🎮 **Las Noches Events:** \`${formatNumber(eventsJoined)} joined • ${formatNumber(eventsCompleted)} completed\``,
+        `🎫 **Support Records:** \`${formatNumber(ticketsCreated)} created • ${formatNumber(ticketsClosed)} closed\``
     ].join('\n');
 }
 
@@ -772,11 +779,11 @@ module.exports = {
 
                     description:
                         [
-                            `Umbra has opened the official Soul Record of ${fullUser}.`,
+                            `Umbra has opened the official Soul Record of ${fullUser} from the eternal archives of Las Noches.`,
                             '',
-                            '━━━━━━━━━━━━━━━━━━━━',
+                            WIDE_DIVIDER,
                             '',
-                            '*Every evolution, battle and achievement is preserved beneath the eternal moon of Las Noches.*'
+                            '🌙 *Every evolution, battle, rank and achievement is preserved beneath the eternal moon of Las Noches.*'
                         ].join('\n'),
 
                     thumbnail:
@@ -794,8 +801,8 @@ module.exports = {
                                 [
                                     `**Soul Name:** ${fullUser.username}`,
                                     `**Display Name:** ${member.displayName}`,
-                                    `**Soul ID:** \`${fullUser.id}\``,
-                                    `**Current Title:** ${titleDisplay}`
+                                    `**Soul Identification Number:** \`${fullUser.id}\``,
+                                    `**Current Chronicle Title:** ${titleDisplay}`
                                 ].join('\n'),
 
                             inline:
@@ -837,8 +844,8 @@ module.exports = {
 
                             value:
                                 [
-                                    `**Standing:** ${lasNochesStanding}`,
-                                    `**Highest Role:** ${highestRole}`
+                                    `**Administrative Standing:** ${lasNochesStanding}`,
+                                    `**Highest Recognized Role:** ${highestRole}`
                                 ].join('\n'),
 
                             inline:
@@ -866,11 +873,11 @@ module.exports = {
                         },
                         {
                             name:
-                                '📅 Journey',
+                                '📅 Journey Through Las Noches',
 
                             value:
                                 [
-                                    '**Entered Las Noches**',
+                                    '**This Soul Entered Las Noches On**',
                                     formatDiscordDate(
                                         member.joinedTimestamp
                                     )
@@ -892,7 +899,7 @@ module.exports = {
 
             soulEmbed.setFooter({
                 text:
-                    `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+                    `🌙 Umbra • Guardian of Las Noches • Soul Record opened by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
