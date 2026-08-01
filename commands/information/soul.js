@@ -10,8 +10,7 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    souls:
-        soulDatabase
+    souls: soulDatabase
 } = require('../../database');
 
 /**
@@ -50,14 +49,12 @@ const ARRANCAR_RANK_ROLES = [
 ];
 
 /**
- * Format a number using separators.
+ * Format a numeric value using separators.
  *
- * @param {number|string|null} value
+ * @param {number|string|null|undefined} value
  * @returns {string}
  */
-function formatNumber(
-    value
-) {
+function formatNumber(value) {
     const numericValue =
         Number(value);
 
@@ -77,12 +74,10 @@ function formatNumber(
 /**
  * Format a Discord timestamp.
  *
- * @param {number|Date|null} value
+ * @param {number|Date|null|undefined} value
  * @returns {string}
  */
-function formatDiscordDate(
-    value
-) {
+function formatDiscordDate(value) {
     if (!value) {
         return 'Unknown';
     }
@@ -90,9 +85,7 @@ function formatDiscordDate(
     const date =
         value instanceof Date
             ? value
-            : new Date(
-                value
-            );
+            : new Date(value);
 
     if (
         Number.isNaN(
@@ -115,7 +108,7 @@ function formatDiscordDate(
 }
 
 /**
- * Create Umbra's visual XP progress bar.
+ * Create Umbra's visual progress bar.
  *
  * @param {number} percentage
  * @param {number} length
@@ -195,9 +188,7 @@ function findMemberRole(
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function getHollowEvolution(
-    member
-) {
+function getHollowEvolution(member) {
     const evolutionRole =
         findMemberRole(
             member,
@@ -218,9 +209,7 @@ function getHollowEvolution(
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function getArrancarRank(
-    member
-) {
+function getArrancarRank(member) {
     const rankRole =
         findMemberRole(
             member,
@@ -307,9 +296,7 @@ function getLasNochesStanding(
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function getHighestRole(
-    member
-) {
+function getHighestRole(member) {
     if (
         member.roles.highest.id ===
         member.guild.id
@@ -317,47 +304,11 @@ function getHighestRole(
         return 'None';
     }
 
-    return member
-        .roles
-        .highest
-        .toString();
-}/**
- * Get a readable Guardian status.
- *
- * @param {Object} guardian
- * @returns {string}
- */
-function getGuardianStatus(
-    guardian
-) {
-    if (
-        guardian.warningCount ===
-        null
-    ) {
-        return '⚠️ Unavailable';
-    }
-
-    if (
-        guardian.warningCount ===
-        0
-    ) {
-        return '🟢 Clear';
-    }
-
-    if (
-        guardian.warningCount ===
-        1
-    ) {
-        return '⚠️ 1 Guardian Mark';
-    }
-
-    return (
-        `⚠️ ${guardian.warningCount} Guardian Marks`
-    );
+    return member.roles.highest.toString();
 }
 
 /**
- * Build the Soul progression block.
+ * Build the Spiritual Progression section.
  *
  * @param {Object} progression
  * @returns {string}
@@ -365,37 +316,68 @@ function getGuardianStatus(
 function buildProgressionDisplay(
     progression
 ) {
-    const progress =
-        progression.progress;
+    const safeProgression =
+        progression || {};
 
-    const progressBar =
-        createProgressBar(
-            progress.progressPercent
+    const progress =
+        safeProgression.progress || {};
+
+    const level =
+        Number(
+            safeProgression.level || 0
+        );
+
+    const xp =
+        Number(
+            safeProgression.xp || 0
+        );
+
+    const progressXp =
+        Number(
+            progress.progressXp || 0
+        );
+
+    const requiredForNextLevel =
+        Number(
+            progress.requiredForNextLevel || 0
+        );
+
+    const nextLevelXp =
+        Number(
+            progress.nextLevelXp || 0
+        );
+
+    const progressPercent =
+        Number(
+            progress.progressPercent || 0
         );
 
     const serverRankDisplay =
-        progression.serverRank
-            ? `#${progression.serverRank}`
+        safeProgression.serverRank
+            ? `#${safeProgression.serverRank}`
             : 'Unranked';
 
     const remainingXp =
         Math.max(
             0,
-            progress.nextLevelXp -
-            progression.xp
+            nextLevelXp - xp
+        );
+
+    const progressBar =
+        createProgressBar(
+            progressPercent
         );
 
     return [
-        `⭐ **Soul Level:** \`${progression.level}\``,
-        `🏆 **Las Noches Standing:** \`${serverRankDisplay}\``,
-        `✨ **Total Spiritual Power:** \`${formatNumber(progression.xp)} XP\``,
-        `💬 **Messages Recorded:** \`${formatNumber(progression.messageCount)}\``,
+        `⭐ **Soul Level:** \`${level}\``,
+        `✨ **Spiritual Power:** \`${formatNumber(xp)} XP\``,
+        `🏆 **Server Standing:** \`${serverRankDisplay}\``,
         '',
-        `**Level ${progression.level} → ${progression.level + 1}**`,
-        `\`${progressBar}\` **${progress.progressPercent}%**`,
+        `**Level ${level} → ${level + 1}**`,
+        `\`${progressBar}\` **${progressPercent}%**`,
         '',
-        `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
-        `🌙 **Power Required:** \`${formatNumber(remainingXp)} XP\``
+        `🌙 \`${formatNumber(progressXp)} / ${formatNumber(requiredForNextLevel)} XP\``,
+        `-# ${formatNumber(remainingXp)} XP required for the next level.`
     ].join('\n');
 }
 
@@ -409,31 +391,43 @@ function formatAchievement(
     achievement
 ) {
     const icon =
-        achievement.icon ||
+        achievement?.icon ||
         '🏆';
 
     const name =
-        achievement.name ||
+        achievement?.name ||
         'Unknown Chronicle';
 
     const description =
-        achievement.description ||
+        achievement?.description ||
         'No description available.';
 
-    const unlockedAt =
-        achievement.unlockedAt
-            ? Math.floor(
-                new Date(
-                    achievement.unlockedAt
-                ).getTime() /
-                1000
-            )
-            : null;
+    let unlockedDisplay =
+        'Unknown';
 
-    const unlockedDisplay =
-        unlockedAt
-            ? `<t:${unlockedAt}:R>`
-            : 'Unknown';
+    if (
+        achievement?.unlockedAt
+    ) {
+        const unlockedDate =
+            new Date(
+                achievement.unlockedAt
+            );
+
+        if (
+            !Number.isNaN(
+                unlockedDate.getTime()
+            )
+        ) {
+            const unlockedTimestamp =
+                Math.floor(
+                    unlockedDate.getTime() /
+                    1000
+                );
+
+            unlockedDisplay =
+                `<t:${unlockedTimestamp}:R>`;
+        }
+    }
 
     return [
         `${icon} **${name}**`,
@@ -451,21 +445,24 @@ function formatAchievement(
 function buildAchievementDisplay(
     achievementData
 ) {
+    const safeAchievementData =
+        achievementData || {};
+
     const unlocked =
         Number(
-            achievementData.unlocked || 0
+            safeAchievementData.unlocked || 0
         );
 
     const total =
         Number(
-            achievementData.total || 0
+            safeAchievementData.total || 0
         );
 
     const recent =
         Array.isArray(
-            achievementData.recent
+            safeAchievementData.recent
         )
-            ? achievementData.recent
+            ? safeAchievementData.recent
             : [];
 
     const progressPercent =
@@ -489,7 +486,7 @@ function buildAchievementDisplay(
         );
 
     const lines = [
-        `🏆 **Recorded:** \`${formatNumber(unlocked)} / ${formatNumber(total)}\``,
+        `🏆 **Chronicles Recorded:** \`${formatNumber(unlocked)} / ${formatNumber(total)}\``,
         `\`${progressBar}\` **${progressPercent}%**`
     ];
 
@@ -498,7 +495,8 @@ function buildAchievementDisplay(
     ) {
         lines.push(
             '',
-            '🌑 No Soul Chronicles have been unlocked yet.'
+            '📖 No Soul Chronicles have been recorded yet.',
+            '-# Continue your journey through Las Noches.'
         );
 
         return lines.join('\n');
@@ -506,90 +504,35 @@ function buildAchievementDisplay(
 
     lines.push(
         '',
-        '**Recently Recorded**',
+        '**Latest Chronicle**',
         ''
     );
 
-    for (
-        const achievement
-        of recent
-    ) {
-        lines.push(
-            formatAchievement(
-                achievement
-            ),
-            ''
-        );
-    }
+    lines.push(
+        formatAchievement(
+            recent[0]
+        )
+    );
 
-    return lines
-        .join('\n')
-        .trim();
+    return lines.join('\n');
 }
 
 /**
- * Build the Chronicle section.
- *
- * @param {Object} chronicleData
- * @returns {string}
- */
-function buildChronicleDisplay(
-    chronicleData
-) {
-    const total =
-        Number(
-            chronicleData.total || 0
-        );
-
-    const recent =
-        Array.isArray(
-            chronicleData.recent
-        )
-            ? chronicleData.recent
-            : [];
-
-    if (
-        recent.length === 0
-    ) {
-        return [
-            `**Archive Entries:** \`${formatNumber(total)}\``,
-            '',
-            '📖 No additional Soul Archive entries have been written yet.'
-        ].join('\n');
-    }
-
-    return [
-        `**Archive Entries:** \`${formatNumber(total)}\``,
-        '',
-        ...recent.map(
-            entry =>
-                typeof entry ===
-                'string'
-                    ? entry
-                    : String(entry)
-        )
-    ].join('\n');
-}
-
-/**
- * Build the Hollow Evolution display.
+ * Build the Hollow Evolution section.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function buildEvolutionDisplay(
-    member
-) {
+function buildEvolutionDisplay(member) {
     const currentEvolution =
         getHollowEvolution(
             member
         );
 
     const currentIndex =
-        HOLLOW_EVOLUTION_ROLES
-            .indexOf(
-                currentEvolution
-            );
+        HOLLOW_EVOLUTION_ROLES.indexOf(
+            currentEvolution
+        );
 
     const nextEvolution =
         currentIndex > 0
@@ -606,7 +549,7 @@ function buildEvolutionDisplay(
         lines.push(
             `**Next Evolution:** ${nextEvolution}`,
             '',
-            '-# Evolution advances through Soul Levels and activity.'
+            '-# Evolution advances automatically through Soul Levels and activity.'
         );
     } else {
         lines.push(
@@ -619,14 +562,12 @@ function buildEvolutionDisplay(
 }
 
 /**
- * Build the manual Arrancar rank display.
+ * Build the manual Arrancar Rank section.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
  */
-function buildArrancarRankDisplay(
-    member
-) {
+function buildArrancarRankDisplay(member) {
     const arrancarRank =
         getArrancarRank(
             member
@@ -635,9 +576,70 @@ function buildArrancarRankDisplay(
     return [
         `**Current Rank:** ${arrancarRank}`,
         '',
-        '-# Arrancar ranks are granted manually by the Ruler and the High Command of Las Noches.'
+        '-# Arrancar ranks are granted manually by the High Command of Las Noches.'
     ].join('\n');
-}module.exports = {
+}
+
+/**
+ * Build the Las Noches activity section.
+ *
+ * @param {Object} soulRecord
+ * @returns {string}
+ */
+function buildActivityDisplay(
+    soulRecord
+) {
+    const progression =
+        soulRecord?.progression || {};
+
+    const tickets =
+        soulRecord?.tickets || {};
+
+    const events =
+        soulRecord?.events || {};
+
+    const voice =
+        soulRecord?.voice || {};
+
+    const messageCount =
+        Number(
+            progression.messageCount || 0
+        );
+
+    const voiceMinutes =
+        Number(
+            voice.totalMinutes || 0
+        );
+
+    const eventsJoined =
+        Number(
+            events.joined || 0
+        );
+
+    const eventsCompleted =
+        Number(
+            events.completed || 0
+        );
+
+    const ticketsCreated =
+        Number(
+            tickets.created || 0
+        );
+
+    const ticketsClosed =
+        Number(
+            tickets.closed || 0
+        );
+
+    return [
+        `💬 **Messages:** \`${formatNumber(messageCount)}\``,
+        `🎙️ **Voice Time:** \`${formatNumber(voiceMinutes)} minutes\``,
+        `🎮 **Events:** \`${formatNumber(eventsJoined)} joined • ${formatNumber(eventsCompleted)} completed\``,
+        `🎫 **Tickets:** \`${formatNumber(ticketsCreated)} created • ${formatNumber(ticketsClosed)} closed\``
+    ].join('\n');
+}
+
+module.exports = {
     category:
         'information',
 
@@ -671,9 +673,7 @@ function buildArrancarRankDisplay(
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(
-        interaction
-    ) {
+    async execute(interaction) {
         try {
             await interaction.deferReply();
 
@@ -725,19 +725,13 @@ function buildArrancarRankDisplay(
                 bannerURL ??
                 avatarURL;
 
+            const titleDisplay =
+                soulRecord?.title?.displayName ||
+                '🌑 Nameless Soul';
+
             const progressionDisplay =
                 buildProgressionDisplay(
-                    soulRecord.progression
-                );
-
-            const achievementDisplay =
-                buildAchievementDisplay(
-                    soulRecord.achievements
-                );
-
-            const chronicleDisplay =
-                buildChronicleDisplay(
-                    soulRecord.chronicles
+                    soulRecord?.progression
                 );
 
             const evolutionDisplay =
@@ -748,11 +742,6 @@ function buildArrancarRankDisplay(
             const arrancarRankDisplay =
                 buildArrancarRankDisplay(
                     member
-                );
-
-            const guardianDisplay =
-                getGuardianStatus(
-                    soulRecord.guardian
                 );
 
             const lasNochesStanding =
@@ -766,10 +755,15 @@ function buildArrancarRankDisplay(
                     member
                 );
 
-            const titleDisplay =
-                soulRecord.title
-                    ?.displayName ||
-                '🌑 Nameless Soul';
+            const achievementDisplay =
+                buildAchievementDisplay(
+                    soulRecord?.achievements
+                );
+
+            const activityDisplay =
+                buildActivityDisplay(
+                    soulRecord
+                );
 
             const soulEmbed =
                 createEmbed({
@@ -778,14 +772,12 @@ function buildArrancarRankDisplay(
 
                     description:
                         [
-                            `Umbra has opened the official Soul Archives of ${fullUser}.`,
+                            `Umbra has opened the official Soul Record of ${fullUser}.`,
                             '',
                             '━━━━━━━━━━━━━━━━━━━━',
                             '',
-                            '*Every evolution, achievement and mark is remembered beneath the eternal moon of Las Noches.*'
-                        ].join(
-                            '\n'
-                        ),
+                            '*Every evolution, battle and achievement is preserved beneath the eternal moon of Las Noches.*'
+                        ].join('\n'),
 
                     thumbnail:
                         avatarURL,
@@ -804,9 +796,7 @@ function buildArrancarRankDisplay(
                                     `**Display Name:** ${member.displayName}`,
                                     `**Soul ID:** \`${fullUser.id}\``,
                                     `**Current Title:** ${titleDisplay}`
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 false
@@ -823,7 +813,7 @@ function buildArrancarRankDisplay(
                         },
                         {
                             name:
-                                '🩸 Hollow Evolution',
+                                '👁️ Hollow Evolution',
 
                             value:
                                 evolutionDisplay,
@@ -848,11 +838,8 @@ function buildArrancarRankDisplay(
                             value:
                                 [
                                     `**Standing:** ${lasNochesStanding}`,
-                                    `**Highest Role:** ${highestRole}`,
-                                    `**Reputation:** \`${formatNumber(soulRecord.reputation.total)}\``
-                                ].join(
-                                    '\n'
-                                ),
+                                    `**Highest Role:** ${highestRole}`
+                                ].join('\n'),
 
                             inline:
                                 false
@@ -869,65 +856,25 @@ function buildArrancarRankDisplay(
                         },
                         {
                             name:
-                                '🛡️ Guardian Record',
+                                '📊 Las Noches Activity',
 
                             value:
-                                [
-                                    `**Status:** ${soulRecord.guardian.status}`,
-                                    `**Guardian Marks:** ${guardianDisplay}`
-                                ].join(
-                                    '\n'
-                                ),
+                                activityDisplay,
 
                             inline:
                                 false
                         },
                         {
                             name:
-                                '📖 Soul Archives',
-
-                            value:
-                                chronicleDisplay,
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '🏰 Las Noches Activity',
+                                '📅 Journey',
 
                             value:
                                 [
-                                    `**Tickets Created:** \`${formatNumber(soulRecord.tickets.created)}\``,
-                                    `**Tickets Closed:** \`${formatNumber(soulRecord.tickets.closed)}\``,
-                                    `**Events Joined:** \`${formatNumber(soulRecord.events.joined)}\``,
-                                    `**Events Completed:** \`${formatNumber(soulRecord.events.completed)}\``,
-                                    `**Voice Time:** \`${formatNumber(soulRecord.voice.totalMinutes)} minutes\``
-                                ].join(
-                                    '\n'
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '📅 Soul History',
-
-                            value:
-                                [
-                                    '**Account Created**',
-                                    formatDiscordDate(
-                                        fullUser.createdTimestamp
-                                    ),
-                                    '',
                                     '**Entered Las Noches**',
                                     formatDiscordDate(
                                         member.joinedTimestamp
                                     )
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 false
@@ -980,9 +927,7 @@ function buildArrancarRankDisplay(
                         'Umbra could not open the requested Soul Record.',
                         '',
                         'Please verify that the selected Soul is still inside Las Noches and try again.'
-                    ].join(
-                        '\n'
-                    )
+                    ].join('\n')
                 );
 
             if (
