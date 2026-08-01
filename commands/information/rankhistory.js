@@ -1661,7 +1661,7 @@ function buildStatisticsPage(
 
             value:
                 [
-                    `\`${createProgressBar(stabilityScore, 16)}\` **${stabilityScore}%**`,
+                    `**Stability Score:** \`${stabilityScore}%\``,
                     '',
                     `⬆️ **Positive Movements:** \`${formatNumber(positiveMovement)}\``,
                     `⬇️ **Negative Movements:** \`${formatNumber(negativeMovement)}\``,
