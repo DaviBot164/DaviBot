@@ -1,6 +1,10 @@
 const {
     SlashCommandBuilder,
-    MessageFlags
+    MessageFlags,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ComponentType
 } = require('discord.js');
 
 const {
@@ -22,38 +26,30 @@ const WIDE_DIVIDER =
     '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
 /**
+ * Button identifiers.
+ */
+const PAGE_IDS = {
+    highCommand:
+        'lasnoches_high_command',
+
+    espada:
+        'lasnoches_espada',
+
+    population:
+        'lasnoches_population',
+
+    overview:
+        'lasnoches_overview'
+};
+
+/**
  * Administrative roles displayed
  * inside the Las Noches command.
  */
 const STAFF_ROLES = [
-    {
-        name:
-            '👑 Ruler of Las Noches',
-
-        fallback:
-            'Server Owner'
-    },
-    {
-        name:
-            '⚜️ Head Captain',
-
-        fallback:
-            'Vacant'
-    },
-    {
-        name:
-            '🛡️ Captain',
-
-        fallback:
-            'Vacant'
-    },
-    {
-        name:
-            '⚔️ Lieutenant',
-
-        fallback:
-            'Vacant'
-    }
+    '⚜️ Head Captain',
+    '🛡️ Captain',
+    '⚔️ Lieutenant'
 ];
 
 /**
@@ -166,7 +162,7 @@ function getHumanRoleMembers(
 function formatMemberList(
     members,
     emptyText = '🌑 Vacant',
-    limit = 8
+    limit = 10
 ) {
     if (
         !Array.isArray(members) ||
@@ -201,61 +197,322 @@ function formatMemberList(
 }
 
 /**
- * Find the Las Noches server owner.
+ * Format a Discord timestamp.
  *
- * @param {import('discord.js').Guild} guild
- * @returns {import('discord.js').GuildMember|null}
+ * @param {number|Date|string|null} value
+ * @returns {string}
  */
-function getOwnerMember(
-    guild
+function formatDiscordDate(
+    value
 ) {
+    if (!value) {
+        return 'Unknown';
+    }
+
+    const date =
+        value instanceof Date
+            ? value
+            : new Date(
+                value
+            );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return 'Unknown';
+    }
+
+    const unixTimestamp =
+        Math.floor(
+            date.getTime() /
+            1000
+        );
+
     return (
-        guild.members.cache.get(
-            guild.ownerId
-        ) ||
-        null
+        `<t:${unixTimestamp}:D> ` +
+        `(<t:${unixTimestamp}:R>)`
     );
 }
 
 /**
- * Build the High Command section.
+ * Create the navigation button row.
  *
- * @param {import('discord.js').Guild} guild
- * @returns {string}
+ * @param {string} activePage
+ * @param {boolean} disabled
+ * @returns {ActionRowBuilder<ButtonBuilder>}
  */
-function buildHighCommandDisplay(
-    guild
+function createNavigationRow(
+    activePage,
+    disabled = false
 ) {
-    const lines = [];
+    return new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(
+                    PAGE_IDS.highCommand
+                )
+                .setLabel(
+                    'High Command'
+                )
+                .setEmoji(
+                    '👑'
+                )
+                .setStyle(
+                    activePage ===
+                    PAGE_IDS.highCommand
+                        ? ButtonStyle.Primary
+                        : ButtonStyle.Secondary
+                )
+                .setDisabled(
+                    disabled
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    PAGE_IDS.espada
+                )
+                .setLabel(
+                    'Espada'
+                )
+                .setEmoji(
+                    '⚔️'
+                )
+                .setStyle(
+                    activePage ===
+                    PAGE_IDS.espada
+                        ? ButtonStyle.Primary
+                        : ButtonStyle.Secondary
+                )
+                .setDisabled(
+                    disabled
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    PAGE_IDS.population
+                )
+                .setLabel(
+                    'Population'
+                )
+                .setEmoji(
+                    '👁️'
+                )
+                .setStyle(
+                    activePage ===
+                    PAGE_IDS.population
+                        ? ButtonStyle.Primary
+                        : ButtonStyle.Secondary
+                )
+                .setDisabled(
+                    disabled
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    PAGE_IDS.overview
+                )
+                .setLabel(
+                    'Overview'
+                )
+                .setEmoji(
+                    '📊'
+                )
+                .setStyle(
+                    activePage ===
+                    PAGE_IDS.overview
+                        ? ButtonStyle.Primary
+                        : ButtonStyle.Secondary
+                )
+                .setDisabled(
+                    disabled
+                )
+        );
+}
+
+/**
+ * Create the shared base embed.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} title
+ * @param {string} pageDescription
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function createKingdomEmbed(
+    interaction,
+    title,
+    pageDescription
+) {
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                1024,
+
+            forceStatic:
+                false
+        });
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    1024,
+
+                forceStatic:
+                    false
+            });
+
+    const embed =
+        createEmbed({
+            title,
+
+            description:
+                [
+                    pageDescription,
+                    '',
+                    WIDE_DIVIDER,
+                    '',
+                    '*Every Soul and throne is preserved beneath the eternal moon of Las Noches.*'
+                ].join('\n'),
+
+            color:
+                LAS_NOCHES_COLOR,
+
+            thumbnail:
+                guildIcon ??
+                botAvatar,
+
+            footer: {
+                text:
+                    `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+
+                iconURL:
+                    interaction.client.user
+                        .displayAvatarURL({
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
+                        })
+            }
+        });
+
+    embed.setAuthor({
+        name:
+            `${interaction.guild.name} • Central Kingdom Records`,
+
+        iconURL:
+            guildIcon ??
+            botAvatar
+    });
+
+    return embed;
+}/**
+ * Build the High Command page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildHighCommandPage(
+    interaction
+) {
+    const embed =
+        createKingdomEmbed(
+            interaction,
+            '👑 High Command of Las Noches',
+            'Umbra has opened the official leadership records of the eternal kingdom.'
+        );
+
+    const owner =
+        interaction.guild.members.cache.get(
+            interaction.guild.ownerId
+        );
+
+    embed.addFields({
+        name:
+            '👑 Ruler of Las Noches',
+
+        value:
+            owner
+                ? [
+                    `${owner}`,
+                    `-# ${owner.user.tag}`,
+                    `-# Soul ID: ${owner.id}`
+                ].join('\n')
+                : '🌑 The ruler could not be located.',
+
+        inline:
+            false
+    });
 
     for (
-        const staffRoleConfig
+        const roleName
         of STAFF_ROLES
     ) {
-        if (
-            staffRoleConfig.name ===
-            '👑 Ruler of Las Noches'
-        ) {
-            const owner =
-                getOwnerMember(
-                    guild
-                );
-
-            lines.push(
-                `**${staffRoleConfig.name}**`,
-                owner
-                    ? `${owner}`
-                    : staffRoleConfig.fallback,
-                ''
+        const role =
+            findGuildRole(
+                interaction.guild,
+                roleName
             );
+
+        if (!role) {
+            embed.addFields({
+                name:
+                    roleName,
+
+                value:
+                    [
+                        '⚠️ Role Missing',
+                        '-# Umbra could not locate this administrative role.'
+                    ].join('\n'),
+
+                inline:
+                    false
+            });
 
             continue;
         }
 
+        const members =
+            getHumanRoleMembers(
+                role
+            );
+
+        embed.addFields({
+            name:
+                roleName,
+
+            value:
+                formatMemberList(
+                    members,
+                    '🌑 Vacant',
+                    10
+                ),
+
+            inline:
+                false
+        });
+    }
+
+    const leadershipIds =
+        new Set();
+
+    if (owner) {
+        leadershipIds.add(
+            owner.id
+        );
+    }
+
+    for (
+        const roleName
+        of STAFF_ROLES
+    ) {
         const role =
             findGuildRole(
-                guild,
-                staffRoleConfig.name
+                interaction.guild,
+                roleName
             );
 
         const members =
@@ -263,46 +520,59 @@ function buildHighCommandDisplay(
                 role
             );
 
-        lines.push(
-            `**${staffRoleConfig.name}**`,
-            formatMemberList(
-                members,
-                `🌑 ${staffRoleConfig.fallback}`,
-                6
-            ),
-            ''
-        );
+        for (
+            const member
+            of members
+        ) {
+            leadershipIds.add(
+                member.id
+            );
+        }
     }
 
-    return lines
-        .join('\n')
-        .trim();
+    embed.addFields({
+        name:
+            '📊 High Command Status',
+
+        value:
+            [
+                `👑 **Recognized Leaders:** \`${leadershipIds.size}\``,
+                `⚜️ **Administrative Divisions:** \`${STAFF_ROLES.length + 1}\``,
+                '',
+                '-# Lieutenants may moderate members, but they cannot manage the Arrancar Rank hierarchy.'
+            ].join('\n'),
+
+        inline:
+            false
+    });
+
+    return embed;
 }
 
 /**
- * Build the Espada throne section.
+ * Build the Espada hierarchy page.
  *
- * @param {import('discord.js').Guild} guild
- * @returns {{
- *     display: string,
- *     activePositions: number,
- *     vacantPositions: number,
- *     uniqueEspada: number,
- *     missingRoles: string[]
- * }}
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
  */
-function buildEspadaDisplay(
-    guild
+function buildEspadaPage(
+    interaction
 ) {
-    const lines = [];
+    const embed =
+        createKingdomEmbed(
+            interaction,
+            '⚔️ Espada Throne Records',
+            'Umbra has opened the official hierarchy of the strongest Arrancar in Las Noches.'
+        );
 
-    const uniqueMemberIds =
-        new Set();
-
-    const missingRoles = [];
-
-    let activePositions =
+    let occupiedPositions =
         0;
+
+    let missingRoles =
+        0;
+
+    const uniqueEspada =
+        new Set();
 
     for (
         const roleName
@@ -310,18 +580,27 @@ function buildEspadaDisplay(
     ) {
         const role =
             findGuildRole(
-                guild,
+                interaction.guild,
                 roleName
             );
 
         if (!role) {
-            missingRoles.push(
-                roleName
-            );
+            missingRoles +=
+                1;
 
-            lines.push(
-                `**${roleName}** — ⚠️ Role Missing`
-            );
+            embed.addFields({
+                name:
+                    roleName,
+
+                value:
+                    [
+                        '⚠️ Role Missing',
+                        '-# Create this Discord role using the exact configured name.'
+                    ].join('\n'),
+
+                inline:
+                    true
+            });
 
             continue;
         }
@@ -334,21 +613,31 @@ function buildEspadaDisplay(
         if (
             members.length === 0
         ) {
-            lines.push(
-                `**${roleName}** — 🌑 Vacant`
-            );
+            embed.addFields({
+                name:
+                    roleName,
+
+                value:
+                    [
+                        '🌑 Vacant',
+                        '-# This throne awaits a worthy Soul.'
+                    ].join('\n'),
+
+                inline:
+                    true
+            });
 
             continue;
         }
 
-        activePositions +=
+        occupiedPositions +=
             1;
 
         for (
             const member
             of members
         ) {
-            uniqueMemberIds.add(
+            uniqueEspada.add(
                 member.id
             );
         }
@@ -356,60 +645,95 @@ function buildEspadaDisplay(
         if (
             members.length === 1
         ) {
-            lines.push(
-                `**${roleName}** — ${members[0]}`
-            );
+            const holder =
+                members[0];
+
+            embed.addFields({
+                name:
+                    roleName,
+
+                value:
+                    [
+                        `${holder}`,
+                        `-# ${holder.user.tag}`,
+                        `-# Soul ID: ${holder.id}`
+                    ].join('\n'),
+
+                inline:
+                    true
+            });
 
             continue;
         }
 
-        lines.push(
-            `**${roleName}** — ⚠️ ${members.length} holders`,
-            members
-                .map(
-                    member =>
-                        `- ${member}`
-                )
-                .join('\n')
-        );
+        embed.addFields({
+            name:
+                roleName,
+
+            value:
+                [
+                    `⚠️ **${members.length} holders detected**`,
+                    '',
+                    formatMemberList(
+                        members,
+                        '🌑 Vacant',
+                        5
+                    ),
+                    '',
+                    '-# Only one Soul should hold each Espada position.'
+                ].join('\n'),
+
+            inline:
+                true
+        });
     }
 
-    return {
-        display:
-            lines.join('\n'),
+    const vacantPositions =
+        ESPADA_ROLES.length -
+        occupiedPositions -
+        missingRoles;
 
-        activePositions,
+    embed.addFields({
+        name:
+            '📊 Espada Hierarchy Status',
 
-        vacantPositions:
-            ESPADA_ROLES.length -
-            activePositions,
+        value:
+            [
+                `⚔️ **Active Espada Souls:** \`${uniqueEspada.size}\``,
+                `👑 **Occupied Thrones:** \`${occupiedPositions} / ${ESPADA_ROLES.length}\``,
+                `🌑 **Vacant Thrones:** \`${Math.max(0, vacantPositions)}\``,
+                `⚠️ **Missing Roles:** \`${missingRoles}\``
+            ].join('\n'),
 
-        uniqueEspada:
-            uniqueMemberIds.size,
+        inline:
+            false
+    });
 
-        missingRoles
-    };
+    return embed;
 }
 
 /**
- * Build the Hollow Evolution
- * population section.
+ * Build the population page.
  *
- * @param {import('discord.js').Guild} guild
- * @returns {{
- *     display: string,
- *     totalAssignments: number,
- *     missingRoles: string[]
- * }}
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
  */
-function buildEvolutionPopulation(
-    guild
+function buildPopulationPage(
+    interaction
 ) {
-    const lines = [];
+    const embed =
+        createKingdomEmbed(
+            interaction,
+            '👁️ Population of Las Noches',
+            'Umbra has opened the spiritual population records of every evolution and Arrancar class.'
+        );
 
-    const missingRoles = [];
+    const evolutionLines = [];
 
-    let totalAssignments =
+    const evolutionMemberIds =
+        new Set();
+
+    let missingEvolutionRoles =
         0;
 
     for (
@@ -418,64 +742,46 @@ function buildEvolutionPopulation(
     ) {
         const role =
             findGuildRole(
-                guild,
+                interaction.guild,
                 roleName
             );
 
         if (!role) {
-            missingRoles.push(
-                roleName
-            );
+            missingEvolutionRoles +=
+                1;
 
-            lines.push(
+            evolutionLines.push(
                 `**${roleName}:** \`Role Missing\``
             );
 
             continue;
         }
 
-        const memberCount =
+        const members =
             getHumanRoleMembers(
                 role
-            ).length;
+            );
 
-        totalAssignments +=
-            memberCount;
+        for (
+            const member
+            of members
+        ) {
+            evolutionMemberIds.add(
+                member.id
+            );
+        }
 
-        lines.push(
-            `**${roleName}:** \`${memberCount}\``
+        evolutionLines.push(
+            `**${roleName}:** \`${members.length}\``
         );
     }
 
-    return {
-        display:
-            lines.join('\n'),
+    const hierarchyLines = [];
 
-        totalAssignments,
+    const hierarchyMemberIds =
+        new Set();
 
-        missingRoles
-    };
-}
-
-/**
- * Build the manually assigned Arrancar
- * hierarchy population section.
- *
- * @param {import('discord.js').Guild} guild
- * @returns {{
- *     display: string,
- *     totalAssignments: number,
- *     missingRoles: string[]
- * }}
- */
-function buildArrancarPopulation(
-    guild
-) {
-    const lines = [];
-
-    const missingRoles = [];
-
-    let totalAssignments =
+    let missingHierarchyRoles =
         0;
 
     for (
@@ -484,101 +790,306 @@ function buildArrancarPopulation(
     ) {
         const role =
             findGuildRole(
-                guild,
+                interaction.guild,
                 roleName
             );
 
         if (!role) {
-            missingRoles.push(
-                roleName
-            );
+            missingHierarchyRoles +=
+                1;
 
-            lines.push(
+            hierarchyLines.push(
                 `**${roleName}:** \`Role Missing\``
             );
 
             continue;
         }
 
-        const memberCount =
+        const members =
             getHumanRoleMembers(
                 role
-            ).length;
+            );
 
-        totalAssignments +=
-            memberCount;
+        for (
+            const member
+            of members
+        ) {
+            hierarchyMemberIds.add(
+                member.id
+            );
+        }
 
-        lines.push(
-            `**${roleName}:** \`${memberCount}\``
+        hierarchyLines.push(
+            `**${roleName}:** \`${members.length}\``
         );
     }
 
-    return {
-        display:
-            lines.join('\n'),
+    const espadaMemberIds =
+        new Set();
 
-        totalAssignments,
+    for (
+        const roleName
+        of ESPADA_ROLES
+    ) {
+        const role =
+            findGuildRole(
+                interaction.guild,
+                roleName
+            );
 
-        missingRoles
-    };
-}
+        const members =
+            getHumanRoleMembers(
+                role
+            );
 
-/**
- * Count non-bot server members.
- *
- * @param {import('discord.js').Guild} guild
- * @returns {number}
- */
-function countHumanMembers(
-    guild
-) {
-    return guild.members.cache.filter(
-        member =>
-            !member.user.bot
-    ).size;
-}
-
-/**
- * Count server bots.
- *
- * @param {import('discord.js').Guild} guild
- * @returns {number}
- */
-function countBots(
-    guild
-) {
-    return guild.members.cache.filter(
-        member =>
-            member.user.bot
-    ).size;
-}
-
-/**
- * Format the server creation date.
- *
- * @param {number} timestamp
- * @returns {string}
- */
-function formatDiscordDate(
-    timestamp
-) {
-    if (!timestamp) {
-        return 'Unknown';
+        for (
+            const member
+            of members
+        ) {
+            espadaMemberIds.add(
+                member.id
+            );
+        }
     }
 
-    const unixTimestamp =
-        Math.floor(
-            timestamp /
-            1000
-        );
+    embed.addFields(
+        {
+            name:
+                '👁️ Hollow Evolution',
 
-    return (
-        `<t:${unixTimestamp}:D> ` +
-        `(<t:${unixTimestamp}:R>)`
+            value:
+                evolutionLines.join(
+                    '\n'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌙 Arrancar Hierarchy',
+
+            value:
+                hierarchyLines.join(
+                    '\n'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '📊 Spiritual Census',
+
+            value:
+                [
+                    `👥 **Evolution Records:** \`${evolutionMemberIds.size}\` unique Souls`,
+                    `⚔️ **Manual Hierarchy Records:** \`${hierarchyMemberIds.size}\` unique Souls`,
+                    `👑 **Espada Souls:** \`${espadaMemberIds.size}\``,
+                    '',
+                    `⚠️ **Missing Evolution Roles:** \`${missingEvolutionRoles}\``,
+                    `⚠️ **Missing Hierarchy Roles:** \`${missingHierarchyRoles}\``,
+                    '',
+                    '-# Evolution and Arrancar Rank are independent systems, so one Soul may appear in both records.'
+                ].join('\n'),
+
+            inline:
+                false
+        }
     );
+
+    return embed;
 }
 
-module.exports = {
+/**
+ * Build the kingdom overview page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildOverviewPage(
+    interaction
+) {
+    const embed =
+        createKingdomEmbed(
+            interaction,
+            '📊 Las Noches Kingdom Overview',
+            'Umbra has opened the central statistics and structural records of the kingdom.'
+        );
+
+    const humanMembers =
+        interaction.guild.members.cache.filter(
+            member =>
+                !member.user.bot
+        );
+
+    const botMembers =
+        interaction.guild.members.cache.filter(
+            member =>
+                member.user.bot
+        );
+
+    const textChannels =
+        interaction.guild.channels.cache.filter(
+            channel =>
+                channel.isTextBased() &&
+                !channel.isThread()
+        );
+
+    const voiceChannels =
+        interaction.guild.channels.cache.filter(
+            channel =>
+                channel.isVoiceBased()
+        );
+
+    const categories =
+        interaction.guild.channels.cache.filter(
+            channel =>
+                channel.type === 4
+        );
+
+    const activeEspadaIds =
+        new Set();
+
+    let occupiedEspadaPositions =
+        0;
+
+    for (
+        const roleName
+        of ESPADA_ROLES
+    ) {
+        const role =
+            findGuildRole(
+                interaction.guild,
+                roleName
+            );
+
+        const members =
+            getHumanRoleMembers(
+                role
+            );
+
+        if (
+            members.length >
+            0
+        ) {
+            occupiedEspadaPositions +=
+                1;
+        }
+
+        for (
+            const member
+            of members
+        ) {
+            activeEspadaIds.add(
+                member.id
+            );
+        }
+    }
+
+    const owner =
+        interaction.guild.members.cache.get(
+            interaction.guild.ownerId
+        );
+
+    embed.addFields(
+        {
+            name:
+                '🌙 Kingdom Identity',
+
+            value:
+                [
+                    `**Kingdom Name:** ${interaction.guild.name}`,
+                    `**Kingdom ID:** \`${interaction.guild.id}\``,
+                    `**Ruler:** ${owner || 'Unknown'}`,
+                    `**Established:** ${formatDiscordDate(interaction.guild.createdTimestamp)}`
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '👥 Population',
+
+            value:
+                [
+                    `**Total Members:** \`${interaction.guild.memberCount}\``,
+                    `**Registered Souls:** \`${humanMembers.size}\``,
+                    `**Guardians and Bots:** \`${botMembers.size}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🏰 Kingdom Structure',
+
+            value:
+                [
+                    `**Categories:** \`${categories.size}\``,
+                    `**Text Channels:** \`${textChannels.size}\``,
+                    `**Voice Channels:** \`${voiceChannels.size}\``,
+                    `**Roles:** \`${interaction.guild.roles.cache.size - 1}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '⚔️ Espada Status',
+
+            value:
+                [
+                    `**Active Espada Souls:** \`${activeEspadaIds.size}\``,
+                    `**Occupied Thrones:** \`${occupiedEspadaPositions} / ${ESPADA_ROLES.length}\``,
+                    `**Vacant Thrones:** \`${ESPADA_ROLES.length - occupiedEspadaPositions}\``
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
+
+    return embed;
+}
+
+/**
+ * Build the requested Las Noches page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} pageId
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildPage(
+    interaction,
+    pageId
+) {
+    switch (pageId) {
+        case PAGE_IDS.espada:
+            return buildEspadaPage(
+                interaction
+            );
+
+        case PAGE_IDS.population:
+            return buildPopulationPage(
+                interaction
+            );
+
+        case PAGE_IDS.overview:
+            return buildOverviewPage(
+                interaction
+            );
+
+        case PAGE_IDS.highCommand:
+        default:
+            return buildHighCommandPage(
+                interaction
+            );
+    }
+}module.exports = {
     category:
         'information',
 
@@ -625,8 +1136,9 @@ module.exports = {
             await interaction.deferReply();
 
             /*
-             * Refresh members so role population
-             * statistics are as current as possible.
+             * Refresh guild member data so role
+             * membership and population records
+             * are as current as possible.
              */
             await interaction.guild.members
                 .fetch()
@@ -634,209 +1146,158 @@ module.exports = {
                     () => null
                 );
 
-            const highCommandDisplay =
-                buildHighCommandDisplay(
-                    interaction.guild
+            let activePage =
+                PAGE_IDS.highCommand;
+
+            const initialEmbed =
+                buildPage(
+                    interaction,
+                    activePage
                 );
 
-            const espadaData =
-                buildEspadaDisplay(
-                    interaction.guild
-                );
+            const replyMessage =
+                await interaction.editReply({
+                    embeds: [
+                        initialEmbed
+                    ],
 
-            const evolutionData =
-                buildEvolutionPopulation(
-                    interaction.guild
-                );
+                    components: [
+                        createNavigationRow(
+                            activePage
+                        )
+                    ],
 
-            const arrancarData =
-                buildArrancarPopulation(
-                    interaction.guild
-                );
-
-            const humanMembers =
-                countHumanMembers(
-                    interaction.guild
-                );
-
-            const botMembers =
-                countBots(
-                    interaction.guild
-                );
-
-            const totalMembers =
-                interaction.guild.memberCount;
-
-            const missingRoles = [
-                ...espadaData.missingRoles,
-                ...evolutionData.missingRoles,
-                ...arrancarData.missingRoles
-            ];
-
-            const fields = [
-                {
-                    name:
-                        '👑 High Command',
-
-                    value:
-                        highCommandDisplay,
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '⚔️ Espada Thrones',
-
-                    value:
-                        espadaData.display,
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '👁️ Hollow Evolution Population',
-
-                    value:
-                        evolutionData.display,
-
-                    inline:
+                    fetchReply:
                         true
-                },
-                {
-                    name:
-                        '🌙 Arrancar Hierarchy Population',
+                });
 
-                    value:
-                        arrancarData.display,
+            const collector =
+                replyMessage.createMessageComponentCollector({
+                    componentType:
+                        ComponentType.Button,
 
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📊 Kingdom Overview',
+                    time:
+                        5 * 60 * 1000
+                });
 
-                    value:
-                        [
-                            `👥 **Total Members:** \`${totalMembers}\``,
-                            `🌙 **Registered Souls:** \`${humanMembers}\``,
-                            `🤖 **Guardians and Bots:** \`${botMembers}\``,
-                            '',
-                            `⚔️ **Active Espada Souls:** \`${espadaData.uniqueEspada}\``,
-                            `👑 **Occupied Thrones:** \`${espadaData.activePositions} / ${ESPADA_ROLES.length}\``,
-                            `🌑 **Vacant Thrones:** \`${espadaData.vacantPositions}\``,
-                            '',
-                            `📅 **Kingdom Established:** ${formatDiscordDate(interaction.guild.createdTimestamp)}`
-                        ].join('\n'),
+            collector.on(
+                'collect',
+                async buttonInteraction => {
+                    try {
+                        if (
+                            buttonInteraction.user.id !==
+                            interaction.user.id
+                        ) {
+                            await buttonInteraction.reply({
+                                embeds: [
+                                    createErrorEmbed(
+                                        '❌ Private Kingdom Panel',
+                                        'Only the Soul who opened this Las Noches panel may control its navigation.'
+                                    )
+                                ],
 
-                    inline:
-                        false
-                }
-            ];
+                                flags:
+                                    MessageFlags.Ephemeral
+                            });
 
-            if (
-                missingRoles.length >
-                0
-            ) {
-                fields.push({
-                    name:
-                        '⚠️ Missing Kingdom Roles',
+                            return;
+                        }
 
-                    value:
-                        [
-                            'Umbra could not locate the following roles:',
-                            '',
-                            ...[
-                                ...new Set(
-                                    missingRoles
+                        if (
+                            !Object.values(
+                                PAGE_IDS
+                            ).includes(
+                                buttonInteraction.customId
+                            )
+                        ) {
+                            return;
+                        }
+
+                        activePage =
+                            buttonInteraction.customId;
+
+                        const updatedEmbed =
+                            buildPage(
+                                interaction,
+                                activePage
+                            );
+
+                        await buttonInteraction.update({
+                            embeds: [
+                                updatedEmbed
+                            ],
+
+                            components: [
+                                createNavigationRow(
+                                    activePage
                                 )
-                            ].map(
-                                roleName =>
-                                    `• ${roleName}`
-                            ),
-                            '',
-                            '-# Role names must match Umbra’s configuration exactly.'
-                        ].join('\n'),
+                            ]
+                        });
+                    } catch (buttonError) {
+                        console.error(
+                            '❌ Umbra Las Noches navigation error:',
+                            buttonError
+                        );
 
-                    inline:
-                        false
-                });
-            }
+                        if (
+                            buttonInteraction.deferred ||
+                            buttonInteraction.replied
+                        ) {
+                            await buttonInteraction
+                                .followUp({
+                                    embeds: [
+                                        createErrorEmbed(
+                                            '❌ Navigation Failed',
+                                            'Umbra could not open the selected kingdom record page.'
+                                        )
+                                    ],
 
-            const guildIcon =
-                interaction.guild.iconURL({
-                    size:
-                        1024,
-
-                    forceStatic:
-                        false
-                });
-
-            const botAvatar =
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            1024,
-
-                        forceStatic:
-                            false
-                    });
-
-            const lasNochesEmbed =
-                createEmbed({
-                    title:
-                        '🌙 The Eternal Kingdom of Las Noches',
-
-                    description:
-                        [
-                            'Umbra has opened the central records of the kingdom.',
-                            '',
-                            WIDE_DIVIDER,
-                            '',
-                            '*Beyond the endless white sands, every Soul, evolution and throne is preserved beneath the eternal moon.*'
-                        ].join('\n'),
-
-                    color:
-                        LAS_NOCHES_COLOR,
-
-                    thumbnail:
-                        guildIcon ??
-                        botAvatar,
-
-                    fields,
-
-                    footer: {
-                        text:
-                            `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
-
-                        iconURL:
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        128,
-
-                                    forceStatic:
-                                        false
+                                    flags:
+                                        MessageFlags.Ephemeral
                                 })
+                                .catch(
+                                    () => null
+                                );
+
+                            return;
+                        }
+
+                        await buttonInteraction
+                            .reply({
+                                embeds: [
+                                    createErrorEmbed(
+                                        '❌ Navigation Failed',
+                                        'Umbra could not open the selected kingdom record page.'
+                                    )
+                                ],
+
+                                flags:
+                                    MessageFlags.Ephemeral
+                            })
+                            .catch(
+                                () => null
+                            );
                     }
-                });
+                }
+            );
 
-            lasNochesEmbed.setAuthor({
-                name:
-                    `${interaction.guild.name} • Central Kingdom Records`,
-
-                iconURL:
-                    guildIcon ??
-                    botAvatar
-            });
-
-            await interaction.editReply({
-                embeds: [
-                    lasNochesEmbed
-                ]
-            });
+            collector.on(
+                'end',
+                async () => {
+                    await interaction
+                        .editReply({
+                            components: [
+                                createNavigationRow(
+                                    activePage,
+                                    true
+                                )
+                            ]
+                        })
+                        .catch(
+                            () => null
+                        );
+                }
+            );
         } catch (error) {
             console.error(
                 '❌ Umbra /lasnoches command error:',
@@ -860,7 +1321,10 @@ module.exports = {
                     .editReply({
                         embeds: [
                             errorEmbed
-                        ]
+                        ],
+
+                        components:
+                            []
                     })
                     .catch(
                         () => null
