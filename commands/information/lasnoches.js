@@ -2,8 +2,8 @@ const {
     SlashCommandBuilder,
     MessageFlags,
     ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder,
     ComponentType
 } = require('discord.js');
 
@@ -12,53 +12,144 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const embedConfig =
+    require('../../config/embed');
+
 const {
     kingdom:
         kingdomDatabase
 } = require('../../database');
 
 /**
- * Las Noches silver embed color.
+ * Kingdom Dashboard navigation menu ID.
  */
-const LAS_NOCHES_COLOR =
-    '#E8E8E8';
+const KINGDOM_MENU_ID =
+    'umbra_lasnoches_dashboard_menu';
 
 /**
- * Achievement and leaderboard color.
+ * Kingdom Dashboard page identifiers.
  */
-const ACHIEVEMENT_COLOR =
-    '#D4AF37';
+const KINGDOM_PAGES = {
+    overview:
+        'lasnoches_dashboard_overview',
 
-/**
- * Visual divider used throughout
- * the Las Noches kingdom panel.
- */
-const WIDE_DIVIDER =
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-
-/**
- * Button identifiers.
- */
-const PAGE_IDS = {
-    highCommand:
-        'lasnoches_high_command',
-
-    espada:
-        'lasnoches_espada',
+    command:
+        'lasnoches_dashboard_command',
 
     population:
-        'lasnoches_population',
+        'lasnoches_dashboard_population',
 
-    achievements:
-        'lasnoches_achievements',
+    progression:
+        'lasnoches_dashboard_progression',
 
-    overview:
-        'lasnoches_overview'
+    espada:
+        'lasnoches_dashboard_espada',
+
+    chronicles:
+        'lasnoches_dashboard_chronicles',
+
+    activity:
+        'lasnoches_dashboard_activity'
+};
+
+/**
+ * Kingdom Dashboard page order.
+ */
+const KINGDOM_PAGE_ORDER = [
+    KINGDOM_PAGES.overview,
+    KINGDOM_PAGES.command,
+    KINGDOM_PAGES.population,
+    KINGDOM_PAGES.progression,
+    KINGDOM_PAGES.espada,
+    KINGDOM_PAGES.chronicles,
+    KINGDOM_PAGES.activity
+];
+
+/**
+ * Kingdom Dashboard page details.
+ */
+const KINGDOM_PAGE_DETAILS = {
+    [KINGDOM_PAGES.overview]: {
+        emoji:
+            '🏰',
+
+        label:
+            'Kingdom Overview',
+
+        description:
+            'Central status of Las Noches'
+    },
+
+    [KINGDOM_PAGES.command]: {
+        emoji:
+            '👑',
+
+        label:
+            'High Command',
+
+        description:
+            'Leadership and administrative divisions'
+    },
+
+    [KINGDOM_PAGES.population]: {
+        emoji:
+            '👥',
+
+        label:
+            'Population',
+
+        description:
+            'Members, evolution and hierarchy census'
+    },
+
+    [KINGDOM_PAGES.progression]: {
+        emoji:
+            '⭐',
+
+        label:
+            'Progression',
+
+        description:
+            'Levels, XP and message statistics'
+    },
+
+    [KINGDOM_PAGES.espada]: {
+        emoji:
+            '⚔️',
+
+        label:
+            'Espada Status',
+
+        description:
+            'Throne occupancy and hierarchy summary'
+    },
+
+    [KINGDOM_PAGES.chronicles]: {
+        emoji:
+            '🏆',
+
+        label:
+            'Chronicles',
+
+        description:
+            'Achievements and Chronicle Titles'
+    },
+
+    [KINGDOM_PAGES.activity]: {
+        emoji:
+            '📈',
+
+        label:
+            'Kingdom Activity',
+
+        description:
+            'Recent archive and hierarchy activity'
+    }
 };
 
 /**
  * Administrative roles displayed
- * inside the Las Noches command.
+ * inside the Kingdom Dashboard.
  */
 const STAFF_ROLES = [
     '⚜️ Head Captain',
@@ -85,7 +176,7 @@ const ESPADA_ROLES = [
 
 /**
  * Hollow Evolution roles managed
- * automatically by the Level System.
+ * by the Soul Level system.
  */
 const HOLLOW_EVOLUTION_ROLES = [
     '👁️ Hollow',
@@ -108,7 +199,232 @@ const ARRANCAR_HIERARCHY_ROLES = [
 ];
 
 /**
- * Find a Discord role using its
+ * Chronicle Title rarity display order.
+ */
+const TITLE_RARITY_ORDER = [
+    'Common',
+    'Uncommon',
+    'Rare',
+    'Epic',
+    'Legendary',
+    'Mythic'
+];
+
+/**
+ * Chronicle Title rarity icons.
+ */
+const TITLE_RARITY_ICONS = {
+    Common:
+        '⚪',
+
+    Uncommon:
+        '🟢',
+
+    Rare:
+        '🔵',
+
+    Epic:
+        '🟣',
+
+    Legendary:
+        '🟡',
+
+    Mythic:
+        '🔴'
+};
+
+/**
+ * Format a number using readable
+ * thousands separators.
+ *
+ * @param {number|string|null|undefined} value
+ * @returns {string}
+ */
+function formatNumber(
+    value
+) {
+    const numericValue =
+        Number(
+            value
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+        return '0';
+    }
+
+    return numericValue.toLocaleString(
+        'en-US'
+    );
+}
+
+/**
+ * Format a decimal value.
+ *
+ * @param {number|string|null|undefined} value
+ * @param {number} digits
+ * @returns {string}
+ */
+function formatDecimal(
+    value,
+    digits = 1
+) {
+    const numericValue =
+        Number(
+            value
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+        return '0.0';
+    }
+
+    return numericValue.toFixed(
+        digits
+    );
+}
+
+/**
+ * Format a Discord timestamp.
+ *
+ * @param {Date|string|number|null|undefined} value
+ * @param {string} style
+ * @returns {string}
+ */
+function formatDiscordDate(
+    value,
+    style = 'F'
+) {
+    if (!value) {
+        return 'Not recorded';
+    }
+
+    const date =
+        value instanceof Date
+            ? value
+            : new Date(
+                value
+            );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return 'Not recorded';
+    }
+
+    const unixTimestamp =
+        Math.floor(
+            date.getTime() /
+            1_000
+        );
+
+    return `<t:${unixTimestamp}:${style}>`;
+}
+
+/**
+ * Create a visual progress bar.
+ *
+ * @param {number} percentage
+ * @param {number} length
+ * @returns {string}
+ */
+function createProgressBar(
+    percentage,
+    length = 16
+) {
+    const safePercentage =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                Number(
+                    percentage
+                ) ||
+                0
+            )
+        );
+
+    const filledBlocks =
+        Math.round(
+            (
+                safePercentage /
+                100
+            ) *
+            length
+        );
+
+    const emptyBlocks =
+        length -
+        filledBlocks;
+
+    return (
+        '▰'.repeat(
+            filledBlocks
+        ) +
+        '▱'.repeat(
+            emptyBlocks
+        )
+    );
+}
+
+/**
+ * Calculate completion percentage.
+ *
+ * @param {number} completed
+ * @param {number} total
+ * @returns {number}
+ */
+function calculatePercentage(
+    completed,
+    total
+) {
+    const safeCompleted =
+        Math.max(
+            0,
+            Number(
+                completed
+            ) ||
+            0
+        );
+
+    const safeTotal =
+        Math.max(
+            0,
+            Number(
+                total
+            ) ||
+            0
+        );
+
+    if (
+        safeTotal ===
+        0
+    ) {
+        return 0;
+    }
+
+    return Math.min(
+        100,
+        Math.round(
+            (
+                safeCompleted /
+                safeTotal
+            ) *
+            100
+        )
+    );
+}
+
+/**
+ * Find one Discord role by its
  * exact configured name.
  *
  * @param {import('discord.js').Guild} guild
@@ -130,8 +446,8 @@ function findGuildRole(
 }
 
 /**
- * Get non-bot members belonging
- * to a specific role.
+ * Get every non-bot member holding
+ * one Discord role.
  *
  * @param {import('discord.js').Role|null} role
  * @returns {import('discord.js').GuildMember[]}
@@ -165,8 +481,7 @@ function getHumanRoleMembers(
 }
 
 /**
- * Convert a member list into a
- * readable Discord display.
+ * Format a member list.
  *
  * @param {import('discord.js').GuildMember[]} members
  * @param {string} emptyText
@@ -179,8 +494,11 @@ function formatMemberList(
     limit = 10
 ) {
     if (
-        !Array.isArray(members) ||
-        members.length === 0
+        !Array.isArray(
+            members
+        ) ||
+        members.length ===
+            0
     ) {
         return emptyText;
     }
@@ -201,9 +519,12 @@ function formatMemberList(
         members.length -
         visibleMembers.length;
 
-    if (remaining > 0) {
+    if (
+        remaining >
+        0
+    ) {
         lines.push(
-            `-# +${remaining} additional Souls`
+            `-# +${formatNumber(remaining)} additional Souls`
         );
     }
 
@@ -211,74 +532,8 @@ function formatMemberList(
 }
 
 /**
- * Format a numeric value using
- * readable separators.
- *
- * @param {number|string|null|undefined} value
- * @returns {string}
- */
-function formatNumber(
-    value
-) {
-    const numericValue =
-        Number(value);
-
-    if (
-        !Number.isFinite(
-            numericValue
-        )
-    ) {
-        return '0';
-    }
-
-    return numericValue.toLocaleString(
-        'en-US'
-    );
-}
-
-/**
- * Format a Discord timestamp.
- *
- * @param {number|Date|string|null} value
- * @returns {string}
- */
-function formatDiscordDate(
-    value
-) {
-    if (!value) {
-        return 'Unknown';
-    }
-
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return 'Unknown';
-    }
-
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1000
-        );
-
-    return (
-        `<t:${unixTimestamp}:D> ` +
-        `(<t:${unixTimestamp}:R>)`
-    );
-}
-
-/**
  * Resolve a database user ID into
- * a readable GuildMember mention.
+ * a GuildMember mention.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string|null|undefined} userId
@@ -305,140 +560,155 @@ function formatSoulMention(
 }
 
 /**
- * Create the navigation button row.
+ * Split long records into safe Discord
+ * Embed field values.
  *
- * Discord allows a maximum of five
- * buttons inside one Action Row.
- *
- * @param {string} activePage
- * @param {boolean} disabled
- * @returns {ActionRowBuilder<ButtonBuilder>}
+ * @param {string[]} records
+ * @param {number} maxLength
+ * @returns {string[]}
  */
-function createNavigationRow(
-    activePage,
+function splitKingdomRecords(
+    records,
+    maxLength = 1_000
+) {
+    const chunks =
+        [];
+
+    let currentChunk =
+        '';
+
+    for (
+        const record
+        of records
+    ) {
+        const separator =
+            currentChunk
+                ? '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
+                : '';
+
+        const nextChunk =
+            `${currentChunk}${separator}${record}`;
+
+        if (
+            nextChunk.length >
+            maxLength
+        ) {
+            if (
+                currentChunk
+            ) {
+                chunks.push(
+                    currentChunk
+                );
+            }
+
+            currentChunk =
+                record;
+        } else {
+            currentChunk =
+                nextChunk;
+        }
+    }
+
+    if (
+        currentChunk
+    ) {
+        chunks.push(
+            currentChunk
+        );
+    }
+
+    return chunks;
+}
+
+/**
+ * Create the Kingdom Dashboard
+ * navigation menu.
+ *
+ * @param {string} selectedPage
+ * @param {boolean} disabled
+ * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
+ */
+function createKingdomMenu(
+    selectedPage,
     disabled = false
 ) {
+    const menu =
+        new StringSelectMenuBuilder()
+            .setCustomId(
+                KINGDOM_MENU_ID
+            )
+            .setPlaceholder(
+                'Select a Las Noches kingdom record'
+            )
+            .setMinValues(
+                1
+            )
+            .setMaxValues(
+                1
+            )
+            .setDisabled(
+                disabled
+            );
+
+    for (
+        const pageId
+        of KINGDOM_PAGE_ORDER
+    ) {
+        const details =
+            KINGDOM_PAGE_DETAILS[
+                pageId
+            ];
+
+        menu.addOptions(
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    details.label
+                )
+                .setDescription(
+                    details.description
+                )
+                .setEmoji(
+                    details.emoji
+                )
+                .setValue(
+                    pageId
+                )
+                .setDefault(
+                    selectedPage ===
+                    pageId
+                )
+        );
+    }
+
     return new ActionRowBuilder()
         .addComponents(
-            new ButtonBuilder()
-                .setCustomId(
-                    PAGE_IDS.highCommand
-                )
-                .setLabel(
-                    'Command'
-                )
-                .setEmoji(
-                    '👑'
-                )
-                .setStyle(
-                    activePage ===
-                    PAGE_IDS.highCommand
-                        ? ButtonStyle.Primary
-                        : ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    PAGE_IDS.espada
-                )
-                .setLabel(
-                    'Espada'
-                )
-                .setEmoji(
-                    '⚔️'
-                )
-                .setStyle(
-                    activePage ===
-                    PAGE_IDS.espada
-                        ? ButtonStyle.Primary
-                        : ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    PAGE_IDS.population
-                )
-                .setLabel(
-                    'Population'
-                )
-                .setEmoji(
-                    '👁️'
-                )
-                .setStyle(
-                    activePage ===
-                    PAGE_IDS.population
-                        ? ButtonStyle.Primary
-                        : ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    PAGE_IDS.achievements
-                )
-                .setLabel(
-                    'Records'
-                )
-                .setEmoji(
-                    '🏆'
-                )
-                .setStyle(
-                    activePage ===
-                    PAGE_IDS.achievements
-                        ? ButtonStyle.Primary
-                        : ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                ),
-
-            new ButtonBuilder()
-                .setCustomId(
-                    PAGE_IDS.overview
-                )
-                .setLabel(
-                    'Overview'
-                )
-                .setEmoji(
-                    '📊'
-                )
-                .setStyle(
-                    activePage ===
-                    PAGE_IDS.overview
-                        ? ButtonStyle.Primary
-                        : ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    disabled
-                )
+            menu
         );
 }
 
 /**
- * Create the shared base embed.
+ * Create the shared Kingdom Dashboard
+ * Embed foundation.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} title
- * @param {string} pageDescription
- * @param {string} color
+ * @param {Object} options
+ * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
+ * @param {string} options.title
+ * @param {string} options.description
+ * @param {string} [options.color]
  * @returns {import('discord.js').EmbedBuilder}
  */
-function createKingdomEmbed(
+function createKingdomEmbed({
     interaction,
     title,
-    pageDescription,
-    color = LAS_NOCHES_COLOR
-) {
+    description,
+    color =
+        embedConfig.colors.accent
+}) {
     const guildIcon =
         interaction.guild.iconURL({
+            extension:
+                'png',
+
             size:
                 1024,
 
@@ -449,6 +719,9 @@ function createKingdomEmbed(
     const botAvatar =
         interaction.client.user
             .displayAvatarURL({
+                extension:
+                    'png',
+
                 size:
                     1024,
 
@@ -456,113 +729,85 @@ function createKingdomEmbed(
                     false
             });
 
-    const embed =
-        createEmbed({
-            title,
+    return createEmbed({
+        title,
 
-            description:
-                [
-                    pageDescription,
-                    '',
-                    WIDE_DIVIDER,
-                    '',
-                    '*Every Soul and throne is preserved beneath the eternal moon of Las Noches.*'
-                ].join('\n'),
+        description:
+            [
+                description,
+                '',
+                embedConfig
+                    .branding
+                    .divider,
+                '',
+                '*Every Soul, Chronicle and throne is preserved beneath the eternal moon of Las Noches.*'
+            ].join('\n'),
 
-            color,
+        color,
 
-            thumbnail:
-                guildIcon ??
-                botAvatar,
+        thumbnail:
+            guildIcon ||
+            botAvatar,
 
-            footer: {
-                text:
-                    `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+        author: {
+            name:
+                `${interaction.guild.name} • Kingdom Dashboard`,
 
-                iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
+            iconURL:
+                guildIcon ||
+                botAvatar
+        },
 
-                            forceStatic:
-                                false
-                        })
-            }
-        });
+        footer: {
+            text:
+                `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
 
-    embed.setAuthor({
-        name:
-            `${interaction.guild.name} • Central Kingdom Records`,
-
-        iconURL:
-            guildIcon ??
-            botAvatar
+            iconURL:
+                botAvatar
+        }
     });
+}
 
-    return embed;
-}/**
- * Build the High Command page.
+/**
+ * Count the current Espada throne state.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {import('discord.js').EmbedBuilder}
+ * @param {import('discord.js').Guild} guild
+ * @returns {{
+ *     occupied: number,
+ *     vacant: number,
+ *     missing: number,
+ *     uniqueHolders: number,
+ *     conflicts: number
+ * }}
  */
-function buildHighCommandPage(
-    interaction
+function getEspadaStatus(
+    guild
 ) {
-    const embed =
-        createKingdomEmbed(
-            interaction,
-            '👑 High Command of Las Noches',
-            'Umbra has opened the official leadership records of the eternal kingdom.'
-        );
+    let occupied =
+        0;
 
-    const owner =
-        interaction.guild.members.cache.get(
-            interaction.guild.ownerId
-        );
+    let missing =
+        0;
 
-    embed.addFields({
-        name:
-            '👑 Ruler of Las Noches',
+    let conflicts =
+        0;
 
-        value:
-            owner
-                ? [
-                    `${owner}`,
-                    `-# ${owner.user.tag}`,
-                    `-# Soul ID: ${owner.id}`
-                ].join('\n')
-                : '🌑 The ruler could not be located.',
-
-        inline:
-            false
-    });
+    const uniqueHolderIds =
+        new Set();
 
     for (
         const roleName
-        of STAFF_ROLES
+        of ESPADA_ROLES
     ) {
         const role =
             findGuildRole(
-                interaction.guild,
+                guild,
                 roleName
             );
 
         if (!role) {
-            embed.addFields({
-                name:
-                    roleName,
-
-                value:
-                    [
-                        '⚠️ Role Missing',
-                        '-# Umbra could not locate this administrative role.'
-                    ].join('\n'),
-
-                inline:
-                    false
-            });
+            missing +=
+                1;
 
             continue;
         }
@@ -572,30 +817,67 @@ function buildHighCommandPage(
                 role
             );
 
-        embed.addFields({
-            name:
-                roleName,
+        if (
+            members.length >
+            0
+        ) {
+            occupied +=
+                1;
+        }
 
-            value:
-                formatMemberList(
-                    members,
-                    '🌑 Vacant',
-                    10
-                ),
+        if (
+            members.length >
+            1
+        ) {
+            conflicts +=
+                1;
+        }
 
-            inline:
-                false
-        });
+        for (
+            const member
+            of members
+        ) {
+            uniqueHolderIds.add(
+                member.id
+            );
+        }
     }
 
-    const leadershipIds =
+    return {
+        occupied,
+
+        vacant:
+            Math.max(
+                0,
+                ESPADA_ROLES.length -
+                occupied -
+                missing
+            ),
+
+        missing,
+
+        uniqueHolders:
+            uniqueHolderIds.size,
+
+        conflicts
+    };
+}
+
+/**
+ * Count recognized High Command members.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @returns {number}
+ */
+function countHighCommandMembers(
+    guild
+) {
+    const memberIds =
         new Set();
 
-    if (owner) {
-        leadershipIds.add(
-            owner.id
-        );
-    }
+    memberIds.add(
+        guild.ownerId
+    );
 
     for (
         const roleName
@@ -603,9 +885,428 @@ function buildHighCommandPage(
     ) {
         const role =
             findGuildRole(
-                interaction.guild,
+                guild,
                 roleName
             );
+
+        for (
+            const member
+            of getHumanRoleMembers(
+                role
+            )
+        ) {
+            memberIds.add(
+                member.id
+            );
+        }
+    }
+
+    return memberIds.size;
+}
+
+/**
+ * Build a readable Title rarity summary.
+ *
+ * @param {Object} rarityStatistics
+ * @returns {string}
+ */
+function buildRaritySummary(
+    rarityStatistics
+) {
+    return TITLE_RARITY_ORDER
+        .map(
+            rarity => {
+                const details =
+                    rarityStatistics?.[
+                        rarity
+                    ] ||
+                    {};
+
+                return (
+                    `${TITLE_RARITY_ICONS[rarity] || '⚪'} ` +
+                    `**${rarity}:** ` +
+                    `\`${formatNumber(details.unlockCount)} unlocks\` ` +
+                    `• \`${formatNumber(details.soulCount)} Souls\``
+                );
+            }
+        )
+        .join('\n');
+}/**
+ * Build the central Kingdom Overview.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildOverviewPage(
+    context
+) {
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
+
+    const guild =
+        interaction.guild;
+
+    const humanMembers =
+        guild.members.cache.filter(
+            member =>
+                !member.user.bot
+        );
+
+    const botMembers =
+        guild.members.cache.filter(
+            member =>
+                member.user.bot
+        );
+
+    const textChannels =
+        guild.channels.cache.filter(
+            channel =>
+                channel.isTextBased() &&
+                !channel.isThread()
+        );
+
+    const voiceChannels =
+        guild.channels.cache.filter(
+            channel =>
+                channel.isVoiceBased()
+        );
+
+    const categoryChannels =
+        guild.channels.cache.filter(
+            channel =>
+                channel.type ===
+                4
+        );
+
+    const owner =
+        guild.members.cache.get(
+            guild.ownerId
+        );
+
+    const espadaStatus =
+        getEspadaStatus(
+            guild
+        );
+
+    const progression =
+        kingdomStatistics
+            ?.progression ||
+        {};
+
+    const achievements =
+        kingdomStatistics
+            ?.achievements ||
+        {};
+
+    const titles =
+        kingdomStatistics
+            ?.titles ||
+        {};
+
+    const ranks =
+        kingdomStatistics
+            ?.ranks ||
+        {};
+
+    const archiveSummary =
+        kingdomStatistics
+            ?.archiveSummary ||
+        {};
+
+    const thronePercentage =
+        calculatePercentage(
+            espadaStatus.occupied,
+            ESPADA_ROLES.length
+        );
+
+    const registeredSoulPercentage =
+        calculatePercentage(
+            progression.registeredSouls,
+            humanMembers.size
+        );
+
+    const embed =
+        createKingdomEmbed({
+            interaction,
+
+            title:
+                '🏰 Las Noches Kingdom Dashboard',
+
+            description:
+                [
+                    'Umbra has opened the central status of Las Noches.',
+                    '',
+                    'This dashboard summarizes the kingdom population, progression, hierarchy and Chronicle archives.'
+                ].join('\n'),
+
+            color:
+                embedConfig.colors.accent
+        });
+
+    embed.addFields(
+        {
+            name:
+                '🌙 Kingdom Identity',
+
+            value:
+                [
+                    `**Kingdom:** ${guild.name}`,
+                    `**Kingdom ID:** \`${guild.id}\``,
+                    `**Ruler:** ${owner || 'Unknown Soul'}`,
+                    `**Established:** ${formatDiscordDate(guild.createdAt, 'F')}`,
+                    `**Kingdom Age:** ${formatDiscordDate(guild.createdAt, 'R')}`
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '👥 Population Status',
+
+            value:
+                [
+                    `**Total Members:** \`${formatNumber(guild.memberCount)}\``,
+                    `**Human Souls:** \`${formatNumber(humanMembers.size)}\``,
+                    `**Guardians and Bots:** \`${formatNumber(botMembers.size)}\``,
+                    `**Database Soul Records:** \`${formatNumber(progression.registeredSouls)}\``,
+                    '',
+                    `\`${createProgressBar(registeredSoulPercentage, 12)}\` **${registeredSoulPercentage}% recorded**`
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🏛️ Kingdom Structure',
+
+            value:
+                [
+                    `**Categories:** \`${formatNumber(categoryChannels.size)}\``,
+                    `**Text Channels:** \`${formatNumber(textChannels.size)}\``,
+                    `**Voice Channels:** \`${formatNumber(voiceChannels.size)}\``,
+                    `**Roles:** \`${formatNumber(Math.max(0, guild.roles.cache.size - 1))}\``,
+                    `**High Command Souls:** \`${formatNumber(countHighCommandMembers(guild))}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '⚔️ Espada Throne Status',
+
+            value:
+                [
+                    `\`${createProgressBar(thronePercentage, 16)}\` **${thronePercentage}% occupied**`,
+                    '',
+                    `👑 **Occupied Thrones:** \`${formatNumber(espadaStatus.occupied)} / ${formatNumber(ESPADA_ROLES.length)}\``,
+                    `🌑 **Vacant Thrones:** \`${formatNumber(espadaStatus.vacant)}\``,
+                    `⚠️ **Missing Roles:** \`${formatNumber(espadaStatus.missing)}\``,
+                    `⚔️ **Unique Throne Holders:** \`${formatNumber(espadaStatus.uniqueHolders)}\``
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
+
+    if (
+        kingdomStatistics
+    ) {
+        embed.addFields(
+            {
+                name:
+                    '⭐ Kingdom Progression',
+
+                value:
+                    [
+                        `**Highest Level:** \`${formatNumber(progression.highestLevel)}\``,
+                        `**Average Level:** \`${formatDecimal(progression.averageLevel)}\``,
+                        `**Total Spiritual Power:** \`${formatNumber(progression.totalXp)} XP\``,
+                        `**Total Messages:** \`${formatNumber(progression.totalMessages)}\``,
+                        `**Active Progression Souls:** \`${formatNumber(progression.activeSouls)}\``
+                    ].join('\n'),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🏆 Chronicle Archives',
+
+                value:
+                    [
+                        `**Achievement Unlocks:** \`${formatNumber(achievements.totalUnlocks)}\``,
+                        `**Title Unlocks:** \`${formatNumber(titles.totalUnlocks)}\``,
+                        `**Active Titles:** \`${formatNumber(titles.activeTitles)}\``,
+                        `**Legendary and Mythic Unlocks:** \`${formatNumber(titles.rareUnlocks)}\``,
+                        `**Active Ranked Souls:** \`${formatNumber(ranks.activeRankedSouls)}\``
+                    ].join('\n'),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📚 Kingdom Archive Summary',
+
+                value:
+                    [
+                        `**Total Archive Records:** \`${formatNumber(archiveSummary.totalArchiveRecords)}\``,
+                        `**Participating Souls:** \`${formatNumber(archiveSummary.participatingSouls)}\``,
+                        `**Average Achievements per Soul:** \`${formatDecimal(archiveSummary.averageAchievementUnlocks, 2)}\``,
+                        `**Average Titles per Soul:** \`${formatDecimal(archiveSummary.averageTitleUnlocks, 2)}\``,
+                        `**Statistics Generated:** ${formatDiscordDate(kingdomStatistics.generatedAt, 'R')}`
+                    ].join('\n'),
+
+                inline:
+                    false
+            }
+        );
+    } else {
+        embed.addFields({
+            name:
+                '⚠️ Kingdom Database Unavailable',
+
+            value:
+                [
+                    'Discord-based population and hierarchy data is still available.',
+                    '',
+                    'PostgreSQL progression, Achievement, Title and activity statistics could not be loaded.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
+    embed.addFields({
+        name:
+            '🧭 Connected Kingdom Systems',
+
+        value:
+            [
+                '`/leaderboard` — competitive Soul rankings',
+                '`/espada` — interactive throne system',
+                '`/soul` — complete Soul archive',
+                '`/titles` — Chronicle Title collection',
+                '`/rankhistory` — Arrancar career history'
+            ].join('\n'),
+
+        inline:
+            false
+    });
+
+    return embed;
+}
+
+/**
+ * Build the High Command page.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildHighCommandPage(
+    context
+) {
+    const {
+        interaction
+    } =
+        context;
+
+    const guild =
+        interaction.guild;
+
+    const owner =
+        guild.members.cache.get(
+            guild.ownerId
+        );
+
+    const embed =
+        createKingdomEmbed({
+            interaction,
+
+            title:
+                '👑 High Command of Las Noches',
+
+            description:
+                'Umbra has opened the official leadership and administrative records of the kingdom.',
+
+            color:
+                embedConfig.colors.rank
+        });
+
+    embed.addFields({
+        name:
+            '👑 Ruler of Las Noches',
+
+        value:
+            owner
+                ? [
+                    `${owner}`,
+                    `**Username:** ${owner.user.tag}`,
+                    `**Soul ID:** \`${owner.id}\``,
+                    `**Entered Las Noches:** ${formatDiscordDate(owner.joinedAt, 'D')}`
+                ].join('\n')
+                : [
+                    '🌑 The Ruler could not be located.',
+                    '',
+                    '-# Refresh the server member cache and try again.'
+                ].join('\n'),
+
+        inline:
+            false
+    });
+
+    const leadershipIds =
+        new Set();
+
+    if (
+        owner
+    ) {
+        leadershipIds.add(
+            owner.id
+        );
+    }
+
+    let missingStaffRoles =
+        0;
+
+    for (
+        const roleName
+        of STAFF_ROLES
+    ) {
+        const role =
+            findGuildRole(
+                guild,
+                roleName
+            );
+
+        if (!role) {
+            missingStaffRoles +=
+                1;
+
+            embed.addFields({
+                name:
+                    roleName,
+
+                value:
+                    [
+                        '⚠️ **Role Missing**',
+                        '-# Umbra could not locate this administrative division.'
+                    ].join('\n'),
+
+                inline:
+                    false
+            });
+
+            continue;
+        }
 
         const members =
             getHumanRoleMembers(
@@ -620,143 +1321,6 @@ function buildHighCommandPage(
                 member.id
             );
         }
-    }
-
-    embed.addFields({
-        name:
-            '📊 High Command Status',
-
-        value:
-            [
-                `👑 **Recognized Leaders:** \`${leadershipIds.size}\``,
-                `⚜️ **Administrative Divisions:** \`${STAFF_ROLES.length + 1}\``,
-                '',
-                '-# Lieutenants may moderate members, but they cannot manage the Arrancar Rank hierarchy.'
-            ].join('\n'),
-
-        inline:
-            false
-    });
-
-    return embed;
-}
-
-/**
- * Build the Espada hierarchy page.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildEspadaPage(
-    interaction
-) {
-    const embed =
-        createKingdomEmbed(
-            interaction,
-            '⚔️ Espada Throne Records',
-            'Umbra has opened the official hierarchy of the strongest Arrancar in Las Noches.'
-        );
-
-    let occupiedPositions =
-        0;
-
-    let missingRoles =
-        0;
-
-    const uniqueEspada =
-        new Set();
-
-    for (
-        const roleName
-        of ESPADA_ROLES
-    ) {
-        const role =
-            findGuildRole(
-                interaction.guild,
-                roleName
-            );
-
-        if (!role) {
-            missingRoles +=
-                1;
-
-            embed.addFields({
-                name:
-                    roleName,
-
-                value:
-                    [
-                        '⚠️ Role Missing',
-                        '-# Create this Discord role using the exact configured name.'
-                    ].join('\n'),
-
-                inline:
-                    true
-            });
-
-            continue;
-        }
-
-        const members =
-            getHumanRoleMembers(
-                role
-            );
-
-        if (
-            members.length === 0
-        ) {
-            embed.addFields({
-                name:
-                    roleName,
-
-                value:
-                    [
-                        '🌑 Vacant',
-                        '-# This throne awaits a worthy Soul.'
-                    ].join('\n'),
-
-                inline:
-                    true
-            });
-
-            continue;
-        }
-
-        occupiedPositions +=
-            1;
-
-        for (
-            const member
-            of members
-        ) {
-            uniqueEspada.add(
-                member.id
-            );
-        }
-
-        if (
-            members.length === 1
-        ) {
-            const holder =
-                members[0];
-
-            embed.addFields({
-                name:
-                    roleName,
-
-                value:
-                    [
-                        `${holder}`,
-                        `-# ${holder.user.tag}`,
-                        `-# Soul ID: ${holder.id}`
-                    ].join('\n'),
-
-                inline:
-                    true
-            });
-
-            continue;
-        }
 
         embed.addFields({
             name:
@@ -764,225 +1328,287 @@ function buildEspadaPage(
 
             value:
                 [
-                    `⚠️ **${members.length} holders detected**`,
-                    '',
                     formatMemberList(
                         members,
-                        '🌑 Vacant',
-                        5
+                        '🌑 No Souls currently hold this position.',
+                        10
                     ),
                     '',
-                    '-# Only one Soul should hold each Espada position.'
+                    `-# Members assigned: ${formatNumber(members.length)}`
                 ].join('\n'),
 
             inline:
-                true
+                false
         });
     }
 
-    const vacantPositions =
-        ESPADA_ROLES.length -
-        occupiedPositions -
-        missingRoles;
+    const staffedDivisions =
+        STAFF_ROLES.length -
+        missingStaffRoles;
 
-    embed.addFields({
-        name:
-            '📊 Espada Hierarchy Status',
+    const staffConfigurationPercentage =
+        calculatePercentage(
+            staffedDivisions,
+            STAFF_ROLES.length
+        );
 
-        value:
-            [
-                `⚔️ **Active Espada Souls:** \`${uniqueEspada.size}\``,
-                `👑 **Occupied Thrones:** \`${occupiedPositions} / ${ESPADA_ROLES.length}\``,
-                `🌑 **Vacant Thrones:** \`${Math.max(0, vacantPositions)}\``,
-                `⚠️ **Missing Roles:** \`${missingRoles}\``
-            ].join('\n'),
+    embed.addFields(
+        {
+            name:
+                '📊 High Command Status',
 
-        inline:
-            false
-    });
+            value:
+                [
+                    `**Recognized Leaders:** \`${formatNumber(leadershipIds.size)}\``,
+                    `**Configured Staff Divisions:** \`${formatNumber(staffedDivisions)} / ${formatNumber(STAFF_ROLES.length)}\``,
+                    `**Missing Staff Roles:** \`${formatNumber(missingStaffRoles)}\``,
+                    '',
+                    `\`${createProgressBar(staffConfigurationPercentage, 14)}\` **${staffConfigurationPercentage}% configured**`
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '🛡️ Authority Structure',
+
+            value:
+                [
+                    '**Ruler** — complete authority over Las Noches',
+                    '**Head Captain** — senior administration',
+                    '**Captain** — administration and hierarchy management',
+                    '**Lieutenant** — moderation and member support',
+                    '',
+                    '-# Actual permissions remain controlled by Discord roles and channel overrides.'
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
 
     return embed;
 }
 
 /**
- * Build the population page.
+ * Count unique Souls across a collection
+ * of named Discord roles.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {import('discord.js').Guild} guild
+ * @param {string[]} roleNames
+ * @returns {{
+ *     uniqueMemberIds: Set<string>,
+ *     missingRoles: number,
+ *     lines: string[]
+ * }}
+ */
+function getRolePopulationSummary(
+    guild,
+    roleNames
+) {
+    const uniqueMemberIds =
+        new Set();
+
+    const lines =
+        [];
+
+    let missingRoles =
+        0;
+
+    for (
+        const roleName
+        of roleNames
+    ) {
+        const role =
+            findGuildRole(
+                guild,
+                roleName
+            );
+
+        if (!role) {
+            missingRoles +=
+                1;
+
+            lines.push(
+                `**${roleName}:** \`Role Missing\``
+            );
+
+            continue;
+        }
+
+        const members =
+            getHumanRoleMembers(
+                role
+            );
+
+        for (
+            const member
+            of members
+        ) {
+            uniqueMemberIds.add(
+                member.id
+            );
+        }
+
+        lines.push(
+            `**${roleName}:** \`${formatNumber(members.length)}\``
+        );
+    }
+
+    return {
+        uniqueMemberIds,
+        missingRoles,
+        lines
+    };
+}
+
+/**
+ * Build the Population and Structure page.
+ *
+ * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildPopulationPage(
-    interaction
+    context
 ) {
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
+
+    const guild =
+        interaction.guild;
+
+    const humanMembers =
+        guild.members.cache.filter(
+            member =>
+                !member.user.bot
+        );
+
+    const botMembers =
+        guild.members.cache.filter(
+            member =>
+                member.user.bot
+        );
+
+    const evolutionSummary =
+        getRolePopulationSummary(
+            guild,
+            HOLLOW_EVOLUTION_ROLES
+        );
+
+    const hierarchySummary =
+        getRolePopulationSummary(
+            guild,
+            ARRANCAR_HIERARCHY_ROLES
+        );
+
+    const espadaSummary =
+        getRolePopulationSummary(
+            guild,
+            ESPADA_ROLES
+        );
+
+    const progression =
+        kingdomStatistics
+            ?.progression ||
+        {};
+
+    const databaseCoverage =
+        calculatePercentage(
+            progression.registeredSouls,
+            humanMembers.size
+        );
+
     const embed =
-        createKingdomEmbed(
+        createKingdomEmbed({
             interaction,
-            '👁️ Population of Las Noches',
-            'Umbra has opened the spiritual population records of every evolution and Arrancar class.'
-        );
 
-    const evolutionLines = [];
+            title:
+                '👥 Population and Structure of Las Noches',
 
-    const evolutionMemberIds =
-        new Set();
+            description:
+                'Umbra has opened the complete population census of human members, Hollow evolution stages and Arrancar hierarchy divisions.',
 
-    let missingEvolutionRoles =
-        0;
-
-    for (
-        const roleName
-        of HOLLOW_EVOLUTION_ROLES
-    ) {
-        const role =
-            findGuildRole(
-                interaction.guild,
-                roleName
-            );
-
-        if (!role) {
-            missingEvolutionRoles +=
-                1;
-
-            evolutionLines.push(
-                `**${roleName}:** \`Role Missing\``
-            );
-
-            continue;
-        }
-
-        const members =
-            getHumanRoleMembers(
-                role
-            );
-
-        for (
-            const member
-            of members
-        ) {
-            evolutionMemberIds.add(
-                member.id
-            );
-        }
-
-        evolutionLines.push(
-            `**${roleName}:** \`${members.length}\``
-        );
-    }
-
-    const hierarchyLines = [];
-
-    const hierarchyMemberIds =
-        new Set();
-
-    let missingHierarchyRoles =
-        0;
-
-    for (
-        const roleName
-        of ARRANCAR_HIERARCHY_ROLES
-    ) {
-        const role =
-            findGuildRole(
-                interaction.guild,
-                roleName
-            );
-
-        if (!role) {
-            missingHierarchyRoles +=
-                1;
-
-            hierarchyLines.push(
-                `**${roleName}:** \`Role Missing\``
-            );
-
-            continue;
-        }
-
-        const members =
-            getHumanRoleMembers(
-                role
-            );
-
-        for (
-            const member
-            of members
-        ) {
-            hierarchyMemberIds.add(
-                member.id
-            );
-        }
-
-        hierarchyLines.push(
-            `**${roleName}:** \`${members.length}\``
-        );
-    }
-
-    const espadaMemberIds =
-        new Set();
-
-    for (
-        const roleName
-        of ESPADA_ROLES
-    ) {
-        const role =
-            findGuildRole(
-                interaction.guild,
-                roleName
-            );
-
-        const members =
-            getHumanRoleMembers(
-                role
-            );
-
-        for (
-            const member
-            of members
-        ) {
-            espadaMemberIds.add(
-                member.id
-            );
-        }
-    }
+            color:
+                embedConfig.colors.support
+        });
 
     embed.addFields(
         {
             name:
-                '👁️ Hollow Evolution',
-
-            value:
-                evolutionLines.join(
-                    '\n'
-                ),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '🌙 Arrancar Hierarchy',
-
-            value:
-                hierarchyLines.join(
-                    '\n'
-                ),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '📊 Spiritual Census',
+                '👥 General Population',
 
             value:
                 [
-                    `👥 **Evolution Records:** \`${evolutionMemberIds.size}\` unique Souls`,
-                    `⚔️ **Manual Hierarchy Records:** \`${hierarchyMemberIds.size}\` unique Souls`,
-                    `👑 **Espada Souls:** \`${espadaMemberIds.size}\``,
+                    `**Total Server Members:** \`${formatNumber(guild.memberCount)}\``,
+                    `**Human Souls:** \`${formatNumber(humanMembers.size)}\``,
+                    `**Bots and Guardians:** \`${formatNumber(botMembers.size)}\``,
+                    `**Database Soul Records:** \`${formatNumber(progression.registeredSouls)}\``,
+                    `**Active Progression Records:** \`${formatNumber(progression.activeSouls)}\``,
                     '',
-                    `⚠️ **Missing Evolution Roles:** \`${missingEvolutionRoles}\``,
-                    `⚠️ **Missing Hierarchy Roles:** \`${missingHierarchyRoles}\``,
+                    `\`${createProgressBar(databaseCoverage, 14)}\` **${databaseCoverage}% database coverage**`
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '👁️ Hollow Evolution Census',
+
+            value:
+                evolutionSummary
+                    .lines
+                    .join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌙 Arrancar Hierarchy Census',
+
+            value:
+                hierarchySummary
+                    .lines
+                    .join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '📊 Spiritual Population Summary',
+
+            value:
+                [
+                    `**Evolution Souls:** \`${formatNumber(evolutionSummary.uniqueMemberIds.size)}\``,
+                    `**Manual Hierarchy Souls:** \`${formatNumber(hierarchySummary.uniqueMemberIds.size)}\``,
+                    `**Espada Souls:** \`${formatNumber(espadaSummary.uniqueMemberIds.size)}\``,
+                    `**Recognized High Command:** \`${formatNumber(countHighCommandMembers(guild))}\``,
                     '',
-                    '-# Evolution and Arrancar Rank are independent systems, so one Soul may appear in both records.'
+                    `**Missing Evolution Roles:** \`${formatNumber(evolutionSummary.missingRoles)}\``,
+                    `**Missing Hierarchy Roles:** \`${formatNumber(hierarchySummary.missingRoles)}\``,
+                    `**Missing Espada Roles:** \`${formatNumber(espadaSummary.missingRoles)}\``
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '📖 Census Notes',
+
+            value:
+                [
+                    'A Soul may appear in multiple groups.',
+                    '',
+                    'Hollow Evolution roles represent progression stages, while Arrancar hierarchy roles represent manually assigned standing.',
+                    '',
+                    '-# Population totals across role groups should not be added together as unique server members.'
                 ].join('\n'),
 
             inline:
@@ -992,227 +1618,109 @@ function buildPopulationPage(
 
     return embed;
 }/**
- * Build one Level leaderboard display.
+ * Format one compact leaderboard entry.
  *
  * @param {import('discord.js').Guild} guild
- * @param {Object[]} leaderboard
+ * @param {Object} record
+ * @param {'level'|'xp'|'messages'} type
  * @returns {string}
  */
-function buildLevelLeaderboardDisplay(
+function formatProgressionLeader(
     guild,
-    leaderboard
+    record,
+    type
 ) {
-    if (
-        !Array.isArray(leaderboard) ||
-        leaderboard.length === 0
-    ) {
-        return [
-            '🌑 No Soul Level records are available yet.',
-            '-# Activity will appear after Souls begin earning XP.'
-        ].join('\n');
+    if (!record) {
+        return '🌑 No ranked Soul is currently available.';
     }
 
-    return leaderboard
-        .map(
-            record => {
-                const position =
-                    Number(
-                        record.rank || 0
-                    );
-
-                const medal =
-                    position === 1
-                        ? '🥇'
-                        : position === 2
-                            ? '🥈'
-                            : position === 3
-                                ? '🥉'
-                                : `\`#${position}\``;
-
-                return [
-                    `${medal} ${formatSoulMention(guild, record.userId)}`,
-                    `-# Level ${formatNumber(record.level)} • ${formatNumber(record.xp)} XP`
-                ].join('\n');
-            }
-        )
-        .join('\n\n');
-}
-
-/**
- * Build the message activity leaderboard.
- *
- * @param {import('discord.js').Guild} guild
- * @param {Object[]} leaderboard
- * @returns {string}
- */
-function buildMessageLeaderboardDisplay(
-    guild,
-    leaderboard
-) {
-    if (
-        !Array.isArray(leaderboard) ||
-        leaderboard.length === 0
-    ) {
-        return [
-            '🌑 No message activity has been recorded yet.',
-            '-# Umbra will update this archive as Souls speak within Las Noches.'
-        ].join('\n');
-    }
-
-    return leaderboard
-        .map(
-            record => {
-                const position =
-                    Number(
-                        record.rank || 0
-                    );
-
-                const medal =
-                    position === 1
-                        ? '🥇'
-                        : position === 2
-                            ? '🥈'
-                            : position === 3
-                                ? '🥉'
-                                : `\`#${position}\``;
-
-                return [
-                    `${medal} ${formatSoulMention(guild, record.userId)}`,
-                    `-# ${formatNumber(record.messageCount)} messages • Level ${formatNumber(record.level)}`
-                ].join('\n');
-            }
-        )
-        .join('\n\n');
-}
-
-/**
- * Build the Achievement leaderboard.
- *
- * @param {import('discord.js').Guild} guild
- * @param {Object[]} leaderboard
- * @returns {string}
- */
-function buildAchievementLeaderboardDisplay(
-    guild,
-    leaderboard
-) {
-    if (
-        !Array.isArray(leaderboard) ||
-        leaderboard.length === 0
-    ) {
-        return [
-            '🌑 No Soul Chronicles have been unlocked yet.',
-            '-# Achievement standings will appear after the first Chronicle is recorded.'
-        ].join('\n');
-    }
-
-    return leaderboard
-        .map(
-            record => {
-                const position =
-                    Number(
-                        record.rank || 0
-                    );
-
-                const medal =
-                    position === 1
-                        ? '🥇'
-                        : position === 2
-                            ? '🥈'
-                            : position === 3
-                                ? '🥉'
-                                : `\`#${position}\``;
-
-                return [
-                    `${medal} ${formatSoulMention(guild, record.userId)}`,
-                    `-# ${formatNumber(record.achievementCount)} Chronicles recorded`
-                ].join('\n');
-            }
-        )
-        .join('\n\n');
-}
-
-/**
- * Build the most recently unlocked
- * Kingdom Achievement records.
- *
- * @param {import('discord.js').Guild} guild
- * @param {Object[]} recentAchievements
- * @returns {string}
- */
-function buildRecentAchievementDisplay(
-    guild,
-    recentAchievements
-) {
-    if (
-        !Array.isArray(recentAchievements) ||
-        recentAchievements.length === 0
-    ) {
-        return [
-            '📖 No recent Soul Chronicles are available.',
-            '-# New unlocks will be preserved here automatically.'
-        ].join('\n');
-    }
-
-    return recentAchievements
-        .map(
-            achievement => {
-                const icon =
-                    achievement.icon ||
-                    '🏆';
-
-                const name =
-                    achievement.name ||
-                    'Unknown Chronicle';
-
-                const unlockedAt =
-                    formatDiscordDate(
-                        achievement.unlockedAt
-                    );
-
-                return [
-                    `${icon} **${name}**`,
-                    `${formatSoulMention(guild, achievement.userId)}`,
-                    `-# ${achievement.description || 'No description available.'}`,
-                    `-# Recorded ${unlockedAt}`
-                ].join('\n');
-            }
-        )
-        .join(
-            '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
+    const position =
+        Number(
+            record.rank || 0
         );
+
+    const medal =
+        position === 1
+            ? '🥇'
+            : position === 2
+                ? '🥈'
+                : position === 3
+                    ? '🥉'
+                    : `#${formatNumber(position)}`;
+
+    let statisticLine =
+        '';
+
+    switch (
+        type
+    ) {
+        case 'xp':
+            statisticLine =
+                `✨ ${formatNumber(record.xp)} XP`;
+            break;
+
+        case 'messages':
+            statisticLine =
+                `💬 ${formatNumber(record.messageCount)} messages`;
+            break;
+
+        case 'level':
+        default:
+            statisticLine =
+                `⭐ Level ${formatNumber(record.level)}`;
+            break;
+    }
+
+    return [
+        `${medal} ${formatSoulMention(guild, record.userId)}`,
+        `**${statisticLine}**`,
+        `-# Level ${formatNumber(record.level)} • ${formatNumber(record.xp)} XP • ${formatNumber(record.messageCount)} messages`
+    ].join('\n');
 }
 
 /**
- * Build the Kingdom Records and
- * leaderboard page using PostgreSQL.
+ * Build the Kingdom Progression page.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {Object|null} kingdomStatistics
+ * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
  */
-function buildAchievementsPage(
-    interaction,
-    kingdomStatistics
+function buildProgressionPage(
+    context
 ) {
-    const embed =
-        createKingdomEmbed(
-            interaction,
-            '🏆 Kingdom Records of Las Noches',
-            'Umbra has opened the progression, activity and Achievement records preserved within PostgreSQL.',
-            ACHIEVEMENT_COLOR
-        );
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
 
-    if (!kingdomStatistics) {
+    const embed =
+        createKingdomEmbed({
+            interaction,
+
+            title:
+                '⭐ Kingdom Progression Statistics',
+
+            description:
+                'Umbra has opened the collective Level, spiritual power and activity records of Las Noches.',
+
+            color:
+                embedConfig.colors.archive
+        });
+
+    if (
+        !kingdomStatistics
+    ) {
         embed.addFields({
             name:
-                '⚠️ Kingdom Core Unavailable',
+                '⚠️ Progression Core Unavailable',
 
             value:
                 [
-                    'Umbra could not load the Kingdom statistics database.',
+                    'Umbra could not load the PostgreSQL progression records.',
                     '',
-                    '-# The remaining Las Noches pages are still available.'
+                    'The Discord-based Kingdom pages remain available.',
+                    '',
+                    '-# Verify the database connection and inspect the Northflank logs.'
                 ].join('\n'),
 
             inline:
@@ -1223,25 +1731,25 @@ function buildAchievementsPage(
     }
 
     const progression =
-        kingdomStatistics.progression || {};
-
-    const achievements =
-        kingdomStatistics.achievements || {};
-
-    const ranks =
-        kingdomStatistics.ranks || {};
-
-    const rankHistory =
-        kingdomStatistics.rankHistory || {};
+        kingdomStatistics.progression ||
+        {};
 
     const leaderboards =
-        kingdomStatistics.leaderboards || {};
+        kingdomStatistics.leaderboards ||
+        {};
 
     const levelLeaderboard =
         Array.isArray(
             leaderboards.levels
         )
             ? leaderboards.levels
+            : [];
+
+    const xpLeaderboard =
+        Array.isArray(
+            leaderboards.xp
+        )
+            ? leaderboards.xp
             : [];
 
     const messageLeaderboard =
@@ -1251,12 +1759,471 @@ function buildAchievementsPage(
             ? leaderboards.messages
             : [];
 
-    const achievementLeaderboard =
-        Array.isArray(
-            leaderboards.achievements
+    const topLevelSoul =
+        levelLeaderboard[0] ||
+        null;
+
+    const topXpSoul =
+        xpLeaderboard[0] ||
+        null;
+
+    const topMessageSoul =
+        messageLeaderboard[0] ||
+        null;
+
+    const activePercentage =
+        calculatePercentage(
+            progression.activeSouls,
+            progression.registeredSouls
+        );
+
+    embed.addFields(
+        {
+            name:
+                '📊 Progression Overview',
+
+            value:
+                [
+                    `**Registered Soul Records:** \`${formatNumber(progression.registeredSouls)}\``,
+                    `**Active Progression Souls:** \`${formatNumber(progression.activeSouls)}\``,
+                    `**Highest Soul Level:** \`${formatNumber(progression.highestLevel)}\``,
+                    `**Average Soul Level:** \`${formatDecimal(progression.averageLevel)}\``,
+                    `**Average Spiritual Power:** \`${formatNumber(Math.round(Number(progression.averageXp || 0)))} XP\``,
+                    `**Average Messages:** \`${formatNumber(Math.round(Number(progression.averageMessages || 0)))}\``,
+                    '',
+                    `\`${createProgressBar(activePercentage, 16)}\` **${activePercentage}% active records**`
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '✨ Collective Spiritual Power',
+
+            value:
+                [
+                    `**Total Kingdom XP:** \`${formatNumber(progression.totalXp)}\``,
+                    `**Highest Individual XP:** \`${formatNumber(progression.highestXp)}\``,
+                    `**Total Messages Recorded:** \`${formatNumber(progression.totalMessages)}\``,
+                    `**Highest Message Count:** \`${formatNumber(progression.highestMessageCount)}\``
+                ].join('\n'),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '⭐ Soul Level Champion',
+
+            value:
+                formatProgressionLeader(
+                    interaction.guild,
+                    topLevelSoul,
+                    'level'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '✨ Spiritual Power Champion',
+
+            value:
+                formatProgressionLeader(
+                    interaction.guild,
+                    topXpSoul,
+                    'xp'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '💬 Activity Champion',
+
+            value:
+                formatProgressionLeader(
+                    interaction.guild,
+                    topMessageSoul,
+                    'messages'
+                ),
+
+            inline:
+                false
+        },
+        {
+            name:
+                '📅 Progression Timeline',
+
+            value:
+                [
+                    `**First Soul Record:** ${formatDiscordDate(progression.firstSoulRecordAt, 'D')}`,
+                    `**Latest Progression Update:** ${formatDiscordDate(progression.latestProgressionUpdateAt, 'R')}`,
+                    '',
+                    '-# Detailed competitive rankings are available through `/leaderboard`.'
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
+
+    return embed;
+}
+
+/**
+ * Format one Espada throne record.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {string} roleName
+ * @returns {string}
+ */
+function formatEspadaThrone(
+    guild,
+    roleName
+) {
+    const role =
+        findGuildRole(
+            guild,
+            roleName
+        );
+
+    if (!role) {
+        return [
+            `### ${roleName}`,
+            '⚠️ **Role Missing**',
+            '-# Create the role using the exact configured name.'
+        ].join('\n');
+    }
+
+    const members =
+        getHumanRoleMembers(
+            role
+        );
+
+    if (
+        members.length ===
+        0
+    ) {
+        return [
+            `### ${roleName}`,
+            '🌑 **Vacant Throne**',
+            '-# This position currently awaits a worthy Arrancar.'
+        ].join('\n');
+    }
+
+    if (
+        members.length >
+        1
+    ) {
+        return [
+            `### ${roleName}`,
+            `⚠️ **Hierarchy Conflict: ${formatNumber(members.length)} holders**`,
+            '',
+            formatMemberList(
+                members,
+                '🌑 Vacant',
+                5
+            ),
+            '',
+            '-# Only one Soul should hold each official Espada throne.'
+        ].join('\n');
+    }
+
+    const holder =
+        members[0];
+
+    return [
+        `### ${roleName}`,
+        `${holder}`,
+        `**Username:** ${holder.user.tag}`,
+        `**Soul ID:** \`${holder.id}\``,
+        `**Entered Las Noches:** ${formatDiscordDate(holder.joinedAt, 'D')}`
+    ].join('\n');
+}
+
+/**
+ * Build the Espada Status page.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildEspadaPage(
+    context
+) {
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
+
+    const guild =
+        interaction.guild;
+
+    const espadaStatus =
+        getEspadaStatus(
+            guild
+        );
+
+    const ranks =
+        kingdomStatistics
+            ?.ranks ||
+        {};
+
+    const rankHistory =
+        kingdomStatistics
+            ?.rankHistory ||
+        {};
+
+    const occupancyPercentage =
+        calculatePercentage(
+            espadaStatus.occupied,
+            ESPADA_ROLES.length
+        );
+
+    const embed =
+        createKingdomEmbed({
+            interaction,
+
+            title:
+                '⚔️ Espada Throne Status',
+
+            description:
+                'Umbra has opened the official throne structure and Arrancar hierarchy summary of Las Noches.',
+
+            color:
+                embedConfig.colors.rank
+        });
+
+    embed.addFields(
+        {
+            name:
+                '👑 Throne Occupancy',
+
+            value:
+                [
+                    `\`${createProgressBar(occupancyPercentage, 18)}\` **${occupancyPercentage}% occupied**`,
+                    '',
+                    `**Configured Thrones:** \`${formatNumber(ESPADA_ROLES.length)}\``,
+                    `**Occupied Thrones:** \`${formatNumber(espadaStatus.occupied)}\``,
+                    `**Vacant Thrones:** \`${formatNumber(espadaStatus.vacant)}\``,
+                    `**Missing Roles:** \`${formatNumber(espadaStatus.missing)}\``,
+                    `**Unique Holders:** \`${formatNumber(espadaStatus.uniqueHolders)}\``,
+                    `**Hierarchy Conflicts:** \`${formatNumber(espadaStatus.conflicts)}\``
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
+
+    const throneRecords =
+        ESPADA_ROLES.map(
+            roleName =>
+                formatEspadaThrone(
+                    guild,
+                    roleName
+                )
+        );
+
+    const throneChunks =
+        splitKingdomRecords(
+            throneRecords
+        );
+
+    throneChunks.forEach(
+        (
+            chunk,
+            index
+        ) => {
+            embed.addFields({
+                name:
+                    index ===
+                    0
+                        ? '⚔️ Official Throne Records'
+                        : '⚔️ Official Throne Records — Continued',
+
+                value:
+                    chunk,
+
+                inline:
+                    false
+            });
+        }
+    );
+
+    if (
+        kingdomStatistics
+    ) {
+        embed.addFields(
+            {
+                name:
+                    '🌙 Database Hierarchy Summary',
+
+                value:
+                    [
+                        `**Active Ranked Souls:** \`${formatNumber(ranks.activeRankedSouls)}\``,
+                        `**Database Espada Records:** \`${formatNumber(ranks.activeEspada)}\``,
+                        `**Privaron Espada:** \`${formatNumber(ranks.privaronEspada)}\``,
+                        `**Fracción:** \`${formatNumber(ranks.fraccion)}\``,
+                        `**Numeros:** \`${formatNumber(ranks.numeros)}\``,
+                        `**Unranked Arrancar:** \`${formatNumber(ranks.unrankedArrancar)}\``
+                    ].join('\n'),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📜 Hierarchy Archive',
+
+                value:
+                    [
+                        `**Total Rank Records:** \`${formatNumber(rankHistory.totalRankRecords)}\``,
+                        `**Assignments:** \`${formatNumber(rankHistory.rankAssignments)}\``,
+                        `**Initial Assignments:** \`${formatNumber(rankHistory.initialAssignments)}\``,
+                        `**Rank Changes:** \`${formatNumber(rankHistory.rankChanges)}\``,
+                        `**Revocations:** \`${formatNumber(rankHistory.rankRemovals)}\``
+                    ].join('\n'),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📅 Hierarchy Timeline',
+
+                value:
+                    [
+                        `**Oldest Active Assignment:** ${formatDiscordDate(ranks.oldestActiveAssignmentAt, 'D')}`,
+                        `**Latest Active Assignment:** ${formatDiscordDate(ranks.latestActiveAssignmentAt, 'R')}`,
+                        `**First Archived Action:** ${formatDiscordDate(rankHistory.firstRankActionAt, 'D')}`,
+                        `**Latest Archived Action:** ${formatDiscordDate(rankHistory.latestRankActionAt, 'R')}`,
+                        '',
+                        '-# Use `/espada` for the full interactive throne system and `/rankhistory` for one Soul’s complete career.'
+                    ].join('\n'),
+
+                inline:
+                    false
+            }
+        );
+    }
+
+    return embed;
+}
+
+/**
+ * Format one recent Achievement.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {Object} achievement
+ * @returns {string}
+ */
+function formatRecentAchievement(
+    guild,
+    achievement
+) {
+    return [
+        `${achievement.icon || '🏆'} **${achievement.name || 'Unknown Achievement'}**`,
+        `**Soul:** ${formatSoulMention(guild, achievement.userId)}`,
+        `**Category:** ${achievement.category || 'Unknown'}`,
+        `**Unlocked:** ${formatDiscordDate(achievement.unlockedAt, 'R')}`,
+        `-# ${achievement.description || 'No description was recorded.'}`
+    ].join('\n');
+}
+
+/**
+ * Format one recent Chronicle Title.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {Object} title
+ * @returns {string}
+ */
+function formatRecentTitle(
+    guild,
+    title
+) {
+    return [
+        `🏷️ **${title.displayName || title.name || 'Unknown Title'}**`,
+        `**Soul:** ${formatSoulMention(guild, title.userId)}`,
+        `**Rarity:** ${title.rarity || 'Unknown'}`,
+        `**Category:** ${title.category || 'Unknown'}`,
+        `**Unlocked:** ${formatDiscordDate(title.unlockedAt, 'R')}`,
+        title.isActive
+            ? '👑 **Currently Active**'
+            : null,
+        `-# ${title.description || 'No description was recorded.'}`
+    ]
+        .filter(
+            Boolean
         )
-            ? leaderboards.achievements
-            : [];
+        .join('\n');
+}
+
+/**
+ * Build the Chronicles page.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildChroniclesPage(
+    context
+) {
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
+
+    const embed =
+        createKingdomEmbed({
+            interaction,
+
+            title:
+                '🏆 Kingdom Chronicle Archives',
+
+            description:
+                'Umbra has opened the collective Achievement and Chronicle Title records of Las Noches.',
+
+            color:
+                embedConfig.colors.title
+        });
+
+    if (
+        !kingdomStatistics
+    ) {
+        embed.addFields({
+            name:
+                '⚠️ Chronicle Core Unavailable',
+
+            value:
+                [
+                    'Achievement and Chronicle Title statistics could not be loaded.',
+                    '',
+                    '-# Verify the PostgreSQL connection and Kingdom database module.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+
+        return embed;
+    }
+
+    const achievements =
+        kingdomStatistics.achievements ||
+        {};
+
+    const titles =
+        kingdomStatistics.titles ||
+        {};
+
+    const titleRarities =
+        kingdomStatistics.titleRarities ||
+        {};
 
     const recentAchievements =
         Array.isArray(
@@ -1265,254 +2232,315 @@ function buildAchievementsPage(
             ? kingdomStatistics.recentAchievements
             : [];
 
-    const averageLevel =
-        Number(
-            progression.averageLevel || 0
-        ).toFixed(
-            1
+    const recentTitles =
+        Array.isArray(
+            kingdomStatistics.recentTitles
+        )
+            ? kingdomStatistics.recentTitles
+            : [];
+
+    const achievementParticipation =
+        calculatePercentage(
+            achievements.soulsWithAchievements,
+            kingdomStatistics.progression?.registeredSouls
+        );
+
+    const titleParticipation =
+        calculatePercentage(
+            titles.soulsWithTitles,
+            kingdomStatistics.progression?.registeredSouls
         );
 
     embed.addFields(
         {
             name:
-                '⭐ Highest Spiritual Power',
-
-            value:
-                buildLevelLeaderboardDisplay(
-                    interaction.guild,
-                    levelLeaderboard
-                ),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '💬 Most Active Souls',
-
-            value:
-                buildMessageLeaderboardDisplay(
-                    interaction.guild,
-                    messageLeaderboard
-                ),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '🏆 Most Soul Chronicles',
-
-            value:
-                buildAchievementLeaderboardDisplay(
-                    interaction.guild,
-                    achievementLeaderboard
-                ),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '📖 Recently Recorded Chronicles',
-
-            value:
-                buildRecentAchievementDisplay(
-                    interaction.guild,
-                    recentAchievements
-                ),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '🌙 Kingdom Progression',
+                '🏆 Achievement Archive',
 
             value:
                 [
-                    `👥 **Registered Soul Records:** \`${formatNumber(progression.registeredSouls)}\``,
-                    `⭐ **Highest Soul Level:** \`${formatNumber(progression.highestLevel)}\``,
-                    `✨ **Highest Spiritual Power:** \`${formatNumber(progression.highestXp)} XP\``,
-                    `📊 **Average Soul Level:** \`${averageLevel}\``,
-                    `🌌 **Total Kingdom XP:** \`${formatNumber(progression.totalXp)}\``,
-                    `💬 **Total Messages Recorded:** \`${formatNumber(progression.totalMessages)}\``
-                ].join('\n'),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '🏅 Achievement Archive',
-
-            value:
-                [
-                    `📚 **Available Achievements:** \`${formatNumber(achievements.availableAchievements)}\``,
-                    `🏆 **Total Chronicle Unlocks:** \`${formatNumber(achievements.totalUnlocks)}\``,
-                    `🌙 **Souls with Achievements:** \`${formatNumber(achievements.soulsWithAchievements)}\``
-                ].join('\n'),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '⚔️ Hierarchy Archive',
-
-            value:
-                [
-                    `👑 **Active Ranked Souls:** \`${formatNumber(ranks.activeRankedSouls)}\``,
-                    `⚔️ **Active Espada:** \`${formatNumber(ranks.activeEspada)}\``,
-                    `🌘 **Privaron Espada:** \`${formatNumber(ranks.privaronEspada)}\``,
-                    `⚔️ **Fracción:** \`${formatNumber(ranks.fraccion)}\``,
-                    `🦴 **Numeros:** \`${formatNumber(ranks.numeros)}\``,
-                    `⚪ **Unranked Arrancar:** \`${formatNumber(ranks.unrankedArrancar)}\``
-                ].join('\n'),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '📜 Rank History Records',
-
-            value:
-                [
-                    `📚 **Total Records:** \`${formatNumber(rankHistory.totalRankRecords)}\``,
-                    `🏅 **Assignments:** \`${formatNumber(rankHistory.rankAssignments)}\``,
-                    `🌑 **Removals:** \`${formatNumber(rankHistory.rankRemovals)}\``,
+                    `**Available Achievements:** \`${formatNumber(achievements.availableAchievements)}\``,
+                    `**Total Unlocks:** \`${formatNumber(achievements.totalUnlocks)}\``,
+                    `**Souls with Achievements:** \`${formatNumber(achievements.soulsWithAchievements)}\``,
                     '',
-                    '**Latest Hierarchy Action:**',
-                    formatDiscordDate(
-                        rankHistory.latestRankActionAt
-                    )
+                    `\`${createProgressBar(achievementParticipation, 12)}\` **${achievementParticipation}% participation**`,
+                    '',
+                    `**First Unlock:** ${formatDiscordDate(achievements.firstUnlockAt, 'D')}`,
+                    `**Latest Unlock:** ${formatDiscordDate(achievements.latestUnlockAt, 'R')}`
                 ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🏷️ Chronicle Title Archive',
+
+            value:
+                [
+                    `**Available Titles:** \`${formatNumber(titles.availableTitles)}\``,
+                    `**Total Unlocks:** \`${formatNumber(titles.totalUnlocks)}\``,
+                    `**Souls with Titles:** \`${formatNumber(titles.soulsWithTitles)}\``,
+                    `**Active Titles:** \`${formatNumber(titles.activeTitles)}\``,
+                    `**Legendary and Mythic:** \`${formatNumber(titles.rareUnlocks)}\``,
+                    '',
+                    `\`${createProgressBar(titleParticipation, 12)}\` **${titleParticipation}% participation**`
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌟 Chronicle Title Rarity Distribution',
+
+            value:
+                buildRaritySummary(
+                    titleRarities
+                ),
 
             inline:
                 false
         }
     );
 
+    if (
+        recentAchievements.length >
+        0
+    ) {
+        const achievementChunks =
+            splitKingdomRecords(
+                recentAchievements.map(
+                    achievement =>
+                        formatRecentAchievement(
+                            interaction.guild,
+                            achievement
+                        )
+                )
+            );
+
+        achievementChunks.forEach(
+            (
+                chunk,
+                index
+            ) => {
+                embed.addFields({
+                    name:
+                        index ===
+                        0
+                            ? '📖 Recent Achievement Unlocks'
+                            : '📖 Recent Achievement Unlocks — Continued',
+
+                    value:
+                        chunk,
+
+                    inline:
+                        false
+                });
+            }
+        );
+    } else {
+        embed.addFields({
+            name:
+                '📖 Recent Achievement Unlocks',
+
+            value:
+                '🌑 No recent Achievement unlocks are recorded.',
+
+            inline:
+                false
+        });
+    }
+
+    if (
+        recentTitles.length >
+        0
+    ) {
+        const titleChunks =
+            splitKingdomRecords(
+                recentTitles.map(
+                    title =>
+                        formatRecentTitle(
+                            interaction.guild,
+                            title
+                        )
+                )
+            );
+
+        titleChunks.forEach(
+            (
+                chunk,
+                index
+            ) => {
+                embed.addFields({
+                    name:
+                        index ===
+                        0
+                            ? '🏷️ Recent Chronicle Title Unlocks'
+                            : '🏷️ Recent Chronicle Title Unlocks — Continued',
+
+                    value:
+                        chunk,
+
+                    inline:
+                        false
+                });
+            }
+        );
+    } else {
+        embed.addFields({
+            name:
+                '🏷️ Recent Chronicle Title Unlocks',
+
+            value:
+                '🌑 No recent Chronicle Title unlocks are recorded.',
+
+            inline:
+                false
+        });
+    }
+
     return embed;
+}/**
+ * Format one recent Arrancar Rank action.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {Object} record
+ * @returns {string}
+ */
+function formatRecentRankAction(
+    guild,
+    record
+) {
+    const action =
+        record.action ===
+        'REMOVE'
+            ? '🌑 Rank Revocation'
+            : '⚔️ Rank Assignment';
+
+    return [
+        `### ${action}`,
+        `**Soul:** ${formatSoulMention(guild, record.userId)}`,
+        `**Previous Rank:** ${record.oldRank || 'None'}`,
+        `**New Rank:** ${record.newRank || 'No active Rank'}`,
+        record.moderatorId
+            ? `**High Command:** ${formatSoulMention(guild, record.moderatorId)}`
+            : '**High Command:** Not recorded',
+        `**Reason:** ${record.reason || 'No reason was recorded.'}`,
+        `**Recorded:** ${formatDiscordDate(record.createdAt, 'F')}`,
+        `-# ${formatDiscordDate(record.createdAt, 'R')}`
+    ].join('\n');
 }
 
 /**
- * Build the kingdom overview page.
+ * Build the Kingdom Activity page.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
  */
-function buildOverviewPage(
-    interaction
+function buildActivityPage(
+    context
 ) {
+    const {
+        interaction,
+        kingdomStatistics
+    } =
+        context;
+
     const embed =
-        createKingdomEmbed(
+        createKingdomEmbed({
             interaction,
-            '📊 Las Noches Kingdom Overview',
-            'Umbra has opened the central statistics and structural records of the kingdom.'
-        );
 
-    const humanMembers =
-        interaction.guild.members.cache.filter(
-            member =>
-                !member.user.bot
-        );
+            title:
+                '📈 Kingdom Activity Records',
 
-    const botMembers =
-        interaction.guild.members.cache.filter(
-            member =>
-                member.user.bot
-        );
+            description:
+                'Umbra has opened the recent progression, Chronicle and hierarchy activity of Las Noches.',
 
-    const textChannels =
-        interaction.guild.channels.cache.filter(
-            channel =>
-                channel.isTextBased() &&
-                !channel.isThread()
-        );
+            color:
+                embedConfig.colors.success
+        });
 
-    const voiceChannels =
-        interaction.guild.channels.cache.filter(
-            channel =>
-                channel.isVoiceBased()
-        );
-
-    const categories =
-        interaction.guild.channels.cache.filter(
-            channel =>
-                channel.type === 4
-        );
-
-    const activeEspadaIds =
-        new Set();
-
-    let occupiedEspadaPositions =
-        0;
-
-    for (
-        const roleName
-        of ESPADA_ROLES
+    if (
+        !kingdomStatistics
     ) {
-        const role =
-            findGuildRole(
-                interaction.guild,
-                roleName
-            );
+        embed.addFields({
+            name:
+                '⚠️ Activity Core Unavailable',
 
-        const members =
-            getHumanRoleMembers(
-                role
-            );
+            value:
+                [
+                    'Umbra could not load recent Kingdom activity.',
+                    '',
+                    '-# Verify PostgreSQL and inspect the Northflank logs.'
+                ].join('\n'),
 
-        if (
-            members.length >
-            0
-        ) {
-            occupiedEspadaPositions +=
-                1;
-        }
+            inline:
+                false
+        });
 
-        for (
-            const member
-            of members
-        ) {
-            activeEspadaIds.add(
-                member.id
-            );
-        }
+        return embed;
     }
 
-    const owner =
-        interaction.guild.members.cache.get(
-            interaction.guild.ownerId
+    const activity =
+        kingdomStatistics.activity ||
+        {};
+
+    const last24Hours =
+        activity.last24Hours ||
+        {};
+
+    const last7Days =
+        activity.last7Days ||
+        {};
+
+    const recentRanks =
+        Array.isArray(
+            kingdomStatistics.recentRanks
+        )
+            ? kingdomStatistics.recentRanks
+            : [];
+
+    const activity24Total =
+        Number(
+            last24Hours.progressionUpdates || 0
+        ) +
+        Number(
+            last24Hours.achievementUnlocks || 0
+        ) +
+        Number(
+            last24Hours.titleUnlocks || 0
+        ) +
+        Number(
+            last24Hours.rankActions || 0
+        );
+
+    const activity7Total =
+        Number(
+            last7Days.progressionUpdates || 0
+        ) +
+        Number(
+            last7Days.achievementUnlocks || 0
+        ) +
+        Number(
+            last7Days.titleUnlocks || 0
+        ) +
+        Number(
+            last7Days.rankActions || 0
         );
 
     embed.addFields(
         {
             name:
-                '🌙 Kingdom Identity',
+                '🕒 Last 24 Hours',
 
             value:
                 [
-                    `**Kingdom Name:** ${interaction.guild.name}`,
-                    `**Kingdom ID:** \`${interaction.guild.id}\``,
-                    `**Ruler:** ${owner || 'Unknown'}`,
-                    `**Established:** ${formatDiscordDate(interaction.guild.createdTimestamp)}`
-                ].join('\n'),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '👥 Population',
-
-            value:
-                [
-                    `**Total Members:** \`${interaction.guild.memberCount}\``,
-                    `**Registered Souls:** \`${humanMembers.size}\``,
-                    `**Guardians and Bots:** \`${botMembers.size}\``
+                    `⭐ **Progression Updates:** \`${formatNumber(last24Hours.progressionUpdates)}\``,
+                    `🏆 **Achievement Unlocks:** \`${formatNumber(last24Hours.achievementUnlocks)}\``,
+                    `🏷️ **Title Unlocks:** \`${formatNumber(last24Hours.titleUnlocks)}\``,
+                    `⚔️ **Hierarchy Actions:** \`${formatNumber(last24Hours.rankActions)}\``,
+                    '',
+                    `**Total Recorded Activity:** \`${formatNumber(activity24Total)}\``
                 ].join('\n'),
 
             inline:
@@ -1520,14 +2548,16 @@ function buildOverviewPage(
         },
         {
             name:
-                '🏰 Kingdom Structure',
+                '📅 Last 7 Days',
 
             value:
                 [
-                    `**Categories:** \`${categories.size}\``,
-                    `**Text Channels:** \`${textChannels.size}\``,
-                    `**Voice Channels:** \`${voiceChannels.size}\``,
-                    `**Roles:** \`${Math.max(0, interaction.guild.roles.cache.size - 1)}\``
+                    `⭐ **Progression Updates:** \`${formatNumber(last7Days.progressionUpdates)}\``,
+                    `🏆 **Achievement Unlocks:** \`${formatNumber(last7Days.achievementUnlocks)}\``,
+                    `🏷️ **Title Unlocks:** \`${formatNumber(last7Days.titleUnlocks)}\``,
+                    `⚔️ **Hierarchy Actions:** \`${formatNumber(last7Days.rankActions)}\``,
+                    '',
+                    `**Total Recorded Activity:** \`${formatNumber(activity7Total)}\``
                 ].join('\n'),
 
             inline:
@@ -1535,13 +2565,21 @@ function buildOverviewPage(
         },
         {
             name:
-                '⚔️ Espada Status',
+                '🌙 Activity Summary',
 
             value:
                 [
-                    `**Active Espada Souls:** \`${activeEspadaIds.size}\``,
-                    `**Occupied Thrones:** \`${occupiedEspadaPositions} / ${ESPADA_ROLES.length}\``,
-                    `**Vacant Thrones:** \`${ESPADA_ROLES.length - occupiedEspadaPositions}\``
+                    activity24Total >
+                    0
+                        ? '🟢 The Kingdom has recorded activity during the last 24 hours.'
+                        : '🌑 No new Kingdom archive activity was recorded during the last 24 hours.',
+                    '',
+                    activity7Total >
+                    0
+                        ? `**Weekly Activity Records:** \`${formatNumber(activity7Total)}\``
+                        : '**Weekly Activity Records:** `0`',
+                    '',
+                    `**Statistics Generated:** ${formatDiscordDate(kingdomStatistics.generatedAt, 'R')}`
                 ].join('\n'),
 
             inline:
@@ -1549,51 +2587,130 @@ function buildOverviewPage(
         }
     );
 
+    if (
+        recentRanks.length >
+        0
+    ) {
+        const rankChunks =
+            splitKingdomRecords(
+                recentRanks.map(
+                    record =>
+                        formatRecentRankAction(
+                            interaction.guild,
+                            record
+                        )
+                )
+            );
+
+        rankChunks.forEach(
+            (
+                chunk,
+                index
+            ) => {
+                embed.addFields({
+                    name:
+                        index ===
+                        0
+                            ? '📜 Recent Hierarchy Actions'
+                            : '📜 Recent Hierarchy Actions — Continued',
+
+                    value:
+                        chunk,
+
+                    inline:
+                        false
+                });
+            }
+        );
+    } else {
+        embed.addFields({
+            name:
+                '📜 Recent Hierarchy Actions',
+
+            value:
+                [
+                    '🌑 No recent Arrancar Rank actions are recorded.',
+                    '',
+                    '-# Future assignments, changes and revocations will appear here.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
+    embed.addFields({
+        name:
+            '🧭 Detailed Archives',
+
+        value:
+            [
+                '`/leaderboard` — competitive progression standings',
+                '`/rankhistory` — complete hierarchy history for one Soul',
+                '`/titles` — Chronicle Title collection',
+                '`/soul` — full personal progression archive'
+            ].join('\n'),
+
+        inline:
+            false
+    });
+
     return embed;
 }
 
 /**
- * Build the requested Las Noches page.
+ * Build the requested Kingdom page.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} pageId
- * @param {Object|null} kingdomStatistics
+ * @param {Object} context
+ * @param {string} selectedPage
  * @returns {import('discord.js').EmbedBuilder}
  */
-function buildPage(
-    interaction,
-    pageId,
-    kingdomStatistics
+function buildKingdomPage(
+    context,
+    selectedPage
 ) {
-    switch (pageId) {
-        case PAGE_IDS.espada:
-            return buildEspadaPage(
-                interaction
-            );
-
-        case PAGE_IDS.population:
-            return buildPopulationPage(
-                interaction
-            );
-
-        case PAGE_IDS.achievements:
-            return buildAchievementsPage(
-                interaction,
-                kingdomStatistics
-            );
-
-        case PAGE_IDS.overview:
-            return buildOverviewPage(
-                interaction
-            );
-
-        case PAGE_IDS.highCommand:
-        default:
+    switch (
+        selectedPage
+    ) {
+        case KINGDOM_PAGES.command:
             return buildHighCommandPage(
-                interaction
+                context
+            );
+
+        case KINGDOM_PAGES.population:
+            return buildPopulationPage(
+                context
+            );
+
+        case KINGDOM_PAGES.progression:
+            return buildProgressionPage(
+                context
+            );
+
+        case KINGDOM_PAGES.espada:
+            return buildEspadaPage(
+                context
+            );
+
+        case KINGDOM_PAGES.chronicles:
+            return buildChroniclesPage(
+                context
+            );
+
+        case KINGDOM_PAGES.activity:
+            return buildActivityPage(
+                context
+            );
+
+        case KINGDOM_PAGES.overview:
+        default:
+            return buildOverviewPage(
+                context
             );
     }
-}module.exports = {
+}
+
+module.exports = {
     category:
         'information',
 
@@ -1603,7 +2720,7 @@ function buildPage(
                 'lasnoches'
             )
             .setDescription(
-                'Open the central kingdom records of Las Noches.'
+                'Open the interactive Kingdom Dashboard of Las Noches.'
             )
             .setDMPermission(
                 false
@@ -1626,7 +2743,7 @@ function buildPage(
                     embeds: [
                         createErrorEmbed(
                             '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            'The Kingdom Dashboard can only be opened inside Las Noches.'
                         )
                     ],
 
@@ -1639,26 +2756,13 @@ function buildPage(
 
             await interaction.deferReply();
 
-            /*
-             * Refresh members so role statistics,
-             * staff lists and population records
-             * are as current as possible.
-             */
             await interaction.guild.members
                 .fetch()
                 .catch(
                     () => null
                 );
 
-            /*
-             * Kingdom Core is optional for the
-             * four Discord-based pages.
-             *
-             * If PostgreSQL statistics fail,
-             * the panel still opens and only
-             * the Records page shows a warning.
-             */
-            const kingdomStatistics =
+            let kingdomStatistics =
                 await kingdomDatabase
                     .getKingdomStatistics(
                         interaction.guild.id,
@@ -1667,6 +2771,12 @@ function buildPage(
                                 5,
 
                             recentAchievementLimit:
+                                5,
+
+                            recentTitleLimit:
+                                5,
+
+                            recentRankLimit:
                                 5
                         }
                     )
@@ -1679,14 +2789,18 @@ function buildPage(
                         return null;
                     });
 
-            let activePage =
-                PAGE_IDS.highCommand;
+            let context = {
+                interaction,
+                kingdomStatistics
+            };
+
+            let selectedPage =
+                KINGDOM_PAGES.overview;
 
             const initialEmbed =
-                buildPage(
-                    interaction,
-                    activePage,
-                    kingdomStatistics
+                buildKingdomPage(
+                    context,
+                    selectedPage
                 );
 
             const replyMessage =
@@ -1696,8 +2810,8 @@ function buildPage(
                     ],
 
                     components: [
-                        createNavigationRow(
-                            activePage
+                        createKingdomMenu(
+                            selectedPage
                         )
                     ],
 
@@ -1706,27 +2820,28 @@ function buildPage(
                 });
 
             const collector =
-                replyMessage.createMessageComponentCollector({
-                    componentType:
-                        ComponentType.Button,
+                replyMessage
+                    .createMessageComponentCollector({
+                        componentType:
+                            ComponentType.StringSelect,
 
-                    time:
-                        5 * 60 * 1000
-                });
+                        time:
+                            10 * 60 * 1000
+                    });
 
             collector.on(
                 'collect',
-                async buttonInteraction => {
+                async menuInteraction => {
                     try {
                         if (
-                            buttonInteraction.user.id !==
+                            menuInteraction.user.id !==
                             interaction.user.id
                         ) {
-                            await buttonInteraction.reply({
+                            await menuInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
-                                        '❌ Private Kingdom Panel',
-                                        'Only the Soul who opened this Las Noches panel may control its navigation.'
+                                        '❌ Private Kingdom Dashboard',
+                                        'Only the Soul who opened this Kingdom Dashboard may control its navigation.'
                                     )
                                 ],
 
@@ -1738,53 +2853,119 @@ function buildPage(
                         }
 
                         if (
-                            !Object.values(
-                                PAGE_IDS
-                            ).includes(
-                                buttonInteraction.customId
-                            )
+                            menuInteraction.customId !==
+                            KINGDOM_MENU_ID
                         ) {
                             return;
                         }
 
-                        activePage =
-                            buttonInteraction.customId;
+                        const requestedPage =
+                            menuInteraction.values[0];
 
-                        const updatedEmbed =
-                            buildPage(
-                                interaction,
-                                activePage,
-                                kingdomStatistics
+                        if (
+                            !KINGDOM_PAGE_ORDER.includes(
+                                requestedPage
+                            )
+                        ) {
+                            await menuInteraction.reply({
+                                embeds: [
+                                    createErrorEmbed(
+                                        '❌ Unknown Kingdom Record',
+                                        'Umbra could not recognize the selected Kingdom Dashboard page.'
+                                    )
+                                ],
+
+                                flags:
+                                    MessageFlags.Ephemeral
+                            });
+
+                            return;
+                        }
+
+                        selectedPage =
+                            requestedPage;
+
+                        /*
+                         * Refresh Discord members and
+                         * PostgreSQL Kingdom statistics
+                         * before every page transition.
+                         */
+                        await interaction.guild.members
+                            .fetch()
+                            .catch(
+                                () => null
                             );
 
-                        await buttonInteraction.update({
+                        kingdomStatistics =
+                            await kingdomDatabase
+                                .getKingdomStatistics(
+                                    interaction.guild.id,
+                                    {
+                                        leaderboardLimit:
+                                            5,
+
+                                        recentAchievementLimit:
+                                            5,
+
+                                        recentTitleLimit:
+                                            5,
+
+                                        recentRankLimit:
+                                            5
+                                    }
+                                )
+                                .catch(error => {
+                                    console.error(
+                                        '⚠️ Umbra Kingdom live refresh failed:',
+                                        error
+                                    );
+
+                                    return null;
+                                });
+
+                        context = {
+                            interaction,
+                            kingdomStatistics
+                        };
+
+                        const updatedEmbed =
+                            buildKingdomPage(
+                                context,
+                                selectedPage
+                            );
+
+                        await menuInteraction.update({
                             embeds: [
                                 updatedEmbed
                             ],
 
                             components: [
-                                createNavigationRow(
-                                    activePage
+                                createKingdomMenu(
+                                    selectedPage
                                 )
                             ]
                         });
-                    } catch (buttonError) {
+                    } catch (menuError) {
                         console.error(
-                            '❌ Umbra Las Noches navigation error:',
-                            buttonError
+                            '❌ Umbra /lasnoches navigation error:',
+                            menuError
                         );
 
                         const navigationErrorEmbed =
                             createErrorEmbed(
-                                '❌ Navigation Failed',
-                                'Umbra could not open the selected kingdom record page.'
+                                '❌ Kingdom Navigation Failed',
+                                [
+                                    'Umbra could not open the selected Kingdom record.',
+                                    '',
+                                    'Please try opening `/lasnoches` again.'
+                                ].join('\n')
                             );
 
                         if (
-                            buttonInteraction.deferred ||
-                            buttonInteraction.replied
+                            menuInteraction.deferred ||
+                            menuInteraction.replied
                         ) {
-                            await buttonInteraction
+                            await menuInteraction
                                 .followUp({
                                     embeds: [
                                         navigationErrorEmbed
@@ -1800,7 +2981,7 @@ function buildPage(
                             return;
                         }
 
-                        await buttonInteraction
+                        await menuInteraction
                             .reply({
                                 embeds: [
                                     navigationErrorEmbed
@@ -1818,12 +2999,26 @@ function buildPage(
 
             collector.on(
                 'end',
-                async () => {
+                async (
+                    collected,
+                    reason
+                ) => {
+                    if (
+                        reason ===
+                            'messageDelete' ||
+                        reason ===
+                            'channelDelete' ||
+                        reason ===
+                            'guildDelete'
+                    ) {
+                        return;
+                    }
+
                     await interaction
                         .editReply({
                             components: [
-                                createNavigationRow(
-                                    activePage,
+                                createKingdomMenu(
+                                    selectedPage,
                                     true
                                 )
                             ]
@@ -1841,11 +3036,11 @@ function buildPage(
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Kingdom Records Unavailable',
+                    '❌ Kingdom Dashboard Unavailable',
                     [
-                        'Umbra could not open the central records of Las Noches.',
+                        'Umbra could not open the central Kingdom Dashboard of Las Noches.',
                         '',
-                        'Please inspect the Northflank logs and verify the PostgreSQL connection and configured kingdom roles.'
+                        'Please verify the PostgreSQL connection, configured hierarchy roles and Northflank logs.'
                     ].join('\n')
                 );
 

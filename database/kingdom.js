@@ -2,100 +2,38 @@ const {
     query
 } = require('./connection');
 
-/**
- * Convert a PostgreSQL Kingdom Level row
- * into Umbra's readable structure.
- *
- * @param {Object|null} row
- * @returns {Object|null}
- */
-function mapLevelLeaderboardRow(
-    row
-) {
-    if (!row) {
-        return null;
-    }
-
-    return {
-        userId:
-            row.user_id,
-
-        xp:
-            Number(
-                row.xp || 0
-            ),
-
-        level:
-            Number(
-                row.level || 0
-            ),
-
-        messageCount:
-            Number(
-                row.message_count || 0
-            ),
-
-        rank:
-            Number(
-                row.rank_position || 0
-            ),
-
-        createdAt:
-            row.created_at
-                ? new Date(
-                    row.created_at
-                )
-                : null,
-
-        updatedAt:
-            row.updated_at
-                ? new Date(
-                    row.updated_at
-                )
-                : null
-    };
-}
+const leaderboardDatabase =
+    require('./leaderboards');
 
 /**
- * Convert an Achievement leaderboard row
- * into Umbra's readable structure.
+ * Normalize a database query limit.
  *
- * @param {Object|null} row
- * @returns {Object|null}
+ * @param {number|string|null|undefined} limit
+ * @param {number} fallback
+ * @param {number} maximum
+ * @returns {number}
  */
-function mapAchievementLeaderboardRow(
-    row
+function normalizeLimit(
+    limit,
+    fallback = 5,
+    maximum = 25
 ) {
-    if (!row) {
-        return null;
-    }
-
-    return {
-        userId:
-            row.user_id,
-
-        achievementCount:
-            Number(
-                row.achievement_count || 0
-            ),
-
-        latestAchievementAt:
-            row.latest_achievement_at
-                ? new Date(
-                    row.latest_achievement_at
-                )
-                : null,
-
-        rank:
-            Number(
-                row.rank_position || 0
+    return Math.min(
+        maximum,
+        Math.max(
+            1,
+            Math.floor(
+                Number(
+                    limit
+                ) ||
+                fallback
             )
-    };
+        )
+    );
 }
 
 /**
- * Convert a recent Achievement row
- * into Umbra's readable structure.
+ * Map a recent Achievement row.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -108,6 +46,9 @@ function mapRecentAchievementRow(
     }
 
     return {
+        guildId:
+            row.guild_id,
+
         userId:
             row.user_id,
 
@@ -136,223 +77,866 @@ function mapRecentAchievementRow(
 }
 
 /**
- * Safely normalize a leaderboard limit.
+ * Map a recent Chronicle Title row.
  *
- * @param {number} limit
- * @param {number} defaultLimit
- * @param {number} maximumLimit
- * @returns {number}
+ * @param {Object|null} row
+ * @returns {Object|null}
  */
-function normalizeLimit(
-    limit,
-    defaultLimit = 5,
-    maximumLimit = 25
+function mapRecentTitleRow(
+    row
 ) {
-    return Math.min(
-        maximumLimit,
-        Math.max(
-            1,
-            Math.floor(
-                Number(limit) ||
-                defaultLimit
-            )
-        )
-    );
+    if (!row) {
+        return null;
+    }
+
+    return {
+        guildId:
+            row.guild_id,
+
+        userId:
+            row.user_id,
+
+        titleId:
+            row.title_id,
+
+        name:
+            row.name,
+
+        displayName:
+            row.display_name,
+
+        description:
+            row.description,
+
+        category:
+            row.category,
+
+        rarity:
+            row.rarity,
+
+        unlockSource:
+            row.unlock_source,
+
+        unlockedBy:
+            row.unlocked_by,
+
+        isActive:
+            Boolean(
+                row.is_active
+            ),
+
+        unlockedAt:
+            row.unlocked_at
+                ? new Date(
+                    row.unlocked_at
+                )
+                : null,
+
+        activatedAt:
+            row.activated_at
+                ? new Date(
+                    row.activated_at
+                )
+                : null
+    };
 }
 
 /**
- * Get the highest-Level Souls
- * inside one server.
+ * Map a recent Arrancar Rank history row.
  *
- * Ranking order:
- * 1. XP
- * 2. Message count
- * 3. Oldest record
+ * @param {Object|null} row
+ * @returns {Object|null}
+ */
+function mapRecentRankHistoryRow(
+    row
+) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id:
+            Number(
+                row.id || 0
+            ),
+
+        guildId:
+            row.guild_id,
+
+        userId:
+            row.user_id,
+
+        moderatorId:
+            row.moderator_id,
+
+        action:
+            row.action,
+
+        oldRank:
+            row.old_rank,
+
+        newRank:
+            row.new_rank,
+
+        reason:
+            row.reason,
+
+        createdAt:
+            row.created_at
+                ? new Date(
+                    row.created_at
+                )
+                : null
+    };
+}
+
+/**
+ * Get total Kingdom progression statistics.
  *
  * @param {string} guildId
- * @param {number} limit
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Object>}
  */
-async function getLevelLeaderboard(
-    guildId,
-    limit = 5
+async function getProgressionStatistics(
+    guildId
 ) {
-    const safeLimit =
-        normalizeLimit(
-            limit,
-            5,
-            25
-        );
-
     const result =
         await query(
             `
                 SELECT
-                    guild_id,
-                    user_id,
-                    xp,
-                    level,
-                    message_count,
-                    created_at,
-                    updated_at,
+                    COUNT(*)::INTEGER
+                        AS registered_souls,
 
-                    ROW_NUMBER() OVER (
-                        ORDER BY
-                            xp DESC,
-                            message_count DESC,
-                            created_at ASC
-                    ) AS rank_position
+                    COUNT(*) FILTER (
+                        WHERE xp > 0
+                           OR message_count > 0
+                    )::INTEGER
+                        AS active_souls,
+
+                    COALESCE(
+                        SUM(xp),
+                        0
+                    )::BIGINT
+                        AS total_xp,
+
+                    COALESCE(
+                        SUM(message_count),
+                        0
+                    )::BIGINT
+                        AS total_messages,
+
+                    COALESCE(
+                        AVG(level),
+                        0
+                    )::NUMERIC
+                        AS average_level,
+
+                    COALESCE(
+                        AVG(xp),
+                        0
+                    )::NUMERIC
+                        AS average_xp,
+
+                    COALESCE(
+                        AVG(message_count),
+                        0
+                    )::NUMERIC
+                        AS average_messages,
+
+                    COALESCE(
+                        MAX(level),
+                        0
+                    )::INTEGER
+                        AS highest_level,
+
+                    COALESCE(
+                        MAX(xp),
+                        0
+                    )::BIGINT
+                        AS highest_xp,
+
+                    COALESCE(
+                        MAX(message_count),
+                        0
+                    )::BIGINT
+                        AS highest_message_count,
+
+                    MIN(created_at)
+                        AS first_soul_record_at,
+
+                    MAX(updated_at)
+                        AS latest_progression_update_at
 
                 FROM levels
 
-                WHERE guild_id = $1
-
-                ORDER BY
-                    xp DESC,
-                    message_count DESC,
-                    created_at ASC
-
-                LIMIT $2;
+                WHERE guild_id = $1;
             `,
             [
-                guildId,
-                safeLimit
+                guildId
             ]
         );
 
-    return result.rows.map(
-        mapLevelLeaderboardRow
-    );
+    const row =
+        result.rows[0] ||
+        {};
+
+    return {
+        registeredSouls:
+            Number(
+                row.registered_souls || 0
+            ),
+
+        activeSouls:
+            Number(
+                row.active_souls || 0
+            ),
+
+        totalXp:
+            Number(
+                row.total_xp || 0
+            ),
+
+        totalMessages:
+            Number(
+                row.total_messages || 0
+            ),
+
+        averageLevel:
+            Number(
+                row.average_level || 0
+            ),
+
+        averageXp:
+            Number(
+                row.average_xp || 0
+            ),
+
+        averageMessages:
+            Number(
+                row.average_messages || 0
+            ),
+
+        highestLevel:
+            Number(
+                row.highest_level || 0
+            ),
+
+        highestXp:
+            Number(
+                row.highest_xp || 0
+            ),
+
+        highestMessageCount:
+            Number(
+                row.highest_message_count || 0
+            ),
+
+        firstSoulRecordAt:
+            row.first_soul_record_at
+                ? new Date(
+                    row.first_soul_record_at
+                )
+                : null,
+
+        latestProgressionUpdateAt:
+            row.latest_progression_update_at
+                ? new Date(
+                    row.latest_progression_update_at
+                )
+                : null
+    };
 }
 
 /**
- * Get the most active Souls
- * according to recorded messages.
+ * Get Achievement statistics.
  *
  * @param {string} guildId
- * @param {number} limit
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Object>}
  */
-async function getMessageLeaderboard(
-    guildId,
-    limit = 5
+async function getAchievementStatistics(
+    guildId
 ) {
-    const safeLimit =
-        normalizeLimit(
-            limit,
-            5,
-            25
-        );
-
     const result =
         await query(
             `
                 SELECT
-                    guild_id,
-                    user_id,
-                    xp,
-                    level,
-                    message_count,
-                    created_at,
-                    updated_at,
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
 
-                    ROW_NUMBER() OVER (
-                        ORDER BY
-                            message_count DESC,
-                            xp DESC,
-                            created_at ASC
-                    ) AS rank_position
+                        FROM achievements
+                    ) AS available_achievements,
 
-                FROM levels
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
 
-                WHERE guild_id = $1
+                        FROM soul_achievements
 
-                ORDER BY
-                    message_count DESC,
-                    xp DESC,
-                    created_at ASC
+                        WHERE guild_id = $1
+                    ) AS total_unlocks,
 
-                LIMIT $2;
+                    (
+                        SELECT
+                            COUNT(
+                                DISTINCT user_id
+                            )::INTEGER
+
+                        FROM soul_achievements
+
+                        WHERE guild_id = $1
+                    ) AS souls_with_achievements,
+
+                    (
+                        SELECT
+                            MIN(unlocked_at)
+
+                        FROM soul_achievements
+
+                        WHERE guild_id = $1
+                    ) AS first_unlock_at,
+
+                    (
+                        SELECT
+                            MAX(unlocked_at)
+
+                        FROM soul_achievements
+
+                        WHERE guild_id = $1
+                    ) AS latest_unlock_at;
             `,
             [
-                guildId,
-                safeLimit
+                guildId
             ]
         );
 
-    return result.rows.map(
-        mapLevelLeaderboardRow
-    );
+    const row =
+        result.rows[0] ||
+        {};
+
+    return {
+        availableAchievements:
+            Number(
+                row.available_achievements || 0
+            ),
+
+        totalUnlocks:
+            Number(
+                row.total_unlocks || 0
+            ),
+
+        soulsWithAchievements:
+            Number(
+                row.souls_with_achievements || 0
+            ),
+
+        firstUnlockAt:
+            row.first_unlock_at
+                ? new Date(
+                    row.first_unlock_at
+                )
+                : null,
+
+        latestUnlockAt:
+            row.latest_unlock_at
+                ? new Date(
+                    row.latest_unlock_at
+                )
+                : null
+    };
 }
 
 /**
- * Get the Souls with the most unlocked
- * Achievements inside one server.
+ * Get Chronicle Title statistics.
  *
  * @param {string} guildId
- * @param {number} limit
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Object>}
  */
-async function getAchievementLeaderboard(
-    guildId,
-    limit = 5
+async function getTitleStatistics(
+    guildId
 ) {
-    const safeLimit =
-        normalizeLimit(
-            limit,
-            5,
-            25
-        );
-
     const result =
         await query(
             `
                 SELECT
-                    guild_id,
-                    user_id,
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM title_definitions
+                    ) AS available_titles,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                    ) AS total_unlocks,
+
+                    (
+                        SELECT
+                            COUNT(
+                                DISTINCT user_id
+                            )::INTEGER
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                    ) AS souls_with_titles,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                          AND is_active = TRUE
+                    ) AS active_titles,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_titles
+
+                        INNER JOIN title_definitions
+                            ON title_definitions.title_id =
+                                soul_titles.title_id
+
+                        WHERE soul_titles.guild_id = $1
+                          AND title_definitions.rarity IN (
+                              'Legendary',
+                              'Mythic'
+                          )
+                    ) AS rare_unlocks,
+
+                    (
+                        SELECT
+                            MIN(unlocked_at)
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                    ) AS first_unlock_at,
+
+                    (
+                        SELECT
+                            MAX(unlocked_at)
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                    ) AS latest_unlock_at;
+            `,
+            [
+                guildId
+            ]
+        );
+
+    const row =
+        result.rows[0] ||
+        {};
+
+    return {
+        availableTitles:
+            Number(
+                row.available_titles || 0
+            ),
+
+        totalUnlocks:
+            Number(
+                row.total_unlocks || 0
+            ),
+
+        soulsWithTitles:
+            Number(
+                row.souls_with_titles || 0
+            ),
+
+        activeTitles:
+            Number(
+                row.active_titles || 0
+            ),
+
+        rareUnlocks:
+            Number(
+                row.rare_unlocks || 0
+            ),
+
+        firstUnlockAt:
+            row.first_unlock_at
+                ? new Date(
+                    row.first_unlock_at
+                )
+                : null,
+
+        latestUnlockAt:
+            row.latest_unlock_at
+                ? new Date(
+                    row.latest_unlock_at
+                )
+                : null
+    };
+}
+
+/**
+ * Get Chronicle Title rarity distribution.
+ *
+ * @param {string} guildId
+ * @returns {Promise<Object>}
+ */
+async function getTitleRarityStatistics(
+    guildId
+) {
+    const result =
+        await query(
+            `
+                SELECT
+                    title_definitions.rarity,
 
                     COUNT(*)::INTEGER
-                        AS achievement_count,
+                        AS unlock_count,
 
-                    MAX(unlocked_at)
-                        AS latest_achievement_at,
+                    COUNT(
+                        DISTINCT soul_titles.user_id
+                    )::INTEGER
+                        AS soul_count
 
-                    ROW_NUMBER() OVER (
-                        ORDER BY
-                            COUNT(*) DESC,
-                            MAX(unlocked_at) ASC,
-                            user_id ASC
-                    ) AS rank_position
+                FROM soul_titles
 
-                FROM soul_achievements
+                INNER JOIN title_definitions
+                    ON title_definitions.title_id =
+                        soul_titles.title_id
 
-                WHERE guild_id = $1
+                WHERE soul_titles.guild_id = $1
 
                 GROUP BY
-                    guild_id,
-                    user_id
-
-                ORDER BY
-                    achievement_count DESC,
-                    latest_achievement_at ASC,
-                    user_id ASC
-
-                LIMIT $2;
+                    title_definitions.rarity;
             `,
             [
-                guildId,
-                safeLimit
+                guildId
             ]
         );
 
-    return result.rows.map(
-        mapAchievementLeaderboardRow
-    );
+    const statistics = {
+        Common: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        },
+
+        Uncommon: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        },
+
+        Rare: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        },
+
+        Epic: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        },
+
+        Legendary: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        },
+
+        Mythic: {
+            unlockCount:
+                0,
+
+            soulCount:
+                0
+        }
+    };
+
+    for (
+        const row
+        of result.rows
+    ) {
+        const rarity =
+            row.rarity ||
+            'Common';
+
+        if (
+            !statistics[
+                rarity
+            ]
+        ) {
+            statistics[
+                rarity
+            ] = {
+                unlockCount:
+                    0,
+
+                soulCount:
+                    0
+            };
+        }
+
+        statistics[
+            rarity
+        ] = {
+            unlockCount:
+                Number(
+                    row.unlock_count || 0
+                ),
+
+            soulCount:
+                Number(
+                    row.soul_count || 0
+                )
+        };
+    }
+
+    return statistics;
 }
 
 /**
- * Get the most recently unlocked
- * Achievements inside one server.
+ * Get active Arrancar Rank statistics.
+ *
+ * @param {string} guildId
+ * @returns {Promise<Object>}
+ */
+async function getRankStatistics(
+    guildId
+) {
+    const result =
+        await query(
+            `
+                SELECT
+                    COUNT(*)::INTEGER
+                        AS active_ranked_souls,
+
+                    COUNT(*) FILTER (
+                        WHERE rank_name IN (
+                            '👑 Espada 0',
+                            'Ⅰ Espada',
+                            'Ⅱ Espada',
+                            'Ⅲ Espada',
+                            'Ⅳ Espada',
+                            'Ⅴ Espada',
+                            'Ⅵ Espada',
+                            'Ⅶ Espada',
+                            'Ⅷ Espada',
+                            'Ⅸ Espada',
+                            'Ⅹ Espada'
+                        )
+                    )::INTEGER
+                        AS active_espada,
+
+                    COUNT(*) FILTER (
+                        WHERE rank_name =
+                            '🌘 Privaron Espada'
+                    )::INTEGER
+                        AS privaron_espada,
+
+                    COUNT(*) FILTER (
+                        WHERE rank_name =
+                            '⚔️ Fracción'
+                    )::INTEGER
+                        AS fraccion,
+
+                    COUNT(*) FILTER (
+                        WHERE rank_name =
+                            '🦴 Numeros'
+                    )::INTEGER
+                        AS numeros,
+
+                    COUNT(*) FILTER (
+                        WHERE rank_name =
+                            '⚪ Unranked Arrancar'
+                    )::INTEGER
+                        AS unranked_arrancar,
+
+                    MIN(assigned_at)
+                        AS oldest_active_assignment_at,
+
+                    MAX(assigned_at)
+                        AS latest_active_assignment_at
+
+                FROM arrancar_ranks
+
+                WHERE guild_id = $1;
+            `,
+            [
+                guildId
+            ]
+        );
+
+    const row =
+        result.rows[0] ||
+        {};
+
+    return {
+        activeRankedSouls:
+            Number(
+                row.active_ranked_souls || 0
+            ),
+
+        activeEspada:
+            Number(
+                row.active_espada || 0
+            ),
+
+        privaronEspada:
+            Number(
+                row.privaron_espada || 0
+            ),
+
+        fraccion:
+            Number(
+                row.fraccion || 0
+            ),
+
+        numeros:
+            Number(
+                row.numeros || 0
+            ),
+
+        unrankedArrancar:
+            Number(
+                row.unranked_arrancar || 0
+            ),
+
+        oldestActiveAssignmentAt:
+            row.oldest_active_assignment_at
+                ? new Date(
+                    row.oldest_active_assignment_at
+                )
+                : null,
+
+        latestActiveAssignmentAt:
+            row.latest_active_assignment_at
+                ? new Date(
+                    row.latest_active_assignment_at
+                )
+                : null
+    };
+}/**
+ * Get Arrancar Rank history statistics.
+ *
+ * @param {string} guildId
+ * @returns {Promise<Object>}
+ */
+async function getRankHistoryStatistics(
+    guildId
+) {
+    const result =
+        await query(
+            `
+                SELECT
+                    COUNT(*)::INTEGER
+                        AS total_rank_records,
+
+                    COUNT(*) FILTER (
+                        WHERE action = 'SET'
+                    )::INTEGER
+                        AS rank_assignments,
+
+                    COUNT(*) FILTER (
+                        WHERE action = 'REMOVE'
+                    )::INTEGER
+                        AS rank_removals,
+
+                    COUNT(*) FILTER (
+                        WHERE action = 'SET'
+                          AND old_rank IS NULL
+                    )::INTEGER
+                        AS initial_assignments,
+
+                    COUNT(*) FILTER (
+                        WHERE action = 'SET'
+                          AND old_rank IS NOT NULL
+                          AND new_rank IS NOT NULL
+                          AND old_rank <> new_rank
+                    )::INTEGER
+                        AS rank_changes,
+
+                    MIN(created_at)
+                        AS first_rank_action_at,
+
+                    MAX(created_at)
+                        AS latest_rank_action_at
+
+                FROM arrancar_rank_history
+
+                WHERE guild_id = $1;
+            `,
+            [
+                guildId
+            ]
+        );
+
+    const row =
+        result.rows[0] ||
+        {};
+
+    return {
+        totalRankRecords:
+            Number(
+                row.total_rank_records || 0
+            ),
+
+        rankAssignments:
+            Number(
+                row.rank_assignments || 0
+            ),
+
+        rankRemovals:
+            Number(
+                row.rank_removals || 0
+            ),
+
+        initialAssignments:
+            Number(
+                row.initial_assignments || 0
+            ),
+
+        rankChanges:
+            Number(
+                row.rank_changes || 0
+            ),
+
+        firstRankActionAt:
+            row.first_rank_action_at
+                ? new Date(
+                    row.first_rank_action_at
+                )
+                : null,
+
+        latestRankActionAt:
+            row.latest_rank_action_at
+                ? new Date(
+                    row.latest_rank_action_at
+                )
+                : null
+    };
+}
+
+/**
+ * Get the most recent Kingdom
+ * Achievement unlocks.
  *
  * @param {string} guildId
  * @param {number} limit
@@ -408,292 +992,230 @@ async function getRecentKingdomAchievements(
 }
 
 /**
- * Get total Kingdom progression statistics.
+ * Get the most recently unlocked
+ * Chronicle Titles.
  *
  * @param {string} guildId
- * @returns {Promise<Object>}
+ * @param {number} limit
+ * @returns {Promise<Object[]>}
  */
-async function getProgressionStatistics(
-    guildId
+async function getRecentKingdomTitles(
+    guildId,
+    limit = 5
 ) {
+    const safeLimit =
+        normalizeLimit(
+            limit,
+            5,
+            20
+        );
+
     const result =
         await query(
             `
                 SELECT
-                    COUNT(*)::INTEGER
-                        AS registered_souls,
+                    soul_titles.guild_id,
+                    soul_titles.user_id,
+                    soul_titles.title_id,
+                    soul_titles.unlocked_by,
+                    soul_titles.unlock_source,
+                    soul_titles.is_active,
+                    soul_titles.unlocked_at,
+                    soul_titles.activated_at,
 
-                    COALESCE(
-                        SUM(xp),
-                        0
-                    )::BIGINT
-                        AS total_xp,
+                    title_definitions.name,
+                    title_definitions.display_name,
+                    title_definitions.description,
+                    title_definitions.category,
+                    title_definitions.rarity
 
-                    COALESCE(
-                        SUM(message_count),
-                        0
-                    )::BIGINT
-                        AS total_messages,
+                FROM soul_titles
 
-                    COALESCE(
-                        AVG(level),
-                        0
-                    )::NUMERIC
-                        AS average_level,
+                INNER JOIN title_definitions
+                    ON title_definitions.title_id =
+                        soul_titles.title_id
 
-                    COALESCE(
-                        MAX(level),
-                        0
-                    )::INTEGER
-                        AS highest_level,
+                WHERE soul_titles.guild_id = $1
 
-                    COALESCE(
-                        MAX(xp),
-                        0
-                    )::BIGINT
-                        AS highest_xp
+                ORDER BY
+                    soul_titles.unlocked_at DESC
 
-                FROM levels
-
-                WHERE guild_id = $1;
+                LIMIT $2;
             `,
             [
-                guildId
+                guildId,
+                safeLimit
             ]
         );
 
-    const row =
-        result.rows[0] || {};
-
-    return {
-        registeredSouls:
-            Number(
-                row.registered_souls || 0
-            ),
-
-        totalXp:
-            Number(
-                row.total_xp || 0
-            ),
-
-        totalMessages:
-            Number(
-                row.total_messages || 0
-            ),
-
-        averageLevel:
-            Number(
-                row.average_level || 0
-            ),
-
-        highestLevel:
-            Number(
-                row.highest_level || 0
-            ),
-
-        highestXp:
-            Number(
-                row.highest_xp || 0
-            )
-    };
+    return result.rows.map(
+        mapRecentTitleRow
+    );
 }
 
 /**
- * Get total Kingdom Achievement statistics.
+ * Get the most recent Arrancar
+ * hierarchy actions.
  *
  * @param {string} guildId
- * @returns {Promise<Object>}
+ * @param {number} limit
+ * @returns {Promise<Object[]>}
  */
-async function getAchievementStatistics(
-    guildId
+async function getRecentRankHistory(
+    guildId,
+    limit = 5
 ) {
-    const result =
-        await query(
-            `
-                SELECT
-                    (
-                        SELECT
-                            COUNT(*)::INTEGER
-                        FROM achievements
-                    ) AS available_achievements,
-
-                    (
-                        SELECT
-                            COUNT(*)::INTEGER
-                        FROM soul_achievements
-                        WHERE guild_id = $1
-                    ) AS total_unlocks,
-
-                    (
-                        SELECT
-                            COUNT(
-                                DISTINCT user_id
-                            )::INTEGER
-                        FROM soul_achievements
-                        WHERE guild_id = $1
-                    ) AS souls_with_achievements;
-            `,
-            [
-                guildId
-            ]
+    const safeLimit =
+        normalizeLimit(
+            limit,
+            5,
+            20
         );
 
-    const row =
-        result.rows[0] || {};
-
-    return {
-        availableAchievements:
-            Number(
-                row.available_achievements || 0
-            ),
-
-        totalUnlocks:
-            Number(
-                row.total_unlocks || 0
-            ),
-
-        soulsWithAchievements:
-            Number(
-                row.souls_with_achievements || 0
-            )
-    };
-}
-
-/**
- * Get Arrancar Rank statistics from
- * the manual Rank System.
- *
- * @param {string} guildId
- * @returns {Promise<Object>}
- */
-async function getRankStatistics(
-    guildId
-) {
     const result =
         await query(
             `
                 SELECT
-                    COUNT(*)::INTEGER
-                        AS active_ranked_souls,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name IN (
-                            '👑 Espada 0',
-                            'Ⅰ Espada',
-                            'Ⅱ Espada',
-                            'Ⅲ Espada',
-                            'Ⅳ Espada',
-                            'Ⅴ Espada',
-                            'Ⅵ Espada',
-                            'Ⅶ Espada',
-                            'Ⅷ Espada',
-                            'Ⅸ Espada',
-                            'Ⅹ Espada'
-                        )
-                    )::INTEGER
-                        AS active_espada,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '🌘 Privaron Espada'
-                    )::INTEGER
-                        AS privaron_espada,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '⚔️ Fracción'
-                    )::INTEGER
-                        AS fraccion,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '🦴 Numeros'
-                    )::INTEGER
-                        AS numeros,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '⚪ Unranked Arrancar'
-                    )::INTEGER
-                        AS unranked_arrancar
-
-                FROM arrancar_ranks
-
-                WHERE guild_id = $1;
-            `,
-            [
-                guildId
-            ]
-        );
-
-    const row =
-        result.rows[0] || {};
-
-    return {
-        activeRankedSouls:
-            Number(
-                row.active_ranked_souls || 0
-            ),
-
-        activeEspada:
-            Number(
-                row.active_espada || 0
-            ),
-
-        privaronEspada:
-            Number(
-                row.privaron_espada || 0
-            ),
-
-        fraccion:
-            Number(
-                row.fraccion || 0
-            ),
-
-        numeros:
-            Number(
-                row.numeros || 0
-            ),
-
-        unrankedArrancar:
-            Number(
-                row.unranked_arrancar || 0
-            )
-    };
-}
-
-/**
- * Get Arrancar Rank history statistics.
- *
- * @param {string} guildId
- * @returns {Promise<Object>}
- */
-async function getRankHistoryStatistics(
-    guildId
-) {
-    const result =
-        await query(
-            `
-                SELECT
-                    COUNT(*)::INTEGER
-                        AS total_rank_records,
-
-                    COUNT(*) FILTER (
-                        WHERE action = 'SET'
-                    )::INTEGER
-                        AS rank_assignments,
-
-                    COUNT(*) FILTER (
-                        WHERE action = 'REMOVE'
-                    )::INTEGER
-                        AS rank_removals,
-
-                    MAX(created_at)
-                        AS latest_rank_action_at
+                    id,
+                    guild_id,
+                    user_id,
+                    moderator_id,
+                    action,
+                    old_rank,
+                    new_rank,
+                    reason,
+                    created_at
 
                 FROM arrancar_rank_history
 
-                WHERE guild_id = $1;
+                WHERE guild_id = $1
+
+                ORDER BY
+                    created_at DESC,
+                    id DESC
+
+                LIMIT $2;
+            `,
+            [
+                guildId,
+                safeLimit
+            ]
+        );
+
+    return result.rows.map(
+        mapRecentRankHistoryRow
+    );
+}
+
+/**
+ * Get high-level Kingdom activity
+ * statistics from existing records.
+ *
+ * @param {string} guildId
+ * @returns {Promise<Object>}
+ */
+async function getActivityStatistics(
+    guildId
+) {
+    const result =
+        await query(
+            `
+                SELECT
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM levels
+
+                        WHERE guild_id = $1
+                          AND updated_at >=
+                              NOW() -
+                              INTERVAL '24 hours'
+                    ) AS progression_updates_24h,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_achievements
+
+                        WHERE guild_id = $1
+                          AND unlocked_at >=
+                              NOW() -
+                              INTERVAL '24 hours'
+                    ) AS achievement_unlocks_24h,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                          AND unlocked_at >=
+                              NOW() -
+                              INTERVAL '24 hours'
+                    ) AS title_unlocks_24h,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM arrancar_rank_history
+
+                        WHERE guild_id = $1
+                          AND created_at >=
+                              NOW() -
+                              INTERVAL '24 hours'
+                    ) AS rank_actions_24h,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM levels
+
+                        WHERE guild_id = $1
+                          AND updated_at >=
+                              NOW() -
+                              INTERVAL '7 days'
+                    ) AS progression_updates_7d,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_achievements
+
+                        WHERE guild_id = $1
+                          AND unlocked_at >=
+                              NOW() -
+                              INTERVAL '7 days'
+                    ) AS achievement_unlocks_7d,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM soul_titles
+
+                        WHERE guild_id = $1
+                          AND unlocked_at >=
+                              NOW() -
+                              INTERVAL '7 days'
+                    ) AS title_unlocks_7d,
+
+                    (
+                        SELECT
+                            COUNT(*)::INTEGER
+
+                        FROM arrancar_rank_history
+
+                        WHERE guild_id = $1
+                          AND created_at >=
+                              NOW() -
+                              INTERVAL '7 days'
+                    ) AS rank_actions_7d;
             `,
             [
                 guildId
@@ -701,49 +1223,229 @@ async function getRankHistoryStatistics(
         );
 
     const row =
-        result.rows[0] || {};
+        result.rows[0] ||
+        {};
 
     return {
-        totalRankRecords:
-            Number(
-                row.total_rank_records || 0
-            ),
+        last24Hours: {
+            progressionUpdates:
+                Number(
+                    row.progression_updates_24h || 0
+                ),
 
-        rankAssignments:
-            Number(
-                row.rank_assignments || 0
-            ),
+            achievementUnlocks:
+                Number(
+                    row.achievement_unlocks_24h || 0
+                ),
 
-        rankRemovals:
-            Number(
-                row.rank_removals || 0
-            ),
+            titleUnlocks:
+                Number(
+                    row.title_unlocks_24h || 0
+                ),
 
-        latestRankActionAt:
-            row.latest_rank_action_at
-                ? new Date(
-                    row.latest_rank_action_at
+            rankActions:
+                Number(
+                    row.rank_actions_24h || 0
                 )
-                : null
+        },
+
+        last7Days: {
+            progressionUpdates:
+                Number(
+                    row.progression_updates_7d || 0
+                ),
+
+            achievementUnlocks:
+                Number(
+                    row.achievement_unlocks_7d || 0
+                ),
+
+            titleUnlocks:
+                Number(
+                    row.title_unlocks_7d || 0
+                ),
+
+            rankActions:
+                Number(
+                    row.rank_actions_7d || 0
+                )
+        }
+    };
+}
+
+/**
+ * Calculate combined Kingdom archive
+ * totals from loaded statistics.
+ *
+ * @param {Object} options
+ * @returns {Object}
+ */
+function buildArchiveSummary({
+    progression,
+    achievements,
+    titles,
+    ranks,
+    rankHistory
+}) {
+    const totalArchiveRecords =
+        Number(
+            progression.registeredSouls || 0
+        ) +
+        Number(
+            achievements.totalUnlocks || 0
+        ) +
+        Number(
+            titles.totalUnlocks || 0
+        ) +
+        Number(
+            ranks.activeRankedSouls || 0
+        ) +
+        Number(
+            rankHistory.totalRankRecords || 0
+        );
+
+    const participatingSoulIds =
+        Math.max(
+            Number(
+                progression.registeredSouls || 0
+            ),
+            Number(
+                achievements.soulsWithAchievements || 0
+            ),
+            Number(
+                titles.soulsWithTitles || 0
+            ),
+            Number(
+                ranks.activeRankedSouls || 0
+            )
+        );
+
+    const averageAchievementUnlocks =
+        achievements.soulsWithAchievements >
+        0
+            ? (
+                achievements.totalUnlocks /
+                achievements.soulsWithAchievements
+            )
+            : 0;
+
+    const averageTitleUnlocks =
+        titles.soulsWithTitles >
+        0
+            ? (
+                titles.totalUnlocks /
+                titles.soulsWithTitles
+            )
+            : 0;
+
+    return {
+        totalArchiveRecords,
+
+        participatingSouls:
+            participatingSoulIds,
+
+        averageAchievementUnlocks:
+            Number(
+                averageAchievementUnlocks.toFixed(
+                    2
+                )
+            ),
+
+        averageTitleUnlocks:
+            Number(
+                averageTitleUnlocks.toFixed(
+                    2
+                )
+            )
+    };
+}
+
+/**
+ * Load leaderboard datasets through the
+ * dedicated Leaderboard database module.
+ *
+ * @param {string} guildId
+ * @param {number} limit
+ * @returns {Promise<Object>}
+ */
+async function getKingdomLeaderboards(
+    guildId,
+    limit = 5
+) {
+    const safeLimit =
+        normalizeLimit(
+            limit,
+            5,
+            25
+        );
+
+    const [
+        levels,
+        xp,
+        messages,
+        achievements,
+        titles
+    ] =
+        await Promise.all([
+            leaderboardDatabase
+                .getLevelLeaderboard(
+                    guildId,
+                    safeLimit
+                ),
+
+            leaderboardDatabase
+                .getXpLeaderboard(
+                    guildId,
+                    safeLimit
+                ),
+
+            leaderboardDatabase
+                .getMessageLeaderboard(
+                    guildId,
+                    safeLimit
+                ),
+
+            leaderboardDatabase
+                .getAchievementLeaderboard(
+                    guildId,
+                    safeLimit
+                ),
+
+            leaderboardDatabase
+                .getTitleLeaderboard(
+                    guildId,
+                    safeLimit
+                )
+        ]);
+
+    return {
+        levels,
+        xp,
+        messages,
+        achievements,
+        titles
     };
 }
 
 /**
  * Get the complete Kingdom statistics
- * required by /lasnoches and future
- * leaderboard commands.
+ * required by the Las Noches Dashboard.
  *
  * @param {string} guildId
  * @param {Object} options
  * @param {number} options.leaderboardLimit
  * @param {number} options.recentAchievementLimit
+ * @param {number} options.recentTitleLimit
+ * @param {number} options.recentRankLimit
  * @returns {Promise<Object>}
  */
 async function getKingdomStatistics(
     guildId,
     {
         leaderboardLimit = 5,
-        recentAchievementLimit = 5
+        recentAchievementLimit = 5,
+        recentTitleLimit = 5,
+        recentRankLimit = 5
     } = {}
 ) {
     if (!guildId) {
@@ -755,12 +1457,15 @@ async function getKingdomStatistics(
     const [
         progression,
         achievementStatistics,
+        titleStatistics,
+        titleRarityStatistics,
         rankStatistics,
         rankHistoryStatistics,
-        levelLeaderboard,
-        messageLeaderboard,
-        achievementLeaderboard,
-        recentAchievements
+        activityStatistics,
+        leaderboards,
+        recentAchievements,
+        recentTitles,
+        recentRanks
     ] =
         await Promise.all([
             getProgressionStatistics(
@@ -768,6 +1473,14 @@ async function getKingdomStatistics(
             ),
 
             getAchievementStatistics(
+                guildId
+            ),
+
+            getTitleStatistics(
+                guildId
+            ),
+
+            getTitleRarityStatistics(
                 guildId
             ),
 
@@ -779,17 +1492,11 @@ async function getKingdomStatistics(
                 guildId
             ),
 
-            getLevelLeaderboard(
-                guildId,
-                leaderboardLimit
+            getActivityStatistics(
+                guildId
             ),
 
-            getMessageLeaderboard(
-                guildId,
-                leaderboardLimit
-            ),
-
-            getAchievementLeaderboard(
+            getKingdomLeaderboards(
                 guildId,
                 leaderboardLimit
             ),
@@ -797,8 +1504,31 @@ async function getKingdomStatistics(
             getRecentKingdomAchievements(
                 guildId,
                 recentAchievementLimit
+            ),
+
+            getRecentKingdomTitles(
+                guildId,
+                recentTitleLimit
+            ),
+
+            getRecentRankHistory(
+                guildId,
+                recentRankLimit
             )
         ]);
+
+    const archiveSummary =
+        buildArchiveSummary({
+            progression,
+            achievements:
+                achievementStatistics,
+            titles:
+                titleStatistics,
+            ranks:
+                rankStatistics,
+            rankHistory:
+                rankHistoryStatistics
+        });
 
     return {
         guildId,
@@ -811,37 +1541,43 @@ async function getKingdomStatistics(
         achievements:
             achievementStatistics,
 
+        titles:
+            titleStatistics,
+
+        titleRarities:
+            titleRarityStatistics,
+
         ranks:
             rankStatistics,
 
         rankHistory:
             rankHistoryStatistics,
 
-        leaderboards: {
-            levels:
-                levelLeaderboard,
+        activity:
+            activityStatistics,
 
-            messages:
-                messageLeaderboard,
+        archiveSummary,
 
-            achievements:
-                achievementLeaderboard
-        },
+        leaderboards,
 
-        recentAchievements
+        recentAchievements,
+        recentTitles,
+        recentRanks
     };
-}
-
-module.exports = {
-    getLevelLeaderboard,
-    getMessageLeaderboard,
-    getAchievementLeaderboard,
-    getRecentKingdomAchievements,
-
+}module.exports = {
     getProgressionStatistics,
     getAchievementStatistics,
+    getTitleStatistics,
+    getTitleRarityStatistics,
+
     getRankStatistics,
     getRankHistoryStatistics,
+    getActivityStatistics,
 
+    getRecentKingdomAchievements,
+    getRecentKingdomTitles,
+    getRecentRankHistory,
+
+    getKingdomLeaderboards,
     getKingdomStatistics
 };
