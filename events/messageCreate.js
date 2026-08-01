@@ -27,6 +27,11 @@ const {
     sendTitleUnlockNotification
 } = require('../utils/titleNotifications');
 
+const {
+    sendAchievementFeed,
+    sendTitleFeed
+} = require('../utils/kingdomFeed');
+
 /**
  * Rapid-message history.
  *
@@ -348,9 +353,7 @@ function shouldBypassAutoMod(
                 );
         }
     );
-}
-
-/**
+}/**
  * Detect rapid-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -522,13 +525,53 @@ function getMentionCount(
 }
 
 /**
+ * Send newly unlocked Achievements
+ * into the public Kingdom Feed.
+ *
+ * @param {import('discord.js').Message} message
+ * @param {Object[]} achievements
+ * @returns {Promise<void>}
+ */
+async function sendAchievementFeeds(
+    message,
+    achievements
+) {
+    if (
+        !Array.isArray(
+            achievements
+        ) ||
+        achievements.length ===
+            0
+    ) {
+        return;
+    }
+
+    for (
+        const achievement
+        of achievements
+    ) {
+        await sendAchievementFeed({
+            member:
+                message.member,
+
+            achievement,
+
+            source:
+                'Message activity or Soul progression'
+        });
+    }
+}
+
+/**
  * Run progression systems after a valid
  * message passes every Guardian check.
  *
  * Order:
  * 1. Achievement System
- * 2. Title System
- * 3. Title unlock notification
+ * 2. Achievement Kingdom Feed
+ * 3. Title System
+ * 4. Existing Title notification
+ * 5. Title Kingdom Feed
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<void>}
@@ -536,10 +579,21 @@ function getMentionCount(
 async function checkMessageProgression(
     message
 ) {
+    let unlockedAchievements =
+        [];
+
     try {
-        await checkMessageAchievements(
-            message
-        );
+        const achievementResult =
+            await checkMessageAchievements(
+                message
+            );
+
+        unlockedAchievements =
+            Array.isArray(
+                achievementResult
+            )
+                ? achievementResult
+                : [];
     } catch (error) {
         console.error(
             '❌ Umbra Achievement check failed:'
@@ -547,6 +601,20 @@ async function checkMessageProgression(
 
         console.error(
             error
+        );
+    }
+
+    if (
+        unlockedAchievements.length >
+        0
+    ) {
+        console.log(
+            `🏆 ${unlockedAchievements.length} new Achievement(s) unlocked for ${message.author.tag}.`
+        );
+
+        await sendAchievementFeeds(
+            message,
+            unlockedAchievements
         );
     }
 
@@ -570,7 +638,7 @@ async function checkMessageProgression(
         return;
     }
 
-    const newlyUnlocked =
+    const newlyUnlockedTitles =
         Array.isArray(
             titleResult?.newlyUnlocked
         )
@@ -578,14 +646,14 @@ async function checkMessageProgression(
             : [];
 
     if (
-        newlyUnlocked.length ===
+        newlyUnlockedTitles.length ===
         0
     ) {
         return;
     }
 
     console.log(
-        `🏷️ ${newlyUnlocked.length} new Title(s) unlocked for ${message.author.tag}.`
+        `🏷️ ${newlyUnlockedTitles.length} new Title(s) unlocked for ${message.author.tag}.`
     );
 
     await sendTitleUnlockNotification({
@@ -596,12 +664,25 @@ async function checkMessageProgression(
             message.channel,
 
         titles:
-            newlyUnlocked,
+            newlyUnlockedTitles,
 
         source:
             'Soul Level, Achievement or spiritual progression'
     });
-}/**
+
+    await sendTitleFeed({
+        member:
+            message.member,
+
+        titles:
+            newlyUnlockedTitles,
+
+        source:
+            'Soul Level, Achievement or spiritual progression'
+    });
+}
+
+/**
  * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -640,9 +721,7 @@ function findLogChannel(
         channelByName ??
         null
     );
-}
-
-/**
+}/**
  * Send Umbra AutoMod log.
  *
  * @param {import('discord.js').Message} message
@@ -1060,7 +1139,8 @@ async function processViolation(
             );
     }
 
-    const actions = [];
+    const actions =
+        [];
 
     actions.push(
         deleted
@@ -1113,80 +1193,49 @@ async function processViolation(
         false,
 
     /**
-     * Run Umbra Guardian for every
-     * new server message.
+     * Umbra Guardian entry point.
      *
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
      */
-    async execute(
-        message
-    ) {
-        if (
-            !message.inGuild()
-        ) {
-            return;
-        }
+    async execute(message) {
+        try {
+            if (
+                !message.inGuild() ||
+                message.author.bot ||
+                message.webhookId
+            ) {
+                return;
+            }
 
-        if (
-            message.author.bot
-        ) {
-            return;
-        }
+            if (
+                !automodConfig.enabled
+            ) {
+                await checkMessageProgression(
+                    message
+                );
 
-        if (
-            !message.member
-        ) {
-            return;
-        }
+                return;
+            }
 
-        const content =
-            message.content ??
-            '';
+            if (
+                shouldBypassAutoMod(
+                    message.member
+                )
+            ) {
+                await checkMessageProgression(
+                    message
+                );
 
-        /*
-         * AutoMod runs only when enabled
-         * and the member has no bypass.
-         *
-         * Achievement, Title and notification
-         * systems still run for:
-         *
-         * - Server owner
-         * - Administrators
-         * - Manage Messages members
-         * - Everyone while AutoMod is disabled
-         */
-        const shouldRunAutoMod =
-            automodConfig.enabled &&
-            !shouldBypassAutoMod(
-                message.member
-            );
+                return;
+            }
 
-        if (!shouldRunAutoMod) {
-            await checkMessageProgression(
-                message
-            );
-
-            return;
-        }
-
-        /*
-         * Umbra Scam Shield
-         */
-        if (
-            automodConfig
-                .scamProtection
-                ?.enabled
-        ) {
+            /*
+             * Scam detection
+             */
             const scamResult =
                 detectScam(
-                    content,
-                    {
-                        timeoutMilliseconds:
-                            automodConfig
-                                .scamProtection
-                                .timeoutMilliseconds
-                    }
+                    message.content
                 );
 
             if (
@@ -1196,216 +1245,195 @@ async function processViolation(
                     message,
                     {
                         reason:
-                            scamResult.reason,
+                            `Scam Link Detected (${scamResult.type})`,
 
                         warning:
-                            scamResult.warning,
+                            'Your message contained a suspicious scam link and has been removed.',
 
                         timeoutDuration:
-                            scamResult
-                                .timeoutDuration
+                            automodConfig
+                                .scamProtection
+                                ?.timeoutMilliseconds
                     }
                 );
 
-                /*
-                 * No Achievement, Title or
-                 * notification processing.
-                 */
                 return;
             }
-        }
 
-        /*
-         * Discord invite protection.
-         */
-        if (
-            automodConfig
-                .inviteProtection
-                ?.enabled &&
-            DISCORD_INVITE_PATTERN
-                .test(
-                    content
-                )
-        ) {
-            await processViolation(
-                message,
-                {
-                    reason:
-                        'Unauthorized Discord invite',
-
-                    warning:
-                        'Discord invite links are not allowed within Las Noches.'
-                }
-            );
-
-            return;
-        }
-
-        /*
-         * Umbra Profanity Shield
-         */
-        const badWordResult =
-            findBadWord(
-                content
-            );
-
-        if (badWordResult) {
+            /*
+             * Discord invite protection
+             */
             if (
-                badWordResult.severity ===
-                'timeout'
+                automodConfig
+                    .inviteProtection
+                    ?.enabled &&
+                DISCORD_INVITE_PATTERN.test(
+                    message.content
+                )
             ) {
                 await processViolation(
                     message,
                     {
                         reason:
-                            'Severe profanity or abusive language detected',
+                            'Discord Invite',
 
                         warning:
-                            'severe profanity and abusive language violate the laws of Las Noches.',
+                            'Advertising other Discord servers is not allowed.',
 
                         timeoutDuration:
                             automodConfig
-                                .badWords
-                                .timeoutMilliseconds
+                                .inviteProtection
+                                ?.timeoutMilliseconds
                     }
                 );
-            } else {
+
+                return;
+            }
+
+            /*
+             * Bad word detection
+             */
+            const badWord =
+                findBadWord(
+                    message.content
+                );
+
+            if (
+                badWord
+            ) {
                 await processViolation(
                     message,
                     {
                         reason:
-                            'Insulting language detected',
+                            `Bad Word (${badWord.word})`,
 
                         warning:
-                            'insulting language violates the laws of Las Noches.'
+                            'Please avoid offensive language.',
+
+                        timeoutDuration:
+                            badWord.severity ===
+                            'timeout'
+                                ? automodConfig
+                                      .badWords
+                                      ?.timeoutMilliseconds
+                                : null
                     }
                 );
+
+                return;
             }
 
-            return;
-        }
+            /*
+             * Rapid message spam
+             */
+            if (
+                isMessageSpam(
+                    message
+                )
+            ) {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            'Spam Detection',
 
-        /*
-         * Mention-spam protection.
-         */
-        const mentionCount =
-            getMentionCount(
-                message
-            );
+                        warning:
+                            'Please slow down your messages.',
 
-        if (
-            automodConfig
-                .mentionSpam
-                ?.enabled &&
-            mentionCount >=
+                        timeoutDuration:
+                            automodConfig
+                                .spam
+                                ?.timeoutMilliseconds
+                    }
+                );
+
+                return;
+            }
+
+            /*
+             * Duplicate spam
+             */
+            if (
+                isDuplicateSpam(
+                    message
+                )
+            ) {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            'Duplicate Messages',
+
+                        warning:
+                            'Repeated messages are not allowed.',
+
+                        timeoutDuration:
+                            automodConfig
+                                .duplicateMessages
+                                ?.timeoutMilliseconds
+                    }
+                );
+
+                return;
+            }
+
+            /*
+             * Mention spam
+             */
+            const mentionCount =
+                getMentionCount(
+                    message
+                );
+
+            if (
                 automodConfig
                     .mentionSpam
-                    .mentionLimit
-        ) {
-            await processViolation(
-                message,
-                {
-                    reason:
-                        `Mention spam (${mentionCount} mentions)`,
+                    ?.enabled &&
+                mentionCount >=
+                    automodConfig
+                        .mentionSpam
+                        .maximumMentions
+            ) {
+                await processViolation(
+                    message,
+                    {
+                        reason:
+                            'Mention Spam',
 
-                    warning:
-                        'mention spam is not allowed within Las Noches.',
+                        warning:
+                            'Too many mentions were detected.',
 
-                    timeoutDuration:
-                        automodConfig
-                            .mentionSpam
-                            .timeoutMilliseconds
-                }
-            );
+                        timeoutDuration:
+                            automodConfig
+                                .mentionSpam
+                                ?.timeoutMilliseconds
+                    }
+                );
 
-            return;
-        }
+                return;
+            }
 
-        /*
-         * Duplicate-message protection.
-         */
-        if (
-            isDuplicateSpam(
+            /*
+             * Safe message.
+             * Run progression systems.
+             */
+            await checkMessageProgression(
                 message
-            )
-        ) {
-            await processViolation(
-                message,
-                {
-                    reason:
-                        'Repeated-message spam',
-
-                    warning:
-                        'do not send the same message repeatedly.',
-
-                    timeoutDuration:
-                        automodConfig
-                            .duplicateMessages
-                            .timeoutMilliseconds
-                }
+            );
+        } catch (error) {
+            console.error(
+                '❌ Umbra MessageCreate error:'
             );
 
-            duplicateHistory.delete(
-                `${message.guild.id}:` +
-                `${message.author.id}`
+            console.error(
+                error
             );
-
-            return;
         }
-
-        /*
-         * Rapid-message protection.
-         */
-        if (
-            isMessageSpam(
-                message
-            )
-        ) {
-            await processViolation(
-                message,
-                {
-                    reason:
-                        'Rapid message spam',
-
-                    warning:
-                        'you are sending messages too quickly.',
-
-                    timeoutDuration:
-                        automodConfig
-                            .spam
-                            .timeoutMilliseconds
-                }
-            );
-
-            messageHistory.delete(
-                `${message.guild.id}:` +
-                `${message.author.id}`
-            );
-
-            return;
-        }
-
-        /*
-         * Umbra Progression System
-         *
-         * This point is reached only when
-         * the message passes every enabled
-         * Guardian / AutoMod check.
-         *
-         * Order:
-         * 1. Achievement checks
-         * 2. Title checks
-         * 3. Title unlock notification
-         */
-        await checkMessageProgression(
-            message
-        );
     }
 };
 
-/**
- * Remove expired spam tracking
- * information from memory.
+/*
+ * Periodically clean cached spam history.
  */
 const cleanupTimer =
     setInterval(
@@ -1413,71 +1441,67 @@ const cleanupTimer =
             const now =
                 Date.now();
 
-            if (
-                automodConfig.spam
-            ) {
-                for (
-                    const [
-                        key,
-                        timestamps
-                    ]
-                    of messageHistory
-                        .entries()
-                ) {
-                    const activeTimestamps =
-                        timestamps.filter(
-                            timestamp =>
-                                now -
-                                    timestamp <
-                                automodConfig
-                                    .spam
-                                    .intervalMilliseconds
-                        );
+            const spamWindow =
+                automodConfig
+                    .spam
+                    ?.intervalMilliseconds ??
+                30_000;
 
-                    if (
-                        activeTimestamps
-                            .length === 0
-                    ) {
-                        messageHistory.delete(
-                            key
-                        );
-                    } else {
-                        messageHistory.set(
-                            key,
-                            activeTimestamps
-                        );
-                    }
+            const duplicateWindow =
+                automodConfig
+                    .duplicateMessages
+                    ?.intervalMilliseconds ??
+                300_000;
+
+            for (
+                const [
+                    key,
+                    timestamps
+                ]
+                of messageHistory.entries()
+            ) {
+                const filtered =
+                    timestamps.filter(
+                        timestamp =>
+                            now -
+                                timestamp <
+                            spamWindow
+                    );
+
+                if (
+                    filtered.length ===
+                    0
+                ) {
+                    messageHistory.delete(
+                        key
+                    );
+                } else {
+                    messageHistory.set(
+                        key,
+                        filtered
+                    );
                 }
             }
 
-            if (
-                automodConfig
-                    .duplicateMessages
+            for (
+                const [
+                    key,
+                    data
+                ]
+                of duplicateHistory.entries()
             ) {
-                for (
-                    const [
-                        key,
-                        data
-                    ]
-                    of duplicateHistory
-                        .entries()
+                if (
+                    now -
+                        data.firstMessageAt >
+                    duplicateWindow
                 ) {
-                    if (
-                        now -
-                            data.firstMessageAt >
-                        automodConfig
-                            .duplicateMessages
-                            .intervalMilliseconds
-                    ) {
-                        duplicateHistory.delete(
-                            key
-                        );
-                    }
+                    duplicateHistory.delete(
+                        key
+                    );
                 }
             }
         },
-
-        60_000
+        5 * 60 * 1000
     );
 
 if (

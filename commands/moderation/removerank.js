@@ -12,6 +12,10 @@ const {
 const rankDatabase =
     require('../../database/ranks');
 
+const {
+    sendRankFeed
+} = require('../../utils/kingdomFeed');
+
 /**
  * Every manually assignable Arrancar Rank.
  *
@@ -162,7 +166,7 @@ function createRankRemovalEmbed({
     const removedAt =
         Math.floor(
             Date.now() /
-            1000
+            1_000
         );
 
     const historyDisplay =
@@ -273,9 +277,7 @@ function createRankRemovalEmbed({
                 '🌙 Umbra • Guardian of Las Noches'
         }
     });
-}
-
-module.exports = {
+}module.exports = {
     category:
         'moderation',
 
@@ -497,13 +499,15 @@ module.exports = {
                 );
 
             const databaseRank =
-                await rankDatabase.getCurrentRank(
-                    interaction.guild.id,
-                    member.id
-                );
+                await rankDatabase
+                    .getCurrentRank(
+                        interaction.guild.id,
+                        member.id
+                    );
 
             if (
-                currentRankRoles.size === 0 &&
+                currentRankRoles.size ===
+                    0 &&
                 !databaseRank
             ) {
                 await interaction.reply({
@@ -528,7 +532,9 @@ module.exports = {
                         botMember.roles.highest.position
                 );
 
-            if (unmanageableRole) {
+            if (
+                unmanageableRole
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
@@ -548,8 +554,6 @@ module.exports = {
                 return;
             }
 
-            await interaction.deferReply();
-
             const roleRankNames =
                 currentRankRoles.map(
                     role =>
@@ -557,14 +561,14 @@ module.exports = {
                 );
 
             const removedRankDisplay =
-                roleRankNames.length > 0
-                    ? roleRankNames.join(', ')
-                    : databaseRank?.rank_name ||
-                        'Unknown Arrancar Rank';
+                databaseRank?.rank_name ||
+                roleRankNames[0] ||
+                'Unknown Arrancar Rank';
 
-            try {
+            await interaction.deferReply();            try {
                 if (
-                    currentRankRoles.size > 0
+                    currentRankRoles.size >
+                    0
                 ) {
                     await member.roles.remove(
                         currentRankRoles,
@@ -573,7 +577,7 @@ module.exports = {
                 }
             } catch (roleError) {
                 console.error(
-                    '❌ Umbra could not remove Arrancar Rank roles:',
+                    '❌ Umbra could not remove the Arrancar Rank roles:',
                     roleError
                 );
 
@@ -585,7 +589,7 @@ module.exports = {
                                 'Umbra could not remove the selected Soul’s Arrancar Rank role.',
                                 '',
                                 'Verify the following:',
-                                '• Umbra has Manage Roles',
+                                '• Umbra has **Manage Roles**',
                                 '• Umbra is above all Arrancar Rank roles',
                                 '• The Rank role is not controlled by another integration'
                             ].join('\n')
@@ -618,8 +622,16 @@ module.exports = {
                     databaseError
                 );
 
+                /*
+                 * PostgreSQL failed after the
+                 * Discord Rank roles were removed.
+                 *
+                 * Restore the previous roles
+                 * wherever possible.
+                 */
                 if (
-                    currentRankRoles.size > 0
+                    currentRankRoles.size >
+                    0
                 ) {
                     await member.roles
                         .add(
@@ -638,7 +650,9 @@ module.exports = {
                             [
                                 'Umbra could not save this Rank removal inside PostgreSQL.',
                                 '',
-                                'The previous Discord Rank was restored where possible. Check the Northflank database logs before trying again.'
+                                'The previous Discord Rank was restored where possible.',
+                                '',
+                                'Check the Northflank database logs before trying again.'
                             ].join('\n')
                         )
                     ]
@@ -650,21 +664,36 @@ module.exports = {
             /*
              * If Discord contained a Rank role
              * but PostgreSQL had no active record,
-             * removeRank returns null. We still
-             * allow the role cleanup to succeed.
+             * removeRank() returns null.
+             *
+             * The Discord cleanup is still treated
+             * as a successful Rank removal.
              */
             const historyId =
-                removedRecord?.history_id ||
+                removedRecord?.history_id ??
                 null;
+
+            const archivedRemovedRank =
+                removedRecord
+                    ?.removed_rank_name ||
+                null;
+
+            const finalRemovedRankDisplay =
+                archivedRemovedRank ||
+                removedRankDisplay;
 
             const removalEmbed =
                 createRankRemovalEmbed({
                     member,
+
                     moderator:
                         interaction.user,
+
                     removedRank:
-                        removedRankDisplay,
+                        finalRemovedRankDisplay,
+
                     reason,
+
                     historyId
                 });
 
@@ -705,20 +734,77 @@ module.exports = {
                             error
                         );
                     });
-            }
+            }            /*
+             * Publish the Rank revocation
+             * into the public Kingdom Feed.
+             */
+            await sendRankFeed({
+                member,
+
+                moderator:
+                    interaction.user,
+
+                oldRank:
+                    finalRemovedRankDisplay,
+
+                newRank:
+                    null,
+
+                reason,
+
+                historyId,
+
+                revoked:
+                    true
+            }).catch(error => {
+                console.error(
+                    '⚠️ Umbra could not publish the Rank Kingdom Feed:',
+                    error
+                );
+            });
+
+            console.log(
+                '======================================'
+            );
+
+            console.log(
+                '🌑 Arrancar Rank Revoked'
+            );
+
+            console.log(
+                `🌙 Soul: ${member.user.tag}`
+            );
+
+            console.log(
+                `📜 Removed Rank: ${finalRemovedRankDisplay}`
+            );
+
+            console.log(
+                `👑 High Command: ${interaction.user.tag}`
+            );
+
+            console.log(
+                `🆔 History Record: ${historyId ?? 'Unknown'}`
+            );
+
+            console.log(
+                '======================================'
+            );
         } catch (error) {
             console.error(
-                '❌ Umbra /removerank command error:',
+                '❌ Umbra /removerank command failed:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Rank Removal Failed',
+                    '❌ Arrancar Rank Removal Failed',
                     [
-                        'Umbra could not complete this Arrancar Rank removal.',
+                        'Umbra could not complete the requested Arrancar Rank removal.',
                         '',
-                        'Please inspect the Northflank logs and try again.'
+                        'No additional changes were applied.',
+                        '',
+                        'Inspect the Northflank logs for more information.'
                     ].join('\n')
                 );
 
@@ -730,25 +816,6 @@ module.exports = {
                         embeds: [
                             errorEmbed
                         ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null

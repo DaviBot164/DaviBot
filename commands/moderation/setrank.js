@@ -20,6 +20,11 @@ const {
     sendTitleUnlockNotification
 } = require('../../utils/titleNotifications');
 
+const {
+    sendRankFeed,
+    sendTitleFeed
+} = require('../../utils/kingdomFeed');
+
 /**
  * All manually assignable Arrancar Ranks.
  *
@@ -166,10 +171,7 @@ function findPromotionChannel(
                 cachedChannel.isTextBased()
         );
 
-    return (
-        channel ||
-        null
-    );
+    return channel || null;
 }
 
 /**
@@ -257,7 +259,7 @@ function createPromotionEmbed({
     const promotedAt =
         Math.floor(
             Date.now() /
-            1000
+            1_000
         );
 
     const previousRankDisplay =
@@ -399,9 +401,7 @@ function createPromotionEmbed({
                 '🌙 Umbra • Guardian of Las Noches'
         }
     });
-}
-
-module.exports = {
+}module.exports = {
     category:
         'moderation',
 
@@ -572,7 +572,9 @@ module.exports = {
 
             .setDMPermission(
                 false
-            ),    /**
+            ),
+
+    /**
      * Execute the /setrank command.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
@@ -682,6 +684,27 @@ module.exports = {
             }
 
             if (
+                member.id ===
+                    interaction.guild.ownerId &&
+                interaction.user.id !==
+                    interaction.guild.ownerId
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Protected Soul',
+                            'Only the server owner may change the owner’s Arrancar Rank.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            if (
                 !rankDatabase.isValidRank(
                     rankName
                 )
@@ -775,31 +798,10 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Rank Hierarchy Error',
                             [
-                                `Umbra cannot manage the **${rankName}** role.`,
+                                `Umbra cannot assign ${selectedRole}.`,
                                 '',
-                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank.'
+                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank and try again.'
                             ].join('\n')
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }
-
-            if (
-                member.id ===
-                    interaction.guild.ownerId &&
-                interaction.user.id !==
-                    interaction.guild.ownerId
-            ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Protected Soul',
-                            'Only the server owner may change the owner’s Arrancar Rank.'
                         )
                     ],
 
@@ -815,46 +817,22 @@ module.exports = {
                     member
                 );
 
-            const currentRankRole =
-                currentRankRoles.first() ||
-                null;
-
-            if (
-                currentRankRoles.size === 1 &&
-                currentRankRole?.id ===
-                    selectedRole.id
-            ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Rank Already Assigned',
-                            `${member} already holds the **${rankName}** Rank.`
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }
-
-            const unmanageableOldRole =
+            const unmanageableCurrentRole =
                 currentRankRoles.find(
                     role =>
                         role.position >=
                         botMember.roles.highest.position
                 );
 
-            if (unmanageableOldRole) {
+            if (unmanageableCurrentRole) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Existing Rank Unmanageable',
+                            '❌ Existing Rank Hierarchy Error',
                             [
-                                `Umbra cannot remove ${unmanageableOldRole}.`,
+                                `Umbra cannot remove the current Rank role ${unmanageableCurrentRole}.`,
                                 '',
-                                'Move Umbra’s role above every Arrancar Rank role and try again.'
+                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank and try again.'
                             ].join('\n')
                         )
                     ],
@@ -866,22 +844,44 @@ module.exports = {
                 return;
             }
 
-            await interaction.deferReply();
-
-            const oldRankNames =
-                currentRankRoles.map(
-                    role =>
-                        role.name
-                );
+            const databaseRank =
+                await rankDatabase
+                    .getCurrentRank(
+                        interaction.guild.id,
+                        member.id
+                    );
 
             const oldRankDisplay =
-                oldRankNames.length > 0
-                    ? oldRankNames.join(', ')
-                    : null;
+                databaseRank?.rank_name ||
+                currentRankRoles.first()?.name ||
+                null;
 
-            try {
+            if (
+                oldRankDisplay ===
+                    rankName &&
+                member.roles.cache.has(
+                    selectedRole.id
+                )
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Rank Already Assigned',
+                            `${member} already holds the Arrancar Rank **${rankName}**.`
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            await interaction.deferReply();            try {
                 if (
-                    currentRankRoles.size > 0
+                    currentRankRoles.size >
+                    0
                 ) {
                     await member.roles.remove(
                         currentRankRoles,
@@ -899,6 +899,25 @@ module.exports = {
                     roleError
                 );
 
+                /*
+                 * Attempt to restore any previous
+                 * Rank roles if the new role could
+                 * not be assigned successfully.
+                 */
+                if (
+                    currentRankRoles.size >
+                    0
+                ) {
+                    await member.roles
+                        .add(
+                            currentRankRoles,
+                            'Rank assignment failed; restoring previous roles.'
+                        )
+                        .catch(
+                            () => null
+                        );
+                }
+
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
@@ -907,9 +926,9 @@ module.exports = {
                                 'Umbra could not update the selected Soul’s Discord roles.',
                                 '',
                                 'Verify the following:',
-                                '• Umbra has Manage Roles',
-                                '• Umbra is above all Arrancar Rank roles',
-                                '• The selected Rank role is not managed by another integration'
+                                '• Umbra has **Manage Roles**',
+                                '• Umbra is above every Arrancar Rank role',
+                                '• The selected role is not managed by another integration'
                             ].join('\n')
                         )
                     ]
@@ -943,9 +962,11 @@ module.exports = {
                 );
 
                 /*
-                 * Attempt to restore the previous
-                 * Discord Rank roles if the database
-                 * operation fails.
+                 * PostgreSQL failed after Discord
+                 * roles were changed.
+                 *
+                 * Remove the newly assigned role
+                 * and restore the previous roles.
                  */
                 await member.roles
                     .remove(
@@ -957,7 +978,8 @@ module.exports = {
                     );
 
                 if (
-                    currentRankRoles.size > 0
+                    currentRankRoles.size >
+                    0
                 ) {
                     await member.roles
                         .add(
@@ -976,7 +998,9 @@ module.exports = {
                             [
                                 'Umbra could not save this Rank change inside PostgreSQL.',
                                 '',
-                                'The previous Discord Rank was restored where possible. Check the Northflank database logs before trying again.'
+                                'The previous Discord Rank was restored where possible.',
+                                '',
+                                'Inspect the Northflank database logs before trying again.'
                             ].join('\n')
                         )
                     ]
@@ -1008,7 +1032,9 @@ module.exports = {
                     '⚠️ Umbra Title unlock failed after Rank promotion:',
                     titleError
                 );
-            }            const promotionEmbed =
+            }
+
+            const promotionEmbed =
                 createPromotionEmbed({
                     member,
 
@@ -1066,58 +1092,137 @@ module.exports = {
                             error
                         );
                     });
-            }
+            }            /*
+             * Publish the Rank change into the
+             * public Kingdom Feed.
+             */
+            await sendRankFeed({
+                member,
+
+                moderator:
+                    interaction.user,
+
+                oldRank:
+                    oldRankDisplay,
+
+                newRank:
+                    rankName,
+
+                reason,
+
+                historyId:
+                    rankRecord?.history_id ??
+                    null,
+
+                revoked:
+                    false
+            });
 
             /*
-             * Send a dedicated Chronicle Title
-             * unlock notification when the new
-             * Rank immediately unlocks Titles.
-             *
-             * This notification is non-fatal:
-             * Rank assignment remains successful
-             * even when the notification fails.
+             * Existing Title notification.
              */
             if (
                 unlockedTitles.length >
                 0
             ) {
-                const notificationChannel =
+                const titleChannel =
                     findTitleNotificationChannel(
                         interaction
                     );
 
-                if (notificationChannel) {
+                if (
+                    titleChannel
+                ) {
                     await sendTitleUnlockNotification({
                         member,
 
                         channel:
-                            notificationChannel,
+                            titleChannel,
 
                         titles:
                             unlockedTitles,
 
                         source:
-                            `Arrancar Rank promotion: ${rankName}`
+                            'Arrancar Rank Promotion'
+                    }).catch(error => {
+                        console.error(
+                            '⚠️ Umbra could not publish the Title notification:',
+                            error
+                        );
                     });
-                } else {
-                    console.warn(
-                        `⚠️ Umbra could not find a Title notification channel for ${member.user.tag}.`
-                    );
                 }
+
+                /*
+                 * Publish newly unlocked
+                 * Chronicle Titles into the
+                 * Kingdom Feed.
+                 */
+                await sendTitleFeed({
+                    member,
+
+                    titles:
+                        unlockedTitles,
+
+                    source:
+                        'Arrancar Rank Promotion'
+                }).catch(error => {
+                    console.error(
+                        '⚠️ Umbra could not publish the Title Kingdom Feed:',
+                        error
+                    );
+                });
             }
+
+            console.log(
+                '======================================'
+            );
+
+            console.log(
+                '👑 Arrancar Rank Assigned'
+            );
+
+            console.log(
+                `🌙 Soul: ${member.user.tag}`
+            );
+
+            console.log(
+                `📜 Previous Rank: ${oldRankDisplay || 'None'}`
+            );
+
+            console.log(
+                `⚔️ New Rank: ${rankName}`
+            );
+
+            console.log(
+                `👑 High Command: ${interaction.user.tag}`
+            );
+
+            console.log(
+                `🆔 History Record: ${rankRecord?.history_id ?? 'Unknown'}`
+            );
+
+            console.log(
+                `🏷️ Chronicle Titles: ${unlockedTitles.length}`
+            );
+
+            console.log(
+                '======================================'
+            );
         } catch (error) {
             console.error(
-                '❌ Umbra /setrank command error:',
+                '❌ Umbra /setrank command failed:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Rank Proclamation Failed',
+                    '❌ Arrancar Rank Assignment Failed',
                     [
-                        'Umbra could not complete this Arrancar Rank assignment.',
+                        'Umbra could not complete the requested Arrancar Rank assignment.',
                         '',
-                        'Please inspect the Northflank logs and try again.'
+                        'No further changes were applied.',
+                        '',
+                        'Inspect the Northflank logs for additional details.'
                     ].join('\n')
                 );
 
@@ -1129,25 +1234,6 @@ module.exports = {
                         embeds: [
                             errorEmbed
                         ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null

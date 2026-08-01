@@ -8,14 +8,19 @@ const {
 } = require('../utils/embeds');
 
 const {
-    levels: levelDatabase
+    levels:
+        levelDatabase
 } = require('../database');
 
 const channels =
     require('../config/channels');
 
+const {
+    sendLevelFeed
+} = require('../utils/kingdomFeed');
+
 /**
- * Official Crimson Eclipse Level Up channel.
+ * Official Las Noches Level Up channel.
  *
  * Level Up announcements are published
  * in the main Eclipse Chat channel.
@@ -30,7 +35,7 @@ const LEVEL_CONFIG = {
     enabled:
         true,
 
-    /*
+    /**
      * XP received for one eligible message.
      */
     minimumXp:
@@ -39,26 +44,26 @@ const LEVEL_CONFIG = {
     maximumXp:
         20,
 
-    /*
+    /**
      * One XP reward every 60 seconds.
      */
     cooldownMilliseconds:
         60_000,
 
-    /*
+    /**
      * Very short messages will not earn XP.
      */
     minimumMessageLength:
         8,
 
-    /*
-     * Prevent identical messages from earning XP
-     * repeatedly during this period.
+    /**
+     * Prevent identical messages from earning
+     * XP repeatedly during this period.
      */
     duplicateWindowMilliseconds:
         10 * 60 * 1000,
 
-    /*
+    /**
      * Delay XP processing briefly so AutoMod
      * has time to delete violating messages.
      */
@@ -81,7 +86,9 @@ const recentMessages =
  * @param {number} milliseconds
  * @returns {Promise<void>}
  */
-function wait(milliseconds) {
+function wait(
+    milliseconds
+) {
     return new Promise(resolve => {
         const timer =
             setTimeout(
@@ -128,8 +135,12 @@ function generateRandomXp(
 function normalizeMessageContent(
     content
 ) {
-    return String(content)
-        .normalize('NFKC')
+    return String(
+        content
+    )
+        .normalize(
+            'NFKC'
+        )
         .toLowerCase()
         .replace(
             /[\u200B-\u200D\uFEFF]/g,
@@ -164,34 +175,43 @@ function hasMeaningfulContent(
         return false;
     }
 
-    /*
+    /**
      * Text commands should not grant XP.
      */
     if (
-        normalizedContent.startsWith('!') ||
-        normalizedContent.startsWith('?') ||
-        normalizedContent.startsWith('.')
+        normalizedContent.startsWith(
+            '!'
+        ) ||
+        normalizedContent.startsWith(
+            '?'
+        ) ||
+        normalizedContent.startsWith(
+            '.'
+        )
     ) {
         return false;
     }
 
-    /*
+    /**
      * Require at least three letters or numbers.
      * Emoji-only and symbol-only messages give no XP.
      */
     const meaningfulCharacters =
         normalizedContent.match(
             /[\p{L}\p{N}]/gu
-        ) || [];
+        ) ||
+        [];
 
     if (
-        meaningfulCharacters.length < 3
+        meaningfulCharacters.length <
+        3
     ) {
         return false;
     }
 
-    /*
+    /**
      * Prevent messages such as:
+     *
      * aaaaaaaaaa
      * 1111111111
      */
@@ -201,8 +221,10 @@ function hasMeaningfulContent(
         );
 
     if (
-        meaningfulCharacters.length >= 8 &&
-        uniqueCharacters.size < 2
+        meaningfulCharacters.length >=
+            8 &&
+        uniqueCharacters.size <
+            2
     ) {
         return false;
     }
@@ -230,7 +252,9 @@ function isRecentDuplicate(
         `${message.author.id}`;
 
     const previousMessage =
-        recentMessages.get(key);
+        recentMessages.get(
+            key
+        );
 
     const now =
         Date.now();
@@ -280,7 +304,10 @@ function createProgressBar(
             100,
             Math.max(
                 0,
-                Number(percentage) || 0
+                Number(
+                    percentage
+                ) ||
+                0
             )
         );
 
@@ -298,23 +325,38 @@ function createProgressBar(
         filledBlocks;
 
     return (
-        '▰'.repeat(filledBlocks) +
-        '▱'.repeat(emptyBlocks)
+        '▰'.repeat(
+            filledBlocks
+        ) +
+        '▱'.repeat(
+            emptyBlocks
+        )
     );
 }
 
 /**
  * Format a number using separators.
  *
- * @param {number} value
+ * @param {number|string|null|undefined} value
  * @returns {string}
  */
 function formatNumber(
     value
 ) {
-    return Number(
-        value || 0
-    ).toLocaleString(
+    const numericValue =
+        Number(
+            value
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+        return '0';
+    }
+
+    return numericValue.toLocaleString(
         'en-US'
     );
 }
@@ -378,7 +420,8 @@ async function synchronizeLevelRewards(
             );
 
     if (
-        allRewards.length === 0
+        allRewards.length ===
+        0
     ) {
         return {
             grantedRoles:
@@ -436,18 +479,23 @@ async function synchronizeLevelRewards(
     const earnedRewards =
         allRewards.filter(
             reward =>
-                reward.level <= level
+                reward.level <=
+                level
         );
 
-    const grantedRoles = [];
-    const removedRoles = [];
+    const grantedRoles =
+        [];
+
+    const removedRoles =
+        [];
 
     /*
      * A Soul below the first reward Level
      * should not have any progression role.
      */
     if (
-        earnedRewards.length === 0
+        earnedRewards.length ===
+        0
     ) {
         for (
             const roleId
@@ -683,9 +731,7 @@ async function synchronizeLevelRewards(
         removedRoles,
         highestRewardLevel
     };
-}
-
-/**
+}/**
  * Resolve the channel that should receive
  * Level Up announcements.
  *
@@ -900,12 +946,14 @@ async function sendLevelUpMessage(
             content:
                 `${message.author}`,
 
-            embeds:
-                [levelUpEmbed],
+            embeds: [
+                levelUpEmbed
+            ],
 
             allowedMentions: {
-                users:
-                    [message.author.id]
+                users: [
+                    message.author.id
+                ]
             }
         });
     } catch (error) {
@@ -1018,6 +1066,28 @@ async function processLevelMessage(
         rewardResult
     );
 
+    /*
+     * NEW:
+     * Publish major Level milestones
+     * into the Kingdom Feed.
+     */
+    await sendLevelFeed({
+        member:
+            message.member,
+
+        previousLevel:
+            levelResult.previousLevel,
+
+        newLevel:
+            levelResult.newLevel,
+
+        totalXp:
+            levelResult.data.xp,
+
+        messageCount:
+            levelResult.data.messageCount
+    });
+
     const serverRank =
         await levelDatabase
             .getUserRank(
@@ -1107,8 +1177,8 @@ module.exports = {
 };
 
 /**
- * Remove old duplicate-message records
- * from memory.
+ * Remove old duplicate-message
+ * records from memory.
  */
 const cleanupTimer =
     setInterval(
@@ -1135,7 +1205,6 @@ const cleanupTimer =
                 }
             }
         },
-
         10 * 60 * 1000
     );
 
