@@ -274,9 +274,7 @@ async function initializeSchema() {
             guild_id,
             message_id
         );
-    `);
-
-    /*
+    `);    /*
      * Giveaway Participants
      */
     await query(`
@@ -397,9 +395,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used for the server XP leaderboard.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS levels_guild_xp_index
         ON levels (
@@ -408,9 +403,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used for sorting Souls by Level and XP.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS levels_guild_level_xp_index
         ON levels (
@@ -420,9 +412,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used for activity statistics.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS levels_guild_message_count_index
         ON levels (
@@ -440,12 +429,6 @@ async function initializeSchema() {
 
     /*
      * Level Reward Roles
-     *
-     * Stores the roles Umbra should grant
-     * when a Soul reaches a specific Level.
-     *
-     * Multiple roles may be assigned
-     * to the same Level if needed.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS level_rewards (
@@ -468,10 +451,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Quickly finds every reward earned
-     * up to the Soul's current Level.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS level_rewards_guild_level_index
         ON level_rewards (
@@ -480,19 +459,13 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Helps locate a reward configuration
-     * by its Discord role.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS level_rewards_guild_role_index
         ON level_rewards (
             guild_id,
             role_id
         );
-    `);
-
-    /*
+    `);    /*
      * Umbra Achievement Definitions
      *
      * Stores every Achievement available
@@ -521,9 +494,6 @@ async function initializeSchema() {
 
     /*
      * Soul Achievements
-     *
-     * Stores every Achievement unlocked
-     * by each Soul inside each server.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS soul_achievements (
@@ -563,6 +533,126 @@ async function initializeSchema() {
         CREATE INDEX IF NOT EXISTS soul_achievements_unlocked_at_index
         ON soul_achievements (
             unlocked_at DESC
+        );
+    `);
+
+    /*
+     * ======================================================
+     * Las Noches Arrancar Rank System
+     * ======================================================
+     */
+
+    /*
+     * Stores the current manually assigned
+     * Arrancar Rank of every Soul.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS arrancar_ranks (
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            rank_name VARCHAR(100) NOT NULL,
+
+            assigned_by VARCHAR(32) NOT NULL,
+
+            reason VARCHAR(500)
+                NOT NULL
+                DEFAULT 'No reason was provided.',
+
+            assigned_at TIMESTAMPTZ
+                NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ
+                NOT NULL
+                DEFAULT NOW(),
+
+            PRIMARY KEY (
+                guild_id,
+                user_id
+            )
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS arrancar_ranks_guild_rank_index
+        ON arrancar_ranks (
+            guild_id,
+            rank_name
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS arrancar_ranks_updated_at_index
+        ON arrancar_ranks (
+            updated_at DESC
+        );
+    `);
+
+    /*
+     * Stores every Promotion,
+     * Demotion and Removal.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS arrancar_rank_history (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            moderator_id VARCHAR(32) NOT NULL,
+
+            action VARCHAR(20) NOT NULL,
+
+            old_rank VARCHAR(100),
+            new_rank VARCHAR(100),
+
+            reason VARCHAR(500)
+                NOT NULL
+                DEFAULT 'No reason was provided.',
+
+            created_at TIMESTAMPTZ
+                NOT NULL
+                DEFAULT NOW(),
+
+            CONSTRAINT arrancar_rank_history_action_valid
+                CHECK (
+                    action IN (
+                        'SET',
+                        'REMOVE'
+                    )
+                ),
+
+            CONSTRAINT arrancar_rank_history_rank_valid
+                CHECK (
+                    old_rank IS NOT NULL
+                    OR new_rank IS NOT NULL
+                )
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS arrancar_rank_history_guild_user_index
+        ON arrancar_rank_history (
+            guild_id,
+            user_id,
+            created_at DESC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS arrancar_rank_history_moderator_index
+        ON arrancar_rank_history (
+            guild_id,
+            moderator_id,
+            created_at DESC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS arrancar_rank_history_created_at_index
+        ON arrancar_rank_history (
+            created_at DESC
         );
     `);
 }
