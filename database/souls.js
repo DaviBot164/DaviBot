@@ -7,22 +7,14 @@ const warnings =
 const achievements =
     require('./achievements');
 
+const titles =
+    require('./titles');
+
 /**
  * Default values reserved for systems
  * that will be added to Umbra later.
  */
 const DEFAULT_SOUL_DATA = {
-    title: {
-        id:
-            null,
-
-        name:
-            'Nameless Soul',
-
-        displayName:
-            '🌑 Nameless Soul'
-    },
-
     reputation: {
         total:
             0,
@@ -63,6 +55,45 @@ const DEFAULT_SOUL_DATA = {
             0
     }
 };
+
+/**
+ * Create a safe fallback Title record.
+ *
+ * This is used only if PostgreSQL or the
+ * Title System is temporarily unavailable.
+ *
+ * @returns {Object}
+ */
+function createDefaultTitleRecord() {
+    return {
+        id:
+            'nameless_soul',
+
+        name:
+            'Nameless Soul',
+
+        displayName:
+            '🌑 Nameless Soul',
+
+        description:
+            'The default designation of every newly recorded Soul.',
+
+        category:
+            'General',
+
+        rarity:
+            'Common',
+
+        unlockedAt:
+            null,
+
+        activatedAt:
+            null,
+
+        totalUnlocked:
+            0
+    };
+}
 
 /**
  * Create a safe default Level record.
@@ -146,7 +177,7 @@ async function getSoulLevel(
 }
 
 /**
- * Safely load a Soul's server Rank.
+ * Safely load a Soul's server ranking.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -277,6 +308,96 @@ async function getRecentSoulAchievements(
 }
 
 /**
+ * Ensure and load a Soul's active Title.
+ *
+ * Every Soul receives Nameless Soul as
+ * the default active Title when no other
+ * active Title has been selected.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<Object>}
+ */
+async function getSoulTitle(
+    guildId,
+    userId
+) {
+    const fallbackTitle =
+        createDefaultTitleRecord();
+
+    try {
+        await titles.ensureDefaultSoulTitle(
+            guildId,
+            userId
+        );
+
+        const [
+            activeTitle,
+            totalUnlocked
+        ] =
+            await Promise.all([
+                titles.getActiveTitle(
+                    guildId,
+                    userId
+                ),
+
+                titles.countSoulTitles(
+                    guildId,
+                    userId
+                )
+            ]);
+
+        if (!activeTitle) {
+            return {
+                ...fallbackTitle,
+
+                totalUnlocked:
+                    Number(
+                        totalUnlocked || 0
+                    )
+            };
+        }
+
+        return {
+            id:
+                activeTitle.titleId,
+
+            name:
+                activeTitle.name,
+
+            displayName:
+                activeTitle.displayName,
+
+            description:
+                activeTitle.description,
+
+            category:
+                activeTitle.category,
+
+            rarity:
+                activeTitle.rarity,
+
+            unlockedAt:
+                activeTitle.unlockedAt,
+
+            activatedAt:
+                activeTitle.activatedAt,
+
+            totalUnlocked:
+                Number(
+                    totalUnlocked || 0
+                )
+        };
+    } catch (error) {
+        console.warn(
+            `⚠️ Soul Title unavailable for ${userId}: ${error.message}`
+        );
+
+        return fallbackTitle;
+    }
+}
+
+/**
  * Create a safe copy of Umbra's default
  * future-system data.
  *
@@ -287,16 +408,14 @@ async function getRecentSoulAchievements(
  */
 function createDefaultSoulData() {
     return {
-        title: {
-            ...DEFAULT_SOUL_DATA.title
-        },
-
         reputation: {
-            ...DEFAULT_SOUL_DATA.reputation
+            ...DEFAULT_SOUL_DATA
+                .reputation
         },
 
         chronicles: {
-            ...DEFAULT_SOUL_DATA.chronicles,
+            ...DEFAULT_SOUL_DATA
+                .chronicles,
 
             recent: [
                 ...DEFAULT_SOUL_DATA
@@ -306,24 +425,24 @@ function createDefaultSoulData() {
         },
 
         tickets: {
-            ...DEFAULT_SOUL_DATA.tickets
+            ...DEFAULT_SOUL_DATA
+                .tickets
         },
 
         events: {
-            ...DEFAULT_SOUL_DATA.events
+            ...DEFAULT_SOUL_DATA
+                .events
         },
 
         voice: {
-            ...DEFAULT_SOUL_DATA.voice
+            ...DEFAULT_SOUL_DATA
+                .voice
         }
     };
-}
-
-/**
+}/**
  * Open one complete Soul Record.
  *
  * This is Umbra Core's central reader.
- * Every future Soul system will connect here.
  *
  * Current live systems:
  * - Levels
@@ -332,9 +451,9 @@ function createDefaultSoulData() {
  * - Message count
  * - Warnings
  * - Achievements
+ * - Active Title
  *
  * Reserved future systems:
- * - Titles
  * - Reputation
  * - Chronicles
  * - Tickets
@@ -367,7 +486,8 @@ async function getSoulRecord(
         warningCount,
         unlockedAchievementCount,
         totalAchievementCount,
-        recentAchievements
+        recentAchievements,
+        activeTitle
     ] =
         await Promise.all([
             getSoulLevel(
@@ -396,6 +516,11 @@ async function getSoulRecord(
                 guildId,
                 userId,
                 3
+            ),
+
+            getSoulTitle(
+                guildId,
+                userId
             )
         ]);
 
@@ -408,6 +533,35 @@ async function getSoulRecord(
 
         openedAt:
             new Date(),
+
+        title: {
+            id:
+                activeTitle.id,
+
+            name:
+                activeTitle.name,
+
+            displayName:
+                activeTitle.displayName,
+
+            description:
+                activeTitle.description,
+
+            category:
+                activeTitle.category,
+
+            rarity:
+                activeTitle.rarity,
+
+            unlockedAt:
+                activeTitle.unlockedAt,
+
+            activatedAt:
+                activeTitle.activatedAt,
+
+            totalUnlocked:
+                activeTitle.totalUnlocked
+        },
 
         progression: {
             level:
@@ -492,8 +646,14 @@ async function soulRecordExists(
 }
 
 /**
- * Ensure that a Soul has at least the
- * base progression record required by Umbra.
+ * Ensure that a Soul has the minimum
+ * records required by Umbra.
+ *
+ * This currently guarantees:
+ *
+ * - A Level record
+ * - The default Nameless Soul Title
+ * - A complete Soul Record response
  *
  * @param {string} guildId
  * @param {string} userId
@@ -515,10 +675,17 @@ async function ensureSoulRecord(
         );
     }
 
-    await levels.ensureUserLevel(
-        guildId,
-        userId
-    );
+    await Promise.all([
+        levels.ensureUserLevel(
+            guildId,
+            userId
+        ),
+
+        titles.ensureDefaultSoulTitle(
+            guildId,
+            userId
+        )
+    ]);
 
     return getSoulRecord(
         guildId,
@@ -529,6 +696,10 @@ async function ensureSoulRecord(
 module.exports = {
     DEFAULT_SOUL_DATA,
 
+    createDefaultTitleRecord,
+    createDefaultLevelRecord,
+    createDefaultSoulData,
+
     getSoulLevel,
     getSoulRank,
     getSoulWarningCount,
@@ -536,6 +707,8 @@ module.exports = {
     getSoulAchievementCount,
     getTotalAchievementCount,
     getRecentSoulAchievements,
+
+    getSoulTitle,
 
     getSoulRecord,
     soulRecordExists,

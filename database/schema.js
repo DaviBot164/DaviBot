@@ -176,11 +176,18 @@ async function initializeSchema() {
 
             joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-            PRIMARY KEY (event_id, user_id),
+            PRIMARY KEY (
+                event_id,
+                user_id
+            ),
 
             CONSTRAINT event_participants_event_foreign_key
-                FOREIGN KEY (event_id)
-                REFERENCES events (event_id)
+                FOREIGN KEY (
+                    event_id
+                )
+                REFERENCES events (
+                    event_id
+                )
                 ON DELETE CASCADE
         );
     `);
@@ -274,7 +281,9 @@ async function initializeSchema() {
             guild_id,
             message_id
         );
-    `);    /*
+    `);
+
+    /*
      * Giveaway Participants
      */
     await query(`
@@ -291,8 +300,12 @@ async function initializeSchema() {
             ),
 
             CONSTRAINT giveaway_participants_giveaway_foreign_key
-                FOREIGN KEY (giveaway_id)
-                REFERENCES giveaways (giveaway_id)
+                FOREIGN KEY (
+                    giveaway_id
+                )
+                REFERENCES giveaways (
+                    giveaway_id
+                )
                 ON DELETE CASCADE
         );
     `);
@@ -337,8 +350,12 @@ async function initializeSchema() {
             ),
 
             CONSTRAINT giveaway_winners_giveaway_foreign_key
-                FOREIGN KEY (giveaway_id)
-                REFERENCES giveaways (giveaway_id)
+                FOREIGN KEY (
+                    giveaway_id
+                )
+                REFERENCES giveaways (
+                    giveaway_id
+                )
                 ON DELETE CASCADE
         );
     `);
@@ -357,9 +374,7 @@ async function initializeSchema() {
             guild_id,
             user_id
         );
-    `);
-
-    /*
+    `);    /*
      * Umbra Level System
      *
      * Stores each Soul's XP, Level and
@@ -385,13 +400,19 @@ async function initializeSchema() {
             ),
 
             CONSTRAINT levels_xp_non_negative
-                CHECK (xp >= 0),
+                CHECK (
+                    xp >= 0
+                ),
 
             CONSTRAINT levels_level_non_negative
-                CHECK (level >= 0),
+                CHECK (
+                    level >= 0
+                ),
 
             CONSTRAINT levels_message_count_non_negative
-                CHECK (message_count >= 0)
+                CHECK (
+                    message_count >= 0
+                )
         );
     `);
 
@@ -429,6 +450,9 @@ async function initializeSchema() {
 
     /*
      * Level Reward Roles
+     *
+     * Stores the Discord roles Umbra should
+     * grant when a Soul reaches a Level.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS level_rewards (
@@ -447,7 +471,9 @@ async function initializeSchema() {
             ),
 
             CONSTRAINT level_rewards_level_positive
-                CHECK (level > 0)
+                CHECK (
+                    level > 0
+                )
         );
     `);
 
@@ -465,7 +491,9 @@ async function initializeSchema() {
             guild_id,
             role_id
         );
-    `);    /*
+    `);
+
+    /*
      * Umbra Achievement Definitions
      *
      * Stores every Achievement available
@@ -494,6 +522,9 @@ async function initializeSchema() {
 
     /*
      * Soul Achievements
+     *
+     * Stores every Achievement unlocked
+     * by each Soul inside each server.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS soul_achievements (
@@ -552,19 +583,15 @@ async function initializeSchema() {
             user_id VARCHAR(32) NOT NULL,
 
             rank_name VARCHAR(100) NOT NULL,
-
             assigned_by VARCHAR(32) NOT NULL,
 
-            reason VARCHAR(500)
-                NOT NULL
+            reason VARCHAR(500) NOT NULL
                 DEFAULT 'No reason was provided.',
 
-            assigned_at TIMESTAMPTZ
-                NOT NULL
+            assigned_at TIMESTAMPTZ NOT NULL
                 DEFAULT NOW(),
 
-            updated_at TIMESTAMPTZ
-                NOT NULL
+            updated_at TIMESTAMPTZ NOT NULL
                 DEFAULT NOW(),
 
             PRIMARY KEY (
@@ -590,8 +617,10 @@ async function initializeSchema() {
     `);
 
     /*
-     * Stores every Promotion,
-     * Demotion and Removal.
+     * Arrancar Rank History
+     *
+     * Stores every promotion, demotion,
+     * replacement and removal.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS arrancar_rank_history (
@@ -599,7 +628,6 @@ async function initializeSchema() {
 
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
-
             moderator_id VARCHAR(32) NOT NULL,
 
             action VARCHAR(20) NOT NULL,
@@ -607,12 +635,10 @@ async function initializeSchema() {
             old_rank VARCHAR(100),
             new_rank VARCHAR(100),
 
-            reason VARCHAR(500)
-                NOT NULL
+            reason VARCHAR(500) NOT NULL
                 DEFAULT 'No reason was provided.',
 
-            created_at TIMESTAMPTZ
-                NOT NULL
+            created_at TIMESTAMPTZ NOT NULL
                 DEFAULT NOW(),
 
             CONSTRAINT arrancar_rank_history_action_valid
@@ -654,6 +680,206 @@ async function initializeSchema() {
         ON arrancar_rank_history (
             created_at DESC
         );
+    `);    /*
+     * ======================================================
+     * Umbra Title System
+     * ======================================================
+     */
+
+    /*
+     * Title Definitions
+     *
+     * Stores every Title available inside
+     * Umbra's Soul Record system.
+     *
+     * These Titles are not Discord roles.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS title_definitions (
+            title_id VARCHAR(100) PRIMARY KEY,
+
+            name VARCHAR(100) NOT NULL,
+            display_name VARCHAR(150) NOT NULL,
+            description TEXT NOT NULL,
+
+            category VARCHAR(100) NOT NULL,
+            rarity VARCHAR(50) NOT NULL,
+
+            unlock_type VARCHAR(50) NOT NULL,
+
+            unlock_data JSONB NOT NULL
+                DEFAULT '{}'::jsonb,
+
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW()
+        );
+    `);
+
+    /*
+     * Helps Umbra organize Titles by
+     * category and rarity inside /titles.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS title_definitions_category_rarity_index
+        ON title_definitions (
+            category,
+            rarity
+        );
+    `);
+
+    /*
+     * Used by automatic Title unlock checks.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS title_definitions_unlock_type_index
+        ON title_definitions (
+            unlock_type
+        );
+    `);
+
+    /*
+     * Used when sorting recently updated
+     * Title definitions.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS title_definitions_updated_at_index
+        ON title_definitions (
+            updated_at DESC
+        );
+    `);
+
+    /*
+     * Soul Titles
+     *
+     * Stores every Title unlocked by each
+     * Soul inside each Discord server.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS soul_titles (
+            guild_id VARCHAR(32) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+            title_id VARCHAR(100) NOT NULL,
+
+            unlocked_by VARCHAR(32),
+
+            unlock_source VARCHAR(100) NOT NULL
+                DEFAULT 'AUTOMATIC',
+
+            is_active BOOLEAN NOT NULL
+                DEFAULT FALSE,
+
+            unlocked_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            activated_at TIMESTAMPTZ,
+
+            PRIMARY KEY (
+                guild_id,
+                user_id,
+                title_id
+            ),
+
+            CONSTRAINT soul_titles_definition_foreign_key
+                FOREIGN KEY (
+                    title_id
+                )
+                REFERENCES title_definitions (
+                    title_id
+                )
+                ON DELETE CASCADE,
+
+            CONSTRAINT soul_titles_activation_date_valid
+                CHECK (
+                    (
+                        is_active = TRUE
+                        AND activated_at IS NOT NULL
+                    )
+                    OR
+                    (
+                        is_active = FALSE
+                    )
+                )
+        );
+    `);
+
+    /*
+     * Quickly loads every Title unlocked
+     * by one Soul.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_titles_guild_user_index
+        ON soul_titles (
+            guild_id,
+            user_id,
+            unlocked_at DESC
+        );
+    `);
+
+    /*
+     * Used for Title unlock statistics
+     * and future Kingdom leaderboards.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_titles_guild_title_index
+        ON soul_titles (
+            guild_id,
+            title_id
+        );
+    `);
+
+    /*
+     * Used for manual Title auditing.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_titles_unlocked_by_index
+        ON soul_titles (
+            guild_id,
+            unlocked_by,
+            unlocked_at DESC
+        );
+    `);
+
+    /*
+     * Used when sorting the latest Title
+     * unlocks throughout Las Noches.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_titles_unlocked_at_index
+        ON soul_titles (
+            unlocked_at DESC
+        );
+    `);
+
+    /*
+     * PostgreSQL partial unique index.
+     *
+     * Guarantees that each Soul may have
+     * only one active Title per server.
+     */
+    await query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS soul_titles_one_active_title_index
+        ON soul_titles (
+            guild_id,
+            user_id
+        )
+        WHERE is_active = TRUE;
+    `);
+
+    /*
+     * Quickly loads the currently active
+     * Title displayed inside /soul.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS soul_titles_active_lookup_index
+        ON soul_titles (
+            guild_id,
+            user_id,
+            activated_at DESC
+        )
+        WHERE is_active = TRUE;
     `);
 }
 

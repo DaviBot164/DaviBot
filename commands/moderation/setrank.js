@@ -12,6 +12,14 @@ const {
 const rankDatabase =
     require('../../database/ranks');
 
+const {
+    checkMemberTitles
+} = require('../../handlers/titleHandler');
+
+const {
+    sendTitleUnlockNotification
+} = require('../../utils/titleNotifications');
+
 /**
  * All manually assignable Arrancar Ranks.
  *
@@ -49,7 +57,8 @@ const RANK_MANAGER_ROLES = [
 ];
 
 /**
- * Channel used for official promotions.
+ * Channel used for official promotions
+ * and Rank Title notifications.
  */
 const PROMOTION_CHANNEL_NAME =
     '🏅・hall-of-promotions';
@@ -92,7 +101,8 @@ function canManageArrancarRanks(
 }
 
 /**
- * Find a Discord role by its exact name.
+ * Find a Discord role using its
+ * exact configured name.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} roleName
@@ -105,7 +115,8 @@ function findGuildRole(
     return (
         guild.roles.cache.find(
             role =>
-                role.name === roleName
+                role.name ===
+                roleName
         ) ||
         null
     );
@@ -116,7 +127,7 @@ function findGuildRole(
  * Rank role currently held by a member.
  *
  * @param {import('discord.js').GuildMember} member
- * @returns {import('discord.js').Role[]}
+ * @returns {import('discord.js').Collection<string, import('discord.js').Role>}
  */
 function getMemberRankRoles(
     member
@@ -139,7 +150,7 @@ function getMemberRankRoles(
 }
 
 /**
- * Find the Hall of Promotions channel.
+ * Find the official Hall of Promotions.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -155,7 +166,69 @@ function findPromotionChannel(
                 cachedChannel.isTextBased()
         );
 
-    return channel || null;
+    return (
+        channel ||
+        null
+    );
+}
+
+/**
+ * Find a safe channel for the special
+ * Title Unlock notification.
+ *
+ * Priority:
+ * 1. Hall of Promotions
+ * 2. Current command channel
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').GuildTextBasedChannel|null}
+ */
+function findTitleNotificationChannel(
+    interaction
+) {
+    const promotionChannel =
+        findPromotionChannel(
+            interaction.guild
+        );
+
+    if (promotionChannel) {
+        return promotionChannel;
+    }
+
+    if (
+        interaction.channel &&
+        interaction.channel.isTextBased()
+    ) {
+        return interaction.channel;
+    }
+
+    return null;
+}
+
+/**
+ * Format newly unlocked Chronicle Titles.
+ *
+ * @param {Object[]} unlockedTitles
+ * @returns {string|null}
+ */
+function formatUnlockedTitles(
+    unlockedTitles
+) {
+    if (
+        !Array.isArray(
+            unlockedTitles
+        ) ||
+        unlockedTitles.length === 0
+    ) {
+        return null;
+    }
+
+    return unlockedTitles
+        .map(
+            title =>
+                `• ${title.displayName}`
+        )
+        .join('\n');
 }
 
 /**
@@ -169,6 +242,7 @@ function findPromotionChannel(
  * @param {string} options.newRank
  * @param {string} options.reason
  * @param {number|string|null} options.historyId
+ * @param {Object[]} options.unlockedTitles
  * @returns {import('discord.js').EmbedBuilder}
  */
 function createPromotionEmbed({
@@ -177,7 +251,8 @@ function createPromotionEmbed({
     oldRank,
     newRank,
     reason,
-    historyId
+    historyId,
+    unlockedTitles = []
 }) {
     const promotedAt =
         Math.floor(
@@ -194,6 +269,104 @@ function createPromotionEmbed({
             ? `#${historyId}`
             : 'Pending Archive';
 
+    const fields = [
+        {
+            name:
+                '🌙 Soul',
+
+            value:
+                `${member}\n` +
+                `\`${member.id}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '👑 High Command',
+
+            value:
+                `${moderator}\n` +
+                `\`${moderator.id}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '📜 Previous Rank',
+
+            value:
+                previousRankDisplay,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '⚔️ New Arrancar Rank',
+
+            value:
+                newRank,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🆔 Hierarchy Record',
+
+            value:
+                `\`${historyDisplay}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🕒 Proclaimed At',
+
+            value:
+                `<t:${promotedAt}:F>\n` +
+                `(<t:${promotedAt}:R>)`,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '📖 Reason',
+
+            value:
+                reason,
+
+            inline:
+                false
+        }
+    ];
+
+    const unlockedTitleDisplay =
+        formatUnlockedTitles(
+            unlockedTitles
+        );
+
+    if (unlockedTitleDisplay) {
+        fields.push({
+            name:
+                '🏷️ New Chronicle Titles',
+
+            value:
+                [
+                    unlockedTitleDisplay,
+                    '',
+                    '-# These Titles are now available through `/settitle`.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
     return createEmbed({
         title:
             '🏅 Arrancar Rank Proclamation',
@@ -207,6 +380,9 @@ function createPromotionEmbed({
                 '*Umbra has preserved this proclamation within the eternal Soul Archives.*'
             ].join('\n'),
 
+        color:
+            '#D4AF37',
+
         thumbnail:
             member.user.displayAvatarURL({
                 size:
@@ -216,81 +392,7 @@ function createPromotionEmbed({
                     false
             }),
 
-        fields: [
-            {
-                name:
-                    '🌙 Soul',
-
-                value:
-                    `${member}\n` +
-                    `\`${member.id}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '👑 High Command',
-
-                value:
-                    `${moderator}\n` +
-                    `\`${moderator.id}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '📜 Previous Rank',
-
-                value:
-                    previousRankDisplay,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '⚔️ New Arrancar Rank',
-
-                value:
-                    newRank,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🆔 Hierarchy Record',
-
-                value:
-                    `\`${historyDisplay}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🕒 Proclaimed At',
-
-                value:
-                    `<t:${promotedAt}:F>\n` +
-                    `(<t:${promotedAt}:R>)`,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '📖 Reason',
-
-                value:
-                    reason,
-
-                inline:
-                    false
-            }
-        ],
+        fields,
 
         footer: {
             text:
@@ -340,90 +442,105 @@ module.exports = {
                         {
                             name:
                                 '👑 Espada 0',
+
                             value:
                                 '👑 Espada 0'
                         },
                         {
                             name:
                                 'Ⅰ Espada',
+
                             value:
                                 'Ⅰ Espada'
                         },
                         {
                             name:
                                 'Ⅱ Espada',
+
                             value:
                                 'Ⅱ Espada'
                         },
                         {
                             name:
                                 'Ⅲ Espada',
+
                             value:
                                 'Ⅲ Espada'
                         },
                         {
                             name:
                                 'Ⅳ Espada',
+
                             value:
                                 'Ⅳ Espada'
                         },
                         {
                             name:
                                 'Ⅴ Espada',
+
                             value:
                                 'Ⅴ Espada'
                         },
                         {
                             name:
                                 'Ⅵ Espada',
+
                             value:
                                 'Ⅵ Espada'
                         },
                         {
                             name:
                                 'Ⅶ Espada',
+
                             value:
                                 'Ⅶ Espada'
                         },
                         {
                             name:
                                 'Ⅷ Espada',
+
                             value:
                                 'Ⅷ Espada'
                         },
                         {
                             name:
                                 'Ⅸ Espada',
+
                             value:
                                 'Ⅸ Espada'
                         },
                         {
                             name:
                                 'Ⅹ Espada',
+
                             value:
                                 'Ⅹ Espada'
                         },
                         {
                             name:
                                 '🌘 Privaron Espada',
+
                             value:
                                 '🌘 Privaron Espada'
                         },
                         {
                             name:
                                 '⚔️ Fracción',
+
                             value:
                                 '⚔️ Fracción'
                         },
                         {
                             name:
                                 '🦴 Numeros',
+
                             value:
                                 '🦴 Numeros'
                         },
                         {
                             name:
                                 '⚪ Unranked Arrancar',
+
                             value:
                                 '⚪ Unranked Arrancar'
                         }
@@ -455,9 +572,7 @@ module.exports = {
 
             .setDMPermission(
                 false
-            ),
-
-    /**
+            ),    /**
      * Execute the /setrank command.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
@@ -870,18 +985,48 @@ module.exports = {
                 return;
             }
 
-            const promotionEmbed =
+            let unlockedTitles =
+                [];
+
+            try {
+                const titleResult =
+                    await checkMemberTitles(
+                        member
+                    );
+
+                if (
+                    titleResult &&
+                    Array.isArray(
+                        titleResult.newlyUnlocked
+                    )
+                ) {
+                    unlockedTitles =
+                        titleResult.newlyUnlocked;
+                }
+            } catch (titleError) {
+                console.error(
+                    '⚠️ Umbra Title unlock failed after Rank promotion:',
+                    titleError
+                );
+            }            const promotionEmbed =
                 createPromotionEmbed({
                     member,
+
                     moderator:
                         interaction.user,
+
                     oldRank:
                         oldRankDisplay,
+
                     newRank:
                         rankName,
+
                     reason,
+
                     historyId:
-                        rankRecord.history_id
+                        rankRecord.history_id,
+
+                    unlockedTitles
                 });
 
             await interaction.editReply({
@@ -921,6 +1066,44 @@ module.exports = {
                             error
                         );
                     });
+            }
+
+            /*
+             * Send a dedicated Chronicle Title
+             * unlock notification when the new
+             * Rank immediately unlocks Titles.
+             *
+             * This notification is non-fatal:
+             * Rank assignment remains successful
+             * even when the notification fails.
+             */
+            if (
+                unlockedTitles.length >
+                0
+            ) {
+                const notificationChannel =
+                    findTitleNotificationChannel(
+                        interaction
+                    );
+
+                if (notificationChannel) {
+                    await sendTitleUnlockNotification({
+                        member,
+
+                        channel:
+                            notificationChannel,
+
+                        titles:
+                            unlockedTitles,
+
+                        source:
+                            `Arrancar Rank promotion: ${rankName}`
+                    });
+                } else {
+                    console.warn(
+                        `⚠️ Umbra could not find a Title notification channel for ${member.user.tag}.`
+                    );
+                }
             }
         } catch (error) {
             console.error(

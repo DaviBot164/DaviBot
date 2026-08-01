@@ -19,13 +19,22 @@ const {
     checkMessageAchievements
 } = require('../handlers/achievementHandler');
 
+const {
+    checkMessageTitles
+} = require('../handlers/titleHandler');
+
+const {
+    sendTitleUnlockNotification
+} = require('../utils/titleNotifications');
+
 /**
  * Rapid-message history.
  *
  * Key:
  * guildId:userId
  */
-const messageHistory = new Map();
+const messageHistory =
+    new Map();
 
 /**
  * Duplicate-message history.
@@ -33,7 +42,8 @@ const messageHistory = new Map();
  * Key:
  * guildId:userId
  */
-const duplicateHistory = new Map();
+const duplicateHistory =
+    new Map();
 
 /**
  * Discord invite link pattern.
@@ -48,7 +58,9 @@ const DISCORD_INVITE_PATTERN =
  * @param {string} value
  * @returns {string}
  */
-function escapeRegExp(value) {
+function escapeRegExp(
+    value
+) {
     return value.replace(
         /[.*+?^${}()|[\]\\]/g,
         '\\$&'
@@ -56,27 +68,47 @@ function escapeRegExp(value) {
 }
 
 /**
- * Convert common number and symbol replacements
- * back into normal letters.
- *
- * Examples:
- * f@ggot
- * sh1t
- * b1tch
+ * Convert common number and symbol
+ * replacements back into normal letters.
  *
  * @param {string} content
  * @returns {string}
  */
-function normalizeLeetCharacters(content) {
-    return String(content)
+function normalizeLeetCharacters(
+    content
+) {
+    return String(
+        content
+    )
         .toLowerCase()
-        .replace(/[@4]/g, 'a')
-        .replace(/8/g, 'b')
-        .replace(/3/g, 'e')
-        .replace(/[1!|]/g, 'i')
-        .replace(/0/g, 'o')
-        .replace(/[$5]/g, 's')
-        .replace(/[7+]/g, 't');
+        .replace(
+            /[@4]/g,
+            'a'
+        )
+        .replace(
+            /8/g,
+            'b'
+        )
+        .replace(
+            /3/g,
+            'e'
+        )
+        .replace(
+            /[1!|]/g,
+            'i'
+        )
+        .replace(
+            /0/g,
+            'o'
+        )
+        .replace(
+            /[$5]/g,
+            's'
+        )
+        .replace(
+            /[7+]/g,
+            't'
+        );
 }
 
 /**
@@ -85,28 +117,29 @@ function normalizeLeetCharacters(content) {
  * @param {string} content
  * @returns {string}
  */
-function normalizeContent(content) {
-    return normalizeLeetCharacters(content)
-        .normalize('NFKC')
+function normalizeContent(
+    content
+) {
+    return normalizeLeetCharacters(
+        content
+    )
+        .normalize(
+            'NFKC'
+        )
         .replace(
             /[\u200B-\u200D\uFEFF]/g,
             ''
         )
-        .replace(/\s+/g, ' ')
+        .replace(
+            /\s+/g,
+            ' '
+        )
         .trim();
 }
 
 /**
- * Create a flexible regular expression for
- * one configured word or phrase.
- *
- * It allows separators between letters:
- *
- * f.u.c.k
- * f_u_c_k
- * f-u-c-k
- * ყ ლ ე
- * ყ.ლ.ე
+ * Create a flexible regular expression
+ * for one configured word or phrase.
  *
  * @param {string} configuredWord
  * @returns {RegExp|null}
@@ -134,7 +167,10 @@ function createProfanityPattern(
     const wordPattern =
         characters
             .map(character => {
-                if (character === ' ') {
+                if (
+                    character ===
+                    ' '
+                ) {
                     return (
                         '[\\s._*~`\\-–—|/\\\\]+'
                     );
@@ -148,10 +184,6 @@ function createProfanityPattern(
                 separatorPattern
             );
 
-    /*
-     * Unicode-aware boundaries prevent words
-     * from matching inside unrelated words.
-     */
     return new RegExp(
         `(^|[^\\p{L}\\p{N}])${wordPattern}(?=$|[^\\p{L}\\p{N}])`,
         'iu'
@@ -170,9 +202,14 @@ function findWordFromList(
     words
 ) {
     const normalizedContent =
-        normalizeContent(content);
+        normalizeContent(
+            content
+        );
 
-    for (const word of words) {
+    for (
+        const word
+        of words
+    ) {
         const pattern =
             createProfanityPattern(
                 word
@@ -196,14 +233,18 @@ function findWordFromList(
  *
  * @param {string} content
  * @returns {{
- *   word: string,
- *   severity: 'warning'|'timeout'
+ *     word: string,
+ *     severity: 'warning'|'timeout'
  * }|null}
  */
-function findBadWord(content) {
+function findBadWord(
+    content
+) {
     if (
         !automodConfig.badWords ||
-        !automodConfig.badWords.enabled
+        !automodConfig
+            .badWords
+            .enabled
     ) {
         return null;
     }
@@ -211,30 +252,38 @@ function findBadWord(content) {
     const timeoutWord =
         findWordFromList(
             content,
-
-            automodConfig.badWords
-                .timeoutWords ?? []
+            automodConfig
+                .badWords
+                .timeoutWords ??
+                []
         );
 
     if (timeoutWord) {
         return {
-            word: timeoutWord,
-            severity: 'timeout'
+            word:
+                timeoutWord,
+
+            severity:
+                'timeout'
         };
     }
 
     const warningWord =
         findWordFromList(
             content,
-
-            automodConfig.badWords
-                .warningWords ?? []
+            automodConfig
+                .badWords
+                .warningWords ??
+                []
         );
 
     if (warningWord) {
         return {
-            word: warningWord,
-            severity: 'warning'
+            word:
+                warningWord,
+
+            severity:
+                'warning'
         };
     }
 
@@ -242,12 +291,15 @@ function findBadWord(content) {
 }
 
 /**
- * Check whether a member bypasses AutoMod.
+ * Check whether a member bypasses
+ * Guardian AutoMod.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
  */
-function shouldBypassAutoMod(member) {
+function shouldBypassAutoMod(
+    member
+) {
     if (!member) {
         return false;
     }
@@ -261,17 +313,21 @@ function shouldBypassAutoMod(member) {
 
     const permissionMap = {
         Administrator:
-            PermissionFlagsBits.Administrator,
+            PermissionFlagsBits
+                .Administrator,
 
         ManageMessages:
-            PermissionFlagsBits.ManageMessages
+            PermissionFlagsBits
+                .ManageMessages
     };
 
     const bypassPermissions =
         Array.isArray(
-            automodConfig.bypassPermissions
+            automodConfig
+                .bypassPermissions
         )
-            ? automodConfig.bypassPermissions
+            ? automodConfig
+                .bypassPermissions
             : [];
 
     return bypassPermissions.some(
@@ -285,9 +341,11 @@ function shouldBypassAutoMod(member) {
                 return false;
             }
 
-            return member.permissions.has(
-                permission
-            );
+            return member
+                .permissions
+                .has(
+                    permission
+                );
         }
     );
 }
@@ -298,10 +356,14 @@ function shouldBypassAutoMod(member) {
  * @param {import('discord.js').Message} message
  * @returns {boolean}
  */
-function isMessageSpam(message) {
+function isMessageSpam(
+    message
+) {
     if (
         !automodConfig.spam ||
-        !automodConfig.spam.enabled
+        !automodConfig
+            .spam
+            .enabled
     ) {
         return false;
     }
@@ -315,11 +377,14 @@ function isMessageSpam(message) {
 
     const minimumTimestamp =
         now -
-        automodConfig.spam
+        automodConfig
+            .spam
             .intervalMilliseconds;
 
     const previousTimestamps =
-        messageHistory.get(key) ??
+        messageHistory.get(
+            key
+        ) ??
         [];
 
     const activeTimestamps =
@@ -340,7 +405,8 @@ function isMessageSpam(message) {
 
     return (
         activeTimestamps.length >=
-        automodConfig.spam
+        automodConfig
+            .spam
             .messageLimit
     );
 }
@@ -351,7 +417,9 @@ function isMessageSpam(message) {
  * @param {import('discord.js').Message} message
  * @returns {boolean}
  */
-function isDuplicateSpam(message) {
+function isDuplicateSpam(
+    message
+) {
     if (
         !automodConfig
             .duplicateMessages ||
@@ -410,7 +478,8 @@ function isDuplicateSpam(message) {
         return false;
     }
 
-    previousData.count += 1;
+    previousData.count +=
+        1;
 
     duplicateHistory.set(
         key,
@@ -431,7 +500,9 @@ function isDuplicateSpam(message) {
  * @param {import('discord.js').Message} message
  * @returns {number}
  */
-function getMentionCount(message) {
+function getMentionCount(
+    message
+) {
     const userMentions =
         message.mentions.users.size;
 
@@ -448,13 +519,97 @@ function getMentionCount(message) {
         roleMentions +
         everyoneMention
     );
+}
+
+/**
+ * Run progression systems after a valid
+ * message passes every Guardian check.
+ *
+ * Order:
+ * 1. Achievement System
+ * 2. Title System
+ * 3. Title unlock notification
+ *
+ * @param {import('discord.js').Message} message
+ * @returns {Promise<void>}
+ */
+async function checkMessageProgression(
+    message
+) {
+    try {
+        await checkMessageAchievements(
+            message
+        );
+    } catch (error) {
+        console.error(
+            '❌ Umbra Achievement check failed:'
+        );
+
+        console.error(
+            error
+        );
+    }
+
+    let titleResult =
+        null;
+
+    try {
+        titleResult =
+            await checkMessageTitles(
+                message
+            );
+    } catch (error) {
+        console.error(
+            '❌ Umbra Title check failed:'
+        );
+
+        console.error(
+            error
+        );
+
+        return;
+    }
+
+    const newlyUnlocked =
+        Array.isArray(
+            titleResult?.newlyUnlocked
+        )
+            ? titleResult.newlyUnlocked
+            : [];
+
+    if (
+        newlyUnlocked.length ===
+        0
+    ) {
+        return;
+    }
+
+    console.log(
+        `🏷️ ${newlyUnlocked.length} new Title(s) unlocked for ${message.author.tag}.`
+    );
+
+    await sendTitleUnlockNotification({
+        member:
+            message.member,
+
+        channel:
+            message.channel,
+
+        titles:
+            newlyUnlocked,
+
+        source:
+            'Soul Level, Achievement or spiritual progression'
+    });
 }/**
  * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
  */
-function findLogChannel(guild) {
+function findLogChannel(
+    guild
+) {
     if (
         automodConfig.logChannelId
     ) {
@@ -481,7 +636,10 @@ function findLogChannel(guild) {
                         .logChannelName
         );
 
-    return channelByName ?? null;
+    return (
+        channelByName ??
+        null
+    );
 }
 
 /**
@@ -515,7 +673,10 @@ async function sendAutoModLog(
     const cleanContent =
         message.content
             ? message.content
-                .slice(0, 1_000)
+                .slice(
+                    0,
+                    1_000
+                )
                 .replace(
                     /```/g,
                     'ˋˋˋ'
@@ -532,7 +693,6 @@ async function sendAutoModLog(
             .setColor(
                 '#8B0000'
             )
-
             .setAuthor({
                 name:
                     'Umbra AutoMod',
@@ -547,15 +707,12 @@ async function sendAutoModLog(
                                 256
                         })
             })
-
             .setTitle(
                 `🛡️ AutoMod Case ${caseNumber}`
             )
-
             .setDescription(
-                'Umbra detected and recorded a violation within the Order.'
+                'Umbra detected and recorded a violation within Las Noches.'
             )
-
             .addFields(
                 {
                     name:
@@ -622,7 +779,6 @@ async function sendAutoModLog(
                         false
                 }
             )
-
             .setThumbnail(
                 message.author
                     .displayAvatarURL({
@@ -630,15 +786,16 @@ async function sendAutoModLog(
                             'png',
 
                         size:
-                            256
+                            256,
+
+                        forceStatic:
+                            false
                     })
             )
-
             .setTimestamp()
-
             .setFooter({
                 text:
-                    `🌑 Umbra • Soul ID: ${message.author.id}`
+                    `🌙 Umbra • Guardian of Las Noches • Soul ID: ${message.author.id}`
             });
 
     try {
@@ -752,7 +909,7 @@ async function sendTemporaryWarning(
         const warningMessage =
             await message.channel.send({
                 content:
-                    `${message.author}, 🌑 **Umbra Guardian:** ${warningText}`
+                    `${message.author}, 🌙 **Umbra Guardian:** ${warningText}`
             });
 
         const warningTimer =
@@ -768,8 +925,8 @@ async function sendTemporaryWarning(
                         }
                     } catch {
                         /*
-                         * The warning may
-                         * already be deleted.
+                         * The warning may already
+                         * have been deleted.
                          */
                     }
                 },
@@ -873,9 +1030,9 @@ async function saveAutoModCase(
  *
  * @param {import('discord.js').Message} message
  * @param {{
- *   reason: string,
- *   warning: string,
- *   timeoutDuration?: number
+ *     reason: string,
+ *     warning: string,
+ *     timeoutDuration?: number
  * }} violation
  * @returns {Promise<void>}
  */
@@ -897,10 +1054,8 @@ async function processViolation(
         timedOut =
             await applyTimeout(
                 message.member,
-
                 violation
                     .timeoutDuration,
-
                 violation.reason
             );
     }
@@ -958,13 +1113,15 @@ async function processViolation(
         false,
 
     /**
-     * Run Umbra AutoMod for every
+     * Run Umbra Guardian for every
      * new server message.
      *
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
      */
-    async execute(message) {
+    async execute(
+        message
+    ) {
         if (
             !message.inGuild()
         ) {
@@ -984,17 +1141,20 @@ async function processViolation(
         }
 
         const content =
-            message.content ?? '';
+            message.content ??
+            '';
 
         /*
-         * AutoMod runs only when it is enabled
-         * and the member does not have bypass.
+         * AutoMod runs only when enabled
+         * and the member has no bypass.
          *
-         * Achievement checks still run for:
-         * - server owner
-         * - administrators
+         * Achievement, Title and notification
+         * systems still run for:
+         *
+         * - Server owner
+         * - Administrators
          * - Manage Messages members
-         * - everyone when AutoMod is disabled
+         * - Everyone while AutoMod is disabled
          */
         const shouldRunAutoMod =
             automodConfig.enabled &&
@@ -1003,7 +1163,7 @@ async function processViolation(
             );
 
         if (!shouldRunAutoMod) {
-            await checkMessageAchievements(
+            await checkMessageProgression(
                 message
             );
 
@@ -1048,8 +1208,8 @@ async function processViolation(
                 );
 
                 /*
-                 * No Achievement check:
-                 * scam violation detected.
+                 * No Achievement, Title or
+                 * notification processing.
                  */
                 return;
             }
@@ -1063,7 +1223,9 @@ async function processViolation(
                 .inviteProtection
                 ?.enabled &&
             DISCORD_INVITE_PATTERN
-                .test(content)
+                .test(
+                    content
+                )
         ) {
             await processViolation(
                 message,
@@ -1072,14 +1234,10 @@ async function processViolation(
                         'Unauthorized Discord invite',
 
                     warning:
-                        'Discord invite links are not allowed within this Order.'
+                        'Discord invite links are not allowed within Las Noches.'
                 }
             );
 
-            /*
-             * No Achievement check:
-             * invite violation detected.
-             */
             return;
         }
 
@@ -1103,7 +1261,7 @@ async function processViolation(
                             'Severe profanity or abusive language detected',
 
                         warning:
-                            'severe profanity and abusive language violate the Sacred Laws.',
+                            'severe profanity and abusive language violate the laws of Las Noches.',
 
                         timeoutDuration:
                             automodConfig
@@ -1119,15 +1277,11 @@ async function processViolation(
                             'Insulting language detected',
 
                         warning:
-                            'insulting language violates the Sacred Laws.'
+                            'insulting language violates the laws of Las Noches.'
                     }
                 );
             }
 
-            /*
-             * No Achievement check:
-             * profanity violation detected.
-             */
             return;
         }
 
@@ -1155,7 +1309,7 @@ async function processViolation(
                         `Mention spam (${mentionCount} mentions)`,
 
                     warning:
-                        'mention spam is not allowed within this Order.',
+                        'mention spam is not allowed within Las Noches.',
 
                     timeoutDuration:
                         automodConfig
@@ -1164,10 +1318,6 @@ async function processViolation(
                 }
             );
 
-            /*
-             * No Achievement check:
-             * mention spam detected.
-             */
             return;
         }
 
@@ -1200,10 +1350,6 @@ async function processViolation(
                 `${message.author.id}`
             );
 
-            /*
-             * No Achievement check:
-             * repeated-message spam detected.
-             */
             return;
         }
 
@@ -1236,25 +1382,28 @@ async function processViolation(
                 `${message.author.id}`
             );
 
-            /*
-             * No Achievement check:
-             * rapid-message spam detected.
-             */
             return;
         }
 
         /*
-         * Umbra Achievement System
+         * Umbra Progression System
          *
          * This point is reached only when
          * the message passes every enabled
          * Guardian / AutoMod check.
+         *
+         * Order:
+         * 1. Achievement checks
+         * 2. Title checks
+         * 3. Title unlock notification
          */
-        await checkMessageAchievements(
+        await checkMessageProgression(
             message
         );
     }
-};/**
+};
+
+/**
  * Remove expired spam tracking
  * information from memory.
  */
