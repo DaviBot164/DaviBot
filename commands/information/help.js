@@ -4,48 +4,120 @@ const {
 } = require('discord.js');
 
 const {
-    createEmbed
+    createEmbed,
+    createErrorEmbed
 } = require('../../utils/embeds');
 
+const embedConfig =
+    require('../../config/embed');
+
 /**
- * Command categories displayed by /help.
+ * Umbra Quick Codex category order.
  *
- * Commands are automatically collected from
- * interaction.client.commands.
+ * Commands that are not currently loaded
+ * are automatically hidden.
  */
-const commandCategories = {
-    general: {
+const COMMAND_CATEGORIES = [
+    {
+        id:
+            'core',
+
         title:
-            '🌑 General',
+            '🌙 Core Navigation',
+
+        description:
+            'Main Umbra panels and system navigation.',
 
         commands: [
+            'guide',
             'help',
-            'ping',
-            'setup',
-            'testwelcome'
+            'lasnoches',
+            'soul'
         ]
     },
+    {
+        id:
+            'information',
 
-    information: {
         title:
-            '📜 Soul Records',
+            '📚 Information',
+
+        description:
+            'General Discord and member information.',
 
         commands: [
             'avatar',
+            'ping',
             'profile',
             'serverinfo',
             'userinfo'
         ]
     },
+    {
+        id:
+            'progression',
 
-    moderation: {
         title:
-            '🛡️ Shadow Wardens',
+            '👤 Soul Progression',
+
+        description:
+            'Soul Records, Titles and progression systems.',
+
+        commands: [
+            'soul',
+            'titles',
+            'settitle',
+            'removetitle'
+        ]
+    },
+    {
+        id:
+            'ranks',
+
+        title:
+            '⚔️ Arrancar Hierarchy',
+
+        description:
+            'Espada records and manually assigned Ranks.',
+
+        commands: [
+            'espada',
+            'rankhistory',
+            'setrank',
+            'removerank'
+        ]
+    },
+    {
+        id:
+            'titleManagement',
+
+        title:
+            '🏷️ Chronicle Management',
+
+        description:
+            'High Command Title administration.',
+
+        commands: [
+            'granttitle',
+            'revoketitle'
+        ]
+    },
+    {
+        id:
+            'moderation',
+
+        title:
+            '🛡️ Moderation',
+
+        description:
+            'Warnings, punishments and channel control.',
 
         commands: [
             'ban',
             'cases',
             'clear',
+            'clearwarnings',
+            'history',
             'kick',
             'lock',
             'slowmode',
@@ -57,64 +129,199 @@ const commandCategories = {
             'warnings'
         ]
     },
+    {
+        id:
+            'support',
 
-    tickets: {
         title:
-            '🎫 Order Support',
+            '🎫 Support',
+
+        description:
+            'Ticket creation and support management.',
 
         commands: [
             'ticket',
             'ticketpanel',
             'tickets'
         ]
+    },
+    {
+        id:
+            'community',
+
+        title:
+            '🎉 Events & Community',
+
+        description:
+            'Official events, giveaways and announcements.',
+
+        commands: [
+            'announce',
+            'event',
+            'giveaway'
+        ]
+    },
+    {
+        id:
+            'administration',
+
+        title:
+            '⚙️ Administration',
+
+        description:
+            'Server setup and Umbra configuration.',
+
+        commands: [
+            'setup',
+            'setuprules',
+            'testwelcome'
+        ]
     }
-};
+];
 
 /**
- * Determine which category a command belongs to.
+ * Create a Set containing every command
+ * name already assigned to a category.
+ *
+ * @returns {Set<string>}
+ */
+function createCategorizedCommandSet() {
+    return new Set(
+        COMMAND_CATEGORIES.flatMap(
+            category =>
+                category.commands
+        )
+    );
+}
+
+/**
+ * Get one loaded command safely.
+ *
+ * @param {import('discord.js').Client} client
+ * @param {string} commandName
+ * @returns {Object|null}
+ */
+function getLoadedCommand(
+    client,
+    commandName
+) {
+    return (
+        client.commands?.get(
+            commandName
+        ) ||
+        null
+    );
+}
+
+/**
+ * Get every loaded command belonging
+ * to one configured category.
+ *
+ * @param {import('discord.js').Client} client
+ * @param {Object} category
+ * @returns {Array<{
+ *     name: string,
+ *     description: string
+ * }>}
+ */
+function getCategoryCommands(
+    client,
+    category
+) {
+    return category.commands
+        .map(commandName => {
+            const command =
+                getLoadedCommand(
+                    client,
+                    commandName
+                );
+
+            if (
+                !command?.data?.name
+            ) {
+                return null;
+            }
+
+            return {
+                name:
+                    command.data.name,
+
+                description:
+                    command.data.description ||
+                    'No description is currently available.'
+            };
+        })
+        .filter(
+            Boolean
+        );
+}
+
+/**
+ * Find every loaded command that has
+ * not yet been assigned to a category.
+ *
+ * @param {import('discord.js').Client} client
+ * @returns {Array<{
+ *     name: string,
+ *     description: string
+ * }>}
+ */
+function getUncategorizedCommands(
+    client
+) {
+    const categorizedCommands =
+        createCategorizedCommandSet();
+
+    return Array.from(
+        client.commands?.values() ||
+        []
+    )
+        .filter(
+            command =>
+                command?.data?.name &&
+                !categorizedCommands.has(
+                    command.data.name
+                )
+        )
+        .map(
+            command => ({
+                name:
+                    command.data.name,
+
+                description:
+                    command.data.description ||
+                    'No description is currently available.'
+            })
+        )
+        .sort(
+            (
+                firstCommand,
+                secondCommand
+            ) =>
+                firstCommand.name.localeCompare(
+                    secondCommand.name
+                )
+        );
+}
+
+/**
+ * Format one command line.
  *
  * @param {Object} command
  * @returns {string}
  */
-function getCommandCategory(
+function formatCommandLine(
     command
 ) {
-    if (
-        command.category &&
-        commandCategories[
-            command.category
-        ]
-    ) {
-        return command.category;
-    }
-
-    const commandName =
-        command.data.name;
-
-    for (
-        const [
-            categoryName,
-            category
-        ]
-        of Object.entries(
-            commandCategories
-        )
-    ) {
-        if (
-            category.commands.includes(
-                commandName
-            )
-        ) {
-            return categoryName;
-        }
-    }
-
-    return 'other';
+    return (
+        `• \`/${command.name}\` — ` +
+        `${command.description}`
+    );
 }
 
 /**
- * Split long field content so it remains inside
- * Discord's 1024-character field limit.
+ * Split command lines into safe Discord
+ * Embed field values.
  *
  * @param {string[]} lines
  * @param {number} maxLength
@@ -122,19 +329,24 @@ function getCommandCategory(
  */
 function splitFieldValue(
     lines,
-    maxLength = 1024
+    maxLength = 1_000
 ) {
     const chunks = [];
-    let currentChunk = '';
 
-    for (const line of lines) {
-        const nextValue =
+    let currentChunk =
+        '';
+
+    for (
+        const line
+        of lines
+    ) {
+        const nextChunk =
             currentChunk
                 ? `${currentChunk}\n${line}`
                 : line;
 
         if (
-            nextValue.length >
+            nextChunk.length >
             maxLength
         ) {
             if (currentChunk) {
@@ -147,7 +359,7 @@ function splitFieldValue(
                 line;
         } else {
             currentChunk =
-                nextValue;
+                nextChunk;
         }
     }
 
@@ -160,9 +372,72 @@ function splitFieldValue(
     return chunks;
 }
 
-module.exports = {
+/**
+ * Add one command category to an Embed.
+ *
+ * @param {import('discord.js').EmbedBuilder} embed
+ * @param {string} title
+ * @param {string} description
+ * @param {Object[]} commands
+ * @returns {void}
+ */
+function addCommandCategoryFields(
+    embed,
+    title,
+    description,
+    commands
+) {
+    if (
+        !Array.isArray(
+            commands
+        ) ||
+        commands.length === 0
+    ) {
+        return;
+    }
+
+    const lines =
+        commands.map(
+            formatCommandLine
+        );
+
+    const chunks =
+        splitFieldValue(
+            lines
+        );
+
+    chunks.forEach(
+        (
+            chunk,
+            index
+        ) => {
+            embed.addFields({
+                name:
+                    index === 0
+                        ? title
+                        : `${title} — Continued`,
+
+                value:
+                    [
+                        index === 0
+                            ? `-# ${description}`
+                            : null,
+
+                        chunk
+                    ]
+                        .filter(
+                            Boolean
+                        )
+                        .join('\n'),
+
+                inline:
+                    false
+            });
+        }
+    );
+}module.exports = {
     category:
-        'general',
+        'information',
 
     data:
         new SlashCommandBuilder()
@@ -170,7 +445,10 @@ module.exports = {
                 'help'
             )
             .setDescription(
-                'Displays all available Umbra commands.'
+                'Open Umbra’s quick command codex.'
+            )
+            .setDMPermission(
+                false
             ),
 
     /**
@@ -183,16 +461,16 @@ module.exports = {
         interaction
     ) {
         try {
-            const clientCommands =
-                interaction.client.commands;
-
             if (
-                !clientCommands ||
-                clientCommands.size === 0
+                !interaction.inGuild()
             ) {
                 await interaction.reply({
-                    content:
-                        '❌ No Umbra commands are currently available.',
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Las Noches Only Command',
+                            'Umbra’s Command Codex can only be opened inside Las Noches.'
+                        )
+                    ],
 
                     flags:
                         MessageFlags.Ephemeral
@@ -201,135 +479,32 @@ module.exports = {
                 return;
             }
 
-            const groupedCommands = {
-                general: [],
-                information: [],
-                moderation: [],
-                tickets: [],
-                other: []
-            };
+            const clientCommands =
+                interaction.client.commands;
 
-            for (
-                const command
-                of clientCommands.values()
+            if (
+                !clientCommands ||
+                clientCommands.size === 0
             ) {
-                if (
-                    !command?.data?.name
-                ) {
-                    continue;
-                }
-
-                const commandName =
-                    command.data.name;
-
-                const commandDescription =
-                    command.data.description ||
-                    'No description available.';
-
-                const category =
-                    getCommandCategory(
-                        command
-                    );
-
-                groupedCommands[
-                    category
-                ].push({
-                    name:
-                        commandName,
-
-                    description:
-                        commandDescription
-                });
-            }
-
-            for (
-                const commands
-                of Object.values(
-                    groupedCommands
-                )
-            ) {
-                commands.sort(
-                    (
-                        firstCommand,
-                        secondCommand
-                    ) =>
-                        firstCommand.name.localeCompare(
-                            secondCommand.name
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Command Archive Empty',
+                            'No Umbra commands are currently loaded.'
                         )
-                );
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
             }
 
-            const fields = [];
-
-            const categoryOrder = [
-                'general',
-                'information',
-                'moderation',
-                'tickets',
-                'other'
-            ];
-
-            for (
-                const categoryName
-                of categoryOrder
-            ) {
-                const commands =
-                    groupedCommands[
-                        categoryName
-                    ];
-
-                if (
-                    !commands ||
-                    commands.length === 0
-                ) {
-                    continue;
-                }
-
-                const categoryTitle =
-                    commandCategories[
-                        categoryName
-                    ]?.title ||
-                    '⚙️ Other Commands';
-
-                const commandLines =
-                    commands.map(
-                        command =>
-                            `• \`/${command.name}\` — ${command.description}`
-                    );
-
-                const fieldParts =
-                    splitFieldValue(
-                        commandLines
-                    );
-
-                fieldParts.forEach(
-                    (
-                        fieldValue,
-                        index
-                    ) => {
-                        fields.push({
-                            name:
-                                index === 0
-                                    ? categoryTitle
-                                    : `${categoryTitle} — Continued`,
-
-                            value:
-                                fieldValue,
-
-                            inline:
-                                false
-                        });
-                    }
-                );
-            }
-
-            const commandCount =
-                Array.from(
-                    clientCommands.values()
-                ).filter(
-                    command =>
-                        command?.data?.name
-                ).length;
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
 
             const botAvatar =
                 interaction.client.user
@@ -345,41 +520,57 @@ module.exports = {
                     });
 
             const guildIcon =
-                interaction.guild?.iconURL({
+                interaction.guild.iconURL({
                     extension:
                         'png',
 
                     size:
-                        256,
+                        1024,
 
                     forceStatic:
                         false
                 });
 
+            const totalCommandCount =
+                Array.from(
+                    clientCommands.values()
+                ).filter(
+                    command =>
+                        command?.data?.name
+                ).length;
+
             const embed =
                 createEmbed({
                     title:
-                        '🌑 Umbra Command Codex',
+                        '🌙 Umbra Quick Command Codex',
 
                     description:
                         [
-                            '**Guardian of Crimson Eclipse**',
-                            '',
                             `Welcome, ${interaction.user}.`,
                             '',
-                            'Below are the commands currently available within the Order.',
+                            'This codex provides a fast overview of every command currently loaded by Umbra.',
                             '',
-                            `📜 **Total Commands:** \`${commandCount}\``,
+                            embedConfig
+                                .branding
+                                .divider,
                             '',
-                            '*Use each command responsibly beneath the crimson moon.*'
+                            `📚 **Loaded Commands:** \`${totalCommandCount}\``,
+                            '',
+                            'For detailed syntax, access levels and explanations, use `/guide`.'
                         ].join('\n'),
 
+                    color:
+                        embedConfig
+                            .colors
+                            .accent,
+
                     thumbnail:
+                        guildIcon ||
                         botAvatar,
 
                     author: {
                         name:
-                            'Umbra • Command Archive',
+                            'Umbra • Quick Command Archive',
 
                         iconURL:
                             botAvatar
@@ -387,54 +578,111 @@ module.exports = {
 
                     footer: {
                         text:
-                            '🌑 Crimson Eclipse • Umbra Command Codex',
+                            `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
 
                         iconURL:
-                            guildIcon ||
                             botAvatar
-                    },
-
-                    fields
+                    }
                 });
 
-            await interaction.reply({
-                embeds:
-                    [embed],
+            for (
+                const category
+                of COMMAND_CATEGORIES
+            ) {
+                const commands =
+                    getCategoryCommands(
+                        interaction.client,
+                        category
+                    );
 
-                flags:
-                    MessageFlags.Ephemeral
+                addCommandCategoryFields(
+                    embed,
+                    category.title,
+                    category.description,
+                    commands
+                );
+            }
+
+            const uncategorizedCommands =
+                getUncategorizedCommands(
+                    interaction.client
+                );
+
+            addCommandCategoryFields(
+                embed,
+                '⚙️ Additional Commands',
+                'Loaded commands that have not yet been assigned to a dedicated codex category.',
+                uncategorizedCommands
+            );
+
+            await interaction.editReply({
+                embeds: [
+                    embed
+                ]
             });
         } catch (error) {
             console.error(
-                '❌ Error while executing Umbra /help:',
+                '❌ Umbra /help command error:',
                 error
             );
 
-            const errorMessage =
-                '❌ Umbra could not load the command codex. Please try again.';
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Command Codex Unavailable',
+                    [
+                        'Umbra could not open the Quick Command Codex.',
+                        '',
+                        'Please inspect the Northflank logs and try again.'
+                    ].join('\n')
+                );
 
             if (
-                interaction.replied ||
                 interaction.deferred
             ) {
-                await interaction.followUp({
-                    content:
-                        errorMessage,
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
 
                 return;
             }
 
-            await interaction.reply({
-                content:
-                    errorMessage,
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
 
-                flags:
-                    MessageFlags.Ephemeral
-            });
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

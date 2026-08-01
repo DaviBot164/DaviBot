@@ -8,19 +8,30 @@ const embedConfig =
 /**
  * Create a standard Umbra embed.
  *
- * This function is used as the foundation
- * for Umbra's information, moderation,
- * warning, success and error embeds.
+ * This is the shared foundation for:
+ *
+ * - Information
+ * - Success
+ * - Error
+ * - Warning
+ * - Moderation
+ * - Soul Archives
+ * - Arrancar Ranks
+ * - Chronicle Titles
+ * - Guardian
+ * - Events
+ * - Support
  *
  * @param {Object} options
  * @param {string} options.title
- * @param {string} [options.description]
+ * @param {string|null} [options.description]
  * @param {string} [options.color]
- * @param {Array} [options.fields]
- * @param {string} [options.thumbnail]
- * @param {string} [options.image]
- * @param {Object} [options.author]
- * @param {Object} [options.footer]
+ * @param {Array<Object>} [options.fields]
+ * @param {string|null} [options.thumbnail]
+ * @param {string|null} [options.image]
+ * @param {Object|null} [options.author]
+ * @param {Object|null} [options.footer]
+ * @param {boolean} [options.timestamp]
  * @returns {EmbedBuilder}
  */
 function createEmbed({
@@ -31,18 +42,29 @@ function createEmbed({
     thumbnail = null,
     image = null,
     author = null,
-    footer = null
+    footer = null,
+    timestamp = true
 }) {
-    const embed = new EmbedBuilder()
-        .setColor(color)
-        .setTitle(title)
-        .setFooter(
-            footer || {
-                text:
-                    embedConfig.footer.text
-            }
-        )
-        .setTimestamp();
+    const embed =
+        new EmbedBuilder()
+            .setColor(
+                color
+            )
+            .setTitle(
+                title
+            )
+            .setFooter(
+                footer || {
+                    text:
+                        embedConfig
+                            .footer
+                            .text
+                }
+            );
+
+    if (timestamp) {
+        embed.setTimestamp();
+    }
 
     if (description) {
         embed.setDescription(
@@ -51,7 +73,9 @@ function createEmbed({
     }
 
     if (
-        Array.isArray(fields) &&
+        Array.isArray(
+            fields
+        ) &&
         fields.length > 0
     ) {
         embed.addFields(
@@ -94,8 +118,11 @@ function createSuccessEmbed(
     return createEmbed({
         title,
         description,
+
         color:
-            embedConfig.colors.success
+            embedConfig
+                .colors
+                .success
     });
 }
 
@@ -113,8 +140,11 @@ function createErrorEmbed(
     return createEmbed({
         title,
         description,
+
         color:
-            embedConfig.colors.error
+            embedConfig
+                .colors
+                .error
     });
 }
 
@@ -132,8 +162,167 @@ function createWarningEmbed(
     return createEmbed({
         title,
         description,
+
         color:
-            embedConfig.colors.warning
+            embedConfig
+                .colors
+                .warning
+    });
+}
+
+/**
+ * Create a Soul Archive embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createArchiveEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .archive,
+
+        ...options
+    });
+}
+
+/**
+ * Create an Arrancar Rank embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createRankEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .rank,
+
+        ...options
+    });
+}
+
+/**
+ * Create a Chronicle Title embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createTitleEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .title,
+
+        ...options
+    });
+}
+
+/**
+ * Create a Guardian or AutoMod embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createGuardianEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .guardian,
+
+        ...options
+    });
+}
+
+/**
+ * Create an Event embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createEventEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .event,
+
+        ...options
+    });
+}
+
+/**
+ * Create a Support or Ticket embed.
+ *
+ * @param {string} title
+ * @param {string} description
+ * @param {Object} [options]
+ * @returns {EmbedBuilder}
+ */
+function createSupportEmbed(
+    title,
+    description,
+    options = {}
+) {
+    return createEmbed({
+        title,
+        description,
+
+        color:
+            embedConfig
+                .colors
+                .support,
+
+        ...options
     });
 }
 
@@ -141,7 +330,12 @@ function createWarningEmbed(
  * Create an Umbra moderation action embed.
  *
  * Used for actions such as:
- * warn, kick, ban, timeout and untimeout.
+ *
+ * - Warn
+ * - Kick
+ * - Ban
+ * - Timeout
+ * - Untimeout
  *
  * @param {Object} options
  * @param {string} options.action
@@ -160,13 +354,14 @@ function createModerationEmbed({
 }) {
     const executedAt =
         Math.floor(
-            Date.now() / 1_000
+            Date.now() /
+            1_000
         );
 
     const fields = [
         {
             name:
-                '🌑 Soul',
+                '🌙 Soul',
 
             value:
                 `${user.tag}\n` +
@@ -177,7 +372,7 @@ function createModerationEmbed({
         },
         {
             name:
-                '🛡️ Shadow Warden',
+                '🛡️ Moderator',
 
             value:
                 `${moderator.tag}\n` +
@@ -185,7 +380,23 @@ function createModerationEmbed({
 
             inline:
                 true
-        },
+        }
+    ];
+
+    if (duration) {
+        fields.push({
+            name:
+                '⏳ Duration',
+
+            value:
+                duration,
+
+            inline:
+                true
+        });
+    }
+
+    fields.push(
         {
             name:
                 '📜 Reason',
@@ -208,31 +419,25 @@ function createModerationEmbed({
             inline:
                 false
         }
-    ];
-
-    if (duration) {
-        fields.splice(
-            2,
-            0,
-            {
-                name:
-                    '⏳ Duration',
-
-                value:
-                    duration,
-
-                inline:
-                    true
-            }
-        );
-    }
+    );
 
     return createEmbed({
         title:
             action,
 
         color:
-            embedConfig.colors.moderation,
+            embedConfig
+                .colors
+                .moderation,
+
+        description:
+            [
+                'Umbra has recorded an official moderation action within Las Noches.',
+                '',
+                embedConfig
+                    .branding
+                    .divider
+            ].join('\n'),
 
         thumbnail:
             user.displayAvatarURL({
@@ -254,7 +459,10 @@ function createModerationEmbed({
  * Create an Umbra channel moderation embed.
  *
  * Used for actions such as:
- * lock, unlock and slowmode.
+ *
+ * - Lock
+ * - Unlock
+ * - Slowmode
  *
  * @param {Object} options
  * @param {string} options.action
@@ -271,7 +479,8 @@ function createChannelModerationEmbed({
 }) {
     const executedAt =
         Math.floor(
-            Date.now() / 1_000
+            Date.now() /
+            1_000
         );
 
     return createEmbed({
@@ -279,19 +488,25 @@ function createChannelModerationEmbed({
             action,
 
         color:
-            embedConfig.colors.moderation,
+            embedConfig
+                .colors
+                .moderation,
 
         description:
             [
-                `The Order has updated ${channel}.`,
+                `${channel} has been updated by the Las Noches moderation system.`,
                 '',
-                'Umbra has recorded this action beneath the crimson moon.'
+                embedConfig
+                    .branding
+                    .divider,
+                '',
+                '*Umbra has preserved this action inside the official moderation archives.*'
             ].join('\n'),
 
         fields: [
             {
                 name:
-                    '🌑 Channel',
+                    '📺 Channel',
 
                 value:
                     `${channel}\n` +
@@ -302,7 +517,7 @@ function createChannelModerationEmbed({
             },
             {
                 name:
-                    '🛡️ Shadow Warden',
+                    '🛡️ Moderator',
 
                 value:
                     `${moderator}\n` +
@@ -313,7 +528,7 @@ function createChannelModerationEmbed({
             },
             {
                 name:
-                    '🏰 Order',
+                    '🏰 Server',
 
                 value:
                     `${channel.guild.name}\n` +
@@ -350,9 +565,18 @@ function createChannelModerationEmbed({
 
 module.exports = {
     createEmbed,
+
     createSuccessEmbed,
     createErrorEmbed,
     createWarningEmbed,
+
+    createArchiveEmbed,
+    createRankEmbed,
+    createTitleEmbed,
+    createGuardianEmbed,
+    createEventEmbed,
+    createSupportEmbed,
+
     createModerationEmbed,
     createChannelModerationEmbed
 };

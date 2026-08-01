@@ -12,23 +12,8 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-/**
- * Las Noches Control Center color.
- */
-const GUIDE_COLOR =
-    '#E8E8E8';
-
-/**
- * Active category color.
- */
-const ACTIVE_GUIDE_COLOR =
-    '#D4AF37';
-
-/**
- * Shared visual divider.
- */
-const WIDE_DIVIDER =
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+const embedConfig =
+    require('../../config/embed');
 
 /**
  * Control Center Select Menu ID.
@@ -99,7 +84,7 @@ const GUIDE_PAGE_DETAILS = {
             'Overview',
 
         description:
-            'Open the Umbra Control Center overview'
+            'Open the central Umbra Control Center'
     },
 
     [GUIDE_PAGES.moderation]: {
@@ -121,7 +106,7 @@ const GUIDE_PAGE_DETAILS = {
             'Arrancar Ranks',
 
         description:
-            'Manage the official Arrancar hierarchy'
+            'Promotions, Rank history and Espada records'
     },
 
     [GUIDE_PAGES.titles]: {
@@ -143,7 +128,7 @@ const GUIDE_PAGE_DETAILS = {
             'Soul Archives',
 
         description:
-            'Soul Records, progression and identity'
+            'Progression, identity and Soul Records'
     },
 
     [GUIDE_PAGES.kingdom]: {
@@ -154,7 +139,7 @@ const GUIDE_PAGE_DETAILS = {
             'Las Noches',
 
         description:
-            'Kingdom records and Espada hierarchy'
+            'Kingdom statistics and central records'
     },
 
     [GUIDE_PAGES.support]: {
@@ -187,7 +172,7 @@ const GUIDE_PAGE_DETAILS = {
             'Administration',
 
         description:
-            'Server setup and administrative tools'
+            'Setup, announcements and server tools'
     },
 
     [GUIDE_PAGES.information]: {
@@ -198,7 +183,7 @@ const GUIDE_PAGE_DETAILS = {
             'Information',
 
         description:
-            'General utility and information commands'
+            'General utilities and Discord information'
     }
 };
 
@@ -230,7 +215,7 @@ const ACCESS_LEVELS = {
  * by the Umbra Control Center.
  *
  * Commands that are not currently loaded
- * by the bot will automatically be hidden.
+ * by the bot are automatically hidden.
  */
 const GUIDE_COMMANDS = {
     /*
@@ -260,7 +245,7 @@ const GUIDE_COMMANDS = {
             '/kick user [reason]',
 
         summary:
-            'Remove a Soul from the server without banning them.',
+            'Remove a Soul without permanently banning them.',
 
         access:
             ACCESS_LEVELS.moderator
@@ -274,7 +259,7 @@ const GUIDE_COMMANDS = {
             '/timeout user duration [reason]',
 
         summary:
-            'Temporarily prevent a Soul from interacting.',
+            'Temporarily restrict a Soul from interacting.',
 
         access:
             ACCESS_LEVELS.moderator
@@ -330,7 +315,7 @@ const GUIDE_COMMANDS = {
             '/unwarn warning_id [reason]',
 
         summary:
-            'Remove one warning record.',
+            'Remove one specific warning record.',
 
         access:
             ACCESS_LEVELS.moderator
@@ -344,7 +329,7 @@ const GUIDE_COMMANDS = {
             '/clearwarnings user [reason]',
 
         summary:
-            'Remove all warnings belonging to one Soul.',
+            'Remove every warning belonging to one Soul.',
 
         access:
             ACCESS_LEVELS.administrator
@@ -372,7 +357,7 @@ const GUIDE_COMMANDS = {
             '/history user [limit]',
 
         summary:
-            'Open a Soul’s moderation history.',
+            'Open a Soul’s complete moderation history.',
 
         access:
             ACCESS_LEVELS.moderator
@@ -564,7 +549,7 @@ const GUIDE_COMMANDS = {
             '/revoketitle user title reason',
 
         summary:
-            'Revoke a manually granted Title.',
+            'Revoke a manually granted Chronicle Title.',
 
         access:
             ACCESS_LEVELS.highCommand
@@ -597,7 +582,7 @@ const GUIDE_COMMANDS = {
             '/profile [user]',
 
         summary:
-            'View a compact member profile.',
+            'View a compact Discord member profile.',
 
         access:
             ACCESS_LEVELS.everyone
@@ -663,7 +648,7 @@ const GUIDE_COMMANDS = {
             '/tickets',
 
         summary:
-            'View ticket information or management options.',
+            'View support ticket information and management options.',
 
         access:
             ACCESS_LEVELS.moderator
@@ -776,7 +761,7 @@ const GUIDE_COMMANDS = {
             '/help',
 
         summary:
-            'Open the compact Umbra Command Codex.',
+            'Open Umbra’s compact Quick Command Codex.',
 
         access:
             ACCESS_LEVELS.everyone
@@ -804,7 +789,7 @@ const GUIDE_COMMANDS = {
             '/ping',
 
         summary:
-            'Check Umbra’s latency and connection status.',
+            'Check Umbra’s current latency and connection status.',
 
         access:
             ACCESS_LEVELS.everyone
@@ -846,11 +831,40 @@ const GUIDE_COMMANDS = {
             '/serverinfo',
 
         summary:
-            'View information about the current server.',
+            'View detailed information about Las Noches.',
 
         access:
             ACCESS_LEVELS.everyone
     }
+};
+
+/**
+ * Quick workflows shown on selected pages.
+ */
+const PAGE_WORKFLOWS = {
+    [GUIDE_PAGES.ranks]: [
+        '`/setrank` — assign a Rank',
+        '`/rankhistory` — verify the archive',
+        '`/espada` — view the hierarchy'
+    ],
+
+    [GUIDE_PAGES.titles]: [
+        '`/titles` — inspect unlocked Titles',
+        '`/settitle` — activate one Title',
+        '`/soul` — confirm the active designation'
+    ],
+
+    [GUIDE_PAGES.souls]: [
+        '`/soul` — open the complete record',
+        '`/titles` — inspect Chronicle Titles',
+        '`/rankhistory` — review hierarchy history'
+    ],
+
+    [GUIDE_PAGES.support]: [
+        '`/ticketpanel` — publish the panel',
+        '`/ticket` — open a support request',
+        '`/tickets` — manage active tickets'
+    ]
 };
 
 /**
@@ -939,7 +953,7 @@ function isCommandAvailable(
  * Get every available documented command
  * belonging to one Control Center page.
  *
- * Commands that are not loaded by Umbra
+ * Commands not currently loaded by Umbra
  * are automatically excluded.
  *
  * @param {import('discord.js').Client} client
@@ -1044,7 +1058,7 @@ function countPageCommands(
 }
 
 /**
- * Format one command for display.
+ * Format one documented command.
  *
  * @param {Object} command
  * @returns {string}
@@ -1060,7 +1074,7 @@ function formatGuideCommand(
 }
 
 /**
- * Split command displays into safe
+ * Split command entries into safe
  * Discord Embed field values.
  *
  * Discord limits each field value
@@ -1119,7 +1133,8 @@ function splitCommandEntries(
 }
 
 /**
- * Create the shared Umbra Guide Embed.
+ * Create the shared Umbra Control Center
+ * Embed foundation.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {string} title
@@ -1131,11 +1146,15 @@ function createGuideEmbed(
     interaction,
     title,
     description,
-    color = GUIDE_COLOR
+    color =
+        embedConfig.colors.primary
 ) {
     const botAvatar =
         interaction.client.user
             .displayAvatarURL({
+                extension:
+                    'png',
+
                 size:
                     1024,
 
@@ -1145,6 +1164,9 @@ function createGuideEmbed(
 
     const guildIcon =
         interaction.guild?.iconURL({
+            extension:
+                'png',
+
             size:
                 1024,
 
@@ -1160,7 +1182,9 @@ function createGuideEmbed(
                 [
                     description,
                     '',
-                    WIDE_DIVIDER,
+                    embedConfig
+                        .branding
+                        .divider,
                     '',
                     '*Select another archive from the menu below to continue navigating Umbra.*'
                 ].join('\n'),
@@ -1171,6 +1195,15 @@ function createGuideEmbed(
                 guildIcon ||
                 botAvatar,
 
+            author: {
+                name:
+                    `${interaction.guild?.name || embedConfig.branding.serverName} • Umbra Control Center`,
+
+                iconURL:
+                    guildIcon ||
+                    botAvatar
+            },
+
             footer: {
                 text:
                     `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
@@ -1180,20 +1213,53 @@ function createGuideEmbed(
             }
         });
 
-    embed.setAuthor({
-        name:
-            `${interaction.guild?.name || 'Las Noches'} • Umbra Control Center`,
-
-        iconURL:
-            guildIcon ||
-            botAvatar
-    });
-
     return embed;
 }
 
 /**
- * Build the Control Center overview.
+ * Add a quick workflow field when one
+ * is configured for the selected page.
+ *
+ * @param {import('discord.js').EmbedBuilder} embed
+ * @param {string} pageId
+ * @returns {void}
+ */
+function addWorkflowField(
+    embed,
+    pageId
+) {
+    const workflow =
+        PAGE_WORKFLOWS[
+            pageId
+        ];
+
+    if (
+        !Array.isArray(
+            workflow
+        ) ||
+        workflow.length === 0
+    ) {
+        return;
+    }
+
+    embed.addFields({
+        name:
+            '🧭 Recommended Workflow',
+
+        value:
+            [
+                ...workflow,
+                '',
+                '-# This order is recommended, but commands may also be used independently.'
+            ].join('\n'),
+
+        inline:
+            false
+    });
+}
+
+/**
+ * Build the central Control Center overview.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @returns {import('discord.js').EmbedBuilder}
@@ -1211,6 +1277,20 @@ function buildOverviewPage(
             ?.size ||
         0;
 
+    const documentedPercentage =
+        totalLoadedCommands > 0
+            ? Math.min(
+                100,
+                Math.round(
+                    (
+                        availableCommandCount /
+                        totalLoadedCommands
+                    ) *
+                    100
+                )
+            )
+            : 0;
+
     const embed =
         createGuideEmbed(
             interaction,
@@ -1218,11 +1298,14 @@ function buildOverviewPage(
             [
                 `Welcome, ${interaction.user}.`,
                 '',
-                'This panel organizes Umbra’s commands, systems and administrative tools into clear categories.',
+                'This panel organizes Umbra’s commands, systems and administrative tools into clearly documented archives.',
                 '',
-                'Use the menu below whenever you forget which command controls a specific part of Las Noches.'
+                'Use `/help` for a fast command list or continue through this menu for full syntax, access levels and recommended workflows.'
             ].join('\n'),
-            ACTIVE_GUIDE_COLOR
+
+            embedConfig
+                .colors
+                .accent
         );
 
     embed.addFields(
@@ -1234,6 +1317,7 @@ function buildOverviewPage(
                 [
                     `**Loaded Slash Commands:** \`${totalLoadedCommands}\``,
                     `**Documented Commands:** \`${availableCommandCount}\``,
+                    `**Documentation Coverage:** \`${documentedPercentage}%\``,
                     `**Control Categories:** \`${GUIDE_PAGE_ORDER.length - 1}\``,
                     '',
                     '-# Commands not currently loaded by Umbra are hidden automatically.'
@@ -1248,8 +1332,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.moderation)}\` available commands`,
-                    '-# Warnings, punishments, Guardian records and channel control.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.moderation)}\` available`,
+                    '-# Warnings, punishments, cases and channel control.'
                 ].join('\n'),
 
             inline:
@@ -1261,8 +1345,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.ranks)}\` available commands`,
-                    '-# Promotions, removals, Rank history and Espada hierarchy.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.ranks)}\` available`,
+                    '-# Promotions, Rank history and Espada hierarchy.'
                 ].join('\n'),
 
             inline:
@@ -1274,8 +1358,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.titles)}\` available commands`,
-                    '-# Unlocks, active Titles and High Command management.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.titles)}\` available`,
+                    '-# Title archives, activation and High Command management.'
                 ].join('\n'),
 
             inline:
@@ -1287,8 +1371,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.souls)}\` available commands`,
-                    '-# Progression, Achievements, identity and complete Soul Records.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.souls)}\` available`,
+                    '-# Progression, identity and complete Soul Records.'
                 ].join('\n'),
 
             inline:
@@ -1300,8 +1384,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.kingdom)}\` available commands`,
-                    '-# Kingdom statistics, leadership and central records.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.kingdom)}\` available`,
+                    '-# Kingdom statistics and central records.'
                 ].join('\n'),
 
             inline:
@@ -1313,8 +1397,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.support)}\` available commands`,
-                    '-# Ticket creation, panels and support management.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.support)}\` available`,
+                    '-# Ticket creation and support management.'
                 ].join('\n'),
 
             inline:
@@ -1326,8 +1410,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.events)}\` available commands`,
-                    '-# Events, giveaways and community activities.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.events)}\` available`,
+                    '-# Events, giveaways and community activity.'
                 ].join('\n'),
 
             inline:
@@ -1339,8 +1423,8 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.setup)}\` available commands`,
-                    '-# Setup Wizard, announcements, rules and previews.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.setup)}\` available`,
+                    '-# Setup Wizard, rules, announcements and previews.'
                 ].join('\n'),
 
             inline:
@@ -1352,12 +1436,27 @@ function buildOverviewPage(
 
             value:
                 [
-                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.information)}\` available commands`,
-                    '-# General utilities and Discord information.'
+                    `\`${countPageCommands(interaction.client, GUIDE_PAGES.information)}\` available`,
+                    '-# General utility and Discord information.'
                 ].join('\n'),
 
             inline:
                 true
+        },
+        {
+            name:
+                '🧭 Quick Navigation',
+
+            value:
+                [
+                    '`/help` — fast command overview',
+                    '`/guide` — detailed command documentation',
+                    '`/soul` — personal progression record',
+                    '`/lasnoches` — kingdom overview'
+                ].join('\n'),
+
+            inline:
+                false
         }
     );
 
@@ -1365,7 +1464,7 @@ function buildOverviewPage(
 }
 
 /**
- * Build one command category page.
+ * Build one documented command category.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {string} pageId
@@ -1396,7 +1495,40 @@ function buildCategoryPage(
         createGuideEmbed(
             interaction,
             `${pageDetails.emoji} ${pageDetails.label} Command Guide`,
-            pageDetails.description
+            [
+                pageDetails.description,
+                '',
+                'Every command below is currently loaded by Umbra and available within this category.'
+            ].join('\n'),
+
+            pageId ===
+                GUIDE_PAGES.moderation
+                ? embedConfig
+                    .colors
+                    .moderation
+                : pageId ===
+                    GUIDE_PAGES.ranks
+                    ? embedConfig
+                        .colors
+                        .rank
+                    : pageId ===
+                        GUIDE_PAGES.titles
+                        ? embedConfig
+                            .colors
+                            .title
+                        : pageId ===
+                            GUIDE_PAGES.events
+                            ? embedConfig
+                                .colors
+                                .event
+                            : pageId ===
+                                GUIDE_PAGES.support
+                                ? embedConfig
+                                    .colors
+                                    .support
+                                : embedConfig
+                                    .colors
+                                    .primary
         );
 
     embed.addFields({
@@ -1407,12 +1539,17 @@ function buildCategoryPage(
             [
                 `**Available Commands:** \`${commands.length}\``,
                 '',
-                '-# Required access is shown below each command.'
+                '-# Required access and complete syntax are displayed below.'
             ].join('\n'),
 
         inline:
             false
     });
+
+    addWorkflowField(
+        embed,
+        pageId
+    );
 
     if (
         commands.length ===
@@ -1424,9 +1561,9 @@ function buildCategoryPage(
 
             value:
                 [
-                    'No loaded Umbra commands currently belong to this category.',
+                    'No currently loaded Umbra commands belong to this archive.',
                     '',
-                    '-# This page will update automatically when matching commands are added.'
+                    '-# This page updates automatically whenever matching commands are added.'
                 ].join('\n'),
 
             inline:
@@ -1669,7 +1806,11 @@ function buildGuidePage(
                         const navigationErrorEmbed =
                             createErrorEmbed(
                                 '❌ Control Center Navigation Failed',
-                                'Umbra could not open the selected command archive.'
+                                [
+                                    'Umbra could not open the selected command archive.',
+                                    '',
+                                    'Please try opening `/guide` again.'
+                                ].join('\n')
                             );
 
                         if (
@@ -1710,7 +1851,21 @@ function buildGuidePage(
 
             collector.on(
                 'end',
-                async () => {
+                async (
+                    collected,
+                    reason
+                ) => {
+                    if (
+                        reason ===
+                        'messageDelete' ||
+                        reason ===
+                        'channelDelete' ||
+                        reason ===
+                        'guildDelete'
+                    ) {
+                        return;
+                    }
+
                     await interaction
                         .editReply({
                             components: [
