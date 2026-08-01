@@ -414,272 +414,6 @@ async function hasSoulTitle(
 }
 
 /**
- * Unlock one Title for a Soul.
- *
- * The same Title can never be unlocked
- * twice by the same Soul in one server.
- *
- * @param {Object} options
- * @param {string} options.guildId
- * @param {string} options.userId
- * @param {string} options.titleId
- * @param {string|null} [options.unlockedBy]
- * @param {string} [options.unlockSource]
- * @param {boolean} [options.activate]
- * @returns {Promise<{
- *     unlocked: boolean,
- *     title: Object|null
- * }>}
- */
-async function unlockSoulTitle({
-    guildId,
-    userId,
-    titleId,
-    unlockedBy = null,
-    unlockSource = 'AUTOMATIC',
-    activate = false
-}) {
-    if (!guildId) {
-        throw new TypeError(
-            'A guild ID is required to unlock a Title.'
-        );
-    }
-
-    if (!userId) {
-        throw new TypeError(
-            'A user ID is required to unlock a Title.'
-        );
-    }
-
-    if (!titleId) {
-        throw new TypeError(
-            'A Title ID is required.'
-        );
-    }
-
-    if (
-        !isValidTitleId(
-            titleId
-        )
-    ) {
-        throw new Error(
-            `Unknown Umbra Title: ${titleId}`
-        );
-    }
-
-    const definition =
-        getTitleDefinition(
-            titleId
-        );
-
-    if (!definition) {
-        return {
-            unlocked:
-                false,
-
-            title:
-                null
-        };
-    }
-
-    const safeSource =
-        String(
-            unlockSource ||
-            'AUTOMATIC'
-        )
-            .trim()
-            .slice(
-                0,
-                100
-            ) ||
-        'AUTOMATIC';
-
-    /*
-     * If activate is true, deactivate the
-     * Soul's previous active Title before
-     * inserting the new Title.
-     */
-    if (activate) {
-        await query(
-            `
-                UPDATE soul_titles
-
-                SET
-                    is_active = FALSE,
-                    activated_at = NULL
-
-                WHERE guild_id = $1
-                  AND user_id = $2
-                  AND is_active = TRUE;
-            `,
-            [
-                guildId,
-                userId
-            ]
-        );
-    }
-
-    const result =
-        await query(
-            `
-                INSERT INTO soul_titles (
-                    guild_id,
-                    user_id,
-                    title_id,
-                    unlocked_by,
-                    unlock_source,
-                    is_active,
-                    activated_at
-                )
-                VALUES (
-                    $1,
-                    $2,
-                    $3,
-                    $4,
-                    $5,
-                    $6,
-                    CASE
-                        WHEN $6::BOOLEAN
-                            THEN NOW()
-                        ELSE NULL
-                    END
-                )
-
-                ON CONFLICT (
-                    guild_id,
-                    user_id,
-                    title_id
-                )
-
-                DO NOTHING
-
-                RETURNING
-                    guild_id,
-                    user_id,
-                    title_id,
-                    unlocked_by,
-                    unlock_source,
-                    is_active,
-                    unlocked_at,
-                    activated_at;
-            `,
-            [
-                guildId,
-                userId,
-                titleId,
-                unlockedBy,
-                safeSource,
-                Boolean(
-                    activate
-                )
-            ]
-        );
-
-    if (
-        result.rows.length === 0
-    ) {
-        /*
-         * The Title was already unlocked.
-         *
-         * If activation was requested,
-         * activate the existing record.
-         */
-        if (activate) {
-            const activatedTitle =
-                await setActiveTitle(
-                    guildId,
-                    userId,
-                    titleId
-                );
-
-            return {
-                unlocked:
-                    false,
-
-                title:
-                    activatedTitle
-            };
-        }
-
-        const existingTitle =
-            await getSoulTitle(
-                guildId,
-                userId,
-                titleId
-            );
-
-        return {
-            unlocked:
-                false,
-
-            title:
-                existingTitle
-        };
-    }
-
-    const unlockedTitle =
-        await getSoulTitle(
-            guildId,
-            userId,
-            titleId
-        );
-
-    return {
-        unlocked:
-            true,
-
-        title:
-            unlockedTitle
-    };
-}
-
-/**
- * Ensure that the default Nameless Soul
- * Title is unlocked.
- *
- * It is activated only when the Soul does
- * not already have an active Title.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-async function ensureDefaultSoulTitle(
-    guildId,
-    userId
-) {
-    const activeTitle =
-        await getActiveTitle(
-            guildId,
-            userId
-        );
-
-    const result =
-        await unlockSoulTitle({
-            guildId,
-            userId,
-
-            titleId:
-                'nameless_soul',
-
-            unlockedBy:
-                null,
-
-            unlockSource:
-                'DEFAULT',
-
-            activate:
-                !activeTitle
-        });
-
-    return (
-        result.title ||
-        activeTitle ||
-        null
-    );
-}
-
-/**
  * Get one unlocked Soul Title.
  *
  * @param {string} guildId
@@ -853,11 +587,261 @@ async function getActiveTitle(
         result.rows[0] ||
         null
     );
+}/**
+ * Unlock one Title for a Soul.
+ *
+ * The same Title can never be unlocked
+ * twice by the same Soul in one server.
+ *
+ * @param {Object} options
+ * @param {string} options.guildId
+ * @param {string} options.userId
+ * @param {string} options.titleId
+ * @param {string|null} [options.unlockedBy]
+ * @param {string} [options.unlockSource]
+ * @param {boolean} [options.activate]
+ * @returns {Promise<{
+ *     unlocked: boolean,
+ *     title: Object|null
+ * }>}
+ */
+async function unlockSoulTitle({
+    guildId,
+    userId,
+    titleId,
+    unlockedBy = null,
+    unlockSource = 'AUTOMATIC',
+    activate = false
+}) {
+    if (!guildId) {
+        throw new TypeError(
+            'A guild ID is required to unlock a Title.'
+        );
+    }
+
+    if (!userId) {
+        throw new TypeError(
+            'A user ID is required to unlock a Title.'
+        );
+    }
+
+    if (!titleId) {
+        throw new TypeError(
+            'A Title ID is required.'
+        );
+    }
+
+    if (
+        !isValidTitleId(
+            titleId
+        )
+    ) {
+        throw new Error(
+            `Unknown Umbra Title: ${titleId}`
+        );
+    }
+
+    const definition =
+        getTitleDefinition(
+            titleId
+        );
+
+    if (!definition) {
+        return {
+            unlocked:
+                false,
+
+            title:
+                null
+        };
+    }
+
+    const safeSource =
+        String(
+            unlockSource ||
+            'AUTOMATIC'
+        )
+            .trim()
+            .slice(
+                0,
+                100
+            ) ||
+        'AUTOMATIC';
+
+    /*
+     * Insert the unlocked Title first
+     * as an inactive record.
+     *
+     * Activation is handled separately
+     * afterward by setActiveTitle().
+     */
+    const result =
+        await query(
+            `
+                INSERT INTO soul_titles (
+                    guild_id,
+                    user_id,
+                    title_id,
+                    unlocked_by,
+                    unlock_source,
+                    is_active,
+                    activated_at
+                )
+                VALUES (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    FALSE,
+                    NULL
+                )
+
+                ON CONFLICT (
+                    guild_id,
+                    user_id,
+                    title_id
+                )
+
+                DO NOTHING
+
+                RETURNING
+                    guild_id,
+                    user_id,
+                    title_id,
+                    unlocked_by,
+                    unlock_source,
+                    is_active,
+                    unlocked_at,
+                    activated_at;
+            `,
+            [
+                guildId,
+                userId,
+                titleId,
+                unlockedBy,
+                safeSource
+            ]
+        );
+
+    const wasUnlocked =
+        result.rows.length >
+        0;
+
+    if (activate) {
+        const activatedTitle =
+            await setActiveTitle(
+                guildId,
+                userId,
+                titleId
+            );
+
+        return {
+            unlocked:
+                wasUnlocked,
+
+            title:
+                activatedTitle
+        };
+    }
+
+    const title =
+        await getSoulTitle(
+            guildId,
+            userId,
+            titleId
+        );
+
+    return {
+        unlocked:
+            wasUnlocked,
+
+        title
+    };
+}
+
+/**
+ * Ensure that the default Nameless Soul
+ * Title is unlocked.
+ *
+ * It becomes active only when the Soul
+ * currently has no active Title.
+ *
+ * @param {string} guildId
+ * @param {string} userId
+ * @returns {Promise<Object|null>}
+ */
+async function ensureDefaultSoulTitle(
+    guildId,
+    userId
+) {
+    if (!guildId) {
+        throw new TypeError(
+            'A guild ID is required to ensure a default Title.'
+        );
+    }
+
+    if (!userId) {
+        throw new TypeError(
+            'A user ID is required to ensure a default Title.'
+        );
+    }
+
+    const defaultTitleId =
+        'nameless_soul';
+
+    const alreadyUnlocked =
+        await hasSoulTitle(
+            guildId,
+            userId,
+            defaultTitleId
+        );
+
+    if (!alreadyUnlocked) {
+        await unlockSoulTitle({
+            guildId,
+            userId,
+
+            titleId:
+                defaultTitleId,
+
+            unlockedBy:
+                null,
+
+            unlockSource:
+                'DEFAULT',
+
+            activate:
+                false
+        });
+    }
+
+    const activeTitle =
+        await getActiveTitle(
+            guildId,
+            userId
+        );
+
+    if (activeTitle) {
+        return activeTitle;
+    }
+
+    return setActiveTitle(
+        guildId,
+        userId,
+        defaultTitleId
+    );
 }
 
 /**
  * Set one already-unlocked Title as
  * the Soul's active Title.
+ *
+ * The previous active Title is deactivated
+ * before the selected Title is activated.
+ *
+ * This fixes PostgreSQL error 23505 from
+ * soul_titles_one_active_title_index.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -869,6 +853,18 @@ async function setActiveTitle(
     userId,
     titleId
 ) {
+    if (!guildId) {
+        throw new TypeError(
+            'A guild ID is required to activate a Title.'
+        );
+    }
+
+    if (!userId) {
+        throw new TypeError(
+            'A user ID is required to activate a Title.'
+        );
+    }
+
     if (
         !isValidTitleId(
             titleId
@@ -890,40 +886,62 @@ async function setActiveTitle(
         return null;
     }
 
+    const currentActiveTitle =
+        await getActiveTitle(
+            guildId,
+            userId
+        );
+
+    if (
+        currentActiveTitle?.titleId ===
+        titleId
+    ) {
+        return currentActiveTitle;
+    }
+
+    /*
+     * First remove the active state from
+     * every currently active Title.
+     *
+     * This query must complete before
+     * the next activation query starts.
+     */
+    await query(
+        `
+            UPDATE soul_titles
+
+            SET
+                is_active = FALSE,
+                activated_at = NULL
+
+            WHERE guild_id = $1
+              AND user_id = $2
+              AND is_active = TRUE;
+        `,
+        [
+            guildId,
+            userId
+        ]
+    );
+
+    /*
+     * Activate the requested unlocked Title.
+     */
     const result =
         await query(
             `
-                WITH deactivated_titles AS (
-                    UPDATE soul_titles
+                UPDATE soul_titles
 
-                    SET
-                        is_active = FALSE,
-                        activated_at = NULL
+                SET
+                    is_active = TRUE,
+                    activated_at = NOW()
 
-                    WHERE guild_id = $1
-                      AND user_id = $2
-                      AND is_active = TRUE
+                WHERE guild_id = $1
+                  AND user_id = $2
+                  AND title_id = $3
 
-                    RETURNING title_id
-                ),
-
-                activated_title AS (
-                    UPDATE soul_titles
-
-                    SET
-                        is_active = TRUE,
-                        activated_at = NOW()
-
-                    WHERE guild_id = $1
-                      AND user_id = $2
-                      AND title_id = $3
-
-                    RETURNING title_id
-                )
-
-                SELECT title_id
-
-                FROM activated_title;
+                RETURNING
+                    title_id;
             `,
             [
                 guildId,
@@ -935,6 +953,22 @@ async function setActiveTitle(
     if (
         result.rows.length === 0
     ) {
+        /*
+         * The selected Title unexpectedly
+         * disappeared after the validation.
+         *
+         * Restore Nameless Soul if possible.
+         */
+        if (
+            titleId !==
+            'nameless_soul'
+        ) {
+            await ensureDefaultSoulTitle(
+                guildId,
+                userId
+            );
+        }
+
         return null;
     }
 
@@ -1067,10 +1101,6 @@ async function revokeSoulTitle(
         ]
     );
 
-    /*
-     * Ensure every Soul retains the
-     * default Nameless Soul Title.
-     */
     if (
         titleId !==
         'nameless_soul'
@@ -1090,9 +1120,7 @@ async function revokeSoulTitle(
     }
 
     return existingTitle;
-}
-
-/**
+}/**
  * Remove every unlocked Title belonging
  * to one Soul.
  *
@@ -1114,7 +1142,8 @@ async function resetSoulTitles(
                 WHERE guild_id = $1
                   AND user_id = $2
 
-                RETURNING title_id;
+                RETURNING
+                    title_id;
             `,
             [
                 guildId,
@@ -1135,7 +1164,7 @@ async function resetSoulTitles(
  *
  * Useful for automatic checks after
  * Level, Achievement, Evolution or
- * Rank updates.
+ * Arrancar Rank updates.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -1163,7 +1192,8 @@ async function unlockSoulTitles({
             )
         ];
 
-    const newlyUnlocked = [];
+    const newlyUnlocked =
+        [];
 
     for (
         const titleId
@@ -1184,6 +1214,7 @@ async function unlockSoulTitles({
                 titleId,
                 unlockedBy,
                 unlockSource,
+
                 activate:
                     false
             });
@@ -1218,13 +1249,16 @@ async function getGuildTitleStatistics(
                     (
                         SELECT
                             COUNT(*)::INTEGER
+
                         FROM title_definitions
                     ) AS available_titles,
 
                     (
                         SELECT
                             COUNT(*)::INTEGER
+
                         FROM soul_titles
+
                         WHERE guild_id = $1
                     ) AS total_unlocks,
 
@@ -1233,14 +1267,18 @@ async function getGuildTitleStatistics(
                             COUNT(
                                 DISTINCT user_id
                             )::INTEGER
+
                         FROM soul_titles
+
                         WHERE guild_id = $1
                     ) AS souls_with_titles,
 
                     (
                         SELECT
                             COUNT(*)::INTEGER
+
                         FROM soul_titles
+
                         WHERE guild_id = $1
                           AND is_active = TRUE
                     ) AS active_titles;
