@@ -34,6 +34,9 @@ const achievementDatabase =
 const rankDatabase =
     require('./ranks');
 
+const kingdomDatabase =
+    require('./kingdom');
+
 /**
  * Connect to PostgreSQL and initialize
  * all required database tables and systems.
@@ -126,6 +129,10 @@ async function initializeDatabase() {
             '✅ Arrancar Rank database initialized.'
         );
 
+        console.log(
+            '✅ Kingdom statistics core initialized.'
+        );
+
         const achievementCount =
             await achievementDatabase
                 .initializeAchievements();
@@ -185,5 +192,8 @@ module.exports = {
         achievementDatabase,
 
     ranks:
-        rankDatabase
+        rankDatabase,
+
+    kingdom:
+        kingdomDatabase
 };
