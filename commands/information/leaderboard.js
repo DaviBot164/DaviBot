@@ -18,29 +18,15 @@ const embedConfig =
 const leaderboardDatabase =
     require('../../database/leaderboards');
 
-/**
- * Interactive leaderboard menu ID.
- */
 const LEADERBOARD_MENU_ID =
     'umbra_leaderboard_page_menu';
 
-/**
- * Number of ranked Souls displayed
- * on each leaderboard page.
- */
 const LEADERBOARD_DISPLAY_LIMIT =
     10;
 
-/**
- * Number of database rows loaded before
- * inactive, departed and bot users are removed.
- */
 const LEADERBOARD_QUERY_LIMIT =
     30;
 
-/**
- * Leaderboard page identifiers.
- */
 const LEADERBOARD_PAGES = {
     overview:
         'leaderboard_overview',
@@ -61,9 +47,6 @@ const LEADERBOARD_PAGES = {
         'leaderboard_titles'
 };
 
-/**
- * Leaderboard page order.
- */
 const LEADERBOARD_PAGE_ORDER = [
     LEADERBOARD_PAGES.overview,
     LEADERBOARD_PAGES.levels,
@@ -73,19 +56,16 @@ const LEADERBOARD_PAGE_ORDER = [
     LEADERBOARD_PAGES.titles
 ];
 
-/**
- * Leaderboard page display information.
- */
 const LEADERBOARD_PAGE_DETAILS = {
     [LEADERBOARD_PAGES.overview]: {
         emoji:
             '🏆',
 
         label:
-            'Leaderboard Overview',
+            'Overview',
 
         description:
-            'View every Las Noches ranking category'
+            'View every Las Noches champion'
     },
 
     [LEADERBOARD_PAGES.levels]: {
@@ -96,7 +76,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Soul Levels',
 
         description:
-            'Highest Soul Levels in Las Noches'
+            'Highest recorded Soul Levels'
     },
 
     [LEADERBOARD_PAGES.xp]: {
@@ -107,7 +87,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Spiritual Power',
 
         description:
-            'Souls with the highest total XP'
+            'Members with the highest total XP'
     },
 
     [LEADERBOARD_PAGES.messages]: {
@@ -118,7 +98,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Message Activity',
 
         description:
-            'Most active recorded Souls'
+            'Most active members of Las Noches'
     },
 
     [LEADERBOARD_PAGES.achievements]: {
@@ -129,7 +109,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Achievements',
 
         description:
-            'Souls with the most Chronicles'
+            'Members with the most Achievements'
     },
 
     [LEADERBOARD_PAGES.titles]: {
@@ -140,13 +120,10 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Chronicle Titles',
 
         description:
-            'Largest Chronicle Title collections'
+            'Largest unlocked Title collections'
     }
 };
 
-/**
- * Medal display by leaderboard position.
- */
 const POSITION_MEDALS = {
     1:
         '🥇',
@@ -233,7 +210,7 @@ function formatDiscordDate(
  */
 function createProgressBar(
     percentage,
-    length = 14
+    length = 10
 ) {
     const safePercentage =
         Math.min(
@@ -242,8 +219,7 @@ function createProgressBar(
                 0,
                 Number(
                     percentage
-                ) ||
-                0
+                ) || 0
             )
         );
 
@@ -256,23 +232,19 @@ function createProgressBar(
             length
         );
 
-    const emptyBlocks =
-        length -
-        filledBlocks;
-
     return (
         '▰'.repeat(
             filledBlocks
         ) +
         '▱'.repeat(
-            emptyBlocks
+            length -
+            filledBlocks
         )
     );
 }
 
 /**
- * Get the visual medal belonging
- * to one leaderboard position.
+ * Get a visual ranking position.
  *
  * @param {number} position
  * @returns {string}
@@ -286,12 +258,34 @@ function getPositionMedal(
                 position
             )
         ] ||
-        `\`#${formatNumber(position)}\``
+        `\`#${formatNumber(
+            position
+        )}\``
     );
 }
 
 /**
- * Create the interactive leaderboard menu.
+ * Return the page number.
+ *
+ * @param {string} pageId
+ * @returns {number}
+ */
+function getPageNumber(
+    pageId
+) {
+    const index =
+        LEADERBOARD_PAGE_ORDER
+            .indexOf(
+                pageId
+            );
+
+    return index >= 0
+        ? index + 1
+        : 1;
+}
+
+/**
+ * Create the interactive page menu.
  *
  * @param {string} selectedPage
  * @param {boolean} disabled
@@ -307,7 +301,7 @@ function createLeaderboardMenu(
                 LEADERBOARD_MENU_ID
             )
             .setPlaceholder(
-                'Select a Las Noches ranking'
+                'Choose a Las Noches ranking...'
             )
             .setMinValues(
                 1
@@ -360,6 +354,7 @@ function createLeaderboardMenu(
  *
  * @param {Object} options
  * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
+ * @param {string} options.pageId
  * @param {string} options.title
  * @param {string} options.description
  * @param {string} [options.color]
@@ -367,6 +362,7 @@ function createLeaderboardMenu(
  */
 function createLeaderboardEmbed({
     interaction,
+    pageId,
     title,
     description,
     color =
@@ -391,7 +387,7 @@ function createLeaderboardEmbed({
                     'png',
 
                 size:
-                    1024,
+                    256,
 
                 forceStatic:
                     false
@@ -406,10 +402,10 @@ function createLeaderboardEmbed({
                 '',
                 embedConfig
                     .branding
-                    .divider,
-                '',
-                '*The most accomplished Souls of Las Noches are preserved within these eternal rankings.*'
-            ].join('\n'),
+                    .divider
+            ].join(
+                '\n'
+            ),
 
         color,
 
@@ -428,7 +424,12 @@ function createLeaderboardEmbed({
 
         footer: {
             text:
-                `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+                (
+                    `Page ${getPageNumber(
+                        pageId
+                    )} / ${LEADERBOARD_PAGE_ORDER.length}` +
+                    ' • Umbra • Guardian of Las Noches'
+                ),
 
             iconURL:
                 botAvatar
@@ -437,11 +438,8 @@ function createLeaderboardEmbed({
 }
 
 /**
- * Resolve one leaderboard database row
- * into a current Las Noches member.
- *
- * Departed users and bot accounts are
- * not shown in public rankings.
+ * Resolve a database row into a
+ * current non-bot server member.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object} row
@@ -470,8 +468,7 @@ function resolveLeaderboardMember(
 }
 
 /**
- * Remove departed users and bots,
- * then limit the visible ranking.
+ * Prepare public leaderboard rows.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object[]} rows
@@ -507,8 +504,7 @@ function prepareLeaderboardRows(
 }
 
 /**
- * Find the highest value from one
- * prepared leaderboard.
+ * Get the highest value in a ranking.
  *
  * @param {Object[]} rows
  * @param {string} property
@@ -534,16 +530,15 @@ function getHighestLeaderboardValue(
                 Number(
                     row[
                         property
-                    ] ||
-                    0
+                    ] || 0
                 )
         )
     );
 }
 
 /**
- * Calculate one ranked entry's visual
- * percentage compared with first place.
+ * Calculate progress relative to
+ * the first-place member.
  *
  * @param {number} value
  * @param {number} highestValue
@@ -578,8 +573,8 @@ function calculateRelativePercentage(
 }
 
 /**
- * Split ranked entries into safe
- * Discord Embed field values.
+ * Split ranking entries into safe
+ * Discord field values.
  *
  * @param {string[]} entries
  * @param {number} maxLength
@@ -589,8 +584,7 @@ function splitLeaderboardEntries(
     entries,
     maxLength = 1_000
 ) {
-    const chunks =
-        [];
+    const chunks = [];
 
     let currentChunk =
         '';
@@ -635,8 +629,8 @@ function splitLeaderboardEntries(
 }
 
 /**
- * Format the requesting Soul's personal
- * leaderboard position.
+ * Format the requesting member's
+ * personal ranking.
  *
  * @param {Object|null} position
  * @param {string} statisticLabel
@@ -650,19 +644,26 @@ function formatPersonalPosition(
 ) {
     if (!position) {
         return [
-            '🌑 You are not currently recorded in this ranking.',
+            '🌑 You are not currently ranked.',
             '',
-            '-# Continue progressing through Las Noches to enter the leaderboard.'
-        ].join('\n');
+            '-# Continue progressing through Las Noches to enter this leaderboard.'
+        ].join(
+            '\n'
+        );
     }
 
     return [
-        `**Position:** \`#${formatNumber(position.rank)}\``,
+        `**Position:** \`#${formatNumber(
+            position.rank
+        )}\``,
         `**${statisticLabel}:** ${statisticValue}`
-    ].join('\n');
-}/**
- * Load every leaderboard dataset required
- * by the interactive ranking system.
+    ].join(
+        '\n'
+    );
+}
+
+/**
+ * Load every leaderboard dataset.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} requestingUserId
@@ -694,83 +695,82 @@ async function loadLeaderboardData(
         levelSoulCount,
         achievementSoulCount,
         titleSoulCount
-    ] =
-        await Promise.all([
-            leaderboardDatabase
-                .getLevelLeaderboard(
-                    guild.id,
-                    LEADERBOARD_QUERY_LIMIT
-                ),
+    ] = await Promise.all([
+        leaderboardDatabase
+            .getLevelLeaderboard(
+                guild.id,
+                LEADERBOARD_QUERY_LIMIT
+            ),
 
-            leaderboardDatabase
-                .getXpLeaderboard(
-                    guild.id,
-                    LEADERBOARD_QUERY_LIMIT
-                ),
+        leaderboardDatabase
+            .getXpLeaderboard(
+                guild.id,
+                LEADERBOARD_QUERY_LIMIT
+            ),
 
-            leaderboardDatabase
-                .getMessageLeaderboard(
-                    guild.id,
-                    LEADERBOARD_QUERY_LIMIT
-                ),
+        leaderboardDatabase
+            .getMessageLeaderboard(
+                guild.id,
+                LEADERBOARD_QUERY_LIMIT
+            ),
 
-            leaderboardDatabase
-                .getAchievementLeaderboard(
-                    guild.id,
-                    LEADERBOARD_QUERY_LIMIT
-                ),
+        leaderboardDatabase
+            .getAchievementLeaderboard(
+                guild.id,
+                LEADERBOARD_QUERY_LIMIT
+            ),
 
-            leaderboardDatabase
-                .getTitleLeaderboard(
-                    guild.id,
-                    LEADERBOARD_QUERY_LIMIT
-                ),
+        leaderboardDatabase
+            .getTitleLeaderboard(
+                guild.id,
+                LEADERBOARD_QUERY_LIMIT
+            ),
 
-            leaderboardDatabase
-                .getLevelPosition(
-                    guild.id,
-                    requestingUserId
-                ),
+        leaderboardDatabase
+            .getLevelPosition(
+                guild.id,
+                requestingUserId
+            ),
 
-            leaderboardDatabase
-                .getXpPosition(
-                    guild.id,
-                    requestingUserId
-                ),
+        leaderboardDatabase
+            .getXpPosition(
+                guild.id,
+                requestingUserId
+            ),
 
-            leaderboardDatabase
-                .getMessagePosition(
-                    guild.id,
-                    requestingUserId
-                ),
+        leaderboardDatabase
+            .getMessagePosition(
+                guild.id,
+                requestingUserId
+            ),
 
-            leaderboardDatabase
-                .getAchievementPosition(
-                    guild.id,
-                    requestingUserId
-                ),
+        leaderboardDatabase
+            .getAchievementPosition(
+                guild.id,
+                requestingUserId
+            ),
 
-            leaderboardDatabase
-                .getTitlePosition(
-                    guild.id,
-                    requestingUserId
-                ),
+        leaderboardDatabase
+            .getTitlePosition(
+                guild.id,
+                requestingUserId
+            ),
 
-            leaderboardDatabase
-                .countLevelLeaderboardSouls(
-                    guild.id
-                ),
+        leaderboardDatabase
+            .countLevelLeaderboardSouls(
+                guild.id
+            ),
 
-            leaderboardDatabase
-                .countAchievementLeaderboardSouls(
-                    guild.id
-                ),
+        leaderboardDatabase
+            .countAchievementLeaderboardSouls(
+                guild.id
+            ),
 
-            leaderboardDatabase
-                .countTitleLeaderboardSouls(
-                    guild.id
-                )
-        ]);
+        leaderboardDatabase
+            .countTitleLeaderboardSouls(
+                guild.id
+            )
+    ]);
 
     return {
         levels:
@@ -847,10 +847,85 @@ async function loadLeaderboardData(
                 )
         }
     };
+}/**
+ * Check whether a position belongs
+ * to the first three places.
+ *
+ * @param {number} position
+ * @returns {boolean}
+ */
+function isTopThree(
+    position
+) {
+    const numericPosition =
+        Number(
+            position
+        );
+
+    return (
+        numericPosition >= 1 &&
+        numericPosition <= 3
+    );
 }
 
 /**
- * Format one Soul Level ranking entry.
+ * Create a ranking entry heading.
+ *
+ * @param {Object} row
+ * @returns {string[]}
+ */
+function buildRankingHeader(
+    row
+) {
+    const position =
+        Number(
+            row.rank
+        );
+
+    if (
+        isTopThree(
+            position
+        )
+    ) {
+        const championLabel =
+            position === 1
+                ? ' • Champion'
+                : '';
+
+        return [
+            `### ${getPositionMedal(
+                position
+            )} ${row.member.displayName}${championLabel}`,
+            `${row.member}`
+        ];
+    }
+
+    return [
+        `${getPositionMedal(
+            position
+        )} **${row.member.displayName}** • ${row.member}`
+    ];
+}
+
+/**
+ * Build one relative progress line.
+ *
+ * @param {number} percentage
+ * @returns {string}
+ */
+function buildRelativeProgressLine(
+    percentage
+) {
+    return (
+        `\`${createProgressBar(
+            percentage,
+            10
+        )}\` **${percentage}%**`
+    );
+}
+
+/**
+ * Format one Soul Level entry.
  *
  * @param {Object} row
  * @param {number} highestLevel
@@ -867,17 +942,28 @@ function formatLevelEntry(
         );
 
     return [
-        `### ${getPositionMedal(row.rank)} ${row.member.displayName}`,
-        `${row.member}`,
-        `⭐ **Soul Level:** \`${formatNumber(row.level)}\``,
-        `✨ **Spiritual Power:** \`${formatNumber(row.xp)} XP\``,
-        `💬 **Messages:** \`${formatNumber(row.messageCount)}\``,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}% of first place**`
-    ].join('\n');
+        ...buildRankingHeader(
+            row
+        ),
+        `⭐ **Level:** \`${formatNumber(
+            row.level
+        )}\``,
+        `✨ **XP:** \`${formatNumber(
+            row.xp
+        )}\``,
+        `💬 **Messages:** \`${formatNumber(
+            row.messageCount
+        )}\``,
+        buildRelativeProgressLine(
+            percentage
+        )
+    ].join(
+        '\n'
+    );
 }
 
 /**
- * Format one Spiritual Power ranking entry.
+ * Format one Spiritual Power entry.
  *
  * @param {Object} row
  * @param {number} highestXp
@@ -894,13 +980,24 @@ function formatXpEntry(
         );
 
     return [
-        `### ${getPositionMedal(row.rank)} ${row.member.displayName}`,
-        `${row.member}`,
-        `✨ **Spiritual Power:** \`${formatNumber(row.xp)} XP\``,
-        `⭐ **Soul Level:** \`${formatNumber(row.level)}\``,
-        `💬 **Messages:** \`${formatNumber(row.messageCount)}\``,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}% of first place**`
-    ].join('\n');
+        ...buildRankingHeader(
+            row
+        ),
+        `✨ **Spiritual Power:** \`${formatNumber(
+            row.xp
+        )} XP\``,
+        `⭐ **Level:** \`${formatNumber(
+            row.level
+        )}\``,
+        `💬 **Messages:** \`${formatNumber(
+            row.messageCount
+        )}\``,
+        buildRelativeProgressLine(
+            percentage
+        )
+    ].join(
+        '\n'
+    );
 }
 
 /**
@@ -921,18 +1018,111 @@ function formatMessageEntry(
         );
 
     return [
-        `### ${getPositionMedal(row.rank)} ${row.member.displayName}`,
-        `${row.member}`,
-        `💬 **Messages Recorded:** \`${formatNumber(row.messageCount)}\``,
-        `⭐ **Soul Level:** \`${formatNumber(row.level)}\``,
-        `✨ **Spiritual Power:** \`${formatNumber(row.xp)} XP\``,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}% of first place**`
-    ].join('\n');
+        ...buildRankingHeader(
+            row
+        ),
+        `💬 **Messages:** \`${formatNumber(
+            row.messageCount
+        )}\``,
+        `⭐ **Level:** \`${formatNumber(
+            row.level
+        )}\``,
+        `✨ **XP:** \`${formatNumber(
+            row.xp
+        )}\``,
+        buildRelativeProgressLine(
+            percentage
+        )
+    ].join(
+        '\n'
+    );
 }
 
 /**
- * Add formatted ranking entries to one
- * leaderboard Embed.
+ * Format one Achievement entry.
+ *
+ * @param {Object} row
+ * @param {number} highestAchievementCount
+ * @returns {string}
+ */
+function formatAchievementEntry(
+    row,
+    highestAchievementCount
+) {
+    const percentage =
+        calculateRelativePercentage(
+            row.achievementCount,
+            highestAchievementCount
+        );
+
+    return [
+        ...buildRankingHeader(
+            row
+        ),
+        `🏆 **Achievements:** \`${formatNumber(
+            row.achievementCount
+        )}\``,
+        `📅 **Latest Unlock:** ${formatDiscordDate(
+            row.latestUnlockAt,
+            'R'
+        )}`,
+        buildRelativeProgressLine(
+            percentage
+        )
+    ].join(
+        '\n'
+    );
+}
+
+/**
+ * Format one Chronicle Title entry.
+ *
+ * @param {Object} row
+ * @param {number} highestTitleCount
+ * @returns {string}
+ */
+function formatTitleEntry(
+    row,
+    highestTitleCount
+) {
+    const percentage =
+        calculateRelativePercentage(
+            row.titleCount,
+            highestTitleCount
+        );
+
+    return [
+        ...buildRankingHeader(
+            row
+        ),
+        `🏷️ **Titles:** \`${formatNumber(
+            row.titleCount
+        )}\``,
+        `👑 **Active Title:** ${
+            row.activeTitleDisplayName ||
+            'Not recorded'
+        }`,
+        row.activeTitleRarity
+            ? `🌟 **Rarity:** ${row.activeTitleRarity}`
+            : null,
+        `📅 **Latest Unlock:** ${formatDiscordDate(
+            row.latestUnlockAt,
+            'R'
+        )}`,
+        buildRelativeProgressLine(
+            percentage
+        )
+    ]
+        .filter(
+            Boolean
+        )
+        .join(
+            '\n'
+        );
+}
+
+/**
+ * Add ranking entries to an Embed.
  *
  * @param {import('discord.js').EmbedBuilder} embed
  * @param {string} fieldTitle
@@ -948,19 +1138,20 @@ function addRankingFields(
         !Array.isArray(
             entries
         ) ||
-        entries.length ===
-            0
+        entries.length === 0
     ) {
         embed.addFields({
             name:
-                '🌑 No Ranked Souls',
+                '🌑 No Ranked Members',
 
             value:
                 [
                     'No current Las Noches members are recorded in this ranking.',
                     '',
-                    '-# The leaderboard will update automatically when qualifying data becomes available.'
-                ].join('\n'),
+                    '-# This ranking will update when qualifying data becomes available.'
+                ].join(
+                    '\n'
+                ),
 
             inline:
                 false
@@ -981,8 +1172,7 @@ function addRankingFields(
         ) => {
             embed.addFields({
                 name:
-                    index ===
-                    0
+                    index === 0
                         ? fieldTitle
                         : `${fieldTitle} — Continued`,
 
@@ -1011,23 +1201,23 @@ function buildOverviewPage(
     } =
         context;
 
-    const topLevelSoul =
+    const topLevelMember =
         leaderboardData.levels[0] ||
         null;
 
-    const topXpSoul =
+    const topXpMember =
         leaderboardData.xp[0] ||
         null;
 
-    const topMessageSoul =
+    const topMessageMember =
         leaderboardData.messages[0] ||
         null;
 
-    const topAchievementSoul =
+    const topAchievementMember =
         leaderboardData.achievements[0] ||
         null;
 
-    const topTitleSoul =
+    const topTitleMember =
         leaderboardData.titles[0] ||
         null;
 
@@ -1035,145 +1225,146 @@ function buildOverviewPage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.overview,
+
             title:
                 '🏆 Las Noches Leaderboards',
 
             description:
                 [
-                    'Umbra has opened the official rankings of Las Noches.',
+                    'The strongest and most accomplished members of Las Noches.',
                     '',
-                    'Select a category below to inspect the Top Souls and your current position.'
-                ].join('\n'),
+                    'Choose a ranking category from the menu below.'
+                ].join(
+                    '\n'
+                ),
 
             color:
-                embedConfig.colors.accent
+                '#6F42C1'
         });
 
     embed.addFields(
         {
             name:
-                '⭐ Soul Level Champion',
-
-            value:
-                topLevelSoul
-                    ? [
-                        `🥇 ${topLevelSoul.member}`,
-                        `**Level:** \`${formatNumber(topLevelSoul.level)}\``,
-                        `**XP:** \`${formatNumber(topLevelSoul.xp)}\``
-                    ].join('\n')
-                    : 'No ranked Soul is currently available.',
-
-            inline:
-                true
-        },
-        {
-            name:
-                '✨ Spiritual Power Champion',
-
-            value:
-                topXpSoul
-                    ? [
-                        `🥇 ${topXpSoul.member}`,
-                        `**XP:** \`${formatNumber(topXpSoul.xp)}\``,
-                        `**Level:** \`${formatNumber(topXpSoul.level)}\``
-                    ].join('\n')
-                    : 'No ranked Soul is currently available.',
-
-            inline:
-                true
-        },
-        {
-            name:
-                '💬 Activity Champion',
-
-            value:
-                topMessageSoul
-                    ? [
-                        `🥇 ${topMessageSoul.member}`,
-                        `**Messages:** \`${formatNumber(topMessageSoul.messageCount)}\``,
-                        `**Level:** \`${formatNumber(topMessageSoul.level)}\``
-                    ].join('\n')
-                    : 'No ranked Soul is currently available.',
-
-            inline:
-                true
-        },
-        {
-            name:
-                '🏆 Chronicle Champion',
-
-            value:
-                topAchievementSoul
-                    ? [
-                        `🥇 ${topAchievementSoul.member}`,
-                        `**Achievements:** \`${formatNumber(topAchievementSoul.achievementCount)}\``,
-                        `**Latest Unlock:** ${formatDiscordDate(topAchievementSoul.latestUnlockAt, 'R')}`
-                    ].join('\n')
-                    : 'No Achievement rankings are currently available.',
-
-            inline:
-                true
-        },
-        {
-            name:
-                '🏷️ Title Collector',
-
-            value:
-                topTitleSoul
-                    ? [
-                        `🥇 ${topTitleSoul.member}`,
-                        `**Titles:** \`${formatNumber(topTitleSoul.titleCount)}\``,
-                        `**Active Title:** ${topTitleSoul.activeTitleDisplayName || 'Not recorded'}`
-                    ].join('\n')
-                    : 'No Chronicle Title rankings are currently available.',
-
-            inline:
-                true
-        },
-        {
-            name:
-                '📊 Ranking Participation',
+                '👑 Progression Champions',
 
             value:
                 [
-                    `⭐ **Progression Souls:** \`${formatNumber(leaderboardData.participantCounts.levels)}\``,
-                    `🏆 **Achievement Souls:** \`${formatNumber(leaderboardData.participantCounts.achievements)}\``,
-                    `🏷️ **Title Collectors:** \`${formatNumber(leaderboardData.participantCounts.titles)}\``
-                ].join('\n'),
+                    topLevelMember
+                        ? (
+                            `🥇 **Highest Level:** ${topLevelMember.member}\n` +
+                            `└ Level \`${formatNumber(
+                                topLevelMember.level
+                            )}\``
+                        )
+                        : '🥇 **Highest Level:** Not recorded',
 
-            inline:
-                true
-        },
-        {
-            name:
-                '🧭 Ranking Categories',
+                    '',
 
-            value:
-                [
-                    '`⭐ Soul Levels` — highest recorded Level',
-                    '`✨ Spiritual Power` — highest total XP',
-                    '`💬 Message Activity` — most recorded messages',
-                    '`🏆 Achievements` — most unlocked Chronicles',
-                    '`🏷️ Chronicle Titles` — largest Title collections'
-                ].join('\n'),
+                    topXpMember
+                        ? (
+                            `✨ **Spiritual Power:** ${topXpMember.member}\n` +
+                            `└ \`${formatNumber(
+                                topXpMember.xp
+                            )} XP\``
+                        )
+                        : '✨ **Spiritual Power:** Not recorded',
+
+                    '',
+
+                    topMessageMember
+                        ? (
+                            `💬 **Most Active:** ${topMessageMember.member}\n` +
+                            `└ \`${formatNumber(
+                                topMessageMember.messageCount
+                            )} messages\``
+                        )
+                        : '💬 **Most Active:** Not recorded'
+                ].join(
+                    '\n'
+                ),
 
             inline:
                 false
         },
         {
             name:
-                '🌙 Connected Archives',
+                '📜 Chronicle Champions',
 
             value:
                 [
-                    '`/profile` — compact Soul profile',
-                    '`/soul` — complete interactive Soul Record',
-                    '`/titles` — Chronicle Title collection',
-                    '`/espada` — current throne hierarchy'
-                ].join('\n'),
+                    topAchievementMember
+                        ? (
+                            `🏆 **Achievements:** ${topAchievementMember.member}\n` +
+                            `└ \`${formatNumber(
+                                topAchievementMember.achievementCount
+                            )}\` unlocked`
+                        )
+                        : '🏆 **Achievements:** Not recorded',
+
+                    '',
+
+                    topTitleMember
+                        ? (
+                            `🏷️ **Title Collector:** ${topTitleMember.member}\n` +
+                            `└ \`${formatNumber(
+                                topTitleMember.titleCount
+                            )}\` titles`
+                        )
+                        : '🏷️ **Title Collector:** Not recorded'
+                ].join(
+                    '\n'
+                ),
 
             inline:
                 false
+        },
+        {
+            name:
+                '📊 Ranking Archive',
+
+            value:
+                [
+                    `⭐ **Progression Members:** \`${formatNumber(
+                        leaderboardData
+                            .participantCounts
+                            .levels
+                    )}\``,
+                    `🏆 **Achievement Members:** \`${formatNumber(
+                        leaderboardData
+                            .participantCounts
+                            .achievements
+                    )}\``,
+                    `🏷️ **Title Collectors:** \`${formatNumber(
+                        leaderboardData
+                            .participantCounts
+                            .titles
+                    )}\``
+                ].join(
+                    '\n'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌙 Available Rankings',
+
+            value:
+                [
+                    '⭐ Soul Levels',
+                    '✨ Spiritual Power',
+                    '💬 Message Activity',
+                    '🏆 Achievements',
+                    '🏷️ Chronicle Titles'
+                ].join(
+                    '\n'
+                ),
+
+            inline:
+                true
         }
     );
 
@@ -1181,7 +1372,7 @@ function buildOverviewPage(
 }
 
 /**
- * Build the Soul Level ranking page.
+ * Build the Soul Level page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1208,11 +1399,14 @@ function buildLevelPage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.levels,
+
             title:
                 '⭐ Soul Level Leaderboard',
 
             description:
-                'The highest recorded Soul Levels currently active within Las Noches.',
+                'Members ranked by their highest recorded Soul Level.',
 
             color:
                 embedConfig.colors.archive
@@ -1224,11 +1418,19 @@ function buildLevelPage(
 
         value:
             [
-                `**Ranked Souls:** \`${formatNumber(leaderboardData.participantCounts.levels)}\``,
-                `**Displayed:** \`${formatNumber(rows.length)}\``,
+                `**Ranked Members:** \`${formatNumber(
+                    leaderboardData
+                        .participantCounts
+                        .levels
+                )}\``,
+                `**Displayed:** \`${formatNumber(
+                    rows.length
+                )}\``,
                 '',
-                '-# Departed members and Discord bots are excluded from public rankings.'
-            ].join('\n'),
+                '-# Bots and departed members are excluded.'
+            ].join(
+                '\n'
+            ),
 
         inline:
             false
@@ -1260,7 +1462,9 @@ function buildLevelPage(
                 personalPosition,
                 'Soul Level',
                 personalPosition
-                    ? `\`${formatNumber(personalPosition.level)}\``
+                    ? `\`${formatNumber(
+                        personalPosition.level
+                    )}\``
                     : 'Not recorded'
             ),
 
@@ -1272,7 +1476,7 @@ function buildLevelPage(
 }
 
 /**
- * Build the Spiritual Power ranking page.
+ * Build the Spiritual Power page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1299,11 +1503,14 @@ function buildXpPage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.xp,
+
             title:
                 '✨ Spiritual Power Leaderboard',
 
             description:
-                'Souls ranked by their complete recorded spiritual power.',
+                'Members ranked by their total recorded XP.',
 
             color:
                 embedConfig.colors.rank
@@ -1315,11 +1522,19 @@ function buildXpPage(
 
         value:
             [
-                `**Ranked Souls:** \`${formatNumber(leaderboardData.participantCounts.xp)}\``,
-                `**Displayed:** \`${formatNumber(rows.length)}\``,
+                `**Ranked Members:** \`${formatNumber(
+                    leaderboardData
+                        .participantCounts
+                        .xp
+                )}\``,
+                `**Displayed:** \`${formatNumber(
+                    rows.length
+                )}\``,
                 '',
                 '-# Total XP determines this ranking.'
-            ].join('\n'),
+            ].join(
+                '\n'
+            ),
 
         inline:
             false
@@ -1351,7 +1566,9 @@ function buildXpPage(
                 personalPosition,
                 'Spiritual Power',
                 personalPosition
-                    ? `\`${formatNumber(personalPosition.xp)} XP\``
+                    ? `\`${formatNumber(
+                        personalPosition.xp
+                    )} XP\``
                     : 'Not recorded'
             ),
 
@@ -1363,7 +1580,7 @@ function buildXpPage(
 }
 
 /**
- * Build the Message Activity ranking page.
+ * Build the Message Activity page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1390,11 +1607,14 @@ function buildMessagePage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.messages,
+
             title:
                 '💬 Message Activity Leaderboard',
 
             description:
-                'The most active recorded Souls within the channels of Las Noches.',
+                'The most active recorded members of Las Noches.',
 
             color:
                 embedConfig.colors.support
@@ -1406,11 +1626,19 @@ function buildMessagePage(
 
         value:
             [
-                `**Ranked Souls:** \`${formatNumber(leaderboardData.participantCounts.messages)}\``,
-                `**Displayed:** \`${formatNumber(rows.length)}\``,
+                `**Ranked Members:** \`${formatNumber(
+                    leaderboardData
+                        .participantCounts
+                        .messages
+                )}\``,
+                `**Displayed:** \`${formatNumber(
+                    rows.length
+                )}\``,
                 '',
-                '-# Guardian-approved message records determine this ranking.'
-            ].join('\n'),
+                '-# Only recorded messages contribute to this ranking.'
+            ].join(
+                '\n'
+            ),
 
         inline:
             false
@@ -1418,7 +1646,7 @@ function buildMessagePage(
 
     addRankingFields(
         embed,
-        '💬 Most Active Souls',
+        '💬 Most Active Members',
         rows.map(
             row =>
                 formatMessageEntry(
@@ -1440,9 +1668,12 @@ function buildMessagePage(
         value:
             formatPersonalPosition(
                 personalPosition,
-                'Messages Recorded',
+                'Messages',
                 personalPosition
-                    ? `\`${formatNumber(personalPosition.messageCount)}\``
+                    ? `\`${formatNumber(
+                        personalPosition
+                            .messageCount
+                    )}\``
                     : 'Not recorded'
             ),
 
@@ -1451,68 +1682,10 @@ function buildMessagePage(
     });
 
     return embed;
-}/**
- * Format one Achievement ranking entry.
- *
- * @param {Object} row
- * @param {number} highestAchievementCount
- * @returns {string}
- */
-function formatAchievementEntry(
-    row,
-    highestAchievementCount
-) {
-    const percentage =
-        calculateRelativePercentage(
-            row.achievementCount,
-            highestAchievementCount
-        );
-
-    return [
-        `### ${getPositionMedal(row.rank)} ${row.member.displayName}`,
-        `${row.member}`,
-        `🏆 **Achievements:** \`${formatNumber(row.achievementCount)}\``,
-        `📅 **Latest Unlock:** ${formatDiscordDate(row.latestUnlockAt, 'R')}`,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}% of first place**`
-    ].join('\n');
 }
 
 /**
- * Format one Chronicle Title ranking entry.
- *
- * @param {Object} row
- * @param {number} highestTitleCount
- * @returns {string}
- */
-function formatTitleEntry(
-    row,
-    highestTitleCount
-) {
-    const percentage =
-        calculateRelativePercentage(
-            row.titleCount,
-            highestTitleCount
-        );
-
-    return [
-        `### ${getPositionMedal(row.rank)} ${row.member.displayName}`,
-        `${row.member}`,
-        `🏷️ **Titles Unlocked:** \`${formatNumber(row.titleCount)}\``,
-        `👑 **Active Title:** ${row.activeTitleDisplayName || 'Not recorded'}`,
-        row.activeTitleRarity
-            ? `🌟 **Rarity:** ${row.activeTitleRarity}`
-            : null,
-        `📅 **Latest Unlock:** ${formatDiscordDate(row.latestUnlockAt, 'R')}`,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}% of first place**`
-    ]
-        .filter(
-            Boolean
-        )
-        .join('\n');
-}
-
-/**
- * Build the Achievement ranking page.
+ * Build the Achievement page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1539,11 +1712,14 @@ function buildAchievementPage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.achievements,
+
             title:
                 '🏆 Achievement Leaderboard',
 
             description:
-                'Souls ranked by the number of unlocked Soul Chronicles.',
+                'Members ranked by their unlocked Soul Chronicles.',
 
             color:
                 embedConfig.colors.success
@@ -1555,11 +1731,19 @@ function buildAchievementPage(
 
         value:
             [
-                `**Ranked Souls:** \`${formatNumber(leaderboardData.participantCounts.achievements)}\``,
-                `**Displayed:** \`${formatNumber(rows.length)}\``,
+                `**Ranked Members:** \`${formatNumber(
+                    leaderboardData
+                        .participantCounts
+                        .achievements
+                )}\``,
+                `**Displayed:** \`${formatNumber(
+                    rows.length
+                )}\``,
                 '',
-                '-# Only members with at least one unlocked Achievement appear in this ranking.'
-            ].join('\n'),
+                '-# At least one Achievement is required.'
+            ].join(
+                '\n'
+            ),
 
         inline:
             false
@@ -1567,7 +1751,7 @@ function buildAchievementPage(
 
     addRankingFields(
         embed,
-        '🏆 Top Chronicle Holders',
+        '🏆 Top Achievement Holders',
         rows.map(
             row =>
                 formatAchievementEntry(
@@ -1591,7 +1775,10 @@ function buildAchievementPage(
                 personalPosition,
                 'Achievements',
                 personalPosition
-                    ? `\`${formatNumber(personalPosition.achievementCount)}\``
+                    ? `\`${formatNumber(
+                        personalPosition
+                            .achievementCount
+                    )}\``
                     : 'Not recorded'
             ),
 
@@ -1603,7 +1790,7 @@ function buildAchievementPage(
 }
 
 /**
- * Build the Chronicle Title ranking page.
+ * Build the Chronicle Title page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1630,11 +1817,14 @@ function buildTitlePage(
         createLeaderboardEmbed({
             interaction,
 
+            pageId:
+                LEADERBOARD_PAGES.titles,
+
             title:
                 '🏷️ Chronicle Title Leaderboard',
 
             description:
-                'Souls ranked by the size of their unlocked Chronicle Title collections.',
+                'Members ranked by their unlocked Chronicle Title collections.',
 
             color:
                 embedConfig.colors.title
@@ -1646,11 +1836,19 @@ function buildTitlePage(
 
         value:
             [
-                `**Ranked Souls:** \`${formatNumber(leaderboardData.participantCounts.titles)}\``,
-                `**Displayed:** \`${formatNumber(rows.length)}\``,
+                `**Ranked Members:** \`${formatNumber(
+                    leaderboardData
+                        .participantCounts
+                        .titles
+                )}\``,
+                `**Displayed:** \`${formatNumber(
+                    rows.length
+                )}\``,
                 '',
-                '-# Every permanently unlocked Title contributes to this ranking.'
-            ].join('\n'),
+                '-# Every permanently unlocked Title contributes.'
+            ].join(
+                '\n'
+            ),
 
         inline:
             false
@@ -1680,9 +1878,12 @@ function buildTitlePage(
         value:
             formatPersonalPosition(
                 personalPosition,
-                'Titles Unlocked',
+                'Titles',
                 personalPosition
-                    ? `\`${formatNumber(personalPosition.titleCount)}\``
+                    ? `\`${formatNumber(
+                        personalPosition
+                            .titleCount
+                    )}\``
                     : 'Not recorded'
             ),
 
@@ -1694,7 +1895,7 @@ function buildTitlePage(
 }
 
 /**
- * Build the requested leaderboard page.
+ * Build the selected leaderboard page.
  *
  * @param {Object} context
  * @param {string} selectedPage
@@ -1738,9 +1939,7 @@ function buildLeaderboardPage(
                 context
             );
     }
-}
-
-module.exports = {
+}module.exports = {
     category:
         'information',
 
@@ -1816,10 +2015,7 @@ module.exports = {
                         createLeaderboardMenu(
                             selectedPage
                         )
-                    ],
-
-                    fetchReply:
-                        true
+                    ]
                 });
 
             const collector =
@@ -1829,7 +2025,7 @@ module.exports = {
                             ComponentType.StringSelect,
 
                         time:
-                            10 * 60 * 1000
+                            10 * 60 * 1_000
                     });
 
             collector.on(
@@ -1844,7 +2040,7 @@ module.exports = {
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Private Ranking Archive',
-                                        'Only the Soul who opened this leaderboard may control its navigation.'
+                                        'Only the member who opened this leaderboard may control it.'
                                     )
                                 ],
 
@@ -1885,14 +2081,16 @@ module.exports = {
                             return;
                         }
 
+                        await menuInteraction.deferUpdate();
+
                         selectedPage =
                             requestedPage;
 
                         /*
-                         * Reload every dataset before each
-                         * page transition so new XP, messages,
-                         * Achievements and Titles are visible
-                         * without reopening /leaderboard.
+                         * Refresh all datasets before changing
+                         * pages so the latest progression,
+                         * messages, Achievements and Titles
+                         * are displayed.
                          */
                         leaderboardData =
                             await loadLeaderboardData(
@@ -1911,7 +2109,7 @@ module.exports = {
                                 selectedPage
                             );
 
-                        await menuInteraction.update({
+                        await menuInteraction.editReply({
                             embeds: [
                                 updatedEmbed
                             ],
@@ -1931,15 +2129,29 @@ module.exports = {
                         const navigationErrorEmbed =
                             createErrorEmbed(
                                 '❌ Leaderboard Navigation Failed',
-                                [
-                                    'Umbra could not open the selected ranking.',
-                                    '',
-                                    'Please try opening `/leaderboard` again.'
-                                ].join('\n')
+                                'Umbra could not open the selected ranking. Please reopen `/leaderboard` and try again.'
                             );
 
                         if (
-                            menuInteraction.deferred ||
+                            menuInteraction.deferred
+                        ) {
+                            await menuInteraction
+                                .followUp({
+                                    embeds: [
+                                        navigationErrorEmbed
+                                    ],
+
+                                    flags:
+                                        MessageFlags.Ephemeral
+                                })
+                                .catch(
+                                    () => null
+                                );
+
+                            return;
+                        }
+
+                        if (
                             menuInteraction.replied
                         ) {
                             await menuInteraction
@@ -2017,8 +2229,10 @@ module.exports = {
                     [
                         'Umbra could not open the Las Noches leaderboards.',
                         '',
-                        'Please verify that PostgreSQL is connected and inspect the Northflank logs if the problem continues.'
-                    ].join('\n')
+                        'Check the PostgreSQL connection and Northflank logs if the problem continues.'
+                    ].join(
+                        '\n'
+                    )
                 );
 
             if (
