@@ -8,7 +8,7 @@ const {
  * The Addon currently exposes:
  * NF_DAVIBOT_DATABASE_POSTGRES_URI
  */
-const databaseUrl =
+const rawDatabaseUrl =
     process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI ||
     process.env.DATABASE_URL;
 
@@ -23,6 +23,66 @@ const isNorthflank =
     );
 
 let pool = null;
+
+/**
+ * Remove SSL query parameters from a PostgreSQL
+ * connection string.
+ *
+ * SSL is configured directly inside the Pool
+ * options so the connection string cannot
+ * overwrite the explicit TLS configuration.
+ *
+ * @param {string} connectionString
+ * @returns {string}
+ */
+function normalizeConnectionString(
+    connectionString
+) {
+    if (!connectionString) {
+        return connectionString;
+    }
+
+    try {
+        const url =
+            new URL(
+                connectionString
+            );
+
+        const sslParameters = [
+            'sslmode',
+            'sslcert',
+            'sslkey',
+            'sslrootcert',
+            'uselibpqcompat'
+        ];
+
+        for (
+            const parameter
+            of sslParameters
+        ) {
+            url.searchParams.delete(
+                parameter
+            );
+        }
+
+        return url.toString();
+    } catch (error) {
+        console.warn(
+            '⚠️ PostgreSQL connection string could not be normalized.'
+        );
+
+        console.warn(
+            error
+        );
+
+        return connectionString;
+    }
+}
+
+const databaseUrl =
+    normalizeConnectionString(
+        rawDatabaseUrl
+    );
 
 /**
  * Create and return the PostgreSQL connection pool.
@@ -42,6 +102,11 @@ function getPool() {
             /*
              * Northflank PostgreSQL connections
              * require TLS.
+             *
+             * Certificate verification remains
+             * disabled because the current addon
+             * connection already relies on this
+             * behavior.
              */
             ssl:
                 isNorthflank
