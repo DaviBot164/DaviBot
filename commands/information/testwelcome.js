@@ -5,21 +5,31 @@ const {
 } = require('discord.js');
 
 const {
-    createWelcomeEmbed
+    createWelcomeEmbed,
+    WELCOME_BANNER_NAME
 } = require('../../utils/welcomeEmbed');
 
-module.exports = {
-    category: 'general',
+const path =
+    require('node:path');
 
-    data: new SlashCommandBuilder()
-        .setName('testwelcome')
-        .setDescription(
-            'Preview the Umbra welcome message.'
-        )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
-        )
-        .setDMPermission(false),
+module.exports = {
+    category:
+        'general',
+
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'testwelcome'
+            )
+            .setDescription(
+                'Preview the Las Noches welcome message.'
+            )
+            .setDefaultMemberPermissions(
+                PermissionFlagsBits.ManageGuild
+            )
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /testwelcome command.
@@ -27,25 +37,53 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
+            if (
+                !interaction.inGuild()
+            ) {
+                await interaction.reply({
+                    content:
+                        '❌ This command can only be used inside Las Noches.',
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             const welcomeEmbed =
                 createWelcomeEmbed(
                     interaction.member
                 );
 
-            await interaction.reply({
-                content: [
-                    '━━━━━━━━━━━━━━━━━━━━━━',
-                    '🌑 **Umbra Welcome Preview**',
-                    '',
-                    `Welcome ${interaction.user}!`,
-                    '',
-                    'This is a preview of the Crimson Eclipse welcome message.',
-                    '━━━━━━━━━━━━━━━━━━━━━━'
-                ].join('\n'),
+            const bannerPath =
+                path.join(
+                    __dirname,
+                    '..',
+                    '..',
+                    'assets',
+                    'images',
+                    WELCOME_BANNER_NAME
+                );
 
-                embeds: [welcomeEmbed]
+            await interaction.reply({
+                embeds: [
+                    welcomeEmbed
+                ],
+
+                files: [
+                    {
+                        attachment:
+                            bannerPath,
+
+                        name:
+                            WELCOME_BANNER_NAME
+                    }
+                ]
             });
         } catch (error) {
             console.error(
@@ -55,25 +93,48 @@ module.exports = {
 
             const errorMessage = {
                 content:
-                    '❌ Umbra could not generate the welcome preview.',
+                    '❌ Umbra could not generate the Las Noches welcome preview.',
+
                 flags:
                     MessageFlags.Ephemeral
             };
 
             if (
-                interaction.replied ||
-                interaction.deferred
+                interaction.replied
             ) {
-                await interaction.followUp(
-                    errorMessage
-                );
+                await interaction
+                    .followUp(
+                        errorMessage
+                    )
+                    .catch(
+                        () => null
+                    );
 
                 return;
             }
 
-            await interaction.reply(
-                errorMessage
-            );
+            if (
+                interaction.deferred
+            ) {
+                await interaction
+                    .editReply({
+                        content:
+                            errorMessage.content
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply(
+                    errorMessage
+                )
+                .catch(
+                    () => null
+                );
         }
     }
 };
