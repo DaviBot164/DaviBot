@@ -50,14 +50,20 @@ function formatVerificationLevel(
 }
 
 module.exports = {
-    category: 'information',
+    category:
+        'information',
 
-    data: new SlashCommandBuilder()
-        .setName('serverinfo')
-        .setDescription(
-            'View the official records of Las Noches.'
-        )
-        .setDMPermission(false),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'serverinfo'
+            )
+            .setDescription(
+                'View the official records of Las Noches.'
+            )
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /serverinfo command.
@@ -65,21 +71,20 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
             const { guild } =
                 interaction;
 
             if (!guild) {
-                const guildErrorEmbed =
-                    createErrorEmbed(
-                        '❌ Las Noches Unavailable',
-                        'This command can only be used inside Las Noches.'
-                    );
-
                 await interaction.reply({
                     embeds: [
-                        guildErrorEmbed
+                        createErrorEmbed(
+                            '❌ Las Noches Unavailable',
+                            'This command can only be used inside Las Noches.'
+                        )
                     ],
 
                     flags:
@@ -104,16 +109,16 @@ module.exports = {
                     ChannelType.GuildVoice
                 );
 
-            const categories =
-                countChannelsByType(
-                    guild,
-                    ChannelType.GuildCategory
-                );
-
             const forumChannels =
                 countChannelsByType(
                     guild,
                     ChannelType.GuildForum
+                );
+
+            const categories =
+                countChannelsByType(
+                    guild,
+                    ChannelType.GuildCategory
                 );
 
             const serverIcon =
@@ -156,14 +161,13 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🏰 Las Noches Kingdom Records',
+                        '🏰 Las Noches Records',
 
                     description:
-                        [
-                            `Umbra has opened the official records of **${guild.name}**.`,
-                            '',
-                            '*Every Soul, throne and structure is preserved beneath the eternal moon.*'
-                        ].join('\n'),
+                        `Official information for **${guild.name}**.`,
+
+                    color:
+                        '#6F42C1',
 
                     thumbnail:
                         serverIcon,
@@ -171,70 +175,88 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '👑 Kingdom Information',
+                                '👑 Kingdom',
 
                             value:
-                                `**Kingdom Name:** ${guild.name}\n` +
-                                `**Kingdom ID:** \`${guild.id}\`\n` +
-                                `**Ruler:** ${owner}\n` +
-                                `**Total Souls:** \`${guild.memberCount}\`\n` +
-                                `**Residents:** \`${humanCount}\`\n` +
-                                `**Automata:** \`${botCount}\``,
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '📅 Kingdom History',
-
-                            value:
-                                `**Founded:** <t:${createdTimestamp}:F>\n` +
-                                `**Age:** <t:${createdTimestamp}:R>`,
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '📊 Las Noches Statistics',
-
-                            value:
-                                `**Text Channels:** \`${textChannels}\`\n` +
-                                `**Voice Channels:** \`${voiceChannels}\`\n` +
-                                `**Forum Channels:** \`${forumChannels}\`\n` +
-                                `**Districts:** \`${categories}\``,
+                                [
+                                    `**Ruler:** ${owner}`,
+                                    `**Souls:** \`${guild.memberCount}\``,
+                                    `**Residents:** \`${humanCount}\``,
+                                    `**Bots:** \`${botCount}\``
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 true
                         },
                         {
                             name:
-                                '🎖️ Kingdom Structure',
+                                '📊 Structure',
 
                             value:
-                                `**Roles:** \`${guild.roles.cache.size}\`\n` +
-                                `**Emojis:** \`${guild.emojis.cache.size}\`\n` +
-                                `**Stickers:** \`${guild.stickers.cache.size}\``,
+                                [
+                                    `**Text:** \`${textChannels}\``,
+                                    `**Voice:** \`${voiceChannels}\``,
+                                    `**Forums:** \`${forumChannels}\``,
+                                    `**Districts:** \`${categories}\``
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 true
                         },
                         {
                             name:
-                                '⚙️ Kingdom Settings',
+                                '🎖️ Resources',
 
                             value:
-                                `**AFK Timeout:** \`${Math.floor(
-                                    guild.afkTimeout /
-                                    60
-                                )} minutes\`\n` +
-                                `**Locale:** \`${guild.preferredLocale}\`\n` +
-                                `**Verification:** \`${formatVerificationLevel(
-                                    guild.verificationLevel
-                                )}\`\n` +
-                                `**Boost Level:** \`${guild.premiumTier}\`\n` +
-                                `**Boosts:** \`${guild.premiumSubscriptionCount ?? 0}\``,
+                                [
+                                    `**Roles:** \`${guild.roles.cache.size}\``,
+                                    `**Emojis:** \`${guild.emojis.cache.size}\``,
+                                    `**Stickers:** \`${guild.stickers.cache.size}\``,
+                                    `**Boosts:** \`${guild.premiumSubscriptionCount ?? 0}\``
+                                ].join(
+                                    '\n'
+                                ),
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '📅 Founded',
+
+                            value:
+                                [
+                                    `<t:${createdTimestamp}:F>`,
+                                    `<t:${createdTimestamp}:R>`
+                                ].join(
+                                    '\n'
+                                ),
+
+                            inline:
+                                false
+                        },
+                        {
+                            name:
+                                '⚙️ Settings',
+
+                            value:
+                                [
+                                    `**Locale:** \`${guild.preferredLocale}\``,
+                                    `**Verification:** \`${formatVerificationLevel(
+                                        guild.verificationLevel
+                                    )}\``,
+                                    `**Boost Level:** \`${guild.premiumTier}\``,
+                                    `**AFK Timeout:** \`${Math.floor(
+                                        guild.afkTimeout /
+                                        60
+                                    )} minutes\``
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 false
@@ -244,7 +266,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    `${guild.name} • Kingdom Records`,
+                    `${guild.name} • Kingdom Archive`,
 
                 iconURL:
                     serverIcon ||
@@ -260,7 +282,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `🌙 Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
@@ -300,26 +322,34 @@ module.exports = {
                 interaction.replied ||
                 interaction.deferred
             ) {
-                await interaction.followUp({
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
                     embeds: [
                         errorEmbed
                     ],
 
                     flags:
                         MessageFlags.Ephemeral
-                });
-
-                return;
-            }
-
-            await interaction.reply({
-                embeds: [
-                    errorEmbed
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

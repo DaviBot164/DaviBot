@@ -17,16 +17,18 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('avatar')
         .setDescription(
-            'View the avatar of a Soul.'
+            'View the avatar of a Las Noches member.'
         )
+
         .addUserOption(option =>
             option
                 .setName('user')
                 .setDescription(
-                    'Select the Soul whose avatar you want to view'
+                    'Select the member whose avatar you want to view'
                 )
                 .setRequired(false)
         )
+
         .setDMPermission(false),
 
     /**
@@ -37,6 +39,22 @@ module.exports = {
      */
     async execute(interaction) {
         try {
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             await interaction.deferReply();
 
             const selectedUser =
@@ -45,88 +63,92 @@ module.exports = {
                 ) ||
                 interaction.user;
 
-            const [user, member] =
-                await Promise.all([
-                    selectedUser.fetch(true),
+            const [
+                user,
+                member
+            ] = await Promise.all([
+                selectedUser.fetch(
+                    true
+                ),
 
-                    interaction.guild.members.fetch(
+                interaction.guild.members
+                    .fetch(
                         selectedUser.id
                     )
-                ]);
+                    .catch(
+                        () => null
+                    )
+            ]);
+
+            if (!member) {
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Member Not Found',
+                            'This user is not currently a member of Las Noches.'
+                        )
+                    ]
+                });
+
+                return;
+            }
 
             const avatarURL =
                 user.displayAvatarURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
 
             const bannerURL =
                 user.bannerURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
-
-            const createdTimestamp =
-                Math.floor(
-                    user.createdTimestamp /
-                    1_000
-                );
-
-            const avatarAnimated =
-                avatarURL.includes('.gif')
-                    ? 'Yes'
-                    : 'No';
-
-            const bannerStatus =
-                bannerURL
-                    ? 'Available'
-                    : 'Not Available';
 
             const accountType =
                 user.bot
-                    ? '🤖 Order Guardian'
+                    ? '🤖 Bot'
                     : user.system
-                        ? '⚙️ System Account'
-                        : '🌑 Soul';
+                        ? '⚙️ System'
+                        : '🌙 Member';
 
             const embed =
                 createEmbed({
                     title:
-                        '🖼️ Soul Avatar',
+                        '🖼️ Las Noches Avatar',
 
                     description:
-                        [
-                            `Umbra has revealed the avatar of ${user}.`,
-                            '',
-                            '*Every Soul bears a face beneath the crimson moon.*'
-                        ].join('\n'),
+                        `Avatar record for ${user}.`,
+
+                    color:
+                        '#6F42C1',
 
                     thumbnail:
+                        avatarURL,
+
+                    image:
                         avatarURL,
 
                     fields: [
                         {
                             name:
-                                '🌑 Soul Information',
+                                '👤 Member',
 
                             value:
-                                `**Username:** ${user.username}\n` +
-                                `**Display Name:** ${member.displayName}\n` +
-                                `**Account Type:** ${accountType}\n` +
-                                `**Soul ID:** \`${user.id}\``,
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '🖼️ Avatar Record',
-
-                            value:
-                                `**Animated:** \`${avatarAnimated}\`\n` +
-                                `**Banner:** \`${bannerStatus}\`\n` +
-                                `**Account Created:** <t:${createdTimestamp}:F>\n` +
-                                `**Account Age:** <t:${createdTimestamp}:R>`,
+                                [
+                                    `**Username:** ${user.username}`,
+                                    `**Display Name:** ${member.displayName}`,
+                                    `**Type:** ${accountType}`,
+                                    `**User ID:** \`${user.id}\``
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 false
@@ -134,35 +156,37 @@ module.exports = {
                     ]
                 });
 
-            embed
-                .setAuthor({
-                    name:
-                        `${user.username} • Soul Avatar`,
+            embed.setAuthor({
+                name:
+                    `${user.username} • Avatar Archive`,
 
-                    iconURL:
-                        avatarURL
-                })
-                .setImage(
+                iconURL:
                     avatarURL
-                )
-                .setFooter({
-                    text:
-                        `🌑 Umbra Avatar Records • Requested by ${interaction.user.username}`,
+            });
 
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size: 128,
-                                forceStatic: false
-                            })
-                });
+            embed.setFooter({
+                text:
+                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+
+                iconURL:
+                    interaction.client.user
+                        .displayAvatarURL({
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
+                        })
+            });
 
             const buttons = [
                 new ButtonBuilder()
                     .setLabel(
                         'Open Avatar'
                     )
-                    .setEmoji('🖼️')
+                    .setEmoji(
+                        '🖼️'
+                    )
                     .setStyle(
                         ButtonStyle.Link
                     )
@@ -177,7 +201,9 @@ module.exports = {
                         .setLabel(
                             'Open Banner'
                         )
-                        .setEmoji('🌌')
+                        .setEmoji(
+                            '🌌'
+                        )
                         .setStyle(
                             ButtonStyle.Link
                         )
@@ -194,8 +220,13 @@ module.exports = {
                     );
 
             await interaction.editReply({
-                embeds: [embed],
-                components: [row]
+                embeds: [
+                    embed
+                ],
+
+                components: [
+                    row
+                ]
             });
         } catch (error) {
             console.error(
@@ -205,8 +236,8 @@ module.exports = {
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Soul Avatar Unavailable',
-                    'Umbra could not retrieve this Soul’s avatar.'
+                    '❌ Avatar Unavailable',
+                    'Umbra could not retrieve this Las Noches avatar.'
                 );
 
             if (interaction.deferred) {
@@ -215,6 +246,7 @@ module.exports = {
                         embeds: [
                             errorEmbed
                         ],
+
                         components: []
                     })
                     .catch(
@@ -230,6 +262,7 @@ module.exports = {
                         embeds: [
                             errorEmbed
                         ],
+
                         flags:
                             MessageFlags.Ephemeral
                     })
@@ -245,6 +278,7 @@ module.exports = {
                     embeds: [
                         errorEmbed
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 })

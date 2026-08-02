@@ -27,13 +27,19 @@ module.exports = {
     async execute(interaction) {
         try {
             const apiLatency =
-                Math.round(
-                    interaction.client.ws.ping
+                Math.max(
+                    0,
+                    Math.round(
+                        interaction.client.ws.ping
+                    )
                 );
 
             const responseTime =
-                Date.now() -
-                interaction.createdTimestamp;
+                Math.max(
+                    0,
+                    Date.now() -
+                    interaction.createdTimestamp
+                );
 
             const status =
                 apiLatency < 150
@@ -42,24 +48,29 @@ module.exports = {
                         ? '🟡 Delayed'
                         : '🔴 High Latency';
 
+            const botAvatar =
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            256,
+
+                        forceStatic:
+                            false
+                    });
+
             const embed =
                 createEmbed({
                     title:
-                        '🌑 Umbra Status',
+                        '🌙 Umbra Status',
 
                     description:
-                        [
-                            '**Guardian of Crimson Eclipse**',
-                            '',
-                            'Umbra is awake and watching over the Order.'
-                        ].join('\n'),
+                        '**Guardian of Las Noches is online.**',
+
+                    color:
+                        '#6F42C1',
 
                     thumbnail:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size: 256,
-                                forceStatic: false
-                            }),
+                        botAvatar,
 
                     fields: [
                         {
@@ -84,10 +95,10 @@ module.exports = {
                         },
                         {
                             name:
-                                '🛡️ Guardian Status',
+                                '🛡️ Status',
 
                             value:
-                                `\`${status}\``,
+                                status,
 
                             inline:
                                 false
@@ -97,18 +108,24 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Umbra • Guardian of Crimson Eclipse',
+                    'Umbra • Guardian of Las Noches',
 
                 iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size: 128,
-                            forceStatic: false
-                        })
+                    botAvatar
+            });
+
+            embed.setFooter({
+                text:
+                    `Las Noches System Check • Requested by ${interaction.user.username}`,
+
+                iconURL:
+                    botAvatar
             });
 
             await interaction.reply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
             });
         } catch (error) {
             console.error(
@@ -122,28 +139,49 @@ module.exports = {
                     'Umbra could not calculate the current latency.'
                 );
 
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
-                await interaction.followUp({
-                    embeds: [
-                        errorEmbed
-                    ],
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
 
                 return;
             }
 
-            await interaction.reply({
-                embeds: [
-                    errorEmbed
-                ],
-                flags:
-                    MessageFlags.Ephemeral
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

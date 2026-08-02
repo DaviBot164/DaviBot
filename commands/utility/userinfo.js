@@ -1,7 +1,7 @@
 /**
  * Umbra
  * Command: /userinfo
- * Version: 2.1.0
+ * Version: 3.0.0
  */
 
 const {
@@ -23,16 +23,18 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('userinfo')
         .setDescription(
-            'View information about a Soul.'
+            'View the Las Noches record of a member.'
         )
+
         .addUserOption(option =>
             option
                 .setName('user')
                 .setDescription(
-                    'Select the Soul whose information you want to view'
+                    'Select the member whose record you want to view'
                 )
                 .setRequired(false)
         )
+
         .setDMPermission(false),
 
     /**
@@ -43,6 +45,22 @@ module.exports = {
      */
     async execute(interaction) {
         try {
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
             await interaction.deferReply();
 
             const selectedUser =
@@ -51,25 +69,52 @@ module.exports = {
                 ) ||
                 interaction.user;
 
-            const [member, user] =
-                await Promise.all([
-                    interaction.guild.members.fetch(
+            const [
+                member,
+                user
+            ] = await Promise.all([
+                interaction.guild.members
+                    .fetch(
                         selectedUser.id
+                    )
+                    .catch(
+                        () => null
                     ),
 
-                    selectedUser.fetch(true)
-                ]);
+                selectedUser.fetch(
+                    true
+                )
+            ]);
+
+            if (!member) {
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Member Not Found',
+                            'This user is not currently a member of Las Noches.'
+                        )
+                    ]
+                });
+
+                return;
+            }
 
             const avatarURL =
                 user.displayAvatarURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
 
             const bannerURL =
                 user.bannerURL({
-                    size: 4096,
-                    forceStatic: false
+                    size:
+                        4096,
+
+                    forceStatic:
+                        false
                 });
 
             const accountCreatedTimestamp =
@@ -101,22 +146,29 @@ module.exports = {
 
             const accountType =
                 user.bot
-                    ? '🤖 Order Guardian'
+                    ? '🤖 Bot'
                     : user.system
-                        ? '⚙️ System Account'
-                        : '🌑 Soul';
+                        ? '⚙️ System'
+                        : '🌙 Member';
+
+            const joinedText =
+                joinedServerTimestamp
+                    ? (
+                        `<t:${joinedServerTimestamp}:F>\n` +
+                        `<t:${joinedServerTimestamp}:R>`
+                    )
+                    : 'Unknown';
 
             const embed =
                 createEmbed({
                     title:
-                        '🌑 Soul Information',
+                        '🌙 Las Noches Member Record',
 
                     description:
-                        [
-                            `Umbra has opened the record of ${user}.`,
-                            '',
-                            '*Every Soul is known beneath the crimson moon.*'
-                        ].join('\n'),
+                        `Official information for ${user}.`,
+
+                    color:
+                        '#6F42C1',
 
                     thumbnail:
                         avatarURL,
@@ -124,30 +176,16 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '🌑 Soul Record',
+                                '👤 Identity',
 
                             value:
-                                `**Username:** ${user.username}\n` +
-                                `**Display Name:** ${member.displayName}\n` +
-                                `**Mention:** ${user}\n` +
-                                `**Account Type:** ${accountType}\n` +
-                                `**Soul ID:** \`${user.id}\``,
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '📅 Soul History',
-
-                            value:
-                                `**Account Created:** <t:${accountCreatedTimestamp}:F>\n` +
-                                `**Account Age:** <t:${accountCreatedTimestamp}:R>\n` +
-                                (
-                                    joinedServerTimestamp
-                                        ? `**Entered the Order:** <t:${joinedServerTimestamp}:F>\n` +
-                                          `**Time in the Order:** <t:${joinedServerTimestamp}:R>`
-                                        : '**Entered the Order:** Unknown'
+                                [
+                                    `**Username:** ${user.username}`,
+                                    `**Display Name:** ${member.displayName}`,
+                                    `**Type:** ${accountType}`,
+                                    `**User ID:** \`${user.id}\``
+                                ].join(
+                                    '\n'
                                 ),
 
                             inline:
@@ -155,12 +193,41 @@ module.exports = {
                         },
                         {
                             name:
-                                '🎭 Order Standing',
+                                '📅 Account Created',
 
                             value:
-                                `**Highest Role:** ${highestRole}\n` +
-                                `**Total Roles:** \`${roleCount}\`\n` +
-                                `**Nickname:** ${member.nickname ?? 'None'}`,
+                                [
+                                    `<t:${accountCreatedTimestamp}:F>`,
+                                    `<t:${accountCreatedTimestamp}:R>`
+                                ].join(
+                                    '\n'
+                                ),
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🏰 Entered Las Noches',
+
+                            value:
+                                joinedText,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🎭 Standing',
+
+                            value:
+                                [
+                                    `**Highest Role:** ${highestRole}`,
+                                    `**Total Roles:** \`${roleCount}\``,
+                                    `**Nickname:** ${member.nickname ?? 'None'}`
+                                ].join(
+                                    '\n'
+                                ),
 
                             inline:
                                 false
@@ -170,7 +237,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    `${user.username} • Soul Record`,
+                    `${user.username} • Member Archive`,
 
                 iconURL:
                     avatarURL
@@ -178,13 +245,16 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `🌑 Umbra Soul Records • Requested by ${interaction.user.username}`,
+                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
                         .displayAvatarURL({
-                            size: 128,
-                            forceStatic: false
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
                         })
             });
 
@@ -201,7 +271,9 @@ module.exports = {
                             .setLabel(
                                 'Open Avatar'
                             )
-                            .setEmoji('🖼️')
+                            .setEmoji(
+                                '🖼️'
+                            )
                             .setStyle(
                                 ButtonStyle.Link
                             )
@@ -216,7 +288,9 @@ module.exports = {
                         .setLabel(
                             'Open Banner'
                         )
-                        .setEmoji('🌌')
+                        .setEmoji(
+                            '🌌'
+                        )
                         .setStyle(
                             ButtonStyle.Link
                         )
@@ -227,8 +301,13 @@ module.exports = {
             }
 
             await interaction.editReply({
-                embeds: [embed],
-                components: [row]
+                embeds: [
+                    embed
+                ],
+
+                components: [
+                    row
+                ]
             });
         } catch (error) {
             console.error(
@@ -238,9 +317,8 @@ module.exports = {
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Soul Information Unavailable',
-
-                    'Umbra could not retrieve information about this Soul.'
+                    '❌ Member Record Unavailable',
+                    'Umbra could not retrieve this Las Noches member record.'
                 );
 
             if (interaction.deferred) {
