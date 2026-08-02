@@ -12,11 +12,16 @@ const embedConfig =
  * Send an Umbra moderation log to the
  * configured moderation-log channel.
  *
+ * Supports both:
+ * - Member moderation actions
+ * - Channel moderation actions
+ *
  * @param {Object} options
  * @param {import('discord.js').Guild} options.guild
  * @param {string} options.action
- * @param {import('discord.js').User} options.user
+ * @param {import('discord.js').User} [options.user]
  * @param {import('discord.js').User} options.moderator
+ * @param {import('discord.js').GuildBasedChannel} [options.channel]
  * @param {string} [options.reason]
  * @param {Array} [options.fields]
  * @returns {Promise<boolean>}
@@ -24,8 +29,9 @@ const embedConfig =
 async function sendModLog({
     guild,
     action,
-    user,
+    user = null,
     moderator,
+    channel = null,
     reason = 'No reason was provided.',
     fields = []
 }) {
@@ -38,9 +44,9 @@ async function sendModLog({
             return false;
         }
 
-        if (!user) {
+        if (!action) {
             console.warn(
-                '⚠️ Umbra moderation log skipped: Target user was not provided.'
+                '⚠️ Umbra moderation log skipped: Action was not provided.'
             );
 
             return false;
@@ -115,66 +121,83 @@ async function sendModLog({
                     'Umbra has recorded a moderation action within the Order.'
                 )
 
-                .setThumbnail(
-                    user.displayAvatarURL({
-                        size: 256,
-                        forceStatic: false
-                    })
-                )
-
-                .addFields(
-                    {
-                        name:
-                            '🌑 Soul',
-
-                        value:
-                            `${user.tag}\n` +
-                            `\`${user.id}\``,
-
-                        inline:
-                            true
-                    },
-                    {
-                        name:
-                            '🛡️ Shadow Warden',
-
-                        value:
-                            `${moderator.tag}\n` +
-                            `\`${moderator.id}\``,
-
-                        inline:
-                            true
-                    },
-                    {
-                        name:
-                            '🏰 Order',
-
-                        value:
-                            `${guild.name}\n` +
-                            `\`${guild.id}\``,
-
-                        inline:
-                            false
-                    },
-                    {
-                        name:
-                            '📜 Reason',
-
-                        value:
-                            reason ||
-                            'No reason was provided.',
-
-                        inline:
-                            false
-                    }
-                )
-
                 .setFooter({
                     text:
                         embedConfig.footer.text
                 })
 
                 .setTimestamp();
+
+        if (user) {
+            logEmbed.setThumbnail(
+                user.displayAvatarURL({
+                    size: 256,
+                    forceStatic: false
+                })
+            );
+
+            logEmbed.addFields({
+                name:
+                    '🌑 Soul',
+
+                value:
+                    `${user.tag}\n` +
+                    `\`${user.id}\``,
+
+                inline:
+                    true
+            });
+        }
+
+        if (channel) {
+            logEmbed.addFields({
+                name:
+                    '📺 Channel',
+
+                value:
+                    `${channel}\n` +
+                    `\`${channel.id}\``,
+
+                inline:
+                    true
+            });
+        }
+
+        logEmbed.addFields(
+            {
+                name:
+                    '🛡️ Shadow Warden',
+
+                value:
+                    `${moderator.tag}\n` +
+                    `\`${moderator.id}\``,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🏰 Order',
+
+                value:
+                    `${guild.name}\n` +
+                    `\`${guild.id}\``,
+
+                inline:
+                    false
+            },
+            {
+                name:
+                    '📜 Reason',
+
+                value:
+                    reason ||
+                    'No reason was provided.',
+
+                inline:
+                    false
+            }
+        );
 
         if (
             Array.isArray(fields) &&

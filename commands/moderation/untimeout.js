@@ -14,6 +14,10 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     category: 'moderation',
 
@@ -198,7 +202,38 @@ module.exports = {
             });
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '✅ Silence Lifted',
+
+                user:
+                    member.user,
+
+                moderator:
+                    interaction.user,
+
+                reason,
+
+                fields: [
+                    {
+                        name:
+                            '🌑 Order Status',
+
+                        value:
+                            'This Soul may communicate within Crimson Eclipse again.',
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(

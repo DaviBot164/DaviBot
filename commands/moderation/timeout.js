@@ -15,6 +15,10 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     category: 'moderation',
 
@@ -311,7 +315,59 @@ module.exports = {
             );
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '⏳ Soul Silenced',
+
+                user:
+                    member.user,
+
+                moderator:
+                    interaction.user,
+
+                reason,
+
+                fields: [
+                    {
+                        name:
+                            '⏱️ Duration',
+
+                        value:
+                            durationText,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🕒 Timeout Ends',
+
+                        value:
+                            `<t:${timeoutEndsAt}:F>\n` +
+                            `(<t:${timeoutEndsAt}:R>)`,
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '🌑 Order Status',
+
+                        value:
+                            'This Soul has temporarily lost the ability to communicate within Crimson Eclipse.',
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(

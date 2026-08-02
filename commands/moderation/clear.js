@@ -9,6 +9,10 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     category: 'moderation',
 
@@ -17,6 +21,7 @@ module.exports = {
         .setDescription(
             'Remove multiple messages from a channel.'
         )
+
         .addIntegerOption(option =>
             option
                 .setName('amount')
@@ -27,9 +32,11 @@ module.exports = {
                 .setMinValue(1)
                 .setMaxValue(100)
         )
+
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageMessages
         )
+
         .setDMPermission(false),
 
     /**
@@ -48,6 +55,7 @@ module.exports = {
                             'This command can only be used inside a server.'
                         )
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -62,7 +70,8 @@ module.exports = {
                 );
 
             const botMember =
-                await interaction.guild.members.fetchMe();
+                await interaction.guild.members
+                    .fetchMe();
 
             if (
                 !botMember.permissions.has(
@@ -76,6 +85,7 @@ module.exports = {
                             'Umbra requires the **Manage Messages** permission to clear messages.'
                         )
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -95,6 +105,7 @@ module.exports = {
                             'Only a Shadow Warden with **Manage Messages** may use this command.'
                         )
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -119,6 +130,7 @@ module.exports = {
                             `Umbra cannot manage messages inside ${interaction.channel}.`
                         )
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -205,7 +217,49 @@ module.exports = {
             });
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '🧹 Channel Purged',
+
+                channel:
+                    interaction.channel,
+
+                moderator:
+                    interaction.user,
+
+                reason:
+                    'Messages were removed with the /clear command.',
+
+                fields: [
+                    {
+                        name:
+                            '🗑️ Requested Messages',
+
+                        value:
+                            `\`${amount}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '✅ Deleted Messages',
+
+                        value:
+                            `\`${deletedCount}\``,
+
+                        inline:
+                            true
+                    }
+                ]
             });
         } catch (error) {
             console.error(
@@ -239,6 +293,7 @@ module.exports = {
                         embeds: [
                             errorEmbed
                         ],
+
                         flags:
                             MessageFlags.Ephemeral
                     })
@@ -254,6 +309,7 @@ module.exports = {
                     embeds: [
                         errorEmbed
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 })

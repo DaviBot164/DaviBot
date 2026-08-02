@@ -13,6 +13,10 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 const warningDatabase =
     require('../../database/warnings');
 
@@ -216,7 +220,60 @@ module.exports = {
             );
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '⚠️ Sacred Warning Recorded',
+
+                user:
+                    member.user,
+
+                moderator:
+                    interaction.user,
+
+                reason,
+
+                fields: [
+                    {
+                        name:
+                            '🆔 Warning Record',
+
+                        value:
+                            `\`#${warning.id}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '📚 Total Warnings',
+
+                        value:
+                            `\`${totalWarnings}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🌑 Order Status',
+
+                        value:
+                            totalWarnings >= 3
+                                ? '🔴 Repeated violations recorded'
+                                : '🟡 Warning placed on record',
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(

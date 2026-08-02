@@ -9,6 +9,10 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 const warningDatabase =
     require('../../database/warnings');
 
@@ -145,6 +149,15 @@ module.exports = {
                         deletedWarning.user_id
                     );
 
+                const targetUser =
+                    await interaction.client.users
+                        .fetch(
+                            deletedWarning.user_id
+                        )
+                        .catch(
+                            () => null
+                        );
+
                 const embed =
                     createEmbed({
                         title:
@@ -213,7 +226,66 @@ module.exports = {
                 });
 
                 await interaction.editReply({
-                    embeds: [embed]
+                    embeds: [
+                        embed
+                    ]
+                });
+
+                await sendModLog({
+                    guild:
+                        interaction.guild,
+
+                    action:
+                        '🗑️ Sacred Warning Removed',
+
+                    user:
+                        targetUser,
+
+                    moderator:
+                        interaction.user,
+
+                    reason:
+                        deletedWarning.reason ||
+                        'No reason was recorded.',
+
+                    fields: [
+                        {
+                            name:
+                                '🆔 Removed Warning',
+
+                            value:
+                                `\`#${deletedWarning.id}\``,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '📚 Remaining Warnings',
+
+                            value:
+                                `\`${remainingWarnings}\``,
+
+                            inline:
+                                true
+                        },
+                        ...(
+                            targetUser
+                                ? []
+                                : [
+                                    {
+                                        name:
+                                            '🌑 Soul ID',
+
+                                        value:
+                                            `\`${deletedWarning.user_id}\``,
+
+                                        inline:
+                                            true
+                                    }
+                                ]
+                        )
+                    ]
                 });
 
                 return;
@@ -328,7 +400,48 @@ module.exports = {
                 });
 
                 await interaction.editReply({
-                    embeds: [embed]
+                    embeds: [
+                        embed
+                    ]
+                });
+
+                await sendModLog({
+                    guild:
+                        interaction.guild,
+
+                    action:
+                        '🗑️ All Sacred Warnings Removed',
+
+                    user,
+
+                    moderator:
+                        interaction.user,
+
+                    reason:
+                        'All warning records were cleared by a Shadow Warden.',
+
+                    fields: [
+                        {
+                            name:
+                                '🗑️ Deleted Records',
+
+                            value:
+                                `\`${deletedCount}\``,
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🛡️ Guardian Status',
+
+                            value:
+                                '🟢 Warning record cleared',
+
+                            inline:
+                                false
+                        }
+                    ]
                 });
 
                 return;

@@ -10,6 +10,10 @@ const {
     createChannelModerationEmbed
 } = require('../../utils/embeds');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     category: 'moderation',
 
@@ -194,12 +198,26 @@ module.exports = {
             const isDisabled =
                 seconds === 0;
 
+            const durationText =
+                isDisabled
+                    ? 'Disabled'
+                    : formatDuration(
+                        seconds
+                    );
+
+            const action =
+                isDisabled
+                    ? '✅ Slowmode Lifted'
+                    : '🐢 Slowmode Enforced';
+
+            const orderStatus =
+                isDisabled
+                    ? 'Souls may now send messages without a delay.'
+                    : 'Souls must now wait between messages in this channel.';
+
             const embed =
                 createChannelModerationEmbed({
-                    action:
-                        isDisabled
-                            ? '✅ Slowmode Lifted'
-                            : '🐢 Slowmode Enforced',
+                    action,
 
                     channel,
 
@@ -215,11 +233,7 @@ module.exports = {
                         '⏱️ Slowmode',
 
                     value:
-                        isDisabled
-                            ? 'Disabled'
-                            : formatDuration(
-                                seconds
-                            ),
+                        durationText,
 
                     inline:
                         true
@@ -229,9 +243,7 @@ module.exports = {
                         '🌑 Order Status',
 
                     value:
-                        isDisabled
-                            ? 'Souls may now send messages without a delay.'
-                            : 'Souls must now wait between messages in this channel.',
+                        orderStatus,
 
                     inline:
                         false
@@ -239,7 +251,46 @@ module.exports = {
             );
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action,
+
+                channel,
+
+                moderator:
+                    interaction.user,
+
+                reason,
+
+                fields: [
+                    {
+                        name:
+                            '⏱️ Slowmode',
+
+                        value:
+                            durationText,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🌑 Order Status',
+
+                        value:
+                            orderStatus,
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(
