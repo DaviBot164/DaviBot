@@ -15,7 +15,8 @@ const WELCOME_BANNER_NAME =
  * Create the Umbra Welcome embed.
  *
  * The banner image is attached inside:
- * events/guildMemberAdd.js
+ * - events/guildMemberAdd.js
+ * - commands/information/testwelcome.js
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {EmbedBuilder}
@@ -87,7 +88,7 @@ function createWelcomeEmbed(
 
     return new EmbedBuilder()
         .setColor(
-            '#F2F2F2'
+            '#6F42C1'
         )
 
         .setAuthor({
@@ -99,64 +100,35 @@ function createWelcomeEmbed(
         })
 
         .setTitle(
-            `🏰 Arrival #${arrivalNumber} Has Entered Las Noches`
+            '🌙 A Soul Has Entered Las Noches'
         )
 
         .setDescription(
             [
-                '━━━━━━━━━━━━━━━━━━━━',
-                '',
                 `Welcome, ${member}.`,
                 '',
-                'A new presence has crossed the white sands of Hueco Mundo.',
-                `The gates of **${guild.name}** now stand before you.`,
-                '',
-                `**${verificationText}**`,
-                '',
-                'Once verified, explore the fortress, meet its Arrancar, and begin your ascent.',
-                '',
-                '━━━━━━━━━━━━━━━━━━━━',
-                '',
-                '*Every arrival leaves a trace within the halls of Las Noches.*'
+                `**${verificationText}**`
             ].join(
                 '\n'
             )
         )
 
-        .addFields(
-            {
-                name:
-                    '📜 Arrival Record',
+        .addFields({
+            name:
+                '📜 Arrival Record',
 
-                value:
-                    [
-                        `👤 **Arrival:** ${member}`,
-                        `🏅 **Record Number:** \`#${arrivalNumber}\``,
-                        `🕒 **Entered:** <t:${joinedTimestamp}:R>`
-                    ].join(
-                        '\n'
-                    ),
+            value:
+                [
+                    `👤 **Soul:** ${member}`,
+                    `🏅 **Number:** \`#${arrivalNumber}\``,
+                    `🕒 **Joined:** <t:${joinedTimestamp}:R>`
+                ].join(
+                    '\n'
+                ),
 
-                inline:
-                    false
-            },
-            {
-                name:
-                    '🌙 First Directive',
-
-                value:
-                    [
-                        'Complete verification.',
-                        'Read the laws of Las Noches.',
-                        'Choose your path and begin your progression.'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    false
-            }
-        )
+            inline:
+                false
+        })
 
         .setThumbnail(
             memberAvatar
