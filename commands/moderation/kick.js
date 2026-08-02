@@ -14,6 +14,10 @@ const {
     getModerationError
 } = require('../../utils/moderation');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 module.exports = {
     category: 'moderation',
 
@@ -199,6 +203,35 @@ module.exports = {
 
             await interaction.editReply({
                 embeds: [embed]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '👢 Soul Removed',
+
+                user:
+                    targetUser,
+
+                moderator:
+                    interaction.user,
+
+                reason,
+
+                fields: [
+                    {
+                        name:
+                            '🌑 Order Status',
+
+                        value:
+                            'The Soul was removed from Crimson Eclipse.',
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(

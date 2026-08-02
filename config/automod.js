@@ -7,9 +7,9 @@ module.exports = {
     /**
      * AutoMod-ის ლოგების არხი.
      */
-    logChannelId: '1527768422535004360',
+    logChannelId: '1530901922855256104',
 
-    logChannelName: '📄・moderation-logs',
+    logChannelName: '📄・umbra-logs',
 
     /**
      * ამ უფლებების მქონე წევრებს
