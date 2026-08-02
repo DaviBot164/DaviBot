@@ -12,6 +12,9 @@ const {
 const rankDatabase =
     require('../../database/ranks');
 
+const rankConfig =
+    require('../../config/ranks');
+
 const {
     checkMemberTitles
 } = require('../../handlers/titleHandler');
@@ -26,51 +29,90 @@ const {
 } = require('../../utils/kingdomFeed');
 
 /**
- * All manually assignable Arrancar Ranks.
+ * Return every configured Arrancar Rank.
  *
- * These names must match the Discord
- * role names exactly.
+ * @returns {Array<{
+ *     key: string,
+ *     id: string,
+ *     name: string
+ * }>}
  */
-const ARRANCAR_RANKS = [
-    '👑 Espada 0',
-    'Ⅰ Espada',
-    'Ⅱ Espada',
-    'Ⅲ Espada',
-    'Ⅳ Espada',
-    'Ⅴ Espada',
-    'Ⅵ Espada',
-    'Ⅶ Espada',
-    'Ⅷ Espada',
-    'Ⅸ Espada',
-    'Ⅹ Espada',
-    '🌘 Privaron Espada',
-    '⚔️ Fracción',
-    '🦴 Numeros',
-    '⚪ Unranked Arrancar'
-];
+function getConfiguredRanks() {
+    return Object.entries(
+        rankConfig.hierarchy
+    ).map(
+        ([
+            key,
+            rank
+        ]) => ({
+            key,
+            id:
+                rank.id,
+            name:
+                rank.name
+        })
+    );
+}
 
 /**
- * Roles that may manage the manual
- * Arrancar Rank System.
+ * Return every configured Arrancar
+ * Rank Role ID.
  *
- * Lieutenants are intentionally excluded.
+ * @returns {string[]}
  */
-const RANK_MANAGER_ROLES = [
-    '👑 Ruler of Las Noches',
-    '⚜️ Head Captain',
-    '🛡️ Captain'
-];
+function getConfiguredRankRoleIds() {
+    return getConfiguredRanks()
+        .map(
+            rank =>
+                rank.id
+        );
+}
 
 /**
- * Channel used for official promotions
- * and Rank Title notifications.
+ * Find one configured Rank by its
+ * stable command key.
+ *
+ * @param {string} rankKey
+ * @returns {{
+ *     key: string,
+ *     id: string,
+ *     name: string
+ * }|null}
  */
-const PROMOTION_CHANNEL_NAME =
-    '🏅・hall-of-promotions';
+function getConfiguredRank(
+    rankKey
+) {
+    const rank =
+        rankConfig.hierarchy[
+            rankKey
+        ];
+
+    if (
+        !rank ||
+        !rank.id ||
+        !rank.name
+    ) {
+        return null;
+    }
+
+    return {
+        key:
+            rankKey,
+
+        id:
+            rank.id,
+
+        name:
+            rank.name
+    };
+}
 
 /**
  * Check whether the command executor
  * belongs to the Las Noches High Command.
+ *
+ * The guild owner and members with
+ * Administrator always bypass Role checks.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -97,31 +139,34 @@ function canManageArrancarRanks(
         return true;
     }
 
-    return member.roles.cache.some(
-        role =>
-            RANK_MANAGER_ROLES.includes(
-                role.name
+    const highCommandRoleIds =
+        Object.values(
+            rankConfig.highCommand
+        );
+
+    return highCommandRoleIds.some(
+        roleId =>
+            member.roles.cache.has(
+                roleId
             )
     );
 }
 
 /**
- * Find a Discord role using its
- * exact configured name.
+ * Find a Discord Role using its
+ * configured immutable Role ID.
  *
  * @param {import('discord.js').Guild} guild
- * @param {string} roleName
+ * @param {string} roleId
  * @returns {import('discord.js').Role|null}
  */
-function findGuildRole(
+function findGuildRoleById(
     guild,
-    roleName
+    roleId
 ) {
     return (
-        guild.roles.cache.find(
-            role =>
-                role.name ===
-                roleName
+        guild.roles.cache.get(
+            roleId
         ) ||
         null
     );
@@ -129,7 +174,7 @@ function findGuildRole(
 
 /**
  * Get every manually managed Arrancar
- * Rank role currently held by a member.
+ * Rank Role currently held by a member.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {import('discord.js').Collection<string, import('discord.js').Role>}
@@ -137,11 +182,16 @@ function findGuildRole(
 function getMemberRankRoles(
     member
 ) {
+    const rankRoleIds =
+        new Set(
+            getConfiguredRankRoleIds()
+        );
+
     return member.roles.cache
         .filter(
             role =>
-                ARRANCAR_RANKS.includes(
-                    role.name
+                rankRoleIds.has(
+                    role.id
                 )
         )
         .sort(
@@ -155,7 +205,8 @@ function getMemberRankRoles(
 }
 
 /**
- * Find the official Hall of Promotions.
+ * Find the official Hall of Honor
+ * using its immutable Channel ID.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -164,22 +215,29 @@ function findPromotionChannel(
     guild
 ) {
     const channel =
-        guild.channels.cache.find(
-            cachedChannel =>
-                cachedChannel.name ===
-                    PROMOTION_CHANNEL_NAME &&
-                cachedChannel.isTextBased()
+        guild.channels.cache.get(
+            rankConfig
+                .channels
+                .hallOfHonor
         );
 
-    return channel || null;
+    if (
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
+    ) {
+        return null;
+    }
+
+    return channel;
 }
 
 /**
- * Find a safe channel for the special
- * Title Unlock notification.
+ * Find a safe channel for a special
+ * Chronicle Title unlock notification.
  *
  * Priority:
- * 1. Hall of Promotions
+ * 1. Hall of Honor
  * 2. Current command channel
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
@@ -235,7 +293,7 @@ function formatUnlockedTitles(
 
 /**
  * Create the official Las Noches
- * promotion announcement.
+ * Arrancar Rank proclamation.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -444,105 +502,105 @@ function createPromotionEmbed({
                                 '👑 Espada 0',
 
                             value:
-                                '👑 Espada 0'
+                                'espada0'
                         },
                         {
                             name:
                                 'Ⅰ Espada',
 
                             value:
-                                'Ⅰ Espada'
+                                'espada1'
                         },
                         {
                             name:
                                 'Ⅱ Espada',
 
                             value:
-                                'Ⅱ Espada'
+                                'espada2'
                         },
                         {
                             name:
                                 'Ⅲ Espada',
 
                             value:
-                                'Ⅲ Espada'
+                                'espada3'
                         },
                         {
                             name:
                                 'Ⅳ Espada',
 
                             value:
-                                'Ⅳ Espada'
+                                'espada4'
                         },
                         {
                             name:
                                 'Ⅴ Espada',
 
                             value:
-                                'Ⅴ Espada'
+                                'espada5'
                         },
                         {
                             name:
                                 'Ⅵ Espada',
 
                             value:
-                                'Ⅵ Espada'
+                                'espada6'
                         },
                         {
                             name:
                                 'Ⅶ Espada',
 
                             value:
-                                'Ⅶ Espada'
+                                'espada7'
                         },
                         {
                             name:
                                 'Ⅷ Espada',
 
                             value:
-                                'Ⅷ Espada'
+                                'espada8'
                         },
                         {
                             name:
                                 'Ⅸ Espada',
 
                             value:
-                                'Ⅸ Espada'
+                                'espada9'
                         },
                         {
                             name:
                                 'Ⅹ Espada',
 
                             value:
-                                'Ⅹ Espada'
+                                'espada10'
                         },
                         {
                             name:
                                 '🌘 Privaron Espada',
 
                             value:
-                                '🌘 Privaron Espada'
+                                'privaron'
                         },
                         {
                             name:
                                 '⚔️ Fracción',
 
                             value:
-                                '⚔️ Fracción'
+                                'fraccion'
                         },
                         {
                             name:
                                 '🦴 Numeros',
 
                             value:
-                                '🦴 Numeros'
+                                'numeros'
                         },
                         {
                             name:
                                 '⚪ Unranked Arrancar',
 
                             value:
-                                '⚪ Unranked Arrancar'
+                                'unranked'
                         }
                     )
             )
@@ -637,7 +695,7 @@ function createPromotionEmbed({
                     'user'
                 );
 
-            const rankName =
+            const rankKey =
                 interaction.options.getString(
                     'rank',
                     true
@@ -704,6 +762,30 @@ function createPromotionEmbed({
                 return;
             }
 
+            const configuredRank =
+                getConfiguredRank(
+                    rankKey
+                );
+
+            if (!configuredRank) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Invalid Arrancar Rank',
+                            'The selected Rank is not configured inside Umbra’s hierarchy.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            const rankName =
+                configuredRank.name;
+
             if (
                 !rankDatabase.isValidRank(
                     rankName
@@ -712,8 +794,12 @@ function createPromotionEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Invalid Arrancar Rank',
-                            'The selected Rank is not recognized by the Las Noches hierarchy.'
+                            '❌ Invalid Rank Archive',
+                            [
+                                `The configured Rank **${rankName}** is not recognized by the PostgreSQL hierarchy.`,
+                                '',
+                                'Check `config/ranks.js` and `database/ranks.js` before trying again.'
+                            ].join('\n')
                         )
                     ],
 
@@ -725,9 +811,9 @@ function createPromotionEmbed({
             }
 
             const selectedRole =
-                findGuildRole(
+                findGuildRoleById(
                     interaction.guild,
-                    rankName
+                    configuredRank.id
                 );
 
             if (!selectedRole) {
@@ -736,9 +822,11 @@ function createPromotionEmbed({
                         createErrorEmbed(
                             '❌ Rank Role Missing',
                             [
-                                `Umbra could not find the Discord role **${rankName}**.`,
+                                `Umbra could not find the configured Discord role for **${rankName}**.`,
                                 '',
-                                'Verify that the role exists and that its name matches the selected Rank exactly.'
+                                `Configured Role ID: \`${configuredRank.id}\``,
+                                '',
+                                'Confirm that the role still exists and that its ID is correct inside `config/ranks.js`.'
                             ].join('\n')
                         )
                     ],
@@ -790,8 +878,10 @@ function createPromotionEmbed({
             }
 
             if (
+                selectedRole.managed ||
+                !selectedRole.editable ||
                 selectedRole.position >=
-                botMember.roles.highest.position
+                    botMember.roles.highest.position
             ) {
                 await interaction.reply({
                     embeds: [
@@ -800,7 +890,10 @@ function createPromotionEmbed({
                             [
                                 `Umbra cannot assign ${selectedRole}.`,
                                 '',
-                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank and try again.'
+                                'Confirm that:',
+                                '• Umbra is above this Rank role',
+                                '• The role is not controlled by another integration',
+                                '• Umbra has **Manage Roles**'
                             ].join('\n')
                         )
                     ],
@@ -820,8 +913,10 @@ function createPromotionEmbed({
             const unmanageableCurrentRole =
                 currentRankRoles.find(
                     role =>
+                        role.managed ||
+                        !role.editable ||
                         role.position >=
-                        botMember.roles.highest.position
+                            botMember.roles.highest.position
                 );
 
             if (unmanageableCurrentRole) {
@@ -832,7 +927,7 @@ function createPromotionEmbed({
                             [
                                 `Umbra cannot remove the current Rank role ${unmanageableCurrentRole}.`,
                                 '',
-                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank and try again.'
+                                'Move Umbra above every manually assignable Arrancar Rank and try again.'
                             ].join('\n')
                         )
                     ],
@@ -842,9 +937,7 @@ function createPromotionEmbed({
                 });
 
                 return;
-            }
-
-            const databaseRank =
+            }            const databaseRank =
                 await rankDatabase
                     .getCurrentRank(
                         interaction.guild.id,
@@ -857,7 +950,7 @@ function createPromotionEmbed({
                 null;
 
             if (
-                oldRankDisplay ===
+                databaseRank?.rank_name ===
                     rankName &&
                 member.roles.cache.has(
                     selectedRole.id
@@ -878,7 +971,9 @@ function createPromotionEmbed({
                 return;
             }
 
-            await interaction.deferReply();            try {
+            await interaction.deferReply();
+
+            try {
                 if (
                     currentRankRoles.size >
                     0
@@ -899,11 +994,6 @@ function createPromotionEmbed({
                     roleError
                 );
 
-                /*
-                 * Attempt to restore any previous
-                 * Rank roles if the new role could
-                 * not be assigned successfully.
-                 */
                 if (
                     currentRankRoles.size >
                     0
@@ -928,7 +1018,7 @@ function createPromotionEmbed({
                                 'Verify the following:',
                                 '• Umbra has **Manage Roles**',
                                 '• Umbra is above every Arrancar Rank role',
-                                '• The selected role is not managed by another integration'
+                                '• The selected role is not controlled by another integration'
                             ].join('\n')
                         )
                     ]
@@ -961,13 +1051,6 @@ function createPromotionEmbed({
                     databaseError
                 );
 
-                /*
-                 * PostgreSQL failed after Discord
-                 * roles were changed.
-                 *
-                 * Remove the newly assigned role
-                 * and restore the previous roles.
-                 */
                 await member.roles
                     .remove(
                         selectedRole,
@@ -1050,7 +1133,8 @@ function createPromotionEmbed({
                     reason,
 
                     historyId:
-                        rankRecord.history_id,
+                        rankRecord?.history_id ??
+                        null,
 
                     unlockedTitles
                 });
@@ -1092,10 +1176,8 @@ function createPromotionEmbed({
                             error
                         );
                     });
-            }            /*
-             * Publish the Rank change into the
-             * public Kingdom Feed.
-             */
+            }
+
             await sendRankFeed({
                 member,
 
@@ -1116,12 +1198,12 @@ function createPromotionEmbed({
 
                 revoked:
                     false
-            });
-
-            /*
-             * Existing Title notification.
-             */
-            if (
+            }).catch(error => {
+                console.error(
+                    '⚠️ Umbra could not publish the Rank Kingdom Feed:',
+                    error
+                );
+            });            if (
                 unlockedTitles.length >
                 0
             ) {
@@ -1152,11 +1234,6 @@ function createPromotionEmbed({
                     });
                 }
 
-                /*
-                 * Publish newly unlocked
-                 * Chronicle Titles into the
-                 * Kingdom Feed.
-                 */
                 await sendTitleFeed({
                     member,
 
@@ -1191,6 +1268,10 @@ function createPromotionEmbed({
 
             console.log(
                 `⚔️ New Rank: ${rankName}`
+            );
+
+            console.log(
+                `🆔 Rank Role ID: ${selectedRole.id}`
             );
 
             console.log(
@@ -1234,6 +1315,25 @@ function createPromotionEmbed({
                         embeds: [
                             errorEmbed
                         ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null

@@ -12,56 +12,61 @@ const {
 const rankDatabase =
     require('../../database/ranks');
 
+const rankConfig =
+    require('../../config/ranks');
+
 const {
     sendRankFeed
 } = require('../../utils/kingdomFeed');
 
 /**
- * Every manually assignable Arrancar Rank.
+ * Return every configured Arrancar Rank.
  *
- * These names must match the Discord
- * role names exactly.
+ * @returns {Array<{
+ *     key: string,
+ *     id: string,
+ *     name: string
+ * }>}
  */
-const ARRANCAR_RANKS = [
-    '👑 Espada 0',
-    'Ⅰ Espada',
-    'Ⅱ Espada',
-    'Ⅲ Espada',
-    'Ⅳ Espada',
-    'Ⅴ Espada',
-    'Ⅵ Espada',
-    'Ⅶ Espada',
-    'Ⅷ Espada',
-    'Ⅸ Espada',
-    'Ⅹ Espada',
-    '🌘 Privaron Espada',
-    '⚔️ Fracción',
-    '🦴 Numeros',
-    '⚪ Unranked Arrancar'
-];
+function getConfiguredRanks() {
+    return Object.entries(
+        rankConfig.hierarchy
+    ).map(
+        ([
+            key,
+            rank
+        ]) => ({
+            key,
+
+            id:
+                rank.id,
+
+            name:
+                rank.name
+        })
+    );
+}
 
 /**
- * Las Noches roles allowed to manage
- * the manual Arrancar hierarchy.
+ * Return every configured Arrancar
+ * Rank Role ID.
  *
- * Lieutenants are intentionally excluded.
+ * @returns {string[]}
  */
-const RANK_MANAGER_ROLES = [
-    '👑 Ruler of Las Noches',
-    '⚜️ Head Captain',
-    '🛡️ Captain'
-];
-
-/**
- * Official promotion and hierarchy
- * announcement channel.
- */
-const PROMOTION_CHANNEL_NAME =
-    '🏅・hall-of-promotions';
+function getConfiguredRankRoleIds() {
+    return getConfiguredRanks()
+        .map(
+            rank =>
+                rank.id
+        );
+}
 
 /**
  * Check whether a member may manage
  * manually assigned Arrancar Ranks.
+ *
+ * The server owner and members with
+ * Administrator bypass Role checks.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -88,17 +93,22 @@ function canManageArrancarRanks(
         return true;
     }
 
-    return member.roles.cache.some(
-        role =>
-            RANK_MANAGER_ROLES.includes(
-                role.name
+    const highCommandRoleIds =
+        Object.values(
+            rankConfig.highCommand
+        );
+
+    return highCommandRoleIds.some(
+        roleId =>
+            member.roles.cache.has(
+                roleId
             )
     );
 }
 
 /**
  * Get every manually managed Arrancar
- * Rank role currently held by a member.
+ * Rank Role currently held by a member.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {import('discord.js').Collection<string, import('discord.js').Role>}
@@ -106,11 +116,16 @@ function canManageArrancarRanks(
 function getMemberRankRoles(
     member
 ) {
+    const rankRoleIds =
+        new Set(
+            getConfiguredRankRoleIds()
+        );
+
     return member.roles.cache
         .filter(
             role =>
-                ARRANCAR_RANKS.includes(
-                    role.name
+                rankRoleIds.has(
+                    role.id
                 )
         )
         .sort(
@@ -124,8 +139,33 @@ function getMemberRankRoles(
 }
 
 /**
- * Find the official Hall of Promotions
- * text channel.
+ * Find one configured Rank using
+ * its immutable Discord Role ID.
+ *
+ * @param {string} roleId
+ * @returns {{
+ *     key: string,
+ *     id: string,
+ *     name: string
+ * }|null}
+ */
+function getConfiguredRankByRoleId(
+    roleId
+) {
+    return (
+        getConfiguredRanks()
+            .find(
+                rank =>
+                    rank.id ===
+                    roleId
+            ) ||
+        null
+    );
+}
+
+/**
+ * Find the official Hall of Honor
+ * using its immutable Channel ID.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -134,19 +174,26 @@ function findPromotionChannel(
     guild
 ) {
     const channel =
-        guild.channels.cache.find(
-            cachedChannel =>
-                cachedChannel.name ===
-                    PROMOTION_CHANNEL_NAME &&
-                cachedChannel.isTextBased()
+        guild.channels.cache.get(
+            rankConfig
+                .channels
+                .hallOfHonor
         );
 
-    return channel || null;
+    if (
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
+    ) {
+        return null;
+    }
+
+    return channel;
 }
 
 /**
  * Create the official Rank removal
- * announcement embed.
+ * announcement Embed.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -186,6 +233,9 @@ function createRankRemovalEmbed({
                 '',
                 '*Umbra has preserved this decision within the eternal Soul Archives.*'
             ].join('\n'),
+
+        color:
+            '#6F42C1',
 
         thumbnail:
             member.user.displayAvatarURL({
@@ -528,8 +578,10 @@ function createRankRemovalEmbed({
             const unmanageableRole =
                 currentRankRoles.find(
                     role =>
+                        role.managed ||
+                        !role.editable ||
                         role.position >=
-                        botMember.roles.highest.position
+                            botMember.roles.highest.position
                 );
 
             if (
@@ -542,7 +594,10 @@ function createRankRemovalEmbed({
                             [
                                 `Umbra cannot remove ${unmanageableRole}.`,
                                 '',
-                                'Move Umbra’s Discord role above every manually assignable Arrancar Rank and try again.'
+                                'Confirm that:',
+                                '• Umbra is above this Arrancar Rank role',
+                                '• The role is not controlled by another integration',
+                                '• Umbra has **Manage Roles**'
                             ].join('\n')
                         )
                     ],
@@ -554,15 +609,19 @@ function createRankRemovalEmbed({
                 return;
             }
 
-            const roleRankNames =
-                currentRankRoles.map(
-                    role =>
-                        role.name
-                );
+            const configuredRoleRank =
+                currentRankRoles.first()
+                    ? getConfiguredRankByRoleId(
+                        currentRankRoles
+                            .first()
+                            .id
+                    )
+                    : null;
 
             const removedRankDisplay =
                 databaseRank?.rank_name ||
-                roleRankNames[0] ||
+                configuredRoleRank?.name ||
+                currentRankRoles.first()?.name ||
                 'Unknown Arrancar Rank';
 
             await interaction.deferReply();            try {
@@ -664,7 +723,7 @@ function createRankRemovalEmbed({
             /*
              * If Discord contained a Rank role
              * but PostgreSQL had no active record,
-             * removeRank() returns null.
+             * removeRank() may return null.
              *
              * The Discord cleanup is still treated
              * as a successful Rank removal.
@@ -734,10 +793,8 @@ function createRankRemovalEmbed({
                             error
                         );
                     });
-            }            /*
-             * Publish the Rank revocation
-             * into the public Kingdom Feed.
-             */
+            }
+
             await sendRankFeed({
                 member,
 
@@ -761,9 +818,7 @@ function createRankRemovalEmbed({
                     '⚠️ Umbra could not publish the Rank Kingdom Feed:',
                     error
                 );
-            });
-
-            console.log(
+            });            console.log(
                 '======================================'
             );
 
@@ -816,6 +871,25 @@ function createRankRemovalEmbed({
                         embeds: [
                             errorEmbed
                         ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null
