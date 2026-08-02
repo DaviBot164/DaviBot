@@ -12,9 +12,6 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-const embedConfig =
-    require('../../config/embed');
-
 const warningDatabase =
     require('../../database/warnings');
 
@@ -172,6 +169,74 @@ function createProgressBar(
 }
 
 /**
+ * Build a premium profile header based on
+ * the member's Las Noches standing.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {Object|null} currentRankRecord
+ * @returns {string}
+ */
+function getSoulCardStatus(
+    member,
+    currentRankRecord
+) {
+    if (
+        member.id ===
+        member.guild.ownerId
+    ) {
+        return '👑 RULER OF LAS NOCHES';
+    }
+
+    const rankName =
+        currentRankRecord
+            ?.rank_name ||
+        getArrancarRank(
+            member
+        );
+
+    if (
+        isEspadaMember(
+            member
+        )
+    ) {
+        return `⚔️ ${rankName.toUpperCase()}`;
+    }
+
+    if (
+        rankName !==
+        '⚪ Unranked Arrancar'
+    ) {
+        return rankName.toUpperCase();
+    }
+
+    if (member.user.bot) {
+        return '🌑 GUARDIAN CONSTRUCT';
+    }
+
+    return '🌙 SOUL OF LAS NOCHES';
+}
+
+/**
+ * Build a compact Soul Card identity block.
+ *
+ * @param {import('discord.js').User} user
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function buildSoulIdentityDisplay(
+    user,
+    member
+) {
+    return [
+        `> **${member.displayName}**`,
+        `> ${user}`,
+        '',
+        `\`Soul ID\`  ${user.id}`,
+        `\`Type\`     ${getAccountType(user)}`
+    ].join('\n');
+}
+
+/**
  * Find a member role by its name.
  *
  * @param {import('discord.js').GuildMember} member
@@ -255,11 +320,8 @@ function getAccountType(
     }
 
     return '🌙 Member';
-}
-
-/**
- * Get Las Noches administrative
- * standing.
+}/**
+ * Get Las Noches administrative standing.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
@@ -397,7 +459,9 @@ function formatWarningCount(
         `⚠️ ${warningCount} Warning` +
         `${warningCount === 1 ? '' : 's'}`
     );
-}/**
+}
+
+/**
  * Safely count a member's warnings.
  *
  * @param {string} guildId
@@ -581,9 +645,7 @@ async function getRankHistoryCount(
 
         return 0;
     }
-}
-
-/**
+}/**
  * Safely load every unlocked
  * Chronicle Title.
  *
@@ -760,14 +822,16 @@ function calculateProfileCompletion({
         total,
         percentage
     };
-}/**
- * Build compact progression details.
+}
+
+/**
+ * Build Premium Spiritual Power details.
  *
  * @param {Object} levelRecord
  * @param {number|null} serverRank
  * @returns {string}
  */
-function buildProgressionDisplay(
+function buildSpiritualPowerDisplay(
     levelRecord,
     serverRank
 ) {
@@ -794,14 +858,10 @@ function buildProgressionDisplay(
             : 'Unranked';
 
     return [
-        `⭐ **Level:** \`${formatNumber(level)}\``,
-        `🏆 **Server Rank:** \`${rankDisplay}\``,
-        `✨ **XP:** \`${formatNumber(xp)}\``,
-        `💬 **Messages:** \`${formatNumber(levelRecord.messageCount)}\``,
-        '',
+        `**Level ${formatNumber(level)}**`,
         `\`${createProgressBar(
             progress.progressPercent,
-            12
+            14
         )}\` **${formatNumber(
             progress.progressPercent
         )}%**`,
@@ -809,7 +869,13 @@ function buildProgressionDisplay(
             progress.progressXp
         )} / ${formatNumber(
             progress.requiredForNextLevel
-        )} XP`
+        )} XP toward the next level`,
+        '',
+        `✨ **Total XP:** \`${formatNumber(xp)}\``,
+        `🏆 **Kingdom Rank:** \`${rankDisplay}\``,
+        `💬 **Soul Messages:** \`${formatNumber(
+            levelRecord.messageCount
+        )}\``
     ].join('\n');
 }
 
@@ -833,15 +899,17 @@ function buildChronicleDisplay(
         null;
 
     return [
-        `🏷️ **Active:** ${
+        `🏷️ **Active Title**`,
+        `> ${
             activeTitle?.displayName ||
             '🌑 Nameless Soul'
         }`,
+        '',
         `🌟 **Rarity:** ${
             activeTitle?.rarity ||
             'Default'
         }`,
-        `📖 **Unlocked:** \`${formatNumber(
+        `📖 **Chronicles Unlocked:** \`${formatNumber(
             unlockedTitles.length
         )}\``
     ].join('\n');
@@ -871,12 +939,14 @@ function buildHierarchyDisplay(
         isEspadaMember(
             member
         )
-            ? '👑 Active Espada'
+            ? '👑 Espada Throne Active'
             : '🌙 No Espada Throne';
 
     return [
-        `⚔️ **Rank:** ${currentRank}`,
-        `👑 **Status:** ${throneStatus}`,
+        `⚔️ **Arrancar Rank**`,
+        `> ${currentRank}`,
+        '',
+        `👑 **Throne:** ${throneStatus}`,
         `📜 **Career Records:** \`${formatNumber(
             historyCount
         )}\``
@@ -937,9 +1007,10 @@ function buildAchievementDisplay(
             percentage,
             10
         )}\` **${percentage}%**`,
+        '',
         latestAchievement
             ? (
-                `📖 **Latest:** ${
+                `📖 **Latest Record:** ${
                     latestAchievement.icon ||
                     '🏆'
                 } ${
@@ -947,12 +1018,10 @@ function buildAchievementDisplay(
                     'Unknown Achievement'
                 }`
             )
-            : '📖 **Latest:** None'
+            : '📖 **Latest Record:** None'
     ].join('\n');
-}
-
-/**
- * Build moderation status.
+}/**
+ * Build Guardian moderation status.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number|string} warningCount
@@ -963,10 +1032,10 @@ function buildGuardianDisplay(
     warningCount
 ) {
     return [
-        `**Warnings:** ${formatWarningCount(
+        `🛡️ **Warnings:** ${formatWarningCount(
             warningCount
         )}`,
-        `**Timeout:** ${getTimeoutStatus(
+        `🔒 **Communication:** ${getTimeoutStatus(
             member
         )}`
     ].join('\n');
@@ -986,16 +1055,74 @@ function buildStandingDisplay(
     progressionRole
 ) {
     return [
-        `**Standing:** ${getLasNochesStanding(
+        `👑 **Standing:** ${getLasNochesStanding(
             member,
             guild
         )}`,
-        `**Progression Role:** ${progressionRole}`,
-        `**Highest Role:** ${getHighestRole(
+        `🎖️ **Progression Role:** ${progressionRole}`,
+        `🌑 **Highest Role:** ${getHighestRole(
             member
         )}`
     ].join('\n');
-}module.exports = {
+}
+
+/**
+ * Build the Soul history block.
+ *
+ * @param {import('discord.js').User} user
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function buildSoulHistoryDisplay(
+    user,
+    member
+) {
+    return [
+        `🌌 **Soul Created**`,
+        `${formatDiscordDate(
+            user.createdAt,
+            'F'
+        )}`,
+        `-# ${formatDiscordDate(
+            user.createdAt,
+            'R'
+        )}`,
+        '',
+        `🏰 **Entered Las Noches**`,
+        `${formatDiscordDate(
+            member.joinedAt,
+            'F'
+        )}`,
+        `-# ${formatDiscordDate(
+            member.joinedAt,
+            'R'
+        )}`
+    ].join('\n');
+}
+
+/**
+ * Build profile completion details.
+ *
+ * @param {{
+ *     completed: number,
+ *     total: number,
+ *     percentage: number
+ * }} completion
+ * @returns {string}
+ */
+function buildCompletionDisplay(
+    completion
+) {
+    return [
+        `\`${createProgressBar(
+            completion.percentage,
+            12
+        )}\` **${completion.percentage}%**`,
+        `-# ${completion.completed} of ${completion.total} Soul milestones completed.`
+    ].join('\n');
+}
+
+module.exports = {
     category:
         'information',
 
@@ -1005,7 +1132,7 @@ function buildStandingDisplay(
                 'profile'
             )
             .setDescription(
-                'Open a compact Las Noches Soul profile.'
+                'Open a premium Las Noches Soul Card.'
             )
 
             .addUserOption(option =>
@@ -1014,7 +1141,7 @@ function buildStandingDisplay(
                         'user'
                     )
                     .setDescription(
-                        'Select the Soul whose profile you want to view'
+                        'Select the Soul whose card you want to inspect'
                     )
                     .setRequired(
                         false
@@ -1042,7 +1169,7 @@ function buildStandingDisplay(
                     embeds: [
                         createErrorEmbed(
                             '❌ Las Noches Only Command',
-                            'Soul profiles can only be opened inside Las Noches.'
+                            'Soul Cards can only be opened inside Las Noches.'
                         )
                     ],
 
@@ -1175,15 +1302,24 @@ function buildStandingDisplay(
                     currentRankRecord,
                     levelRecord,
                     fullUser
-                });
+                });            const soulCardStatus =
+                getSoulCardStatus(
+                    member,
+                    currentRankRecord
+                );
 
             const profileEmbed =
                 createEmbed({
                     title:
-                        `🌙 ${fullUser.username}'s Profile`,
+                        `🌙 ${fullUser.username} • Soul Card`,
 
                     description:
-                        `Official Las Noches profile for ${fullUser}.`,
+                        [
+                            `## ${soulCardStatus}`,
+                            '',
+                            `> Official Premium Soul Record of ${fullUser}`,
+                            '> Preserved within the archives of Las Noches.'
+                        ].join('\n'),
 
                     color:
                         '#6F42C1',
@@ -1197,7 +1333,7 @@ function buildStandingDisplay(
 
                     author: {
                         name:
-                            `${member.displayName} • Soul Archive`,
+                            `${member.displayName} • Kingdom Records`,
 
                         iconURL:
                             avatarURL
@@ -1224,18 +1360,12 @@ function buildStandingDisplay(
                     fields: [
                         {
                             name:
-                                '👤 Identity',
+                                '╭・👤 SOUL IDENTITY',
 
                             value:
-                                [
-                                    `**Username:** ${fullUser.username}`,
-                                    `**Display Name:** ${member.displayName}`,
-                                    `**Type:** ${getAccountType(
-                                        fullUser
-                                    )}`,
-                                    `**User ID:** \`${fullUser.id}\``
-                                ].join(
-                                    '\n'
+                                buildSoulIdentityDisplay(
+                                    fullUser,
+                                    member
                                 ),
 
                             inline:
@@ -1243,10 +1373,10 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '⭐ Progression',
+                                '├・✨ SPIRITUAL POWER',
 
                             value:
-                                buildProgressionDisplay(
+                                buildSpiritualPowerDisplay(
                                     levelRecord,
                                     serverRank
                                 ),
@@ -1256,7 +1386,7 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '🏷️ Chronicle',
+                                '├・🏷️ CHRONICLE TITLE',
 
                             value:
                                 buildChronicleDisplay(
@@ -1269,7 +1399,7 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '⚔️ Hierarchy',
+                                '├・⚔️ ARRANCAR HIERARCHY',
 
                             value:
                                 buildHierarchyDisplay(
@@ -1283,7 +1413,7 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '🏆 Achievements',
+                                '├・🏆 ACHIEVEMENT ARCHIVE',
 
                             value:
                                 buildAchievementDisplay(
@@ -1295,7 +1425,7 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '🎖️ Standing',
+                                '├・🎖️ KINGDOM STANDING',
 
                             value:
                                 buildStandingDisplay(
@@ -1309,7 +1439,7 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '🛡️ Guardian Status',
+                                '├・🛡️ GUARDIAN STATUS',
 
                             value:
                                 buildGuardianDisplay(
@@ -1322,17 +1452,11 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '📈 Completion',
+                                '├・📈 SOUL COMPLETION',
 
                             value:
-                                [
-                                    `\`${createProgressBar(
-                                        completion.percentage,
-                                        10
-                                    )}\` **${completion.percentage}%**`,
-                                    `-# ${completion.completed} of ${completion.total} milestones completed.`
-                                ].join(
-                                    '\n'
+                                buildCompletionDisplay(
+                                    completion
                                 ),
 
                             inline:
@@ -1340,20 +1464,12 @@ function buildStandingDisplay(
                         },
                         {
                             name:
-                                '📅 History',
+                                '╰・📅 SOUL HISTORY',
 
                             value:
-                                [
-                                    `**Created:** ${formatDiscordDate(
-                                        fullUser.createdAt,
-                                        'F'
-                                    )}`,
-                                    `**Joined Las Noches:** ${formatDiscordDate(
-                                        member.joinedAt,
-                                        'F'
-                                    )}`
-                                ].join(
-                                    '\n'
+                                buildSoulHistoryDisplay(
+                                    fullUser,
+                                    member
                                 ),
 
                             inline:
@@ -1367,7 +1483,7 @@ function buildStandingDisplay(
                     .addComponents(
                         new ButtonBuilder()
                             .setLabel(
-                                'Open Avatar'
+                                'Open Soul Avatar'
                             )
                             .setEmoji(
                                 '🖼️'
@@ -1384,7 +1500,7 @@ function buildStandingDisplay(
                 buttons.addComponents(
                     new ButtonBuilder()
                         .setLabel(
-                            'Open Banner'
+                            'Open Soul Banner'
                         )
                         .setEmoji(
                             '🌌'
@@ -1415,8 +1531,8 @@ function buildStandingDisplay(
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Soul Profile Unavailable',
-                    'Umbra could not open the requested Las Noches profile.'
+                    '❌ Soul Card Unavailable',
+                    'Umbra could not open the requested Premium Soul Card.'
                 );
 
             if (
