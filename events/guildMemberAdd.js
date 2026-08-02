@@ -32,8 +32,8 @@ const WELCOME_CHANNEL_ID =
  * Role assigned automatically
  * when a new member joins.
  */
-const UNVERIFIED_ROLE_NAME =
-    '🌑 Unverified';
+const UNVERIFIED_ROLE_ID =
+    '1530938389086601236';
 
 /**
  * Recent member joins for each guild.
@@ -148,14 +148,14 @@ async function assignUnverifiedRole(
         }
 
         const unverifiedRole =
-            findGuildRole(
-                member.guild,
-                UNVERIFIED_ROLE_NAME
-            );
+    member.guild.roles.cache.get(
+        UNVERIFIED_ROLE_ID
+    ) ||
+    null;
 
         if (!unverifiedRole) {
             console.error(
-                `❌ Unverified role "${UNVERIFIED_ROLE_NAME}" was not found in ${member.guild.name}.`
+                `❌ Unverified role "${unverifiedRole.name}" was not found in ${member.guild.name}.`
             );
 
             return false;
@@ -191,7 +191,7 @@ async function assignUnverifiedRole(
             )
         ) {
             console.error(
-                `❌ Umbra cannot assign ${UNVERIFIED_ROLE_NAME}. Move Umbra above this role.`
+                `❌ Umbra cannot assign ${unverifiedRole.name}. Move Umbra above this role.`
             );
 
             return false;
@@ -211,13 +211,13 @@ async function assignUnverifiedRole(
         );
 
         console.log(
-            `🌑 Assigned ${UNVERIFIED_ROLE_NAME} to ${member.user.tag}.`
+            `🌑 Assigned ${unverifiedRole.name} to ${member.user.tag}.`
         );
 
         return true;
     } catch (error) {
         console.error(
-            `❌ Failed to assign ${UNVERIFIED_ROLE_NAME} to ${member.user.tag}:`
+            `❌ Failed to assign ${unverifiedRole.name} to ${member.user.tag}:`
         );
 
         console.error(
