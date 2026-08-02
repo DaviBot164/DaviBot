@@ -11,7 +11,8 @@ const {
 
 const {
     hasBotPermission,
-    getModerationError
+    getModerationError,
+    handleModerationCommandError
 } = require('../../utils/moderation');
 
 const {
@@ -131,7 +132,8 @@ module.exports = {
             const moderationError =
                 getModerationError({
                     interaction,
-                    target: member,
+                    target:
+                        member,
                     botMember
                 });
 
@@ -195,14 +197,16 @@ module.exports = {
                     '🌑 Order Status',
 
                 value:
-                    'The Soul has been removed from Crimson Eclipse.',
+                    'The Soul has been removed from Las Noches.',
 
                 inline:
                     false
             });
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
             });
 
             await sendModLog({
@@ -226,7 +230,7 @@ module.exports = {
                             '🌑 Order Status',
 
                         value:
-                            'The Soul was removed from Crimson Eclipse.',
+                            'The Soul was removed from Las Noches.',
 
                         inline:
                             false
@@ -234,60 +238,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /kick command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'kick',
+
+                title:
                     '❌ Removal Failed',
+
+                description:
                     'Umbra encountered an unexpected error while trying to remove this Soul.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

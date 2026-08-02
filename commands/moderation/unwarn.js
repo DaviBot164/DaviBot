@@ -10,6 +10,10 @@ const {
 } = require('../../utils/embeds');
 
 const {
+    handleModerationCommandError
+} = require('../../utils/moderation');
+
+const {
     sendModLog
 } = require('../../utils/modLogs');
 
@@ -78,8 +82,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -98,351 +102,24 @@ module.exports = {
                     MessageFlags.Ephemeral
             });
 
-            if (subcommand === 'single') {
-                const warningId =
-                    interaction.options.getInteger(
-                        'warning_id',
-                        true
-                    );
-
-                const warning =
-                    await warningDatabase.getWarningById(
-                        interaction.guild.id,
-                        warningId
-                    );
-
-                if (!warning) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Warning Record Not Found',
-                                `No warning with ID **#${warningId}** exists within this Order.`
-                            )
-                        ]
-                    });
-
-                    return;
-                }
-
-                const deletedWarning =
-                    await warningDatabase.deleteWarningById(
-                        interaction.guild.id,
-                        warningId
-                    );
-
-                if (!deletedWarning) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Warning Removal Failed',
-                                'Umbra could not remove the selected warning record.'
-                            )
-                        ]
-                    });
-
-                    return;
-                }
-
-                const remainingWarnings =
-                    await warningDatabase.countWarnings(
-                        interaction.guild.id,
-                        deletedWarning.user_id
-                    );
-
-                const targetUser =
-                    await interaction.client.users
-                        .fetch(
-                            deletedWarning.user_id
-                        )
-                        .catch(
-                            () => null
-                        );
-
-                const embed =
-                    createEmbed({
-                        title:
-                            '🗑️ Sacred Warning Removed',
-
-                        description:
-                            `Warning record **#${deletedWarning.id}** was removed successfully.`,
-
-                        fields: [
-                            {
-                                name:
-                                    '🌑 Soul',
-
-                                value:
-                                    `<@${deletedWarning.user_id}>\n` +
-                                    `\`${deletedWarning.user_id}\``,
-
-                                inline:
-                                    true
-                            },
-                            {
-                                name:
-                                    '🛡️ Removed By',
-
-                                value:
-                                    `${interaction.user}\n` +
-                                    `\`${interaction.user.id}\``,
-
-                                inline:
-                                    true
-                            },
-                            {
-                                name:
-                                    '📜 Original Reason',
-
-                                value:
-                                    deletedWarning.reason ||
-                                    'No reason was recorded.',
-
-                                inline:
-                                    false
-                            },
-                            {
-                                name:
-                                    '📚 Remaining Warnings',
-
-                                value:
-                                    `\`${remainingWarnings}\``,
-
-                                inline:
-                                    true
-                            }
-                        ]
-                    });
-
-                embed.setFooter({
-                    text:
-                        `🌑 Umbra Warning Records • Removed by ${interaction.user.username}`,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size: 128,
-                                forceStatic: false
-                            })
-                });
-
-                await interaction.editReply({
-                    embeds: [
-                        embed
-                    ]
-                });
-
-                await sendModLog({
-                    guild:
-                        interaction.guild,
-
-                    action:
-                        '🗑️ Sacred Warning Removed',
-
-                    user:
-                        targetUser,
-
-                    moderator:
-                        interaction.user,
-
-                    reason:
-                        deletedWarning.reason ||
-                        'No reason was recorded.',
-
-                    fields: [
-                        {
-                            name:
-                                '🆔 Removed Warning',
-
-                            value:
-                                `\`#${deletedWarning.id}\``,
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '📚 Remaining Warnings',
-
-                            value:
-                                `\`${remainingWarnings}\``,
-
-                            inline:
-                                true
-                        },
-                        ...(
-                            targetUser
-                                ? []
-                                : [
-                                    {
-                                        name:
-                                            '🌑 Soul ID',
-
-                                        value:
-                                            `\`${deletedWarning.user_id}\``,
-
-                                        inline:
-                                            true
-                                    }
-                                ]
-                        )
-                    ]
-                });
+            if (
+                subcommand ===
+                'single'
+            ) {
+                await removeSingleWarning(
+                    interaction
+                );
 
                 return;
             }
 
-            if (subcommand === 'all') {
-                const user =
-                    interaction.options.getUser(
-                        'user',
-                        true
-                    );
-
-                const warningCount =
-                    await warningDatabase.countWarnings(
-                        interaction.guild.id,
-                        user.id
-                    );
-
-                if (warningCount === 0) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ No Warning Records Found',
-                                `${user.tag} has no warnings within this Order.`
-                            )
-                        ]
-                    });
-
-                    return;
-                }
-
-                const deletedCount =
-                    await warningDatabase.deleteAllWarnings(
-                        interaction.guild.id,
-                        user.id
-                    );
-
-                const embed =
-                    createEmbed({
-                        title:
-                            '🗑️ All Sacred Warnings Removed',
-
-                        description:
-                            [
-                                `All warning records for ${user} were removed successfully.`,
-                                '',
-                                '*Umbra has cleared this Soul’s Guardian record.*'
-                            ].join('\n'),
-
-                        thumbnail:
-                            user.displayAvatarURL({
-                                size: 256,
-                                forceStatic: false
-                            }),
-
-                        fields: [
-                            {
-                                name:
-                                    '🌑 Soul',
-
-                                value:
-                                    `${user}\n` +
-                                    `\`${user.id}\``,
-
-                                inline:
-                                    true
-                            },
-                            {
-                                name:
-                                    '🛡️ Removed By',
-
-                                value:
-                                    `${interaction.user}\n` +
-                                    `\`${interaction.user.id}\``,
-
-                                inline:
-                                    true
-                            },
-                            {
-                                name:
-                                    '🗑️ Deleted Records',
-
-                                value:
-                                    `\`${deletedCount}\``,
-
-                                inline:
-                                    true
-                            },
-                            {
-                                name:
-                                    '🛡️ Guardian Status',
-
-                                value:
-                                    '🟢 Warning record cleared',
-
-                                inline:
-                                    false
-                            }
-                        ]
-                    });
-
-                embed.setFooter({
-                    text:
-                        `🌑 Umbra Warning Records • Cleared by ${interaction.user.username}`,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size: 128,
-                                forceStatic: false
-                            })
-                });
-
-                await interaction.editReply({
-                    embeds: [
-                        embed
-                    ]
-                });
-
-                await sendModLog({
-                    guild:
-                        interaction.guild,
-
-                    action:
-                        '🗑️ All Sacred Warnings Removed',
-
-                    user,
-
-                    moderator:
-                        interaction.user,
-
-                    reason:
-                        'All warning records were cleared by a Shadow Warden.',
-
-                    fields: [
-                        {
-                            name:
-                                '🗑️ Deleted Records',
-
-                            value:
-                                `\`${deletedCount}\``,
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '🛡️ Guardian Status',
-
-                            value:
-                                '🟢 Warning record cleared',
-
-                            inline:
-                                false
-                        }
-                    ]
-                });
+            if (
+                subcommand ===
+                'all'
+            ) {
+                await removeAllWarnings(
+                    interaction
+                );
 
                 return;
             }
@@ -456,60 +133,392 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /unwarn command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'unwarn',
+
+                title:
                     '❌ Warning Removal Failed',
+
+                description:
                     'Umbra could not remove the warning record. Please check the database connection.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };
+
+/**
+ * Remove one warning record by its ID.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function removeSingleWarning(
+    interaction
+) {
+    const warningId =
+        interaction.options.getInteger(
+            'warning_id',
+            true
+        );
+
+    const warning =
+        await warningDatabase.getWarningById(
+            interaction.guild.id,
+            warningId
+        );
+
+    if (!warning) {
+        await interaction.editReply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Warning Record Not Found',
+                    `No warning with ID **#${warningId}** exists within Las Noches.`
+                )
+            ]
+        });
+
+        return;
+    }
+
+    const deletedWarning =
+        await warningDatabase.deleteWarningById(
+            interaction.guild.id,
+            warningId
+        );
+
+    if (!deletedWarning) {
+        await interaction.editReply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Warning Removal Failed',
+                    'Umbra could not remove the selected warning record.'
+                )
+            ]
+        });
+
+        return;
+    }
+
+    const remainingWarnings =
+        await warningDatabase.countWarnings(
+            interaction.guild.id,
+            deletedWarning.user_id
+        );
+
+    const targetUser =
+        await interaction.client.users
+            .fetch(
+                deletedWarning.user_id
+            )
+            .catch(
+                () => null
+            );
+
+    const embed =
+        createEmbed({
+            title:
+                '🗑️ Sacred Warning Removed',
+
+            description:
+                `Warning record **#${deletedWarning.id}** was removed successfully.`,
+
+            fields: [
+                {
+                    name:
+                        '🌙 Soul',
+
+                    value:
+                        `<@${deletedWarning.user_id}>\n` +
+                        `\`${deletedWarning.user_id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🛡️ Removed By',
+
+                    value:
+                        `${interaction.user}\n` +
+                        `\`${interaction.user.id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📜 Original Reason',
+
+                    value:
+                        deletedWarning.reason ||
+                        'No reason was recorded.',
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '📚 Remaining Warnings',
+
+                    value:
+                        `\`${remainingWarnings}\``,
+
+                    inline:
+                        true
+                }
+            ]
+        });
+
+    embed.setFooter({
+        text:
+            `🌙 Umbra Warning Records • Removed by ${interaction.user.username}`,
+
+        iconURL:
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
+    });
+
+    await interaction.editReply({
+        embeds: [
+            embed
+        ]
+    });
+
+    const logFields = [
+        {
+            name:
+                '🆔 Removed Warning',
+
+            value:
+                `\`#${deletedWarning.id}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '📚 Remaining Warnings',
+
+            value:
+                `\`${remainingWarnings}\``,
+
+            inline:
+                true
+        }
+    ];
+
+    if (!targetUser) {
+        logFields.push({
+            name:
+                '🌙 Soul ID',
+
+            value:
+                `\`${deletedWarning.user_id}\``,
+
+            inline:
+                true
+        });
+    }
+
+    await sendModLog({
+        guild:
+            interaction.guild,
+
+        action:
+            '🗑️ Sacred Warning Removed',
+
+        user:
+            targetUser,
+
+        moderator:
+            interaction.user,
+
+        reason:
+            deletedWarning.reason ||
+            'No reason was recorded.',
+
+        fields:
+            logFields
+    });
+}
+
+/**
+ * Remove every warning record from a Soul.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function removeAllWarnings(
+    interaction
+) {
+    const user =
+        interaction.options.getUser(
+            'user',
+            true
+        );
+
+    const warningCount =
+        await warningDatabase.countWarnings(
+            interaction.guild.id,
+            user.id
+        );
+
+    if (
+        warningCount ===
+        0
+    ) {
+        await interaction.editReply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ No Warning Records Found',
+                    `${user.tag} has no warnings within Las Noches.`
+                )
+            ]
+        });
+
+        return;
+    }
+
+    const deletedCount =
+        await warningDatabase.deleteAllWarnings(
+            interaction.guild.id,
+            user.id
+        );
+
+    const embed =
+        createEmbed({
+            title:
+                '🗑️ All Sacred Warnings Removed',
+
+            description:
+                [
+                    `All warning records for ${user} were removed successfully.`,
+                    '',
+                    '*Umbra has cleared this Soul’s Guardian record within Las Noches.*'
+                ].join('\n'),
+
+            thumbnail:
+                user.displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                }),
+
+            fields: [
+                {
+                    name:
+                        '🌙 Soul',
+
+                    value:
+                        `${user}\n` +
+                        `\`${user.id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🛡️ Removed By',
+
+                    value:
+                        `${interaction.user}\n` +
+                        `\`${interaction.user.id}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🗑️ Deleted Records',
+
+                    value:
+                        `\`${deletedCount}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🌙 Las Noches Status',
+
+                    value:
+                        '🟢 Warning record cleared',
+
+                    inline:
+                        false
+                }
+            ]
+        });
+
+    embed.setFooter({
+        text:
+            `🌙 Umbra Warning Records • Cleared by ${interaction.user.username}`,
+
+        iconURL:
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
+    });
+
+    await interaction.editReply({
+        embeds: [
+            embed
+        ]
+    });
+
+    await sendModLog({
+        guild:
+            interaction.guild,
+
+        action:
+            '🗑️ All Sacred Warnings Removed',
+
+        user,
+
+        moderator:
+            interaction.user,
+
+        reason:
+            'All warning records were cleared by a Las Noches moderator.',
+
+        fields: [
+            {
+                name:
+                    '🗑️ Deleted Records',
+
+                value:
+                    `\`${deletedCount}\``,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🌙 Las Noches Status',
+
+                value:
+                    '🟢 Warning record cleared',
+
+                inline:
+                    false
+            }
+        ]
+    });
+}

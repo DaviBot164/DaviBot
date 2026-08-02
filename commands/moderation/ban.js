@@ -11,7 +11,8 @@ const {
 
 const {
     hasBotPermission,
-    getModerationError
+    getModerationError,
+    handleModerationCommandError
 } = require('../../utils/moderation');
 
 const {
@@ -56,17 +57,23 @@ module.exports = {
                     {
                         name:
                             'Do not delete messages',
-                        value: 0
+
+                        value:
+                            0
                     },
                     {
                         name:
                             'Delete messages from the last day',
-                        value: 1
+
+                        value:
+                            1
                     },
                     {
                         name:
                             'Delete messages from the last 7 days',
-                        value: 7
+
+                        value:
+                            7
                     }
                 )
                 .setRequired(false)
@@ -122,7 +129,8 @@ module.exports = {
             const deleteMessageDays =
                 interaction.options.getInteger(
                     'delete_messages'
-                ) || 0;
+                ) ||
+                0;
 
             const botMember =
                 interaction.guild.members.me;
@@ -195,7 +203,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Ban Failed',
-                            'The Crimson Lord cannot be banned.'
+                            'The Ruler of Las Noches cannot be banned.'
                         )
                     ],
 
@@ -210,7 +218,10 @@ module.exports = {
                 const moderationError =
                     getModerationError({
                         interaction,
-                        target: member,
+
+                        target:
+                            member,
+
                         botMember
                     });
 
@@ -263,6 +274,15 @@ module.exports = {
                 }
             );
 
+            const deletedMessagesText =
+                deleteMessageDays === 0
+                    ? 'No messages were deleted.'
+                    : `Messages from the last ${deleteMessageDays} day${
+                        deleteMessageDays === 1
+                            ? ''
+                            : 's'
+                    } were deleted.`;
+
             const embed =
                 createModerationEmbed({
                     action:
@@ -281,117 +301,69 @@ module.exports = {
                     '🗑️ Deleted Messages',
 
                 value:
-                    deleteMessageDays === 0
-                        ? 'No messages were deleted.'
-                        : `Messages from the last ${deleteMessageDays} day${
-                            deleteMessageDays === 1
-                                ? ''
-                                : 's'
-                        } were deleted.`,
+                    deletedMessagesText,
 
                 inline:
                     false
             });
 
             await interaction.editReply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
             });
 
-            try {
-                await sendModLog({
-                    guild:
-                        interaction.guild,
+            await sendModLog({
+                guild:
+                    interaction.guild,
 
-                    action:
-                        '🔨 Soul Banished',
+                action:
+                    '🔨 Soul Banished',
 
-                    user,
+                user,
 
-                    moderator:
-                        interaction.user,
+                moderator:
+                    interaction.user,
 
-                    reason,
+                reason,
 
-                    fields: [
-                        {
-                            name:
-                                '🗑️ Deleted Messages',
+                fields: [
+                    {
+                        name:
+                            '🗑️ Deleted Messages',
 
-                            value:
-                                deleteMessageDays === 0
-                                    ? 'No messages deleted'
-                                    : `Messages from the last ${deleteMessageDays} day${
-                                        deleteMessageDays === 1
-                                            ? ''
-                                            : 's'
-                                    }`,
+                        value:
+                            deletedMessagesText,
 
-                            inline:
-                                false
-                        }
-                    ]
-                });
-            } catch (logError) {
-                console.error(
-                    '❌ Umbra failed to send the ban moderation log:',
-                    logError
-                );
-            }
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '🌙 Las Noches Status',
+
+                        value:
+                            'This Soul has been banished from Las Noches.',
+
+                        inline:
+                            false
+                    }
+                ]
+            });
         } catch (error) {
-            console.error(
-                '❌ Umbra /ban command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'ban',
+
+                title:
                     '❌ Ban Failed',
+
+                description:
                     'Umbra encountered an unexpected error while trying to ban this Soul.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

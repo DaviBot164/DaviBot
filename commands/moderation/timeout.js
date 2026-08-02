@@ -12,7 +12,8 @@ const {
 const {
     hasBotPermission,
     canModerate,
-    getModerationError
+    getModerationError,
+    handleModerationCommandError
 } = require('../../utils/moderation');
 
 const {
@@ -157,7 +158,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of the Order.'
+                            'This Soul is not currently a member of Las Noches.'
                         )
                     ],
 
@@ -193,7 +194,8 @@ module.exports = {
             const moderationError =
                 getModerationError({
                     interaction,
-                    target: member,
+                    target:
+                        member,
                     botMember
                 });
 
@@ -304,10 +306,10 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌑 Order Status',
+                        '🌙 Las Noches Status',
 
                     value:
-                        'This Soul has temporarily lost the ability to communicate within Crimson Eclipse.',
+                        'This Soul has temporarily lost the ability to communicate within Las Noches.',
 
                     inline:
                         false
@@ -359,10 +361,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌑 Order Status',
+                            '🌙 Las Noches Status',
 
                         value:
-                            'This Soul has temporarily lost the ability to communicate within Crimson Eclipse.',
+                            'This Soul has temporarily lost the ability to communicate within Las Noches.',
 
                         inline:
                             false
@@ -370,60 +372,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /timeout command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'timeout',
+
+                title:
                     '❌ Timeout Failed',
+
+                description:
                     'Umbra encountered an unexpected error while trying to timeout this Soul.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

@@ -11,6 +11,10 @@ const {
 } = require('../../utils/embeds');
 
 const {
+    handleModerationCommandError
+} = require('../../utils/moderation');
+
+const {
     sendModLog
 } = require('../../utils/modLogs');
 
@@ -62,8 +66,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -123,7 +127,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
+                            'Umbra could not access its Las Noches member information.'
                         )
                     ],
 
@@ -210,7 +214,7 @@ module.exports = {
                     ? '✅ Slowmode Lifted'
                     : '🐢 Slowmode Enforced';
 
-            const orderStatus =
+            const statusText =
                 isDisabled
                     ? 'Souls may now send messages without a delay.'
                     : 'Souls must now wait between messages in this channel.';
@@ -240,10 +244,10 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌑 Order Status',
+                        '🌙 Las Noches Status',
 
                     value:
-                        orderStatus,
+                        statusText,
 
                     inline:
                         false
@@ -282,10 +286,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌑 Order Status',
+                            '🌙 Las Noches Status',
 
                         value:
-                            orderStatus,
+                            statusText,
 
                         inline:
                             false
@@ -293,60 +297,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /slowmode command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'slowmode',
+
+                title:
                     '❌ Slowmode Failed',
+
+                description:
                     'Umbra could not change slowmode. Check its permissions and Northflank logs.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };
@@ -357,24 +320,37 @@ module.exports = {
  * @param {number} totalSeconds
  * @returns {string}
  */
-function formatDuration(totalSeconds) {
-    if (totalSeconds < 60) {
+function formatDuration(
+    totalSeconds
+) {
+    if (
+        totalSeconds <
+        60
+    ) {
         return (
             `${totalSeconds} second` +
             `${totalSeconds === 1 ? '' : 's'}`
         );
     }
 
-    if (totalSeconds < 3600) {
+    if (
+        totalSeconds <
+        3600
+    ) {
         const minutes =
             Math.floor(
-                totalSeconds / 60
+                totalSeconds /
+                60
             );
 
         const seconds =
-            totalSeconds % 60;
+            totalSeconds %
+            60;
 
-        if (seconds === 0) {
+        if (
+            seconds ===
+            0
+        ) {
             return (
                 `${minutes} minute` +
                 `${minutes === 1 ? '' : 's'}`
@@ -391,18 +367,24 @@ function formatDuration(totalSeconds) {
 
     const hours =
         Math.floor(
-            totalSeconds / 3600
+            totalSeconds /
+            3600
         );
 
     const remainingSeconds =
-        totalSeconds % 3600;
+        totalSeconds %
+        3600;
 
     const minutes =
         Math.floor(
-            remainingSeconds / 60
+            remainingSeconds /
+            60
         );
 
-    if (minutes === 0) {
+    if (
+        minutes ===
+        0
+    ) {
         return (
             `${hours} hour` +
             `${hours === 1 ? '' : 's'}`

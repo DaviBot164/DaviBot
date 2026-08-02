@@ -10,7 +10,8 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    getModerationError
+    getModerationError,
+    handleModerationCommandError
 } = require('../../utils/moderation');
 
 const {
@@ -67,8 +68,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -98,7 +99,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of the Order.'
+                            'This Soul is not currently a member of Las Noches.'
                         )
                     ],
 
@@ -114,7 +115,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
+                            'Umbra could not access its Las Noches member information.'
                         )
                     ],
 
@@ -128,7 +129,10 @@ module.exports = {
             const moderationError =
                 getModerationError({
                     interaction,
-                    target: member,
+
+                    target:
+                        member,
+
                     botMember
                 });
 
@@ -170,6 +174,11 @@ module.exports = {
                     member.id
                 );
 
+            const orderStatus =
+                totalWarnings >= 3
+                    ? '🔴 Repeated violations recorded'
+                    : '🟡 Warning placed on record';
+
             const embed =
                 createModerationEmbed({
                     action:
@@ -207,12 +216,10 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌑 Order Status',
+                        '🌙 Las Noches Status',
 
                     value:
-                        totalWarnings >= 3
-                            ? '🔴 Repeated violations recorded'
-                            : '🟡 Warning placed on record',
+                        orderStatus,
 
                     inline:
                         false
@@ -263,12 +270,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌑 Order Status',
+                            '🌙 Las Noches Status',
 
                         value:
-                            totalWarnings >= 3
-                                ? '🔴 Repeated violations recorded'
-                                : '🟡 Warning placed on record',
+                            orderStatus,
 
                         inline:
                             false
@@ -276,60 +281,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /warn command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'warn',
+
+                title:
                     '❌ Warning Record Failed',
+
+                description:
                     'Umbra could not save this warning. Please check the database connection and try again.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

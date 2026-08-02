@@ -10,6 +10,10 @@ const {
 } = require('../../utils/embeds');
 
 const {
+    handleModerationCommandError
+} = require('../../utils/moderation');
+
+const {
     sendModLog
 } = require('../../utils/modLogs');
 
@@ -51,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -102,7 +106,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only a Shadow Warden with **Manage Messages** may use this command.'
+                            'Only a Las Noches moderator with **Manage Messages** may use this command.'
                         )
                     ],
 
@@ -165,7 +169,7 @@ module.exports = {
                                     : 's'
                             } from ${interaction.channel}.`,
                             '',
-                            '*The channel has been cleansed beneath the crimson moon.*'
+                            '*The channel has been cleansed beneath the moon of Las Noches.*'
                         ].join('\n'),
 
                     fields: [
@@ -182,7 +186,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '🛡️ Shadow Warden',
+                                '🛡️ Moderator',
 
                             value:
                                 `${interaction.user}\n` +
@@ -206,13 +210,16 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Umbra • Guardian of Crimson Eclipse',
+                    'Umbra • Guardian of Las Noches',
 
                 iconURL:
                     interaction.client.user
                         .displayAvatarURL({
-                            size: 128,
-                            forceStatic: false
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
                         })
             });
 
@@ -262,60 +269,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /clear command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'clear',
+
+                title:
                     '❌ Channel Purge Failed',
+
+                description:
                     'Umbra could not delete the requested messages. Discord cannot bulk-delete messages older than 14 days.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

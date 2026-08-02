@@ -11,7 +11,8 @@ const {
 
 const {
     hasBotPermission,
-    getModerationError
+    getModerationError,
+    handleModerationCommandError
 } = require('../../utils/moderation');
 
 const {
@@ -64,8 +65,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -95,7 +96,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of the Order.'
+                            'This Soul is not currently a member of Las Noches.'
                         )
                     ],
 
@@ -131,7 +132,8 @@ module.exports = {
             const moderationError =
                 getModerationError({
                     interaction,
-                    target: member,
+                    target:
+                        member,
                     botMember
                 });
 
@@ -192,10 +194,10 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌑 Order Status',
+                    '🌙 Las Noches Status',
 
                 value:
-                    'This Soul may communicate within Crimson Eclipse again.',
+                    'This Soul may communicate within Las Noches again.',
 
                 inline:
                     false
@@ -225,10 +227,10 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌑 Order Status',
+                            '🌙 Las Noches Status',
 
                         value:
-                            'This Soul may communicate within Crimson Eclipse again.',
+                            'This Soul may communicate within Las Noches again.',
 
                         inline:
                             false
@@ -236,60 +238,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /untimeout command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'untimeout',
+
+                title:
                     '❌ Timeout Removal Failed',
+
+                description:
                     'Umbra encountered an unexpected error while trying to remove this timeout.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

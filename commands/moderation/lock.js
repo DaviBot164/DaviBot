@@ -11,6 +11,10 @@ const {
 } = require('../../utils/embeds');
 
 const {
+    handleModerationCommandError
+} = require('../../utils/moderation');
+
+const {
     sendModLog
 } = require('../../utils/modLogs');
 
@@ -20,7 +24,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('lock')
         .setDescription(
-            'Lock the current channel for the Order.'
+            'Lock the current channel for Las Noches.'
         )
 
         .addStringOption(option =>
@@ -51,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -109,7 +113,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
+                            'Umbra could not access its Las Noches member information.'
                         )
                     ],
 
@@ -186,6 +190,9 @@ module.exports = {
                 }
             );
 
+            const orderStatus =
+                'Souls can no longer send messages in this channel until it is unlocked.';
+
             const embed =
                 createChannelModerationEmbed({
                     action:
@@ -201,10 +208,10 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌑 Order Status',
+                    '🌙 Las Noches Status',
 
                 value:
-                    'Members of the Order can no longer send messages in this channel until it is unlocked.',
+                    orderStatus,
 
                 inline:
                     false
@@ -233,10 +240,10 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌑 Order Status',
+                            '🌙 Las Noches Status',
 
                         value:
-                            'Members of the Order can no longer send messages in this channel until it is unlocked.',
+                            orderStatus,
 
                         inline:
                             false
@@ -244,60 +251,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /lock command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'lock',
+
+                title:
                     '❌ Channel Seal Failed',
+
+                description:
                     'Umbra could not lock this channel. Check its permissions and Northflank logs.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };

@@ -10,6 +10,10 @@ const {
 } = require('../../utils/embeds');
 
 const {
+    handleModerationCommandError
+} = require('../../utils/moderation');
+
+const {
     sendModLog
 } = require('../../utils/modLogs');
 
@@ -52,8 +56,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Order Only Command',
-                            'This command can only be used inside a server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ],
 
@@ -78,12 +82,15 @@ module.exports = {
                     user.id
                 );
 
-            if (warningCount === 0) {
+            if (
+                warningCount ===
+                0
+            ) {
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
                             '❌ No Warnings Found',
-                            `${user.tag} does not have any warnings in this server.`
+                            `${user.tag} does not have any warnings within Las Noches.`
                         )
                     ]
                 });
@@ -134,7 +141,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🛡️ Guardian Status',
+                        '🌙 Las Noches Status',
 
                     value:
                         '🟢 Warning record cleared',
@@ -188,7 +195,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🛡️ Guardian Status',
+                            '🌙 Las Noches Status',
 
                         value:
                             '🟢 Warning record cleared',
@@ -199,60 +206,19 @@ module.exports = {
                 ]
             });
         } catch (error) {
-            console.error(
-                '❌ Umbra /clearwarnings command error:',
-                error
-            );
+            await handleModerationCommandError({
+                interaction,
+                error,
 
-            const errorEmbed =
-                createErrorEmbed(
+                commandName:
+                    'clearwarnings',
+
+                title:
                     '❌ Warning Removal Failed',
+
+                description:
                     'The warnings could not be removed. Please check the database connection.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            });
         }
     }
 };
