@@ -1,37 +1,28 @@
 const {
-    SlashCommandBuilder,
+    Events,
     MessageFlags
 } = require('discord.js');
 
 const {
     createErrorEmbed
-} = require('../../utils/embeds');
+} = require('../utils/embeds');
 
 const {
-    createHelpHomeEmbed,
+    createHelpCategoryEmbed,
     createHelpSelectMenu
-} = require('../../utils/helpMenu');
+} = require('../utils/helpMenu');
 
 module.exports = {
-    category:
-        'information',
+    name:
+        Events.InteractionCreate,
 
-    data:
-        new SlashCommandBuilder()
-            .setName(
-                'help'
-            )
-            .setDescription(
-                'Open Umbra’s interactive command codex.'
-            )
-            .setDMPermission(
-                false
-            ),
+    once:
+        false,
 
     /**
-     * Execute the /help command.
+     * Handle Umbra Help Menu interactions.
      *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @param {import('discord.js').StringSelectMenuInteraction} interaction
      * @returns {Promise<void>}
      */
     async execute(
@@ -39,13 +30,26 @@ module.exports = {
     ) {
         try {
             if (
+                !interaction.isStringSelectMenu()
+            ) {
+                return;
+            }
+
+            if (
+                interaction.customId !==
+                'umbra_help_category'
+            ) {
+                return;
+            }
+
+            if (
                 !interaction.inGuild()
             ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'Umbra’s Command Codex can only be opened inside Las Noches.'
+                            '❌ Las Noches Only Menu',
+                            'Umbra’s Command Codex can only be used inside Las Noches.'
                         )
                     ],
 
@@ -56,18 +60,21 @@ module.exports = {
                 return;
             }
 
-            const clientCommands =
-                interaction.client.commands;
+            const selectedCategoryId =
+                interaction.values[0];
 
-            if (
-                !clientCommands ||
-                clientCommands.size === 0
-            ) {
+            const categoryEmbed =
+                createHelpCategoryEmbed(
+                    interaction,
+                    selectedCategoryId
+                );
+
+            if (!categoryEmbed) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Command Archive Empty',
-                            'No Umbra commands are currently loaded.'
+                            '❌ Category Not Found',
+                            'Umbra could not find the selected command category.'
                         )
                     ],
 
@@ -78,52 +85,31 @@ module.exports = {
                 return;
             }
 
-            await interaction.reply({
+            await interaction.update({
                 embeds: [
-                    createHelpHomeEmbed(
-                        interaction
-                    )
+                    categoryEmbed
                 ],
 
                 components: [
-                    createHelpSelectMenu()
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
+                    createHelpSelectMenu(
+                        selectedCategoryId
+                    )
+                ]
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /help command error:',
+                '❌ Umbra Help Menu interaction error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Command Codex Unavailable',
-                    'Umbra could not open the interactive Command Codex.'
+                    '❌ Command Category Unavailable',
+                    'Umbra could not open the selected command category.'
                 );
 
             if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
+                interaction.deferred ||
                 interaction.replied
             ) {
                 await interaction
