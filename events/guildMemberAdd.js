@@ -25,8 +25,8 @@ const {
 /**
  * Official Welcome channel.
  */
-const WELCOME_CHANNEL_NAME =
-    '👋・arrivals';
+const WELCOME_CHANNEL_ID =
+    '1528401903438925906';
 
 /**
  * Role assigned automatically
@@ -982,16 +982,20 @@ async function processRaidDetection(
 function findWelcomeChannel(
     guild
 ) {
-    return (
-        guild.channels.cache.find(
-            channel =>
-                channel.isTextBased() &&
-                !channel.isThread() &&
-                channel.name ===
-                    WELCOME_CHANNEL_NAME
-        ) ||
-        null
-    );
+    const welcomeChannel =
+        guild.channels.cache.get(
+            WELCOME_CHANNEL_ID
+        );
+
+    if (
+        !welcomeChannel ||
+        !welcomeChannel.isTextBased() ||
+        welcomeChannel.isThread()
+    ) {
+        return null;
+    }
+
+    return welcomeChannel;
 }
 
 /**
@@ -1060,7 +1064,7 @@ async function sendWelcomeMessage(
 
         if (!welcomeChannel) {
             console.error(
-                `❌ Welcome channel "${WELCOME_CHANNEL_NAME}" was not found in ${member.guild.name}.`
+                `❌ Welcome channel ID "${WELCOME_CHANNEL_ID}" was not found in ${member.guild.name}.`
             );
 
             return false;
