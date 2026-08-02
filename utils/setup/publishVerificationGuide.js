@@ -32,12 +32,13 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Verification Channel Missing',
-                    'Umbra could not find the configured verification channel.'
+                    '❌ Verification Gate Missing',
+                    'Umbra could not find the configured Las Noches verification channel.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -51,11 +52,12 @@ async function getVerificationChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Umbra Unavailable',
-                    'Umbra could not access its server member information.'
+                    'Umbra could not access its Las Noches member record.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -77,11 +79,18 @@ async function getVerificationChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the verification channel.'
+                    [
+                        'Umbra requires the following permissions inside the verification channel:',
+                        '',
+                        '• **View Channel**',
+                        '• **Send Messages**',
+                        '• **Embed Links**'
+                    ].join('\n')
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -91,9 +100,10 @@ async function getVerificationChannel(
 }
 
 /**
- * Publish the Crimson Eclipse verification guide.
+ * Publish the Las Noches verification guide.
  *
- * Bloxlink continues to handle the real Roblox verification.
+ * Bloxlink continues to handle the real
+ * Roblox account verification process.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -113,39 +123,51 @@ async function publishVerificationGuide(
     const guideEmbed =
         createEmbed({
             title:
-                '⛩️ The Gate of Crimson Eclipse',
+                '⛩️ Gate of Las Noches',
 
             description:
                 [
-                    'Welcome, traveler.',
+                    '## Welcome, wandering Soul.',
                     '',
-                    'Before entering the Order, you must verify your Roblox account through **Bloxlink**.',
+                    'Before entering **Las Noches**, your Roblox identity must be verified through **Bloxlink**.',
                     '',
-                    'Complete the steps below to unlock the main Crimson Eclipse channels.'
+                    'Complete the ritual below to receive access to the kingdom and begin your progression.'
                 ].join('\n'),
+
+            color:
+                '#6F42C1',
 
             thumbnail:
                 interaction.guild.iconURL({
-                    size: 512,
-                    forceStatic: false
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
                 }) ??
-                interaction.client.user.displayAvatarURL({
-                    size: 512,
-                    forceStatic: false
-                }),
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            512,
+
+                        forceStatic:
+                            false
+                    }),
 
             fields: [
                 {
                     name:
-                        '🔗 How to Verify',
+                        '╭・🔗 VERIFICATION RITUAL',
 
                     value:
                         [
-                            '1. Type the `/verify` command in this channel.',
-                            '2. Select the Bloxlink command when Discord displays it.',
-                            '3. Open the verification link sent by Bloxlink.',
+                            '1. Use the `/verify` command in this channel.',
+                            '2. Select the command provided by **Bloxlink**.',
+                            '3. Open the secure verification link.',
                             '4. Connect the correct Roblox account.',
-                            '5. Return to Discord and complete the process.'
+                            '5. Return to Discord and finish the process.',
+                            '',
+                            '-# Bloxlink manages the actual Roblox verification process.'
                         ].join('\n'),
 
                     inline:
@@ -153,14 +175,15 @@ async function publishVerificationGuide(
                 },
                 {
                     name:
-                        '✅ What Happens After Verification?',
+                        '├・✅ AFTER VERIFICATION',
 
                     value:
                         [
-                            '• You receive the **Verified** role.',
-                            '• The **Unverified** role is removed.',
-                            '• The main community channels become available.',
-                            '• You may enter the Gathering Hall and the Realms.'
+                            '• The **Verified** role will be granted.',
+                            '• The **Unverified** role will be removed.',
+                            '• Las Noches community channels will unlock.',
+                            '• Your Roblox identity will be linked to your Discord account.',
+                            '• You may begin building your Soul Record and Spiritual Power.'
                         ].join('\n'),
 
                     inline:
@@ -168,15 +191,16 @@ async function publishVerificationGuide(
                 },
                 {
                     name:
-                        '⚠️ Important',
+                        '├・🛡️ SECURITY NOTICE',
 
                     value:
                         [
-                            '• Connect only your own Roblox account.',
-                            '• Make sure the Roblox username is correct.',
+                            '• Connect only an account that belongs to you.',
+                            '• Confirm that the Roblox username is correct.',
+                            '• Never share your Roblox or Discord password.',
                             '• Do not repeatedly spam the verification command.',
-                            '• Never share your password with anyone.',
-                            '• Crimson Eclipse staff will never ask for your Roblox password.'
+                            '• Las Noches staff will never request your password.',
+                            '• Umbra will never send private login requests.'
                         ].join('\n'),
 
                     inline:
@@ -184,13 +208,15 @@ async function publishVerificationGuide(
                 },
                 {
                     name:
-                        '🔄 Already Verified With Bloxlink?',
+                        '├・🔄 ALREADY CONNECTED?',
 
                     value:
                         [
-                            'If your Roblox account is already connected to Bloxlink, use `/verify` again.',
+                            'If your Roblox account is already linked to Bloxlink, use `/verify` again.',
                             '',
-                            'Bloxlink should update your roles automatically and grant access to the Order.'
+                            'Bloxlink should refresh your server information and update your roles automatically.',
+                            '',
+                            '-# Role updates may take a short moment to appear.'
                         ].join('\n'),
 
                     inline:
@@ -198,18 +224,19 @@ async function publishVerificationGuide(
                 },
                 {
                     name:
-                        '🎫 Verification Not Working?',
+                        '├・🎫 VERIFICATION SUPPORT',
 
                     value:
                         [
-                            'Wait a short moment and try `/verify` again.',
+                            'If verification does not work:',
                             '',
-                            'If the problem continues:',
+                            '1. Wait briefly and try `/verify` again.',
+                            '2. Confirm that the correct Roblox account is connected.',
+                            '3. Read the Las Noches Ticket Guide.',
+                            '4. Open a private support ticket.',
+                            '5. Explain the issue clearly to the Las Noches staff.',
                             '',
-                            '1. Read the Ticket Guide.',
-                            '2. Go to **🎫・create-ticket**.',
-                            '3. Open a private support ticket.',
-                            '4. Explain the problem clearly to the Shadow Wardens.'
+                            '-# Never post passwords, login codes, or private account information.'
                         ].join('\n'),
 
                     inline:
@@ -217,13 +244,13 @@ async function publishVerificationGuide(
                 },
                 {
                     name:
-                        '🌑 Final Instruction',
+                        '╰・🌙 FINAL DECREE',
 
                     value:
                         [
-                            'Verification protects the Order from impersonation and helps members use the correct Roblox identity.',
+                            'Verification protects Las Noches from impersonation and keeps every Soul connected to the correct Roblox identity.',
                             '',
-                            '*Prove your identity, unlock the gates, and begin your journey beneath the crimson moon.*'
+                            '> **Reveal your identity, cross the gate, and enter the kingdom beneath the eternal night.**'
                         ].join('\n'),
 
                     inline:
@@ -234,38 +261,51 @@ async function publishVerificationGuide(
 
     guideEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Crimson Eclipse',
+            'Umbra • Guardian of Las Noches',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     guideEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Verification Gate',
+            'Las Noches • Soul Verification Gate',
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     guideEmbed.setTimestamp();
 
     await verifyChannel.send({
-        embeds:
-            [guideEmbed],
+        embeds: [
+            guideEmbed
+        ],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
@@ -273,11 +313,12 @@ async function publishVerificationGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Verification Guide Published',
-                `Umbra successfully published the verification guide in ${verifyChannel}.`
+                `Umbra successfully published the Las Noches verification guide in ${verifyChannel}.`
             )
         ],
 
-        components: []
+        components:
+            []
     });
 
     console.log(
@@ -285,7 +326,7 @@ async function publishVerificationGuide(
     );
 
     console.log(
-        '⛩️ Verification Guide Published Through Setup Wizard'
+        '⛩️ Las Noches Verification Guide Published'
     );
 
     console.log(
@@ -297,7 +338,7 @@ async function publishVerificationGuide(
     );
 
     console.log(
-        `🏰 Server: ${interaction.guild.name}`
+        `🏰 Kingdom: ${interaction.guild.name}`
     );
 
     console.log(

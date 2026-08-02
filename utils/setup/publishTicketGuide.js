@@ -12,7 +12,8 @@ const TICKET_GUIDE_CHANNEL_ID =
     '1530989678553989261';
 
 /**
- * Get and validate the Ticket Guide channel.
+ * Get and validate the
+ * Ticket Guide channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,9 +22,13 @@ async function getTicketGuideChannel(
     interaction
 ) {
     const ticketGuideChannel =
-        await interaction.guild.channels.fetch(
-            TICKET_GUIDE_CHANNEL_ID
-        );
+        await interaction.guild.channels
+            .fetch(
+                TICKET_GUIDE_CHANNEL_ID
+            )
+            .catch(
+                () => null
+            );
 
     if (
         !ticketGuideChannel ||
@@ -32,8 +37,8 @@ async function getTicketGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Ticket Guide Channel Missing',
-                    'Umbra could not find the configured Ticket Guide channel.'
+                    '❌ Support Codex Missing',
+                    'Umbra could not locate the configured Ticket Guide channel.'
                 )
             ],
 
@@ -51,7 +56,7 @@ async function getTicketGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Umbra Unavailable',
-                    'Umbra could not access its server member information.'
+                    'Umbra could not access its Las Noches member record.'
                 )
             ],
 
@@ -61,13 +66,13 @@ async function getTicketGuideChannel(
         return null;
     }
 
-    const channelPermissions =
+    const permissions =
         ticketGuideChannel.permissionsFor(
             botMember
         );
 
     if (
-        !channelPermissions?.has([
+        !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
@@ -77,7 +82,13 @@ async function getTicketGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Ticket Guide channel.'
+                    [
+                        'Umbra requires:',
+                        '',
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
+                    ].join('\n')
                 )
             ],
 
@@ -91,10 +102,8 @@ async function getTicketGuideChannel(
 }
 
 /**
- * Publish the Crimson Eclipse Ticket Guide.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<void>}
+ * Publish the official
+ * Las Noches Support Codex.
  */
 async function publishTicketGuide(
     interaction
@@ -113,19 +122,22 @@ async function publishTicketGuide(
             Date.now() / 1000
         );
 
-    const ticketGuideEmbed =
+    const guideEmbed =
         createEmbed({
             title:
-                '🎫 Umbra Support Guide',
+                '🎫 Support Codex',
 
             description:
                 [
-                    'The Ticket System allows every Soul to privately contact the **Shadow Wardens**.',
+                    '## Every Soul deserves a fair hearing.',
                     '',
-                    'Read this guide before creating a ticket so your request can be handled quickly and fairly.',
+                    'Umbra provides a private support system where members may safely communicate with the **Las Noches Authorities**.',
                     '',
-                    '*Honest information helps the Guardians protect the Order.*'
+                    'Read this codex before opening a ticket so your request can be reviewed quickly and fairly.'
                 ].join('\n'),
+
+            color:
+                '#6F42C1',
 
             thumbnail:
                 interaction.client.user.displayAvatarURL({
@@ -136,19 +148,19 @@ async function publishTicketGuide(
             fields: [
                 {
                     name:
-                        '🎫 What Is a Ticket?',
+                        '╭・🎫 WHAT IS A TICKET?',
 
                     value:
                         [
-                            'A ticket is a private support channel created by Umbra.',
+                            'A ticket is a private support chamber created by Umbra.',
                             '',
-                            'A ticket can normally be viewed by:',
+                            'Normally visible only to:',
                             '',
-                            `• The Soul who created it`,
-                            '• Shadow Wardens',
+                            '• The Soul who opened it',
+                            '• Las Noches Authorities',
                             '• Umbra',
                             '',
-                            'Other members cannot view your private support conversation.'
+                            '> Every discussion remains private unless moderation requires otherwise.'
                         ].join('\n'),
 
                     inline:
@@ -156,20 +168,21 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '✅ When Should You Create One?',
+                        '├・✅ WHEN SHOULD YOU OPEN ONE?',
 
                     value:
                         [
-                            'Create a ticket when private staff assistance is genuinely needed.',
+                            'Open a ticket whenever private assistance is genuinely required.',
                             '',
-                            'Suitable reasons include:',
+                            'Examples include:',
                             '',
                             '• Reporting a member',
-                            '• Appealing a warning, timeout, kick, or ban',
-                            '• Reporting a server or bot problem',
-                            '• Providing private screenshots or evidence',
-                            '• Requesting help from Shadow Wardens',
-                            '• Reporting harassment, scams, or serious rule violations'
+                            '• Appealing moderation',
+                            '• Verification issues',
+                            '• Bot problems',
+                            '• Private evidence',
+                            '• Serious rule violations',
+                            '• Questions that should not be discussed publicly'
                         ].join('\n'),
 
                     inline:
@@ -177,46 +190,44 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '❌ When Should You Not Create One?',
+                        '├・❌ WHEN SHOULD YOU NOT OPEN ONE?',
 
                     value:
                         [
-                            'Do not misuse the Umbra support system.',
+                            'Do not misuse Umbra’s support system.',
                             '',
-                            'Tickets must not be created for:',
+                            'Tickets are not intended for:',
                             '',
-                            '• Jokes or trolling',
                             '• Spam',
-                            '• Fake reports',
+                            '• Jokes',
                             '• General conversations',
-                            '• Asking for staff roles or promotions',
-                            '• Questions already answered in the Server Guide',
-                            '• Repeatedly opening tickets about the same resolved issue',
+                            '• Repeated requests',
+                            '• Promotion requests',
+                            '• Questions already answered in the Knowledge Archive',
                             '',
-                            'Abusing the Ticket System may result in moderation action.'
+                            '> Abuse of the Ticket System may result in moderation.'
                         ].join('\n'),
 
                     inline:
                         false
-                },
-                {
+                },                {
                     name:
-                        '📝 How to Create a Good Ticket',
+                        '├・📝 HOW TO CREATE A STRONG REPORT',
 
                     value:
                         [
-                            'A clear ticket helps the Shadow Wardens respond faster.',
+                            'Clear information allows the Las Noches Authorities to respond more effectively.',
                             '',
                             'When opening a ticket:',
                             '',
                             '• Explain the issue clearly',
                             '• Include the correct usernames',
-                            '• Describe when and where the incident happened',
+                            '• Describe when and where it happened',
                             '• Attach screenshots or evidence when possible',
-                            '• Avoid sending repeated messages',
+                            '• Avoid repeated messages',
                             '• Remain respectful and patient',
                             '',
-                            '**Never edit or falsify evidence.**'
+                            '**Never edit, hide, or falsify evidence.**'
                         ].join('\n'),
 
                     inline:
@@ -224,20 +235,20 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '🛡️ What Happens After You Open It?',
+                        '├・🛡️ HOW THE PROCESS WORKS',
 
                     value:
                         [
                             'The support process normally follows these steps:',
                             '',
-                            '1. Umbra creates a private ticket channel.',
-                            '2. You explain the issue and provide evidence.',
-                            '3. A Shadow Warden reviews the request.',
-                            '4. Staff may ask additional questions.',
-                            '5. The issue is handled or a decision is explained.',
-                            '6. The ticket is closed when support is complete.',
+                            '1. Umbra creates a private ticket chamber.',
+                            '2. The requesting Soul explains the issue.',
+                            '3. Evidence is reviewed.',
+                            '4. Las Noches Authorities may ask additional questions.',
+                            '5. A decision or solution is provided.',
+                            '6. The ticket is closed when the case is complete.',
                             '',
-                            'A closed ticket may be reopened by the Shadow Wardens if further review is required.'
+                            '-# A closed ticket may be reopened if further review is required.'
                         ].join('\n'),
 
                     inline:
@@ -245,19 +256,19 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '🔒 Privacy and Safety',
+                        '├・🔒 PRIVACY & SECURITY',
 
                     value:
                         [
-                            'Tickets are private, but they are still subject to the Sacred Laws.',
+                            'Tickets are private, but all Royal Laws still apply.',
                             '',
-                            '• Do not share passwords or private login information',
-                            '• Do not send malicious files or links',
-                            '• Do not threaten or harass staff',
-                            '• Do not reveal another person’s private information',
-                            '• Only provide evidence related to the report',
+                            '• Never share passwords or login codes',
+                            '• Never send malicious files or links',
+                            '• Never expose private personal information',
+                            '• Never threaten or harass staff',
+                            '• Submit only evidence relevant to the case',
                             '',
-                            'Umbra and the Shadow Wardens may preserve relevant information for moderation records.'
+                            'Umbra and authorized staff may preserve important information for Kingdom Records and moderation history.'
                         ].join('\n'),
 
                     inline:
@@ -265,20 +276,21 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '⏳ Response Times',
+                        '├・⏳ RESPONSE TIMES',
 
                     value:
                         [
-                            'Shadow Wardens may not always respond immediately.',
+                            'Las Noches staff may not always respond immediately.',
                             '',
                             'Please remember:',
                             '',
                             '• Staff members may be busy or offline',
                             '• Complex reports may require investigation',
-                            '• Repeated mentions will not make the process faster',
-                            '• Remain patient while your request is reviewed',
+                            '• Repeated mentions will not speed up the process',
+                            '• Additional evidence may be requested',
+                            '• Every genuine request will be reviewed',
                             '',
-                            'Every genuine request will be reviewed as soon as possible.'
+                            '> Patience protects the fairness of every judgement.'
                         ].join('\n'),
 
                     inline:
@@ -286,17 +298,17 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '📍 How to Open a Ticket',
+                        '├・📍 HOW TO OPEN A TICKET',
 
                     value:
                         [
-                            'After reading this guide, go to:',
+                            'After reading this Support Codex, go to:',
                             '',
                             '**🎫・create-ticket**',
                             '',
                             'Use the **Open Ticket** button on Umbra’s support panel.',
                             '',
-                            'Only create one active ticket at a time unless a Shadow Warden instructs you otherwise.'
+                            'Only maintain one active ticket at a time unless a staff member instructs you otherwise.'
                         ].join('\n'),
 
                     inline:
@@ -304,21 +316,21 @@ async function publishTicketGuide(
                 },
                 {
                     name:
-                        '🌑 Final Support Decree',
+                        '╰・🌙 FINAL SUPPORT DECREE',
 
                     value:
                         [
-                            'Every ticket will be reviewed fairly according to the available information.',
+                            'Every request will be reviewed according to the available information and evidence.',
                             '',
                             'Be honest.',
-                            'Provide evidence.',
-                            'Respect the Shadow Wardens.',
+                            'Provide clear records.',
+                            'Respect the Las Noches Authorities.',
                             'Remain patient.',
                             '',
-                            `**Guide published:** <t:${publishedAt}:F>`,
+                            `**Codex published:** <t:${publishedAt}:F>`,
                             `-# <t:${publishedAt}:R>`,
                             '',
-                            '*Umbra watches over every request beneath the crimson moon.*'
+                            '> **Umbra preserves every worthy request beneath the eternal night.**'
                         ].join('\n'),
 
                     inline:
@@ -327,9 +339,9 @@ async function publishTicketGuide(
             ]
         });
 
-    ticketGuideEmbed.setAuthor({
+    guideEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Crimson Eclipse',
+            'Umbra • Guardian of Las Noches',
 
         iconURL:
             interaction.client.user.displayAvatarURL({
@@ -338,9 +350,9 @@ async function publishTicketGuide(
             })
     });
 
-    ticketGuideEmbed.setFooter({
+    guideEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Support Archive',
+            'Las Noches • Support Codex',
 
         iconURL:
             interaction.guild.iconURL({
@@ -353,11 +365,12 @@ async function publishTicketGuide(
             })
     });
 
-    ticketGuideEmbed.setTimestamp();
+    guideEmbed.setTimestamp();
 
     await ticketGuideChannel.send({
-        embeds:
-            [ticketGuideEmbed],
+        embeds: [
+            guideEmbed
+        ],
 
         allowedMentions: {
             parse: []
@@ -367,8 +380,8 @@ async function publishTicketGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Ticket Guide Published',
-                `Umbra successfully published the Ticket Guide in ${ticketGuideChannel}.`
+                '✅ Support Codex Published',
+                `Umbra successfully published the Las Noches Support Codex in ${ticketGuideChannel}.`
             )
         ],
 
@@ -380,7 +393,7 @@ async function publishTicketGuide(
     );
 
     console.log(
-        '🎫 Ticket Guide Published Through Setup Wizard'
+        '🎫 Las Noches Support Codex Published'
     );
 
     console.log(
@@ -392,7 +405,7 @@ async function publishTicketGuide(
     );
 
     console.log(
-        `🏰 Server: ${interaction.guild.name}`
+        `🏰 Kingdom: ${interaction.guild.name}`
     );
 
     console.log(

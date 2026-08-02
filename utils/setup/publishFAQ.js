@@ -12,7 +12,8 @@ const setupChannels =
     require('../../config/setupChannels');
 
 /**
- * Get and validate the Information channel.
+ * Get and validate the
+ * Las Noches Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,10 +22,14 @@ async function getFAQChannel(
     interaction
 ) {
     const informationChannel =
-        await interaction.guild.channels.fetch(
-            setupChannels
-                .informationChannelId
-        );
+        await interaction.guild.channels
+            .fetch(
+                setupChannels
+                    .informationChannelId
+            )
+            .catch(
+                () => null
+            );
 
     if (
         !informationChannel ||
@@ -33,8 +38,8 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
-                    'Umbra could not find the configured Information channel.'
+                    '❌ Kingdom Archive Missing',
+                    'Umbra could not find the configured Las Noches Information channel.'
                 )
             ],
 
@@ -52,7 +57,7 @@ async function getFAQChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Umbra Unavailable',
-                    'Umbra could not access its server member information.'
+                    'Umbra could not access its Las Noches member record.'
                 )
             ],
 
@@ -62,13 +67,13 @@ async function getFAQChannel(
         return null;
     }
 
-    const channelPermissions =
+    const permissions =
         informationChannel.permissionsFor(
             botMember
         );
 
     if (
-        !channelPermissions?.has([
+        !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
@@ -78,7 +83,13 @@ async function getFAQChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Information channel.'
+                    [
+                        'Umbra requires:',
+                        '',
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
+                    ].join('\n')
                 )
             ],
 
@@ -92,10 +103,8 @@ async function getFAQChannel(
 }
 
 /**
- * Publish the Crimson Eclipse FAQ.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<void>}
+ * Publish the official
+ * Knowledge Archive of Las Noches.
  */
 async function publishFAQ(
     interaction
@@ -112,14 +121,19 @@ async function publishFAQ(
     const faqEmbed =
         createEmbed({
             title:
-                '❓ Crimson Eclipse FAQ',
+                '📚 Knowledge Archive of Las Noches',
 
             description:
                 [
-                    'Below are answers to frequently asked questions about Crimson Eclipse.',
+                    '## Answers preserved by Umbra.',
                     '',
-                    'Read this section before opening a support ticket, as your question may already be answered here.'
+                    'Before opening a support ticket, consult this archive.',
+                    '',
+                    'Most questions asked by new Souls have already been answered here.'
                 ].join('\n'),
+
+            color:
+                '#6F42C1',
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -134,19 +148,15 @@ async function publishFAQ(
             fields: [
                 {
                     name:
-                        '⛩️ How do I verify?',
+                        '╭・⛩️ HOW DO I ENTER LAS NOCHES?',
 
                     value:
                         [
-                            'Go to the verification channel and follow the instructions shown there.',
+                            'Complete the verification process through **Bloxlink**.',
                             '',
-                            'Verification may require you to:',
+                            'After verification Umbra will automatically grant the correct access roles.',
                             '',
-                            '• Connect your Roblox account',
-                            '• Complete the provided verification steps',
-                            '• Wait for the correct server role',
-                            '',
-                            'After successful verification, you should gain access to the main community channels.'
+                            'If verification fails, use the Ticket System.'
                         ].join('\n'),
 
                     inline:
@@ -154,19 +164,19 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🔒 Why can I not see the server channels?',
+                        '├・🔒 WHY ARE CHANNELS LOCKED?',
 
                     value:
                         [
                             'The most common reason is incomplete verification.',
                             '',
-                            'Make sure that:',
+                            'Confirm that:',
                             '',
-                            '• Your Roblox account is connected correctly',
-                            '• You completed every verification step',
-                            '• The Verified role was assigned',
+                            '• Your Roblox account is connected.',
+                            '• Verification completed successfully.',
+                            '• The Verified role has been assigned.',
                             '',
-                            'If you are verified but still cannot access channels, create a support ticket.'
+                            'If everything appears correct, contact the staff through a ticket.'
                         ].join('\n'),
 
                     inline:
@@ -174,15 +184,15 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '📜 Where can I read the server rules?',
+                        '├・📜 WHERE ARE THE ROYAL LAWS?',
 
                     value:
                         [
-                            'The official rules are published in this Information channel.',
+                            'The Royal Laws are available inside the Information Archive.',
                             '',
-                            'Read all Sacred Laws before participating in the community.',
+                            'Every Soul is expected to read them before participating in the kingdom.',
                             '',
-                            'By remaining in Crimson Eclipse, you agree to follow the server rules and Discord’s Terms of Service.'
+                            'Remaining in Las Noches means accepting those laws.'
                         ].join('\n'),
 
                     inline:
@@ -190,44 +200,41 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '📢 Where are official announcements posted?',
+                        '├・📢 WHERE ARE KINGDOM DECREES POSTED?',
 
                     value:
                         [
-                            'Official announcements are posted in the Decrees channel.',
+                            'Official announcements are published inside the Kingdom Decrees channel.',
                             '',
-                            'Decrees may include:',
+                            'There you will find:',
                             '',
-                            '• Server updates',
-                            '• Event announcements',
+                            '• Updates',
+                            '• Events',
                             '• Rule changes',
-                            '• Staff updates',
-                            '• Important community information',
-                            '',
-                            'Members should check the Decrees channel regularly.'
+                            '• Community news',
+                            '• Important notices'
                         ].join('\n'),
 
                     inline:
                         false
-                },
-                {
+                },                {
                     name:
-                        '🎫 How do I contact the staff team?',
+                        '├・🎫 HOW DO I CONTACT STAFF?',
 
                     value:
                         [
-                            'Use Umbra’s Ticket System when you need private assistance.',
+                            'Use Umbra’s private Ticket System whenever assistance is needed.',
                             '',
-                            'Tickets should be used for:',
+                            'Tickets may be opened for:',
                             '',
                             '• Member reports',
                             '• Moderation appeals',
-                            '• Server problems',
                             '• Verification problems',
+                            '• Server issues',
                             '• Private questions',
                             '• Evidence that should not be shared publicly',
                             '',
-                            'Do not repeatedly mention staff members in public channels.'
+                            '-# Avoid repeatedly mentioning staff members in public channels.'
                         ].join('\n'),
 
                     inline:
@@ -235,20 +242,20 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '⏳ How long does ticket support take?',
+                        '├・⏳ HOW LONG DOES SUPPORT TAKE?',
 
                     value:
                         [
-                            'Response times depend on staff availability.',
+                            'Response time depends on staff availability.',
                             '',
                             'After creating a ticket:',
                             '',
-                            '• Explain your issue clearly',
-                            '• Include all important details',
-                            '• Add screenshots or evidence when necessary',
-                            '• Wait patiently for a Shadow Warden',
+                            '• Explain the situation clearly.',
+                            '• Include all important details.',
+                            '• Attach screenshots or evidence when needed.',
+                            '• Wait patiently for a response.',
                             '',
-                            'Repeated mentions or unnecessary messages may delay the process.'
+                            'Repeated mentions or unnecessary messages may slow the process.'
                         ].join('\n'),
 
                     inline:
@@ -256,21 +263,21 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🛡️ Can I appeal a warning, timeout, kick, or ban?',
+                        '├・🛡️ CAN I APPEAL A PUNISHMENT?',
 
                     value:
                         [
-                            'Yes, moderation actions may be appealed through the Ticket System.',
+                            'Warnings, timeouts, kicks, and bans may be appealed through the Ticket System.',
                             '',
                             'Your appeal should include:',
                             '',
                             '• Your Discord username',
-                            '• The moderation action received',
-                            '• The reason provided by staff',
-                            '• A clear explanation of why you believe it should be reviewed',
+                            '• The punishment received',
+                            '• The reason provided',
+                            '• A clear explanation',
                             '• Relevant evidence',
                             '',
-                            'Submitting an appeal does not guarantee that the punishment will be removed.'
+                            '-# Submitting an appeal does not guarantee removal of the punishment.'
                         ].join('\n'),
 
                     inline:
@@ -278,24 +285,27 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🤖 What is Umbra?',
+                        '├・🤖 WHAT IS UMBRA?',
 
                     value:
                         [
-                            'Umbra is the Guardian of Crimson Eclipse.',
+                            'Umbra is the **Guardian of Las Noches**.',
                             '',
-                            'Umbra manages systems such as:',
+                            'Umbra manages:',
                             '',
-                            '• Welcome messages',
-                            '• Verification guidance',
-                            '• Server information',
-                            '• Moderation commands',
                             '• Guardian AutoMod',
-                            '• Ticket support',
-                            '• Member records',
-                            '• Setup publications',
+                            '• Warning and Raid Systems',
+                            '• Tickets and verification guidance',
+                            '• Welcome messages',
+                            '• Levels and Spiritual Power',
+                            '• Soul Records',
+                            '• Arrancar Ranks',
+                            '• Chronicle Titles',
+                            '• Achievements',
+                            '• Events and Giveaways',
+                            '• Interactive Leaderboards',
                             '',
-                            'Umbra is a bot and cannot answer normal chat messages unless a command or interaction is used.'
+                            'Umbra responds through commands and interactions rather than normal conversation.'
                         ].join('\n'),
 
                     inline:
@@ -303,19 +313,19 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '⚠️ Why did Umbra delete my message?',
+                        '├・⚠️ WHY DID UMBRA DELETE MY MESSAGE?',
 
                     value:
                         [
-                            'Umbra’s Guardian system may remove messages that violate server protections.',
+                            'Umbra’s Guardian system may remove messages that violate kingdom protections.',
                             '',
                             'This may include:',
                             '',
-                            '• Offensive or prohibited language',
+                            '• Prohibited language',
                             '• Spam',
                             '• Unauthorized Discord invites',
                             '• Repeated disruptive messages',
-                            '• Attempts to bypass word filters',
+                            '• Attempts to bypass filters',
                             '',
                             'Repeated violations may result in warnings or temporary timeouts.'
                         ].join('\n'),
@@ -325,17 +335,15 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🎮 Is scripting or exploiting allowed?',
+                        '├・⚔️ ARE SCRIPTS OR EXPLOITS ALLOWED?',
 
                     value:
                         [
-                            'No.',
+                            '**No.**',
                             '',
-                            'Scripts, exploits, cheats, unfair tools, and other prohibited advantages are not allowed.',
+                            'Scripts, exploits, cheats, unfair tools, and prohibited advantages are forbidden.',
                             '',
-                            'Members caught using or distributing these tools may receive moderation action without exceptions.',
-                            '',
-                            'Play fairly and protect the community.'
+                            'Using or distributing them may result in immediate moderation or permanent exile from Las Noches.'
                         ].join('\n'),
 
                     inline:
@@ -343,23 +351,22 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🎖️ How do I receive a higher role?',
+                        '├・🏆 HOW DO I GROW STRONGER?',
 
                     value:
                         [
-                            'Some roles are earned through activity, events, achievements, or contributions.',
+                            'Progression is earned through activity and participation.',
                             '',
-                            'Staff roles are not granted simply because someone asks for them.',
+                            'Your Soul may gain:',
                             '',
-                            'Members considered for staff must demonstrate:',
+                            '• Levels',
+                            '• Spiritual Power',
+                            '• Chronicle Titles',
+                            '• Achievements',
+                            '• Progression Roles',
+                            '• Arrancar Ranks',
                             '',
-                            '• Maturity',
-                            '• Loyalty',
-                            '• Fair judgment',
-                            '• Consistent activity',
-                            '• Respect for the community',
-                            '',
-                            'Do not repeatedly ask for promotions or staff permissions.'
+                            'Staff roles are not granted simply because someone requests them.'
                         ].join('\n'),
 
                     inline:
@@ -367,21 +374,21 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '👤 Can I advertise another server or community?',
+                        '├・👤 IS ADVERTISING ALLOWED?',
 
                     value:
                         [
-                            'Advertising is not allowed unless permission was given by Crimson Eclipse leadership.',
+                            'Advertising requires permission from Las Noches leadership.',
                             '',
                             'This includes:',
                             '',
                             '• Discord server invites',
-                            '• Unapproved communities',
                             '• Recruitment advertisements',
+                            '• Unapproved communities',
                             '• Repeated promotional links',
                             '• Advertising through direct messages',
                             '',
-                            'Unauthorized advertising may result in moderation action.'
+                            'Unauthorized advertising may result in moderation.'
                         ].join('\n'),
 
                     inline:
@@ -389,15 +396,15 @@ async function publishFAQ(
                 },
                 {
                     name:
-                        '🌙 What should I do if my question is not listed?',
+                        '╰・🌙 WHAT IF MY QUESTION IS NOT HERE?',
 
                     value:
                         [
-                            'If your question is not answered here, use the appropriate community channel or open a support ticket.',
+                            'Use the appropriate community channel for general questions.',
                             '',
-                            'For private, serious, or moderation-related matters, always use the Ticket System.',
+                            'For private, serious, technical, or moderation-related matters, open a support ticket.',
                             '',
-                            '*Knowledge strengthens every Soul beneath the crimson moon.*'
+                            '> **Knowledge strengthens every Soul and preserves the eternal kingdom.**'
                         ].join('\n'),
 
                     inline:
@@ -408,7 +415,7 @@ async function publishFAQ(
 
     faqEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Crimson Eclipse',
+            'Umbra • Guardian of Las Noches',
 
         iconURL:
             interaction.client.user.displayAvatarURL({
@@ -419,7 +426,7 @@ async function publishFAQ(
 
     faqEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Frequently Asked Questions',
+            'Las Noches • Knowledge Archive',
 
         iconURL:
             interaction.guild.iconURL({
@@ -435,8 +442,9 @@ async function publishFAQ(
     faqEmbed.setTimestamp();
 
     await informationChannel.send({
-        embeds:
-            [faqEmbed],
+        embeds: [
+            faqEmbed
+        ],
 
         allowedMentions: {
             parse: []
@@ -446,8 +454,8 @@ async function publishFAQ(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ FAQ Published',
-                `Umbra successfully published the FAQ in ${informationChannel}.`
+                '✅ Knowledge Archive Published',
+                `Umbra successfully published the Las Noches Knowledge Archive in ${informationChannel}.`
             )
         ],
 
@@ -459,7 +467,7 @@ async function publishFAQ(
     );
 
     console.log(
-        '❓ FAQ Published Through Setup Wizard'
+        '📚 Las Noches Knowledge Archive Published'
     );
 
     console.log(
@@ -471,7 +479,7 @@ async function publishFAQ(
     );
 
     console.log(
-        `🏰 Server: ${interaction.guild.name}`
+        `🏰 Kingdom: ${interaction.guild.name}`
     );
 
     console.log(

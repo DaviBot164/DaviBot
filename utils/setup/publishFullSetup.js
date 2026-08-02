@@ -4,6 +4,10 @@ const {
 } = require('../embeds');
 
 const {
+    publishVerificationGuide
+} = require('./publishVerificationGuide');
+
+const {
     publishSacredLaws
 } = require('./publishSacredLaws');
 
@@ -24,12 +28,15 @@ const {
 } = require('./publishTicketGuide');
 
 /**
- * Wait for a short period between setup modules.
+ * Wait briefly between setup publications
+ * to keep the process stable and organized.
  *
  * @param {number} milliseconds
  * @returns {Promise<void>}
  */
-function wait(milliseconds) {
+function wait(
+    milliseconds
+) {
     return new Promise(resolve => {
         setTimeout(
             resolve,
@@ -39,13 +46,16 @@ function wait(milliseconds) {
 }
 
 /**
- * Publish every available Umbra setup module.
+ * Publish every available
+ * Las Noches setup archive.
  *
- * Information modules are published in the configured
+ * Royal Laws, Kingdom Guide,
+ * Kingdom Hierarchy and Knowledge Archive
+ * are published in the configured
  * Information channel.
  *
- * The Ticket Guide remains in its configured
- * Ticket Guide channel.
+ * Verification Guide and Support Codex
+ * remain in their own configured channels.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -57,27 +67,29 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '🚀 Full Server Setup Started',
+                    '🚀 Las Noches Setup Initiated',
                     [
-                        'Umbra is preparing the official Crimson Eclipse information.',
+                        'Umbra is preparing the official archives of **Las Noches**.',
                         '',
-                        'The following modules will be published in the Information channel:',
+                        'The following records will be published in the Information Archive:',
                         '',
-                        '📜 Sacred Laws',
-                        '📖 Server Guide',
-                        '🎖️ Role Information',
-                        '❓ Frequently Asked Questions',
+                        '📜 **Royal Laws**',
+                        '📖 **Kingdom Guide**',
+                        '👑 **Kingdom Hierarchy**',
+                        '📚 **Knowledge Archive**',
                         '',
-                        'The following module will remain in the Ticket Guide channel:',
+                        'The following records will be published in their dedicated channels:',
                         '',
-                        '🎫 Ticket Guide',
+                        '⛩️ **Verification Guide**',
+                        '🎫 **Support Codex**',
                         '',
-                        'Please wait while each module is prepared.'
+                        'Umbra will prepare each archive in sequence.'
                     ].join('\n')
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         console.log(
@@ -85,7 +97,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            '🚀 Full Server Setup Started'
+            '🚀 Las Noches Full Setup Started'
         );
 
         console.log(
@@ -93,11 +105,19 @@ async function publishFullSetup(
         );
 
         console.log(
-            `🏰 Server: ${interaction.guild.name}`
+            `🏰 Kingdom: ${interaction.guild.name}`
         );
 
         console.log(
             '======================================'
+        );
+
+        await publishVerificationGuide(
+            interaction
+        );
+
+        await wait(
+            750
         );
 
         await publishSacredLaws(
@@ -134,32 +154,32 @@ async function publishFullSetup(
 
         await publishTicketGuide(
             interaction
-        );
-
-        await interaction.editReply({
+        );        await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '✅ Full Server Setup Complete',
+                    '✅ Las Noches Setup Complete',
                     [
-                        'Umbra successfully published every available setup module.',
+                        'Umbra successfully published every available setup archive.',
                         '',
-                        'Published in the Information channel:',
+                        'Published in the Information Archive:',
                         '',
-                        '✅ Sacred Laws',
-                        '✅ Server Guide',
-                        '✅ Role Information',
-                        '✅ Frequently Asked Questions',
+                        '✅ **Royal Laws**',
+                        '✅ **Kingdom Guide**',
+                        '✅ **Kingdom Hierarchy**',
+                        '✅ **Knowledge Archive**',
                         '',
-                        'Published in the Ticket Guide channel:',
+                        'Published in dedicated channels:',
                         '',
-                        '✅ Ticket Guide',
+                        '✅ **Verification Guide**',
+                        '✅ **Support Codex**',
                         '',
-                        'The official Crimson Eclipse information is now ready.'
+                        '> **The official records of Las Noches are now ready.**'
                     ].join('\n')
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         console.log(
@@ -167,7 +187,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            '✅ Full Server Setup Completed'
+            '✅ Las Noches Full Setup Completed'
         );
 
         console.log(
@@ -175,7 +195,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            `🏰 Server: ${interaction.guild.name}`
+            `🏰 Kingdom: ${interaction.guild.name}`
         );
 
         console.log(
@@ -183,7 +203,7 @@ async function publishFullSetup(
         );
     } catch (error) {
         console.error(
-            '❌ Umbra full server setup error:'
+            '❌ Umbra Las Noches full setup error:'
         );
 
         console.error(
@@ -193,18 +213,19 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Full Server Setup Failed',
+                    '❌ Las Noches Setup Failed',
                     [
-                        'Umbra could not complete every setup module.',
+                        'Umbra could not complete every setup archive.',
                         '',
-                        'Some modules may already have been published before the error occurred.',
+                        'Some records may already have been published before the error occurred.',
                         '',
                         'Check the configured channel IDs, Umbra permissions, and Northflank logs.'
                     ].join('\n')
                 )
             ],
 
-            components: []
+            components:
+                []
         });
     }
 }

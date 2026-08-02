@@ -12,7 +12,8 @@ const setupChannels =
     require('../../config/setupChannels');
 
 /**
- * Get and validate the Information channel.
+ * Get and validate the
+ * Las Noches Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,10 +22,14 @@ async function getRoleInformationChannel(
     interaction
 ) {
     const informationChannel =
-        await interaction.guild.channels.fetch(
-            setupChannels
-                .informationChannelId
-        );
+        await interaction.guild.channels
+            .fetch(
+                setupChannels
+                    .informationChannelId
+            )
+            .catch(
+                () => null
+            );
 
     if (
         !informationChannel ||
@@ -33,12 +38,13 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
-                    'Umbra could not find the configured Information channel.'
+                    '❌ Kingdom Archive Missing',
+                    'Umbra could not find the configured Las Noches Information channel.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -52,11 +58,12 @@ async function getRoleInformationChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Umbra Unavailable',
-                    'Umbra could not access its server member information.'
+                    'Umbra could not access its Las Noches member record.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -78,11 +85,19 @@ async function getRoleInformationChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Information channel.'
+                    [
+                        `Umbra cannot publish the Kingdom Hierarchy in ${informationChannel}.`,
+                        '',
+                        'Required permissions:',
+                        '• **View Channel**',
+                        '• **Send Messages**',
+                        '• **Embed Links**'
+                    ].join('\n')
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -92,7 +107,8 @@ async function getRoleInformationChannel(
 }
 
 /**
- * Publish Crimson Eclipse role information.
+ * Publish the official
+ * Las Noches Kingdom Hierarchy.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -112,45 +128,57 @@ async function publishRoleInformation(
     const roleEmbed =
         createEmbed({
             title:
-                '🎖️ Ranks of Crimson Eclipse',
+                '👑 Hierarchy of Las Noches',
 
             description:
                 [
-                    'Every rank within Crimson Eclipse has its own purpose and responsibility.',
+                    '## Every Soul has a place within the kingdom.',
                     '',
-                    'Roles may represent leadership, moderation authority, community progress, special recognition, or system access.',
+                    'The hierarchy of **Las Noches** represents leadership, authority, progression, recognition, and responsibility.',
                     '',
-                    'Read the information below to understand the structure of the Order.'
+                    'Read the records below to understand how each rank serves the eternal kingdom.'
                 ].join('\n'),
+
+            color:
+                '#6F42C1',
 
             thumbnail:
                 interaction.guild.iconURL({
-                    size: 512,
-                    forceStatic: false
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
                 }) ??
-                interaction.client.user.displayAvatarURL({
-                    size: 512,
-                    forceStatic: false
-                }),
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            512,
+
+                        forceStatic:
+                            false
+                    }),
 
             fields: [
                 {
                     name:
-                        '👑 Crimson Lord',
+                        '╭・👑 ROYAL AUTHORITY',
 
                     value:
                         [
-                            'The highest authority within Crimson Eclipse.',
+                            '**Ruler of Las Noches**',
                             '',
-                            'The Crimson Lord is responsible for:',
+                            'The highest authority within the kingdom.',
                             '',
-                            '• Leading the Order',
-                            '• Making final server decisions',
+                            'The Ruler is responsible for:',
+                            '',
+                            '• Directing the future of Las Noches',
+                            '• Approving major kingdom changes',
                             '• Managing senior leadership',
-                            '• Approving major changes',
-                            '• Protecting the future of the community',
+                            '• Resolving final disputes',
+                            '• Protecting the stability of the community',
                             '',
-                            'Decisions made by the Crimson Lord must be respected unless they violate Discord rules or community safety.'
+                            '> The throne carries both absolute authority and absolute responsibility.'
                         ].join('\n'),
 
                     inline:
@@ -158,22 +186,27 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '⚜️ Eclipse Keepers',
+                        '├・⚜️ MILITARY COMMAND',
 
                     value:
                         [
-                            'Senior administrators trusted with the management of Crimson Eclipse.',
+                            '**Head Captain**',
+                            'The highest senior administrator beneath the Ruler.',
                             '',
-                            'Eclipse Keepers may:',
+                            '**Captains**',
+                            'Trusted leaders responsible for management, protection, and major decisions.',
                             '',
-                            '• Manage server systems',
-                            '• Oversee Shadow Wardens',
-                            '• Review serious reports',
-                            '• Organize server changes',
-                            '• Assist the Crimson Lord',
-                            '• Handle important community decisions',
+                            '**Lieutenants**',
+                            'Moderators and support officers who enforce the Royal Laws and assist members.',
                             '',
-                            'This rank carries significant authority and responsibility.'
+                            'Command roles may be responsible for:',
+                            '',
+                            '• Moderation and investigations',
+                            '• Ticket support',
+                            '• Staff supervision',
+                            '• Event organization',
+                            '• Server maintenance',
+                            '• Community protection'
                         ].join('\n'),
 
                     inline:
@@ -181,22 +214,26 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🛡️ Shadow Wardens',
+                        '├・⚔️ ARRANCAR HIERARCHY',
 
                     value:
                         [
-                            'The moderation and support team of Crimson Eclipse.',
+                            '**👑 Espada**',
+                            'The elite Arrancar who hold the highest combat ranks within Las Noches.',
                             '',
-                            'Shadow Wardens are responsible for:',
+                            '**🌘 Privaron Espada**',
+                            'Former Espada who retain distinguished status and power.',
                             '',
-                            '• Enforcing the Sacred Laws',
-                            '• Responding to tickets',
-                            '• Reviewing member reports',
-                            '• Managing disruptive behavior',
-                            '• Protecting community channels',
-                            '• Helping new members',
+                            '**⚔️ Fracción**',
+                            'Trusted Arrancar who serve and support higher-ranked warriors.',
                             '',
-                            'Shadow Wardens must use their permissions fairly and provide clear reasons for moderation actions.'
+                            '**🦴 Numeros**',
+                            'Ranked Arrancar who form the broader military body of Las Noches.',
+                            '',
+                            '**⚪ Unranked Arrancar**',
+                            'Members who have not yet earned an official Arrancar rank.',
+                            '',
+                            '-# Arrancar rank does not automatically grant staff or moderation authority.'
                         ].join('\n'),
 
                     inline:
@@ -204,143 +241,156 @@ async function publishRoleInformation(
                 },
                 {
                     name:
-                        '🌑 Souls',
+                        '├・🌙 KINGDOM SOULS',
 
                     value:
                         [
-                            'Verified members of the Crimson Eclipse community.',
+                            'Verified members of Las Noches are recognized as **Souls**.',
                             '',
                             'Souls may:',
                             '',
                             '• Access community channels',
                             '• Participate in conversations',
-                            '• Join gaming activities',
-                            '• Share images and clips',
-                            '• Attend community events',
-                            '• Earn progression roles',
+                            '• Join events and giveaways',
+                            '• Build Spiritual Power',
+                            '• Earn Chronicle Titles',
+                            '• Unlock Achievements',
+                            '• Rise through the Arrancar hierarchy',
                             '',
-                            'Every Soul is expected to respect the Sacred Laws and other members.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🎖️ Progression Roles',
-
-                    value:
-                        [
-                            'Progression roles represent activity and growth within Crimson Eclipse.',
-                            '',
-                            'They may be earned through:',
-                            '',
-                            '• Community activity',
-                            '• Umbra’s Level System',
-                            '• Event participation',
-                            '• Special achievements',
-                            '• Contributions to the Order',
-                            '',
-                            'Progression roles do not automatically grant moderation authority.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🏆 Special Recognition Roles',
-
-                    value:
-                        [
-                            'Some roles may be granted as special recognition.',
-                            '',
-                            'These roles may represent:',
-                            '',
-                            '• Event victories',
-                            '• Community contributions',
-                            '• Trusted membership',
-                            '• Partnerships',
-                            '• Support for the server',
-                            '• Limited-time achievements',
-                            '',
-                            'Special roles may be changed, retired, or replaced as the server develops.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🤖 Umbra',
-
-                    value:
-                        [
-                            'Umbra is the Guardian of Crimson Eclipse.',
-                            '',
-                            'Umbra manages several server systems, including:',
-                            '',
-                            '• Welcome messages',
-                            '• Verification guidance',
-                            '• Setup publications',
-                            '• Moderation commands',
-                            '• Guardian AutoMod',
-                            '• Ticket support',
-                            '• Level progression',
-                            '• Server records',
-                            '',
-                            'Umbra is a system role and should remain above every role that the bot must manage.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '⚠️ Role Authority',
-
-                    value:
-                        [
-                            'A decorative or progression role does not grant staff authority.',
-                            '',
-                            'Only authorized leadership and moderation roles may:',
-                            '',
-                            '• Punish members',
-                            '• Manage server channels',
-                            '• Review private reports',
-                            '• Speak officially for the Order',
-                            '• Use restricted staff systems',
-                            '',
-                            'Impersonating staff or falsely claiming authority may result in moderation action.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🌙 Respect the Order',
-
-                    value:
-                        [
-                            'Every rank exists to support the community.',
-                            '',
-                            'Higher roles must not misuse their power, and members must not harass staff for performing legitimate duties.',
-                            '',
-                            'Concerns about staff behavior should be reported privately through the Ticket System.',
-                            '',
-                            '*Strength earns recognition. Loyalty preserves the Order.*'
+                            'Every Soul is expected to respect the Royal Laws and the other members of the kingdom.'
                         ].join('\n'),
 
                     inline:
                         false
                 }
             ]
-        });
+        });            roleEmbed.addFields(
+                {
+                    name:
+                        '├・🏆 PROGRESSION SYSTEM',
+
+                    value:
+                        [
+                            'Las Noches rewards active Souls through Umbra\'s progression systems.',
+                            '',
+                            '⭐ **Levels**',
+                            'Earn experience through activity.',
+                            '',
+                            '✨ **Spiritual Power**',
+                            'Increase your strength as you level up.',
+                            '',
+                            '📜 **Chronicle Titles**',
+                            'Unlock unique titles that represent your journey.',
+                            '',
+                            '🏆 **Achievements**',
+                            'Complete milestones and collect permanent records.',
+                            '',
+                            '👤 **Soul Record**',
+                            'Umbra permanently records your progression.',
+                            '',
+                            '> Your activity shapes your legacy.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '├・📖 CHRONICLE RECORDS',
+
+                    value:
+                        [
+                            'Umbra maintains an official archive for every Soul.',
+                            '',
+                            'Your records include:',
+                            '',
+                            '• Level',
+                            '• Spiritual Power',
+                            '• Messages',
+                            '• Achievements',
+                            '• Chronicle Titles',
+                            '• Arrancar Rank',
+                            '• Soul Profile',
+                            '',
+                            'These records continue to grow as you remain active inside Las Noches.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '├・🤖 UMBRA SYSTEMS',
+
+                    value:
+                        [
+                            'Umbra protects and manages the kingdom through multiple systems.',
+                            '',
+                            '• Guardian AutoMod',
+                            '• Warning System',
+                            '• Raid Protection',
+                            '• Ticket System',
+                            '• Welcome System',
+                            '• Verification Guide',
+                            '• Level System',
+                            '• Soul Records',
+                            '• Arrancar Rank System',
+                            '• Chronicle Titles',
+                            '• Achievement System',
+                            '• Interactive Leaderboards',
+                            '• Events',
+                            '• Giveaways',
+                            '',
+                            '> Every major system inside Las Noches is maintained by Umbra.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '├・⚖️ AUTHORITY & RESPONSIBILITY',
+
+                    value:
+                        [
+                            'A decorative or progression role does **not** grant moderation authority.',
+                            '',
+                            'Only authorized leadership may:',
+                            '',
+                            '• Moderate members',
+                            '• Review private reports',
+                            '• Manage staff systems',
+                            '• Make official decisions',
+                            '',
+                            'Impersonating staff or falsely claiming authority may result in moderation.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '╰・🌙 FINAL RECORD',
+
+                    value:
+                        [
+                            'Every rank exists to strengthen the kingdom.',
+                            '',
+                            'Leadership exists to serve.',
+                            'Members exist to grow.',
+                            'Umbra exists to protect.',
+                            '',
+                            '> **Power is earned. Respect is remembered. Legacy is eternal.**'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                }
+            );
 
     roleEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Crimson Eclipse',
+            'Umbra • Guardian of Las Noches',
 
         iconURL:
             interaction.client.user.displayAvatarURL({
@@ -351,7 +401,7 @@ async function publishRoleInformation(
 
     roleEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Role Information',
+            'Las Noches • Kingdom Hierarchy',
 
         iconURL:
             interaction.guild.iconURL({
@@ -367,8 +417,9 @@ async function publishRoleInformation(
     roleEmbed.setTimestamp();
 
     await informationChannel.send({
-        embeds:
-            [roleEmbed],
+        embeds: [
+            roleEmbed
+        ],
 
         allowedMentions: {
             parse: []
@@ -378,8 +429,8 @@ async function publishRoleInformation(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Role Information Published',
-                `Umbra successfully published the Role Information in ${informationChannel}.`
+                '✅ Kingdom Hierarchy Published',
+                `Umbra successfully published the Kingdom Hierarchy in ${informationChannel}.`
             )
         ],
 
@@ -391,7 +442,7 @@ async function publishRoleInformation(
     );
 
     console.log(
-        '🎖️ Role Information Published Through Setup Wizard'
+        '👑 Kingdom Hierarchy Published'
     );
 
     console.log(
@@ -403,7 +454,7 @@ async function publishRoleInformation(
     );
 
     console.log(
-        `🏰 Server: ${interaction.guild.name}`
+        `🏰 Kingdom: ${interaction.guild.name}`
     );
 
     console.log(

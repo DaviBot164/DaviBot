@@ -12,7 +12,8 @@ const setupChannels =
     require('../../config/setupChannels');
 
 /**
- * Get and validate the Information channel.
+ * Get and validate the
+ * Las Noches Information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,10 +22,14 @@ async function getServerGuideChannel(
     interaction
 ) {
     const guideChannel =
-        await interaction.guild.channels.fetch(
-            setupChannels
-                .informationChannelId
-        );
+        await interaction.guild.channels
+            .fetch(
+                setupChannels
+                    .informationChannelId
+            )
+            .catch(
+                () => null
+            );
 
     if (
         !guideChannel ||
@@ -33,8 +38,8 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
-                    'Umbra could not find the configured Information channel.'
+                    '❌ Kingdom Archive Missing',
+                    'Umbra could not find the configured Las Noches Information channel.'
                 )
             ],
 
@@ -52,7 +57,7 @@ async function getServerGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Umbra Unavailable',
-                    'Umbra could not access its server member information.'
+                    'Umbra could not access its Las Noches member record.'
                 )
             ],
 
@@ -62,13 +67,13 @@ async function getServerGuideChannel(
         return null;
     }
 
-    const channelPermissions =
+    const permissions =
         guideChannel.permissionsFor(
             botMember
         );
 
     if (
-        !channelPermissions?.has([
+        !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
@@ -78,7 +83,13 @@ async function getServerGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
-                    'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Information channel.'
+                    [
+                        'Umbra requires:',
+                        '',
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
+                    ].join('\n')
                 )
             ],
 
@@ -92,10 +103,8 @@ async function getServerGuideChannel(
 }
 
 /**
- * Publish the Crimson Eclipse Server Guide.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<void>}
+ * Publish the official
+ * Las Noches Kingdom Guide.
  */
 async function publishServerGuide(
     interaction
@@ -112,16 +121,19 @@ async function publishServerGuide(
     const guideEmbed =
         createEmbed({
             title:
-                '📖 Journey Through Crimson Eclipse',
+                '📖 Welcome to Las Noches',
 
             description:
                 [
-                    `Welcome, ${interaction.user}.`,
+                    '## Every Soul begins somewhere.',
                     '',
-                    'Every Soul begins their journey beneath the crimson moon.',
+                    'This guide explains everything you need before beginning your journey inside **Las Noches**.',
                     '',
-                    'Follow the steps below to unlock the Order and become part of the Crimson Eclipse community.'
+                    'Follow each step to unlock the kingdom and begin building your Soul Record.'
                 ].join('\n'),
+
+            color:
+                '#6F42C1',
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -136,22 +148,21 @@ async function publishServerGuide(
             fields: [
                 {
                     name:
-                        '📜 Step I — Read the Sacred Laws',
+                        '╭・📜 STEP I — LEARN THE ROYAL LAWS',
 
                     value:
                         [
-                            'Begin by reading the official laws of Crimson Eclipse.',
+                            'Before doing anything else, read the **Royal Laws of Las Noches**.',
                             '',
-                            'The Sacred Laws explain:',
+                            'They explain:',
                             '',
-                            '• Community behavior',
-                            '• Fair-play requirements',
-                            '• Chat restrictions',
-                            '• Staff authority',
-                            '• Ticket expectations',
+                            '• Kingdom rules',
+                            '• Fair gameplay',
+                            '• Communication standards',
+                            '• Authority structure',
                             '• Guardian punishments',
                             '',
-                            'Remaining in the server means that you agree to follow these laws.'
+                            '> Remaining inside Las Noches means accepting these laws.'
                         ].join('\n'),
 
                     inline:
@@ -159,20 +170,13 @@ async function publishServerGuide(
                 },
                 {
                     name:
-                        '⛩️ Step II — Verify Your Account',
+                        '├・⛩️ STEP II — VERIFY YOUR IDENTITY',
 
                     value:
                         [
-                            'Visit the verification channel and connect your Roblox account.',
+                            'Use **Bloxlink** to verify your Roblox account.',
                             '',
-                            'Verification helps the Order:',
-                            '',
-                            '• Confirm your Roblox identity',
-                            '• Protect members from impersonation',
-                            '• Assign the correct access roles',
-                            '• Keep the community secure',
-                            '',
-                            'Complete verification before attempting to access the main community channels.'
+                            'Verification protects every Soul and allows Umbra to assign your correct roles automatically.'
                         ].join('\n'),
 
                     inline:
@@ -180,41 +184,34 @@ async function publishServerGuide(
                 },
                 {
                     name:
-                        '🌑 Step III — Enter the Gathering Hall',
+                        '├・🌙 STEP III — ENTER THE KINGDOM',
 
                     value:
                         [
-                            'After verification, introduce yourself and join the community.',
+                            'After verification you may freely enter the kingdom.',
                             '',
-                            'Use the main gathering channel for:',
-                            '',
-                            '• General conversations',
-                            '• Meeting other members',
-                            '• Discussing Project Slayers',
-                            '• Sharing community ideas',
-                            '• Finding people to play with',
-                            '',
-                            'Keep conversations respectful and follow the purpose of each channel.'
+                            'Introduce yourself.',
+                            'Meet other Souls.',
+                            'Begin your adventure.'
                         ].join('\n'),
 
                     inline:
                         false
-                },
-                {
+                },                {
                     name:
-                        '🎮 Step IV — Explore the Community',
+                        '├・🎮 STEP IV — EXPLORE LAS NOCHES',
 
                     value:
                         [
-                            'Crimson Eclipse contains several spaces for different activities.',
+                            'Las Noches contains different spaces for every kind of activity.',
                             '',
                             '🎮 **Gaming** — Find teammates and discuss games',
                             '🎵 **Music** — Share songs and playlists',
-                            '🖼️ **Gallery** — Share images, clips, and artwork',
-                            '📢 **Decrees** — Read official announcements',
-                            '📜 **Information** — Review server information and official guidance',
+                            '🖼️ **Gallery** — Share artwork, screenshots, and clips',
+                            '📢 **Kingdom Decrees** — Read official announcements',
+                            '📜 **Information Archive** — Review guides and important records',
                             '',
-                            'More systems may become available as the Order grows.'
+                            '-# New areas may be added as the kingdom expands.'
                         ].join('\n'),
 
                     inline:
@@ -222,21 +219,22 @@ async function publishServerGuide(
                 },
                 {
                     name:
-                        '🎫 Step V — Request Support',
+                        '├・✨ STEP V — BUILD SPIRITUAL POWER',
 
                     value:
                         [
-                            'If you experience a problem, use Umbra’s Ticket System.',
+                            'Activity inside Las Noches contributes to your progression.',
                             '',
-                            'Create a ticket for:',
+                            'Through messages, events, achievements, ranks, and other systems, your Soul may unlock:',
                             '',
-                            '• Reporting a member',
-                            '• Appealing a moderation action',
-                            '• Reporting a server problem',
-                            '• Requesting help from Shadow Wardens',
-                            '• Providing private evidence',
+                            '• Higher Levels',
+                            '• More Spiritual Power',
+                            '• Chronicle Titles',
+                            '• Achievement Records',
+                            '• Arrancar Ranks',
+                            '• Progression Roles',
                             '',
-                            'Explain your issue clearly and remain patient while waiting for assistance.'
+                            '> Your Soul Record grows alongside your activity.'
                         ].join('\n'),
 
                     inline:
@@ -244,19 +242,21 @@ async function publishServerGuide(
                 },
                 {
                     name:
-                        '🛡️ Step VI — Understand the Order',
+                        '├・🎫 STEP VI — REQUEST SUPPORT',
 
                     value:
                         [
-                            'Crimson Eclipse is protected and managed through several ranks.',
+                            'Use Umbra’s private Ticket System when assistance is needed.',
                             '',
-                            '👑 **Crimson Lord** — Leader of the Order',
-                            '⚜️ **Eclipse Keepers** — Senior administrators',
-                            '🛡️ **Shadow Wardens** — Moderation and support staff',
-                            '🌑 **Souls** — Members of the community',
-                            '🤖 **Umbra** — Guardian of Crimson Eclipse',
+                            'Tickets may be used for:',
                             '',
-                            'Respect every rank and report misuse of authority through the proper support channels.'
+                            '• Reporting members',
+                            '• Appealing moderation decisions',
+                            '• Reporting server problems',
+                            '• Sharing private evidence',
+                            '• Requesting help from Las Noches staff',
+                            '',
+                            'Explain the issue clearly and remain patient while waiting for a response.'
                         ].join('\n'),
 
                     inline:
@@ -264,20 +264,46 @@ async function publishServerGuide(
                 },
                 {
                     name:
-                        '🌙 Step VII — Begin Your Journey',
+                        '├・👑 STEP VII — UNDERSTAND THE HIERARCHY',
 
                     value:
                         [
-                            'You are now ready to become part of Crimson Eclipse.',
+                            'Las Noches is protected through a clear structure of authority and progression.',
                             '',
-                            '• Respect other Souls',
-                            '• Play fairly',
-                            '• Help new members',
-                            '• Report serious violations',
-                            '• Participate in the community',
-                            '• Enjoy your journey',
+                            '👑 **Ruler of Las Noches** — Kingdom leadership',
+                            '⚜️ **Head Captain** — Senior administration',
+                            '🛡️ **Captains** — Management and protection',
+                            '⚔️ **Lieutenants** — Moderation and support',
+                            '👑 **Espada** — Elite Arrancar ranks',
+                            '🌘 **Privaron Espada** — Former elite ranks',
+                            '⚔️ **Fracción** — Arrancar serving higher ranks',
+                            '🦴 **Numeros** — Ranked Arrancar',
+                            '🌙 **Souls** — Members of Las Noches',
+                            '🤖 **Umbra** — Guardian of Las Noches',
                             '',
-                            '*Every Soul leaves a mark beneath the crimson moon.*'
+                            '-# Always report misuse of authority through the proper support channels.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '╰・🌑 STEP VIII — BEGIN YOUR JOURNEY',
+
+                    value:
+                        [
+                            'You are now ready to become part of Las Noches.',
+                            '',
+                            '• Respect every Soul',
+                            '• Follow the Royal Laws',
+                            '• Compete fairly',
+                            '• Support new members',
+                            '• Participate in events',
+                            '• Build your Soul Record',
+                            '• Rise through the Arrancar hierarchy',
+                            '',
+                            '> **Enter the eternal night and carve your name into the Kingdom Records.**'
                         ].join('\n'),
 
                     inline:
@@ -288,50 +314,64 @@ async function publishServerGuide(
 
     guideEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Crimson Eclipse',
+            'Umbra • Guardian of Las Noches',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     guideEmbed.setFooter({
         text:
-            '🌑 Crimson Eclipse • Server Guide',
+            'Las Noches • Kingdom Guide',
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     guideEmbed.setTimestamp();
 
     await guideChannel.send({
-        embeds:
-            [guideEmbed],
+        embeds: [
+            guideEmbed
+        ],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Server Guide Published',
-                `Umbra successfully published the Server Guide in ${guideChannel}.`
+                '✅ Kingdom Guide Published',
+                `Umbra successfully published the Las Noches Kingdom Guide in ${guideChannel}.`
             )
         ],
 
-        components: []
+        components:
+            []
     });
 
     console.log(
@@ -339,7 +379,7 @@ async function publishServerGuide(
     );
 
     console.log(
-        '📖 Server Guide Published Through Setup Wizard'
+        '📖 Las Noches Kingdom Guide Published'
     );
 
     console.log(
@@ -351,7 +391,7 @@ async function publishServerGuide(
     );
 
     console.log(
-        `🏰 Server: ${interaction.guild.name}`
+        `🏰 Kingdom: ${interaction.guild.name}`
     );
 
     console.log(
