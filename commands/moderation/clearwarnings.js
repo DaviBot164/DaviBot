@@ -1,6 +1,7 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require('discord.js');
 
 const {
@@ -8,10 +9,16 @@ const {
     createModerationEmbed
 } = require('../../utils/embeds');
 
+const {
+    sendModLog
+} = require('../../utils/modLogs');
+
 const warningDatabase =
     require('../../database/warnings');
 
 module.exports = {
+    category: 'moderation',
+
     data: new SlashCommandBuilder()
         .setName('clearwarnings')
         .setDescription(
@@ -29,14 +36,39 @@ module.exports = {
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ModerateMembers
-        ),
+        )
 
+        .setDMPermission(false),
+
+    /**
+     * Execute the /clearwarnings command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(interaction) {
         try {
-            const user = interaction.options.getUser(
-                'user',
-                true
-            );
+            if (!interaction.inGuild()) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Order Only Command',
+                            'This command can only be used inside a server.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            const user =
+                interaction.options.getUser(
+                    'user',
+                    true
+                );
 
             await interaction.deferReply();
 
@@ -47,14 +79,16 @@ module.exports = {
                 );
 
             if (warningCount === 0) {
-                const embed = createErrorEmbed(
-                    '❌ No Warnings Found',
-                    `${user.tag} does not have any warnings in this server.`
-                );
-
-                return interaction.editReply({
-                    embeds: [embed]
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ No Warnings Found',
+                            `${user.tag} does not have any warnings in this server.`
+                        )
+                    ]
                 });
+
+                return;
             }
 
             const deletedCount =
@@ -63,54 +97,162 @@ module.exports = {
                     user.id
                 );
 
-            const embed = createModerationEmbed({
-                action: '🧹 Warnings Cleared',
-                user,
-                moderator: interaction.user,
-                reason:
-                    `All warnings were removed from this member.`
-            });
+            const embed =
+                createModerationEmbed({
+                    action:
+                        '🧹 Warnings Cleared',
+
+                    user,
+
+                    moderator:
+                        interaction.user,
+
+                    reason:
+                        'All warnings were removed from this member.'
+                });
 
             embed.addFields(
                 {
-                    name: '🗑️ Removed Warnings',
-                    value: String(deletedCount),
-                    inline: true
+                    name:
+                        '🗑️ Removed Warnings',
+
+                    value:
+                        `\`${deletedCount}\``,
+
+                    inline:
+                        true
                 },
                 {
-                    name: '📚 Remaining Warnings',
-                    value: '0',
-                    inline: true
+                    name:
+                        '📚 Remaining Warnings',
+
+                    value:
+                        '`0`',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🛡️ Guardian Status',
+
+                    value:
+                        '🟢 Warning record cleared',
+
+                    inline:
+                        false
                 }
             );
 
-            return interaction.editReply({
-                embeds: [embed]
+            await interaction.editReply({
+                embeds: [
+                    embed
+                ]
+            });
+
+            await sendModLog({
+                guild:
+                    interaction.guild,
+
+                action:
+                    '🧹 Warnings Cleared',
+
+                user,
+
+                moderator:
+                    interaction.user,
+
+                reason:
+                    'All warnings were removed from this member.',
+
+                fields: [
+                    {
+                        name:
+                            '🗑️ Removed Warnings',
+
+                        value:
+                            `\`${deletedCount}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '📚 Remaining Warnings',
+
+                        value:
+                            '`0`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🛡️ Guardian Status',
+
+                        value:
+                            '🟢 Warning record cleared',
+
+                        inline:
+                            false
+                    }
+                ]
             });
         } catch (error) {
             console.error(
-                'Clearwarnings command error:',
+                '❌ Umbra /clearwarnings command error:',
                 error
             );
 
-            const embed = createErrorEmbed(
-                '❌ Warning Removal Failed',
-                'The warnings could not be removed. Please check the database connection.'
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Warning Removal Failed',
+                    'The warnings could not be removed. Please check the database connection.'
+                );
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                return interaction.editReply({
-                    embeds: [embed]
-                });
+            if (interaction.deferred) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ]
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
             }
 
-            return interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            });
+            if (interaction.replied) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };

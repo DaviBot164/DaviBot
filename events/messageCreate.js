@@ -353,7 +353,9 @@ function shouldBypassAutoMod(
                 );
         }
     );
-}/**
+}
+
+/**
  * Detect rapid-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -680,9 +682,7 @@ async function checkMessageProgression(
         source:
             'Soul Level, Achievement or spiritual progression'
     });
-}
-
-/**
+}/**
  * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -721,7 +721,9 @@ function findLogChannel(
         channelByName ??
         null
     );
-}/**
+}
+
+/**
  * Send Umbra AutoMod log.
  *
  * @param {import('discord.js').Message} message
@@ -772,6 +774,7 @@ async function sendAutoModLog(
             .setColor(
                 '#8B0000'
             )
+
             .setAuthor({
                 name:
                     'Umbra AutoMod',
@@ -786,12 +789,15 @@ async function sendAutoModLog(
                                 256
                         })
             })
+
             .setTitle(
                 `🛡️ AutoMod Case ${caseNumber}`
             )
+
             .setDescription(
                 'Umbra detected and recorded a violation within Las Noches.'
             )
+
             .addFields(
                 {
                     name:
@@ -858,6 +864,7 @@ async function sendAutoModLog(
                         false
                 }
             )
+
             .setThumbnail(
                 message.author
                     .displayAvatarURL({
@@ -871,7 +878,9 @@ async function sendAutoModLog(
                             false
                     })
             )
+
             .setTimestamp()
+
             .setFooter({
                 text:
                     `🌙 Umbra • Guardian of Las Noches • Soul ID: ${message.author.id}`
@@ -1392,7 +1401,7 @@ async function processViolation(
                 mentionCount >=
                     automodConfig
                         .mentionSpam
-                        .maximumMentions
+                        .mentionLimit
             ) {
                 await processViolation(
                     message,
@@ -1501,7 +1510,7 @@ const cleanupTimer =
                 }
             }
         },
-        5 * 60 * 1000
+        5 * 60 * 1_000
     );
 
 if (
