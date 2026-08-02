@@ -79,15 +79,15 @@ function createWelcomeEmbed(
     const verificationText =
         verifyChannel &&
         verifyChannel.isTextBased()
-            ? `Complete verification in ${verifyChannel} to enter the Order.`
-            : 'Complete verification to enter the Order.';
+            ? `Complete verification in ${verifyChannel} to enter Las Noches.`
+            : 'Complete verification to enter Las Noches.';
 
-    const soulNumber =
+    const arrivalNumber =
         guild.memberCount;
 
     return new EmbedBuilder()
         .setColor(
-            '#8B0000'
+            '#F2F2F2'
         )
 
         .setAuthor({
@@ -99,7 +99,7 @@ function createWelcomeEmbed(
         })
 
         .setTitle(
-            `🌑 Soul #${soulNumber} Has Arrived`
+            `🏰 Arrival #${arrivalNumber} Has Entered Las Noches`
         )
 
         .setDescription(
@@ -108,14 +108,16 @@ function createWelcomeEmbed(
                 '',
                 `Welcome, ${member}.`,
                 '',
-                'A new Soul has stepped beneath the Crimson Moon.',
-                `Your journey through **${guild.name}** begins now.`,
+                'A new presence has crossed the white sands of Hueco Mundo.',
+                `The gates of **${guild.name}** now stand before you.`,
                 '',
                 `**${verificationText}**`,
                 '',
+                'Once verified, explore the fortress, meet its Arrancar, and begin your ascent.',
+                '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*The Order grows stronger beneath the crimson moon.*'
+                '*Every arrival leaves a trace within the halls of Las Noches.*'
             ].join(
                 '\n'
             )
@@ -124,13 +126,29 @@ function createWelcomeEmbed(
         .addFields(
             {
                 name:
-                    '👤 Soul Record',
+                    '📜 Arrival Record',
 
                 value:
                     [
-                        `🌑 **Soul:** ${member}`,
-                        `🏅 **Number:** \`#${soulNumber}\``,
-                        `📅 **Joined:** <t:${joinedTimestamp}:R>`
+                        `👤 **Arrival:** ${member}`,
+                        `🏅 **Record Number:** \`#${arrivalNumber}\``,
+                        `🕒 **Entered:** <t:${joinedTimestamp}:R>`
+                    ].join(
+                        '\n'
+                    ),
+
+                inline:
+                    false
+            },
+            {
+                name:
+                    '🌙 First Directive',
+
+                value:
+                    [
+                        'Complete verification.',
+                        'Read the laws of Las Noches.',
+                        'Choose your path and begin your progression.'
                     ].join(
                         '\n'
                     ),
@@ -150,7 +168,7 @@ function createWelcomeEmbed(
 
         .setFooter({
             text:
-                'Umbra • Guardian of Crimson Eclipse',
+                'Umbra • Guardian of Las Noches',
 
             iconURL:
                 botAvatar

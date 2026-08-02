@@ -55,7 +55,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('serverinfo')
         .setDescription(
-            'View information about the Crimson Eclipse Order.'
+            'View the official records of Las Noches.'
         )
         .setDMPermission(false),
 
@@ -73,14 +73,15 @@ module.exports = {
             if (!guild) {
                 const guildErrorEmbed =
                     createErrorEmbed(
-                        '❌ Order Unavailable',
-                        'This command can only be used inside a server.'
+                        '❌ Las Noches Unavailable',
+                        'This command can only be used inside Las Noches.'
                     );
 
                 await interaction.reply({
                     embeds: [
                         guildErrorEmbed
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -117,14 +118,20 @@ module.exports = {
 
             const serverIcon =
                 guild.iconURL({
-                    size: 1024,
-                    forceStatic: false
+                    size:
+                        1024,
+
+                    forceStatic:
+                        false
                 });
 
             const bannerURL =
                 guild.bannerURL({
-                    size: 2048,
-                    forceStatic: false
+                    size:
+                        2048,
+
+                    forceStatic:
+                        false
                 });
 
             const createdTimestamp =
@@ -149,13 +156,13 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🌑 Crimson Eclipse Records',
+                        '🏰 Las Noches Kingdom Records',
 
                     description:
                         [
-                            `Umbra has opened the records of **${guild.name}**.`,
+                            `Umbra has opened the official records of **${guild.name}**.`,
                             '',
-                            '*An Order forged beneath the crimson moon.*'
+                            '*Every Soul, throne and structure is preserved beneath the eternal moon.*'
                         ].join('\n'),
 
                     thumbnail:
@@ -164,22 +171,22 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '👑 Order Information',
+                                '👑 Kingdom Information',
 
                             value:
-                                `**Order Name:** ${guild.name}\n` +
-                                `**Order ID:** \`${guild.id}\`\n` +
-                                `**Crimson Lord:** ${owner}\n` +
+                                `**Kingdom Name:** ${guild.name}\n` +
+                                `**Kingdom ID:** \`${guild.id}\`\n` +
+                                `**Ruler:** ${owner}\n` +
                                 `**Total Souls:** \`${guild.memberCount}\`\n` +
-                                `**Humans:** \`${humanCount}\`\n` +
-                                `**Bots:** \`${botCount}\``,
+                                `**Residents:** \`${humanCount}\`\n` +
+                                `**Automata:** \`${botCount}\``,
 
                             inline:
                                 false
                         },
                         {
                             name:
-                                '📅 Order History',
+                                '📅 Kingdom History',
 
                             value:
                                 `**Founded:** <t:${createdTimestamp}:F>\n` +
@@ -190,20 +197,20 @@ module.exports = {
                         },
                         {
                             name:
-                                '📊 Eclipse Statistics',
+                                '📊 Las Noches Statistics',
 
                             value:
                                 `**Text Channels:** \`${textChannels}\`\n` +
                                 `**Voice Channels:** \`${voiceChannels}\`\n` +
                                 `**Forum Channels:** \`${forumChannels}\`\n` +
-                                `**Categories:** \`${categories}\``,
+                                `**Districts:** \`${categories}\``,
 
                             inline:
                                 true
                         },
                         {
                             name:
-                                '🎖️ Order Structure',
+                                '🎖️ Kingdom Structure',
 
                             value:
                                 `**Roles:** \`${guild.roles.cache.size}\`\n` +
@@ -215,7 +222,7 @@ module.exports = {
                         },
                         {
                             name:
-                                '⚙️ Order Settings',
+                                '⚙️ Kingdom Settings',
 
                             value:
                                 `**AFK Timeout:** \`${Math.floor(
@@ -237,26 +244,32 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    `${guild.name} • Order Records`,
+                    `${guild.name} • Kingdom Records`,
 
                 iconURL:
                     serverIcon ||
                     interaction.client.user
                         .displayAvatarURL({
-                            size: 128,
-                            forceStatic: false
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
                         })
             });
 
             embed.setFooter({
                 text:
-                    `🌑 Umbra Server Records • Requested by ${interaction.user.username}`,
+                    `🌙 Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
                         .displayAvatarURL({
-                            size: 128,
-                            forceStatic: false
+                            size:
+                                128,
+
+                            forceStatic:
+                                false
                         })
             });
 
@@ -267,7 +280,9 @@ module.exports = {
             }
 
             await interaction.reply({
-                embeds: [embed]
+                embeds: [
+                    embed
+                ]
             });
         } catch (error) {
             console.error(
@@ -277,8 +292,8 @@ module.exports = {
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Order Records Unavailable',
-                    'Umbra could not retrieve the records of this Order.'
+                    '❌ Kingdom Records Unavailable',
+                    'Umbra could not retrieve the official records of Las Noches.'
                 );
 
             if (
@@ -289,6 +304,7 @@ module.exports = {
                     embeds: [
                         errorEmbed
                     ],
+
                     flags:
                         MessageFlags.Ephemeral
                 });
@@ -300,6 +316,7 @@ module.exports = {
                 embeds: [
                     errorEmbed
                 ],
+
                 flags:
                     MessageFlags.Ephemeral
             });
