@@ -175,19 +175,25 @@ function buildRankTrialEventDescription(
 ) {
     const rawDescription =
         [
-            'The gates of Las Noches have opened.',
+            '⚔️ Monthly Rank Trials',
             '',
-            'Souls seeking a higher Arrancar Rank may enter the Monthly Rank Trials and prove their worth.',
+            'The Monthly Rank Trials are now open.',
             '',
-            'Promotion evaluation includes:',
+            'If you wish to earn a higher Arrancar Rank, this is your opportunity to prove yourself.',
             '',
-            buildEventCriteriaList(),
+            'Promotion is based on:',
             '',
-            'Victory alone does not guarantee promotion.',
+            '• Combat Performance',
+            '• Activity',
+            '• Behavior',
+            '• Loyalty',
+            '• Contribution to the Server',
             '',
-            'All final decisions remain under the authority of Las Noches Leadership.',
+            'Winning battles alone does not guarantee a promotion.',
             '',
-            `Trial Cycle: ${schedule.trialKey}`
+            'The final decision will always be made by the Las Noches Leadership.',
+            '',
+            'Good luck to everyone participating.'
         ].join('\n');
 
     const configuredLimit =
@@ -374,12 +380,12 @@ function getScheduledEventPermissions(
             hasManageEvents,
 
         hasCreateEvents,
+
         hasManageEvents,
+
         hasAdministrator
     };
-}
-
-/**
+}/**
  * Build the options accepted by
  * GuildScheduledEventManager#create.
  *
@@ -686,8 +692,8 @@ async function createRankTrialScheduledEvent(
      * A deleted PostgreSQL record remains
      * reserved for the same monthly cycle.
      *
-     * In this case Umbra creates a new Discord
-     * Event and attaches its ID to that record.
+     * Umbra creates a new Discord Event and
+     * attaches its ID to the existing record.
      */
     if (
         existingRecord
@@ -1303,9 +1309,7 @@ async function synchronizeRankTrialScheduledEvent(
                     )
         };
     }
-}
-
-/**
+}/**
  * Fetch the members who selected Interested
  * on a Discord Scheduled Event.
  *
@@ -1327,19 +1331,13 @@ async function fetchRankTrialEventSubscribers(
         .fetchSubscribers(
             discordEventId,
             {
-                limit:
-                    100
+                limit: 100
             }
         );
 }
 
 /**
- * Count members currently interested in one
- * Rank Trial Discord Scheduled Event.
- *
- * Discord returns at most the requested page.
- * The Rank Trials system currently requests
- * up to 100 subscribers.
+ * Count interested members.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} discordEventId
@@ -1359,17 +1357,11 @@ async function countRankTrialEventSubscribers(
 }
 
 /**
- * Load the current monthly Rank Trial Event
- * from PostgreSQL and Discord.
+ * Load the current Rank Trial Event state.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object} schedule
- * @returns {Promise<{
- *     record: Object|null,
- *     discordEvent:
- *         import('discord.js').GuildScheduledEvent|null,
- *     interestedCount: number
- * }>}
+ * @returns {Promise<Object>}
  */
 async function getRankTrialScheduledEventState(
     guild,
@@ -1387,15 +1379,9 @@ async function getRankTrialScheduledEventState(
         !record.discordEventId
     ) {
         return {
-            record:
-                record ??
-                null,
-
-            discordEvent:
-                null,
-
-            interestedCount:
-                0
+            record,
+            discordEvent: null,
+            interestedCount: 0
         };
     }
 
@@ -1413,57 +1399,24 @@ async function getRankTrialScheduledEventState(
             );
 
         return {
-            record: {
-                ...record,
-
-                discordEventId:
-                    null,
-
-                status:
-                    rankTrialConfig
-                        .eventStatuses
-                        .deleted
-            },
-
-            discordEvent:
-                null,
-
-            interestedCount:
-                0
+            record,
+            discordEvent: null,
+            interestedCount: 0
         };
-    }
-
-    let interestedCount =
-        Number(
-            discordEvent.userCount ??
-            0
-        );
-
-    /*
-     * userCount may be unavailable when the
-     * Event was fetched without subscriber data.
-     */
-    if (
-        !Number.isFinite(
-            interestedCount
-        ) ||
-        interestedCount <
-            0
-    ) {
-        interestedCount =
-            0;
     }
 
     return {
         record,
         discordEvent,
-        interestedCount
+        interestedCount:
+            Number(
+                discordEvent.userCount ?? 0
+            )
     };
 }
 
 /**
- * Mark the PostgreSQL Event record with the
- * latest status currently reported by Discord.
+ * Refresh Event status inside PostgreSQL.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object} schedule
@@ -1512,30 +1465,23 @@ async function refreshRankTrialEventStatus(
 }
 
 /**
- * Synchronize Rank Trial Scheduled Events
- * across all configured guilds.
+ * Synchronize Rank Trial Events
+ * for multiple guilds.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} schedule
  * @param {string[]} guildIds
- * @returns {Promise<Array<{
- *     guildId: string,
- *     status: string,
- *     reason?: string,
- *     discordEventId?: string
- * }>>}
+ * @returns {Promise<Array>}
  */
 async function synchronizeRankTrialEventsForGuilds(
     client,
     schedule,
     guildIds
 ) {
-    const results =
-        [];
+    const results = [];
 
     for (
-        const guildId of
-        guildIds
+        const guildId of guildIds
     ) {
         const guild =
             client.guilds.cache.get(
@@ -1552,10 +1498,7 @@ async function synchronizeRankTrialEventsForGuilds(
         if (!guild) {
             results.push({
                 guildId,
-
-                status:
-                    'failed',
-
+                status: 'failed',
                 reason:
                     'Guild could not be fetched.'
             });
@@ -1570,18 +1513,11 @@ async function synchronizeRankTrialEventsForGuilds(
             );
 
         results.push({
-            guildId:
-                guild.id,
-
-            status:
-                result.status,
-
-            reason:
-                result.reason,
-
+            guildId: guild.id,
+            status: result.status,
+            reason: result.reason,
             discordEventId:
-                result.discordEvent
-                    ?.id
+                result.discordEvent?.id
         });
     }
 
