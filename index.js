@@ -25,6 +25,11 @@ const {
     logTerminal
 } = require('./utils/terminal/terminalLogger');
 
+const {
+    startTerminalDashboard,
+    stopTerminalDashboard
+} = require('./utils/terminal/terminalDashboard');
+
 /**
  * Server that Umbra must leave.
  */
@@ -42,7 +47,7 @@ const UNKNOWN_INTERACTION =
     10062;
 
 /**
- * Create the Discord client.
+ * Create the Discord Client.
  */
 const client =
     new Client({
@@ -283,7 +288,7 @@ async function registerGuildCommands(
  * Core Boot Sequence.
  *
  * @param {import('discord.js').Client<true>} readyClient
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>}
  */
 async function publishBootSequence(
     readyClient
@@ -314,7 +319,7 @@ async function publishBootSequence(
             0
         );
 
-    await logTerminal(
+    return logTerminal(
         readyClient,
         {
             level:
@@ -403,7 +408,9 @@ async function publishBootSequence(
             ]
         }
     );
-}/**
+}
+
+/**
  * Send an error message for a failed
  * Slash Command.
  *
@@ -422,8 +429,10 @@ async function sendCommandError(
         ) {
             await interaction.editReply({
                 content,
+
                 embeds:
                     [],
+
                 components:
                     []
             });
@@ -462,7 +471,9 @@ async function sendCommandError(
                     flags:
                         MessageFlags.Ephemeral
                 });
-            } catch (followUpError) {
+            } catch (
+                followUpError
+            ) {
                 if (
                     followUpError.code ===
                     UNKNOWN_INTERACTION
@@ -505,9 +516,7 @@ async function sendCommandError(
             error
         );
     }
-}
-
-/**
+}/**
  * Discord Client Ready event.
  */
 client.once(
@@ -553,10 +562,8 @@ client.once(
         }
 
         /*
-         * Publish the Umbra Core Boot
-         * Sequence only after the client,
-         * database and command registry
-         * are ready.
+         * Publish one Boot Sequence event
+         * after Umbra is fully ready.
          */
         try {
             const terminalPublished =
@@ -565,16 +572,50 @@ client.once(
                 );
 
             if (
-                terminalPublished ===
-                false
+                terminalPublished
             ) {
+                console.log(
+                    '✅ Umbra Boot Sequence published.'
+                );
+            } else {
                 console.warn(
-                    '⚠️ Umbra Boot Sequence was not published in the Terminal channel.'
+                    '⚠️ Umbra Boot Sequence was not published.'
                 );
             }
         } catch (error) {
             console.error(
                 '❌ Umbra Boot Sequence failed:'
+            );
+
+            console.error(
+                error
+            );
+        }
+
+        /*
+         * Start the persistent live Health
+         * Dashboard after the Boot Sequence.
+         */
+        try {
+            const dashboardStarted =
+                await startTerminalDashboard(
+                    readyClient
+                );
+
+            if (
+                dashboardStarted
+            ) {
+                console.log(
+                    '✅ Umbra Health Dashboard started.'
+                );
+            } else {
+                console.warn(
+                    '⚠️ Umbra Health Dashboard did not start.'
+                );
+            }
+        } catch (error) {
+            console.error(
+                '❌ Umbra Health Dashboard failed to start:'
             );
 
             console.error(
@@ -638,9 +679,9 @@ client.on(
 /**
  * Start Umbra.
  *
- * The PostgreSQL connection is initialized
- * before Discord login so the Ready event
- * only runs after the database is available.
+ * PostgreSQL initializes before Discord
+ * login so the Ready event runs only after
+ * the database core is available.
  *
  * @returns {Promise<void>}
  */
@@ -704,6 +745,12 @@ async function shutdown(
     );
 
     /*
+     * Stop Dashboard updates before
+     * beginning the shutdown sequence.
+     */
+    stopTerminalDashboard();
+
+    /*
      * Attempt to publish a final Terminal
      * notice before destroying the client.
      */
@@ -731,6 +778,7 @@ async function shutdown(
                             value:
                                 [
                                     '```diff',
+                                    '- Health Dashboard stopped',
                                     '- Gateway connection closing',
                                     '- PostgreSQL connection closing',
                                     '- Command processing stopping',
