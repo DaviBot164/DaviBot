@@ -26,6 +26,10 @@ const {
 } = require('./utils/terminal/terminalLogger');
 
 const {
+    logAlert
+} = require('./utils/terminal/alertLogger');
+
+const {
     startTerminalDashboard,
     stopTerminalDashboard
 } = require('./utils/terminal/terminalDashboard');
@@ -45,6 +49,12 @@ const INTERACTION_ALREADY_ACKNOWLEDGED =
 
 const UNKNOWN_INTERACTION =
     10062;
+
+/**
+ * Prevent duplicate fatal-error handling.
+ */
+let fatalErrorInProgress =
+    false;
 
 /**
  * Create the Discord Client.
@@ -346,6 +356,8 @@ async function publishBootSequence(
                             '+ Guardian Systems Ready',
                             '+ Kingdom Records Available',
                             '+ Arrancar Registry Online',
+                            '+ Alert Engine Armed',
+                            '+ Health Monitor Active',
                             '```'
                         ].join('\n'),
 
@@ -408,9 +420,7 @@ async function publishBootSequence(
             ]
         }
     );
-}
-
-/**
+}/**
  * Send an error message for a failed
  * Slash Command.
  *
@@ -516,7 +526,9 @@ async function sendCommandError(
             error
         );
     }
-}/**
+}
+
+/**
  * Discord Client Ready event.
  */
 client.once(
@@ -851,7 +863,508 @@ async function shutdown(
             1
         );
     }
+}/**
+ * Convert an unknown error value into
+ * safe diagnostic information.
+ *
+ * @param {unknown} error
+ * @returns {{
+ *     name: string,
+ *     message: string,
+ *     stack: string
+ * }}
+ */
+function normalizeProcessError(
+    error
+) {
+    if (
+        error instanceof Error
+    ) {
+        return {
+            name:
+                error.name ||
+                'Error',
+
+            message:
+                error.message ||
+                'No error message was provided.',
+
+            stack:
+                error.stack ||
+                'No stack trace was available.'
+        };
+    }
+
+    let message;
+
+    try {
+        message =
+            typeof error ===
+                'string'
+                ? error
+                : JSON.stringify(
+                    error,
+                    null,
+                    2
+                );
+    } catch {
+        message =
+            String(
+                error
+            );
+    }
+
+    return {
+        name:
+            'UnknownError',
+
+        message:
+            message ||
+            'No error message was provided.',
+
+        stack:
+            'No stack trace was available.'
+    };
 }
+
+/**
+ * Limit diagnostic text so it remains
+ * valid inside a Discord Embed field.
+ *
+ * @param {string} text
+ * @param {number} maxLength
+ * @returns {string}
+ */
+function limitDiagnosticText(
+    text,
+    maxLength =
+        900
+) {
+    if (
+        typeof text !==
+        'string' ||
+        text.length ===
+            0
+    ) {
+        return 'No diagnostic information available.';
+    }
+
+    if (
+        text.length <=
+        maxLength
+    ) {
+        return text;
+    }
+
+    return (
+        text.slice(
+            0,
+            maxLength -
+                20
+        ) +
+        '\n... truncated'
+    );
+}
+
+/**
+ * Publish one process-level warning
+ * inside Umbra Core Terminal.
+ *
+ * @param {string} title
+ * @param {string} message
+ * @param {Array<{
+ *     name: string,
+ *     value: string,
+ *     inline?: boolean
+ * }>} fields
+ * @returns {Promise<void>}
+ */
+async function publishProcessWarning(
+    title,
+    message,
+    fields =
+        []
+) {
+    if (
+        !client.isReady()
+    ) {
+        console.warn(
+            '⚠️ Process warning could not be published because Umbra is not ready.'
+        );
+
+        return;
+    }
+
+    await logAlert(
+        client,
+        {
+            title,
+            message,
+
+            severity:
+                'warning',
+
+            fields
+        }
+    ).catch(
+        terminalError => {
+            console.error(
+                '❌ Failed to publish the process warning:'
+            );
+
+            console.error(
+                terminalError
+            );
+        }
+    );
+}
+
+/**
+ * Handle a fatal Node.js process error.
+ *
+ * Continuing after an uncaught exception
+ * is unsafe. Umbra publishes an alert,
+ * stops diagnostics and exits safely.
+ *
+ * @param {string} source
+ * @param {unknown} error
+ * @returns {Promise<void>}
+ */
+async function handleFatalProcessError(
+    source,
+    error
+) {
+    if (
+        fatalErrorInProgress
+    ) {
+        console.error(
+            '❌ A second fatal error occurred during emergency shutdown:'
+        );
+
+        console.error(
+            error
+        );
+
+        return;
+    }
+
+    fatalErrorInProgress =
+        true;
+
+    const diagnostic =
+        normalizeProcessError(
+            error
+        );
+
+    console.error(
+        '======================================'
+    );
+
+    console.error(
+        `🚨 Fatal process error: ${source}`
+    );
+
+    console.error(
+        error
+    );
+
+    console.error(
+        '======================================'
+    );
+
+    stopTerminalDashboard();
+
+    if (
+        client.isReady()
+    ) {
+        await logAlert(
+            client,
+            {
+                title:
+                    'Critical Process Failure',
+
+                message:
+                    'Umbra detected a fatal Node.js error. An emergency shutdown sequence has started.',
+
+                severity:
+                    'critical',
+
+                fields: [
+                    {
+                        name:
+                            '🚨 Failure Source',
+
+                        value:
+                            `\`${source}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🧩 Error Type',
+
+                        value:
+                            `\`${diagnostic.name}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🌙 System State',
+
+                        value:
+                            '`EMERGENCY SHUTDOWN`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '📖 Error Message',
+
+                        value:
+                            [
+                                '```',
+                                limitDiagnosticText(
+                                    diagnostic.message
+                                ),
+                                '```'
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '🔍 Stack Trace',
+
+                        value:
+                            [
+                                '```',
+                                limitDiagnosticText(
+                                    diagnostic.stack
+                                ),
+                                '```'
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    }
+                ]
+            }
+        ).catch(
+            terminalError => {
+                console.error(
+                    '❌ Failed to publish the fatal Terminal alert:'
+                );
+
+                console.error(
+                    terminalError
+                );
+            }
+        );
+    }
+
+    try {
+        if (
+            client.isReady()
+        ) {
+            client.destroy();
+        }
+
+        await closeConnection();
+    } catch (shutdownError) {
+        console.error(
+            '❌ Emergency shutdown cleanup failed:'
+        );
+
+        console.error(
+            shutdownError
+        );
+    }
+
+    process.exit(
+        1
+    );
+}
+
+/**
+ * Capture unexpected synchronous errors.
+ */
+process.on(
+    'uncaughtException',
+
+    error => {
+        void handleFatalProcessError(
+            'uncaughtException',
+            error
+        );
+    }
+);
+
+/**
+ * Capture Promise rejections that were
+ * not handled by their originating module.
+ *
+ * Umbra remains online, but publishes
+ * a warning for investigation.
+ */
+process.on(
+    'unhandledRejection',
+
+    reason => {
+        const diagnostic =
+            normalizeProcessError(
+                reason
+            );
+
+        console.error(
+            '⚠️ Unhandled Promise Rejection:'
+        );
+
+        console.error(
+            reason
+        );
+
+        void publishProcessWarning(
+            'Unhandled Promise Rejection',
+            'Umbra detected a Promise rejection that was not handled by its originating module.',
+            [
+                {
+                    name:
+                        '🧩 Error Type',
+
+                    value:
+                        `\`${diagnostic.name}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🌙 Process State',
+
+                    value:
+                        '`RUNNING — INVESTIGATION REQUIRED`',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📖 Rejection Reason',
+
+                    value:
+                        [
+                            '```',
+                            limitDiagnosticText(
+                                diagnostic.message
+                            ),
+                            '```'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🔍 Stack Trace',
+
+                    value:
+                        [
+                            '```',
+                            limitDiagnosticText(
+                                diagnostic.stack
+                            ),
+                            '```'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                }
+            ]
+        );
+    }
+);
+
+/**
+ * Capture warnings emitted by Node.js.
+ */
+process.on(
+    'warning',
+
+    warning => {
+        console.warn(
+            '⚠️ Node.js Process Warning:'
+        );
+
+        console.warn(
+            warning
+        );
+
+        void publishProcessWarning(
+            'Node.js Process Warning',
+            'The Node.js runtime emitted a system warning.',
+            [
+                {
+                    name:
+                        '⚠️ Warning Type',
+
+                    value:
+                        `\`${warning.name || 'Warning'}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🌙 Process State',
+
+                    value:
+                        '`RUNNING — WARNING RECORDED`',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📖 Warning Message',
+
+                    value:
+                        [
+                            '```',
+                            limitDiagnosticText(
+                                warning.message
+                            ),
+                            '```'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🔍 Warning Trace',
+
+                    value:
+                        [
+                            '```',
+                            limitDiagnosticText(
+                                warning.stack ||
+                                'No warning trace was available.'
+                            ),
+                            '```'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                }
+            ]
+        );
+    }
+);
 
 /**
  * Handle local and Northflank
@@ -861,7 +1374,7 @@ process.once(
     'SIGINT',
 
     () => {
-        shutdown(
+        void shutdown(
             'SIGINT'
         );
     }
@@ -871,7 +1384,7 @@ process.once(
     'SIGTERM',
 
     () => {
-        shutdown(
+        void shutdown(
             'SIGTERM'
         );
     }
