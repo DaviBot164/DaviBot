@@ -4,7 +4,8 @@ const {
     ButtonBuilder,
     ButtonStyle,
     PermissionFlagsBits,
-    MessageFlags
+    MessageFlags,
+    ComponentType
 } = require('discord.js');
 
 const {
@@ -30,8 +31,28 @@ const {
 } = require('../../database');
 
 /**
- * Arrancar Rank roles from strongest
- * to weakest.
+ * Profile navigation pages.
+ */
+const PROFILE_PAGES = {
+    SOUL:
+        'profile_soul',
+
+    RECORDS:
+        'profile_records'
+};
+
+/**
+ * Profile navigation remains active
+ * for five minutes.
+ */
+const PROFILE_COLLECTOR_TIME =
+    5 *
+    60 *
+    1_000;
+
+/**
+ * Arrancar Rank roles ordered from
+ * strongest to weakest.
  */
 const ARRANCAR_RANK_ROLES = [
     '👑 Espada 0',
@@ -69,26 +90,26 @@ const ESPADA_RANK_ROLES =
 function formatNumber(
     value
 ) {
-    const numericValue =
+    const number =
         Number(
             value
         );
 
     if (
         !Number.isFinite(
-            numericValue
+            number
         )
     ) {
         return '0';
     }
 
-    return numericValue.toLocaleString(
+    return number.toLocaleString(
         'en-US'
     );
 }
 
 /**
- * Format a Discord timestamp.
+ * Format one Discord timestamp.
  *
  * @param {Date|string|number|null|undefined} value
  * @param {string} style
@@ -96,7 +117,7 @@ function formatNumber(
  */
 function formatDiscordDate(
     value,
-    style = 'F'
+    style = 'R'
 ) {
     if (!value) {
         return 'Unknown';
@@ -135,7 +156,7 @@ function formatDiscordDate(
  */
 function createProgressBar(
     percentage,
-    length = 12
+    length = 8
 ) {
     const safePercentage =
         Math.min(
@@ -144,11 +165,12 @@ function createProgressBar(
                 0,
                 Number(
                     percentage
-                ) || 0
+                ) ||
+                0
             )
         );
 
-    const filledBlocks =
+    const filled =
         Math.round(
             (
                 safePercentage /
@@ -159,85 +181,17 @@ function createProgressBar(
 
     return (
         '▰'.repeat(
-            filledBlocks
+            filled
         ) +
         '▱'.repeat(
             length -
-            filledBlocks
+            filled
         )
     );
 }
 
 /**
- * Build a premium profile header based on
- * the member's Las Noches standing.
- *
- * @param {import('discord.js').GuildMember} member
- * @param {Object|null} currentRankRecord
- * @returns {string}
- */
-function getSoulCardStatus(
-    member,
-    currentRankRecord
-) {
-    if (
-        member.id ===
-        member.guild.ownerId
-    ) {
-        return '👑 RULER OF LAS NOCHES';
-    }
-
-    const rankName =
-        currentRankRecord
-            ?.rank_name ||
-        getArrancarRank(
-            member
-        );
-
-    if (
-        isEspadaMember(
-            member
-        )
-    ) {
-        return `⚔️ ${rankName.toUpperCase()}`;
-    }
-
-    if (
-        rankName !==
-        '⚪ Unranked Arrancar'
-    ) {
-        return rankName.toUpperCase();
-    }
-
-    if (member.user.bot) {
-        return '🌑 GUARDIAN CONSTRUCT';
-    }
-
-    return '🌙 SOUL OF LAS NOCHES';
-}
-
-/**
- * Build a compact Soul Card identity block.
- *
- * @param {import('discord.js').User} user
- * @param {import('discord.js').GuildMember} member
- * @returns {string}
- */
-function buildSoulIdentityDisplay(
-    user,
-    member
-) {
-    return [
-        `> **${member.displayName}**`,
-        `> ${user}`,
-        '',
-        `\`Soul ID\`  ${user.id}`,
-        `\`Type\`     ${getAccountType(user)}`
-    ].join('\n');
-}
-
-/**
- * Find a member role by its name.
+ * Find a member role by exact name.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {string[]} roleNames
@@ -267,7 +221,8 @@ function findMemberRole(
 }
 
 /**
- * Get the member's Arrancar Rank.
+ * Get the member's current Arrancar
+ * Rank from Discord roles.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -285,8 +240,8 @@ function getArrancarRank(
 }
 
 /**
- * Check whether the member holds
- * an Espada throne.
+ * Check whether the member holds an
+ * official Espada throne.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -312,15 +267,64 @@ function getAccountType(
     user
 ) {
     if (user.bot) {
-        return '🤖 Bot';
+        return '🤖 Construct';
     }
 
     if (user.system) {
         return '⚙️ System';
     }
 
-    return '🌙 Member';
-}/**
+    return '🌙 Soul';
+}
+
+/**
+ * Get the member's primary Soul status.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {Object|null} currentRankRecord
+ * @returns {string}
+ */
+function getSoulStatus(
+    member,
+    currentRankRecord
+) {
+    if (
+        member.id ===
+        member.guild.ownerId
+    ) {
+        return '👑 RULER OF LAS NOCHES';
+    }
+
+    const currentRank =
+        currentRankRecord
+            ?.rank_name ||
+        getArrancarRank(
+            member
+        );
+
+    if (
+        isEspadaMember(
+            member
+        )
+    ) {
+        return currentRank.toUpperCase();
+    }
+
+    if (
+        currentRank !==
+        '⚪ Unranked Arrancar'
+    ) {
+        return currentRank.toUpperCase();
+    }
+
+    if (member.user.bot) {
+        return '🌑 GUARDIAN CONSTRUCT';
+    }
+
+    return '🌙 SOUL OF LAS NOCHES';
+}
+
+/**
  * Get Las Noches administrative standing.
  *
  * @param {import('discord.js').GuildMember} member
@@ -382,7 +386,7 @@ function getLasNochesStanding(
 }
 
 /**
- * Get the highest visible role.
+ * Get the member's highest visible role.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -403,7 +407,7 @@ function getHighestRole(
 }
 
 /**
- * Get a readable timeout status.
+ * Get a readable timeout state.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {string}
@@ -417,23 +421,25 @@ function getTimeoutStatus(
         return '🟢 Clear';
     }
 
-    const timeoutTimestamp =
+    const until =
         member
             .communicationDisabledUntilTimestamp;
 
-    return timeoutTimestamp
-        ? (
-            '🔇 Active until ' +
-            formatDiscordDate(
-                timeoutTimestamp,
-                'R'
-            )
+    if (!until) {
+        return '🔇 Active';
+    }
+
+    return (
+        '🔇 Active until ' +
+        formatDiscordDate(
+            until,
+            'R'
         )
-        : '🔇 Active';
+    );
 }
 
 /**
- * Format the warning count.
+ * Format the warning state.
  *
  * @param {number|string} warningCount
  * @returns {string}
@@ -459,9 +465,7 @@ function formatWarningCount(
         `⚠️ ${warningCount} Warning` +
         `${warningCount === 1 ? '' : 's'}`
     );
-}
-
-/**
+}/**
  * Safely count a member's warnings.
  *
  * @param {string} guildId
@@ -543,8 +547,7 @@ async function getLevelRecord(
 }
 
 /**
- * Safely load the member's server
- * leaderboard position.
+ * Safely load the member's leaderboard rank.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -645,9 +648,10 @@ async function getRankHistoryCount(
 
         return 0;
     }
-}/**
- * Safely load every unlocked
- * Chronicle Title.
+}
+
+/**
+ * Safely load every unlocked Chronicle Title.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -730,9 +734,7 @@ async function getProgressionRole(
                     role.id
                 )
             ) {
-                return (
-                    `${role} • Level ${reward.level}`
-                );
+                return `${role} • Level ${reward.level}`;
             }
         }
 
@@ -747,7 +749,28 @@ async function getProgressionRole(
 }
 
 /**
- * Calculate compact profile completion.
+ * Find the active Chronicle Title.
+ *
+ * @param {Object|null} soulRecord
+ * @param {Object[]} unlockedTitles
+ * @returns {Object|null}
+ */
+function getActiveChronicleTitle(
+    soulRecord,
+    unlockedTitles
+) {
+    return (
+        unlockedTitles.find(
+            title =>
+                title.isActive
+        ) ||
+        soulRecord?.title ||
+        null
+    );
+}
+
+/**
+ * Calculate profile completion.
  *
  * @param {Object} options
  * @param {Object|null} options.soulRecord
@@ -825,7 +848,25 @@ function calculateProfileCompletion({
 }
 
 /**
- * Build Premium Spiritual Power details.
+ * Build compact Soul identity text.
+ *
+ * @param {import('discord.js').User} user
+ * @param {import('discord.js').GuildMember} member
+ * @returns {string}
+ */
+function buildSoulIdentityDisplay(
+    user,
+    member
+) {
+    return [
+        `👤 **${member.displayName}**`,
+        `${getAccountType(user)}`,
+        `🆔 \`${user.id}\``
+    ].join('\n');
+}
+
+/**
+ * Build compact Spiritual Power details.
  *
  * @param {Object} levelRecord
  * @param {number|null} serverRank
@@ -852,16 +893,11 @@ function buildSpiritualPowerDisplay(
             levelRecord.xp || 0
         );
 
-    const rankDisplay =
-        serverRank
-            ? `#${serverRank}`
-            : 'Unranked';
-
     return [
-        `**Level ${formatNumber(level)}**`,
+        `✨ **Level ${formatNumber(level)}**`,
         `\`${createProgressBar(
             progress.progressPercent,
-            14
+            8
         )}\` **${formatNumber(
             progress.progressPercent
         )}%**`,
@@ -869,54 +905,44 @@ function buildSpiritualPowerDisplay(
             progress.progressXp
         )} / ${formatNumber(
             progress.requiredForNextLevel
-        )} XP toward the next level`,
-        '',
-        `✨ **Total XP:** \`${formatNumber(xp)}\``,
-        `🏆 **Kingdom Rank:** \`${rankDisplay}\``,
-        `💬 **Soul Messages:** \`${formatNumber(
+        )} XP`,
+        `⚡ \`${formatNumber(xp)} XP\` • 🏆 \`${
+            serverRank
+                ? `#${serverRank}`
+                : 'Unranked'
+        }\` • 💬 \`${formatNumber(
             levelRecord.messageCount
         )}\``
     ].join('\n');
 }
 
 /**
- * Build Chronicle Title details.
+ * Build compact Chronicle Title details.
  *
- * @param {Object|null} soulRecord
+ * @param {Object|null} activeTitle
  * @param {Object[]} unlockedTitles
  * @returns {string}
  */
 function buildChronicleDisplay(
-    soulRecord,
+    activeTitle,
     unlockedTitles
 ) {
-    const activeTitle =
-        unlockedTitles.find(
-            title =>
-                title.isActive
-        ) ||
-        soulRecord?.title ||
-        null;
-
     return [
-        `🏷️ **Active Title**`,
-        `> ${
+        `🏷️ ${
             activeTitle?.displayName ||
             '🌑 Nameless Soul'
         }`,
-        '',
-        `🌟 **Rarity:** ${
+        `${
             activeTitle?.rarity ||
             'Default'
-        }`,
-        `📖 **Chronicles Unlocked:** \`${formatNumber(
+        } • 📖 ${formatNumber(
             unlockedTitles.length
-        )}\``
+        )} unlocked`
     ].join('\n');
 }
 
 /**
- * Build Arrancar hierarchy details.
+ * Build compact Arrancar Rank details.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {Object|null} currentRankRecord
@@ -935,26 +961,20 @@ function buildHierarchyDisplay(
             member
         );
 
-    const throneStatus =
-        isEspadaMember(
-            member
-        )
-            ? '👑 Espada Throne Active'
-            : '🌙 No Espada Throne';
-
     return [
-        `⚔️ **Arrancar Rank**`,
-        `> ${currentRank}`,
-        '',
-        `👑 **Throne:** ${throneStatus}`,
-        `📜 **Career Records:** \`${formatNumber(
+        `⚔️ ${currentRank}`,
+        `${
+            isEspadaMember(
+                member
+            )
+                ? '👑 Throne Active'
+                : '🌙 No Throne'
+        } • 📜 ${formatNumber(
             historyCount
-        )}\``
+        )} records`
     ].join('\n');
-}
-
-/**
- * Build Achievement details.
+}/**
+ * Build compact Achievement details.
  *
  * @param {Object|null} soulRecord
  * @returns {string}
@@ -968,12 +988,14 @@ function buildAchievementDisplay(
 
     const unlocked =
         Number(
-            achievements.unlocked || 0
+            achievements.unlocked ||
+            0
         );
 
     const total =
         Number(
-            achievements.total || 0
+            achievements.total ||
+            0
         );
 
     const percentage =
@@ -990,38 +1012,21 @@ function buildAchievementDisplay(
             )
             : 0;
 
-    const latestAchievement =
-        Array.isArray(
-            achievements.recent
-        )
-            ? achievements.recent[0]
-            : null;
-
     return [
-        `🏆 **Unlocked:** \`${formatNumber(
+        `🏆 \`${formatNumber(
             unlocked
         )} / ${formatNumber(
             total
         )}\``,
         `\`${createProgressBar(
             percentage,
-            10
-        )}\` **${percentage}%**`,
-        '',
-        latestAchievement
-            ? (
-                `📖 **Latest Record:** ${
-                    latestAchievement.icon ||
-                    '🏆'
-                } ${
-                    latestAchievement.name ||
-                    'Unknown Achievement'
-                }`
-            )
-            : '📖 **Latest Record:** None'
+            8
+        )}\` **${percentage}%**`
     ].join('\n');
-}/**
- * Build Guardian moderation status.
+}
+
+/**
+ * Build compact Guardian details.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number|string} warningCount
@@ -1032,17 +1037,17 @@ function buildGuardianDisplay(
     warningCount
 ) {
     return [
-        `🛡️ **Warnings:** ${formatWarningCount(
+        `🛡️ Warnings: ${formatWarningCount(
             warningCount
         )}`,
-        `🔒 **Communication:** ${getTimeoutStatus(
+        `🔒 Communication: ${getTimeoutStatus(
             member
         )}`
     ].join('\n');
 }
 
 /**
- * Build Las Noches standing details.
+ * Build compact Kingdom standing.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {import('discord.js').Guild} guild
@@ -1055,19 +1060,16 @@ function buildStandingDisplay(
     progressionRole
 ) {
     return [
-        `👑 **Standing:** ${getLasNochesStanding(
+        `👑 ${getLasNochesStanding(
             member,
             guild
         )}`,
-        `🎖️ **Progression Role:** ${progressionRole}`,
-        `🌑 **Highest Role:** ${getHighestRole(
-            member
-        )}`
+        `🎖️ ${progressionRole}`
     ].join('\n');
 }
 
 /**
- * Build the Soul history block.
+ * Build compact Soul history.
  *
  * @param {import('discord.js').User} user
  * @param {import('discord.js').GuildMember} member
@@ -1078,22 +1080,11 @@ function buildSoulHistoryDisplay(
     member
 ) {
     return [
-        `🌌 **Soul Created**`,
-        `${formatDiscordDate(
-            user.createdAt,
-            'F'
-        )}`,
-        `-# ${formatDiscordDate(
+        `🌌 Created ${formatDiscordDate(
             user.createdAt,
             'R'
         )}`,
-        '',
-        `🏰 **Entered Las Noches**`,
-        `${formatDiscordDate(
-            member.joinedAt,
-            'F'
-        )}`,
-        `-# ${formatDiscordDate(
+        `🏰 Joined ${formatDiscordDate(
             member.joinedAt,
             'R'
         )}`
@@ -1101,7 +1092,7 @@ function buildSoulHistoryDisplay(
 }
 
 /**
- * Build profile completion details.
+ * Build compact completion details.
  *
  * @param {{
  *     completed: number,
@@ -1116,13 +1107,428 @@ function buildCompletionDisplay(
     return [
         `\`${createProgressBar(
             completion.percentage,
-            12
+            8
         )}\` **${completion.percentage}%**`,
-        `-# ${completion.completed} of ${completion.total} Soul milestones completed.`
+        `-# ${completion.completed}/${completion.total} milestones completed`
     ].join('\n');
 }
 
-module.exports = {
+/**
+ * Build the main profile summary.
+ *
+ * @param {Object} context
+ * @returns {string}
+ */
+function buildProfileSummary(
+    context
+) {
+    const {
+        member,
+        currentRankRecord,
+        activeTitle,
+        levelRecord,
+        serverRank
+    } = context;
+
+    const currentRank =
+        currentRankRecord
+            ?.rank_name ||
+        getArrancarRank(
+            member
+        );
+
+    const level =
+        Number(
+            levelRecord.level ||
+            0
+        );
+
+    return [
+        `## ${getSoulStatus(
+            member,
+            currentRankRecord
+        )}`,
+        `${currentRank}`,
+        `${
+            activeTitle?.displayName ||
+            '🌑 Nameless Soul'
+        }`,
+        `✨ Level ${formatNumber(
+            level
+        )} • 🏆 ${
+            serverRank
+                ? `#${serverRank}`
+                : 'Unranked'
+        }`
+    ].join('\n');
+}
+
+/**
+ * Build profile buttons.
+ *
+ * @param {'profile_soul'|'profile_records'} activePage
+ * @param {string} avatarURL
+ * @param {string|null} bannerURL
+ * @param {boolean} disabled
+ * @returns {ActionRowBuilder[]}
+ */
+function buildProfileComponents(
+    activePage,
+    avatarURL,
+    bannerURL,
+    disabled =
+        false
+) {
+    const navigationRow =
+        new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(
+                        PROFILE_PAGES
+                            .SOUL
+                    )
+                    .setLabel(
+                        'Soul'
+                    )
+                    .setEmoji(
+                        '🌙'
+                    )
+                    .setStyle(
+                        activePage ===
+                            PROFILE_PAGES
+                                .SOUL
+                            ? ButtonStyle.Primary
+                            : ButtonStyle.Secondary
+                    )
+                    .setDisabled(
+                        disabled
+                    ),
+
+                new ButtonBuilder()
+                    .setCustomId(
+                        PROFILE_PAGES
+                            .RECORDS
+                    )
+                    .setLabel(
+                        'Records'
+                    )
+                    .setEmoji(
+                        '📚'
+                    )
+                    .setStyle(
+                        activePage ===
+                            PROFILE_PAGES
+                                .RECORDS
+                            ? ButtonStyle.Primary
+                            : ButtonStyle.Secondary
+                    )
+                    .setDisabled(
+                        disabled
+                    )
+            );
+
+    const linkRow =
+        new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setLabel(
+                        'Avatar'
+                    )
+                    .setEmoji(
+                        '🖼️'
+                    )
+                    .setStyle(
+                        ButtonStyle.Link
+                    )
+                    .setURL(
+                        avatarURL
+                    )
+            );
+
+    if (bannerURL) {
+        linkRow.addComponents(
+            new ButtonBuilder()
+                .setLabel(
+                    'Banner'
+                )
+                .setEmoji(
+                    '🌌'
+                )
+                .setStyle(
+                    ButtonStyle.Link
+                )
+                .setURL(
+                    bannerURL
+                )
+        );
+    }
+
+    return [
+        navigationRow,
+        linkRow
+    ];
+}
+
+/**
+ * Build the main Soul page.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildSoulEmbed(
+    context
+) {
+    const {
+        fullUser,
+        member,
+        avatarURL,
+        levelRecord,
+        serverRank,
+        activeTitle,
+        unlockedTitles,
+        currentRankRecord,
+        rankHistoryCount,
+        soulRecord,
+        interaction
+    } = context;
+
+    return createEmbed({
+        title:
+            `🌙 ${fullUser.username}`,
+
+        description:
+            buildProfileSummary(
+                context
+            ),
+
+        color:
+            '#6F42C1',
+
+        thumbnail:
+            avatarURL,
+
+        author: {
+            name:
+                `${member.displayName} • Soul Card`,
+
+            iconURL:
+                avatarURL
+        },
+
+        footer: {
+            text:
+                `Umbra • Soul 1/2 • Requested by ${interaction.user.username}`,
+
+            iconURL:
+                interaction.client.user
+                    .displayAvatarURL({
+                        extension:
+                            'png',
+
+                        size:
+                            128,
+
+                        forceStatic:
+                            false
+                    })
+        },
+
+        fields: [
+            {
+                name:
+                    '👤 Soul',
+
+                value:
+                    buildSoulIdentityDisplay(
+                        fullUser,
+                        member
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '✨ Spiritual Power',
+
+                value:
+                    buildSpiritualPowerDisplay(
+                        levelRecord,
+                        serverRank
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🏷️ Chronicle',
+
+                value:
+                    buildChronicleDisplay(
+                        activeTitle,
+                        unlockedTitles
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '⚔️ Hierarchy',
+
+                value:
+                    buildHierarchyDisplay(
+                        member,
+                        currentRankRecord,
+                        rankHistoryCount
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🏆 Achievements',
+
+                value:
+                    buildAchievementDisplay(
+                        soulRecord
+                    ),
+
+                inline:
+                    true
+            }
+        ]
+    });
+}
+
+/**
+ * Build the secondary Records page.
+ *
+ * @param {Object} context
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildRecordsEmbed(
+    context
+) {
+    const {
+        fullUser,
+        member,
+        avatarURL,
+        warningCount,
+        progressionRole,
+        completion,
+        interaction
+    } = context;
+
+    return createEmbed({
+        title:
+            `📚 ${fullUser.username} • Records`,
+
+        description:
+            'Administrative and historical records preserved by Umbra.',
+
+        color:
+            '#4B2E83',
+
+        thumbnail:
+            avatarURL,
+
+        author: {
+            name:
+                `${member.displayName} • Kingdom Archives`,
+
+            iconURL:
+                avatarURL
+        },
+
+        footer: {
+            text:
+                `Umbra • Records 2/2 • Requested by ${interaction.user.username}`,
+
+            iconURL:
+                interaction.client.user
+                    .displayAvatarURL({
+                        extension:
+                            'png',
+
+                        size:
+                            128,
+
+                        forceStatic:
+                            false
+                    })
+        },
+
+        fields: [
+            {
+                name:
+                    '🎖️ Kingdom Standing',
+
+                value:
+                    buildStandingDisplay(
+                        member,
+                        interaction.guild,
+                        progressionRole
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🌑 Highest Role',
+
+                value:
+                    getHighestRole(
+                        member
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🛡️ Guardian',
+
+                value:
+                    buildGuardianDisplay(
+                        member,
+                        warningCount
+                    ),
+
+                inline:
+                    false
+            },
+            {
+                name:
+                    '📈 Completion',
+
+                value:
+                    buildCompletionDisplay(
+                        completion
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📅 History',
+
+                value:
+                    buildSoulHistoryDisplay(
+                        fullUser,
+                        member
+                    ),
+
+                inline:
+                    true
+            }
+        ]
+    });
+}module.exports = {
     category:
         'information',
 
@@ -1132,22 +1538,20 @@ module.exports = {
                 'profile'
             )
             .setDescription(
-                'Open a premium Las Noches Soul Card.'
+                'Open a compact premium Las Noches Soul profile.'
             )
-
             .addUserOption(option =>
                 option
                     .setName(
                         'user'
                     )
                     .setDescription(
-                        'Select the Soul whose card you want to inspect'
+                        'Select the Soul whose profile you want to inspect'
                     )
                     .setRequired(
                         false
                     )
             )
-
             .setDMPermission(
                 false
             ),
@@ -1169,7 +1573,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Las Noches Only Command',
-                            'Soul Cards can only be opened inside Las Noches.'
+                            'Soul profiles can only be opened inside Las Noches.'
                         )
                     ],
 
@@ -1271,13 +1675,19 @@ module.exports = {
                     )
                 );
 
+            const activeTitle =
+                getActiveChronicleTitle(
+                    soulRecord,
+                    unlockedTitles
+                );
+
             const avatarURL =
                 fullUser.displayAvatarURL({
                     extension:
                         'png',
 
                     size:
-                        4096,
+                        2048,
 
                     forceStatic:
                         false
@@ -1289,7 +1699,7 @@ module.exports = {
                         'png',
 
                     size:
-                        4096,
+                        2048,
 
                     forceStatic:
                         false
@@ -1302,237 +1712,146 @@ module.exports = {
                     currentRankRecord,
                     levelRecord,
                     fullUser
-                });            const soulCardStatus =
-                getSoulCardStatus(
-                    member,
-                    currentRankRecord
-                );
-
-            const profileEmbed =
-                createEmbed({
-                    title:
-                        `🌙 ${fullUser.username} • Soul Card`,
-
-                    description:
-                        [
-                            `## ${soulCardStatus}`,
-                            '',
-                            `> Official Premium Soul Record of ${fullUser}`,
-                            '> Preserved within the archives of Las Noches.'
-                        ].join('\n'),
-
-                    color:
-                        '#6F42C1',
-
-                    thumbnail:
-                        avatarURL,
-
-                    image:
-                        bannerURL ||
-                        avatarURL,
-
-                    author: {
-                        name:
-                            `${member.displayName} • Kingdom Records`,
-
-                        iconURL:
-                            avatarURL
-                    },
-
-                    footer: {
-                        text:
-                            `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
-
-                        iconURL:
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    extension:
-                                        'png',
-
-                                    size:
-                                        128,
-
-                                    forceStatic:
-                                        false
-                                })
-                    },
-
-                    fields: [
-                        {
-                            name:
-                                '╭・👤 SOUL IDENTITY',
-
-                            value:
-                                buildSoulIdentityDisplay(
-                                    fullUser,
-                                    member
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '├・✨ SPIRITUAL POWER',
-
-                            value:
-                                buildSpiritualPowerDisplay(
-                                    levelRecord,
-                                    serverRank
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '├・🏷️ CHRONICLE TITLE',
-
-                            value:
-                                buildChronicleDisplay(
-                                    soulRecord,
-                                    unlockedTitles
-                                ),
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '├・⚔️ ARRANCAR HIERARCHY',
-
-                            value:
-                                buildHierarchyDisplay(
-                                    member,
-                                    currentRankRecord,
-                                    rankHistoryCount
-                                ),
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '├・🏆 ACHIEVEMENT ARCHIVE',
-
-                            value:
-                                buildAchievementDisplay(
-                                    soulRecord
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '├・🎖️ KINGDOM STANDING',
-
-                            value:
-                                buildStandingDisplay(
-                                    member,
-                                    interaction.guild,
-                                    progressionRole
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '├・🛡️ GUARDIAN STATUS',
-
-                            value:
-                                buildGuardianDisplay(
-                                    member,
-                                    warningCount
-                                ),
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '├・📈 SOUL COMPLETION',
-
-                            value:
-                                buildCompletionDisplay(
-                                    completion
-                                ),
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '╰・📅 SOUL HISTORY',
-
-                            value:
-                                buildSoulHistoryDisplay(
-                                    fullUser,
-                                    member
-                                ),
-
-                            inline:
-                                false
-                        }
-                    ]
                 });
 
-            const buttons =
-                new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setLabel(
-                                'Open Soul Avatar'
-                            )
-                            .setEmoji(
-                                '🖼️'
-                            )
-                            .setStyle(
-                                ButtonStyle.Link
-                            )
-                            .setURL(
-                                avatarURL
-                            )
-                    );
+            const context = {
+                interaction,
+                fullUser,
+                member,
+                avatarURL,
+                bannerURL,
+                levelRecord,
+                serverRank,
+                soulRecord,
+                currentRankRecord,
+                rankHistoryCount,
+                unlockedTitles,
+                activeTitle,
+                warningCount,
+                progressionRole,
+                completion
+            };
 
-            if (bannerURL) {
-                buttons.addComponents(
-                    new ButtonBuilder()
-                        .setLabel(
-                            'Open Soul Banner'
+            let activePage =
+                PROFILE_PAGES.SOUL;
+
+            const profileMessage =
+                await interaction.editReply({
+                    embeds: [
+                        buildSoulEmbed(
+                            context
                         )
-                        .setEmoji(
-                            '🌌'
-                        )
-                        .setStyle(
-                            ButtonStyle.Link
-                        )
-                        .setURL(
+                    ],
+
+                    components:
+                        buildProfileComponents(
+                            activePage,
+                            avatarURL,
                             bannerURL
                         )
-                );
-            }
+                });
 
-            await interaction.editReply({
-                embeds: [
-                    profileEmbed
-                ],
+            const collector =
+                profileMessage
+                    .createMessageComponentCollector({
+                        componentType:
+                            ComponentType.Button,
 
-                components: [
-                    buttons
-                ]
-            });
+                        time:
+                            PROFILE_COLLECTOR_TIME
+                    });
+
+            collector.on(
+                'collect',
+
+                async buttonInteraction => {
+                    if (
+                        buttonInteraction.user.id !==
+                        interaction.user.id
+                    ) {
+                        await buttonInteraction.reply({
+                            content:
+                                'Only the member who opened this profile may control it.',
+
+                            flags:
+                                MessageFlags.Ephemeral
+                        });
+
+                        return;
+                    }
+
+                    if (
+                        buttonInteraction.customId !==
+                            PROFILE_PAGES.SOUL &&
+                        buttonInteraction.customId !==
+                            PROFILE_PAGES.RECORDS
+                    ) {
+                        return;
+                    }
+
+                    activePage =
+                        buttonInteraction.customId;
+
+                    const activeEmbed =
+                        activePage ===
+                            PROFILE_PAGES.SOUL
+                            ? buildSoulEmbed(
+                                context
+                            )
+                            : buildRecordsEmbed(
+                                context
+                            );
+
+                    await buttonInteraction.update({
+                        embeds: [
+                            activeEmbed
+                        ],
+
+                        components:
+                            buildProfileComponents(
+                                activePage,
+                                avatarURL,
+                                bannerURL
+                            )
+                    });
+                }
+            );
+
+            collector.on(
+                'end',
+
+                async () => {
+                    try {
+                        await interaction.editReply({
+                            components:
+                                buildProfileComponents(
+                                    activePage,
+                                    avatarURL,
+                                    bannerURL,
+                                    true
+                                )
+                        });
+                    } catch {
+                        /*
+                         * The message may have been
+                         * deleted before expiry.
+                         */
+                    }
+                }
+            );
         } catch (error) {
             console.error(
-                '❌ Umbra /profile command error:',
+                '❌ Umbra /profile command error:'
+            );
+
+            console.error(
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Soul Card Unavailable',
-                    'Umbra could not open the requested Premium Soul Card.'
+                    '❌ Soul Profile Unavailable',
+                    'Umbra could not open the requested Soul profile.'
                 );
 
             if (
