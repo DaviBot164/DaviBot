@@ -19,8 +19,6 @@ const {
 } = require('../../database');
 
 const {
-    buildMonthlyRankTrialSchedule,
-    getCurrentRankTrialMonth,
     getRelevantRankTrialSchedule,
     toDiscordTimestamp
 } = require('../../utils/rankTrials/calendar');
@@ -37,11 +35,17 @@ const {
     getRankTrialSchedulerInterval
 } = require('../../utils/rankTrials/scheduler');
 
+const {
+    getScheduledEventPermissions,
+    getRankTrialScheduledEventState,
+    synchronizeRankTrialScheduledEvent
+} = require('../../utils/rankTrials/eventManager');
+
 /**
  * Available Rank Trial publication keys.
  *
- * These values must match the keys used by
- * the scheduler and publisher modules.
+ * These values must match the scheduler
+ * and publisher modules.
  */
 const PUBLICATION_KEYS =
     new Set([
@@ -53,8 +57,8 @@ const PUBLICATION_KEYS =
     ]);
 
 /**
- * Convert one publication key into a
- * Slash Command choice label.
+ * Convert a publication key into a
+ * readable command option label.
  *
  * @param {string} publicationKey
  * @returns {string}
@@ -131,7 +135,7 @@ function formatPublicationDatabaseStatus(
 }
 
 /**
- * Format a publication schedule field.
+ * Format one publication schedule entry.
  *
  * @param {Object} scheduledPublication
  * @param {Object|null} publicationRecord
@@ -169,7 +173,7 @@ function formatSchedulePublication(
 }
 
 /**
- * Format one recent publication row.
+ * Format one recent publication record.
  *
  * @param {Object} publication
  * @returns {string}
@@ -196,6 +200,86 @@ function formatHistoryEntry(
         `Published: ${publishedTimestamp}`,
         `Message: ${messageReference}`
     ].join('\n');
+}
+
+/**
+ * Convert an Event Manager result into
+ * a readable status label.
+ *
+ * @param {string|null|undefined} status
+ * @returns {string}
+ */
+function formatEventManagerStatus(
+    status
+) {
+    switch (
+        status
+    ) {
+        case 'created':
+            return '`CREATED`';
+
+        case 'recreated':
+            return '`RECREATED`';
+
+        case 'updated':
+            return '`UPDATED`';
+
+        case 'synchronized':
+            return '`SYNCHRONIZED`';
+
+        case 'scheduled':
+        case 'SCHEDULED':
+            return '`SCHEDULED`';
+
+        case 'active':
+        case 'ACTIVE':
+            return '`ACTIVE`';
+
+        case 'completed':
+        case 'COMPLETED':
+            return '`COMPLETED`';
+
+        case 'cancelled':
+        case 'CANCELLED':
+            return '`CANCELLED`';
+
+        case 'deleted':
+        case 'DELETED':
+            return '`DELETED`';
+
+        case 'missing':
+            return '`MISSING`';
+
+        case 'disabled':
+            return '`DISABLED`';
+
+        case 'failed':
+            return '`FAILED`';
+
+        default:
+            return '`NOT CREATED`';
+    }
+}
+
+/**
+ * Build a Discord Scheduled Event link.
+ *
+ * @param {string} guildId
+ * @param {string|null|undefined} eventId
+ * @returns {string}
+ */
+function buildScheduledEventLink(
+    guildId,
+    eventId
+) {
+    if (!eventId) {
+        return '`Unavailable`';
+    }
+
+    return (
+        `https://discord.com/events/` +
+        `${guildId}/${eventId}`
+    );
 }
 
 /**
@@ -480,6 +564,34 @@ module.exports = {
                                         false
                                     )
                         )
+            )
+
+            /*
+             * /ranktrials event
+             */
+            .addSubcommand(
+                subcommand =>
+                    subcommand
+                        .setName(
+                            'event'
+                        )
+                        .setDescription(
+                            'View the current Rank Trial Discord Scheduled Event.'
+                        )
+            )
+
+            /*
+             * /ranktrials sync
+             */
+            .addSubcommand(
+                subcommand =>
+                    subcommand
+                        .setName(
+                            'sync'
+                        )
+                        .setDescription(
+                            'Create, restore or synchronize the Rank Trial Discord Event.'
+                        )
             ),
 
     /**
@@ -600,6 +712,13 @@ module.exports = {
                                         ? '`RUNNING`'
                                         : '`STOPPED`'
                                 }`,
+                                `**Scheduled Events:** ${
+                                    rankTrialConfig
+                                        .scheduledEvent
+                                        ?.enabled
+                                        ? '`ENABLED`'
+                                        : '`DISABLED`'
+                                }`,
                                 `**Check Interval:** \`${schedulerIntervalMinutes} minutes\``,
                                 `**Timezone:** \`${rankTrialConfig.timezone}\``,
                                 `**Trial Cycle:** \`${schedule.trialKey}\``,
@@ -705,7 +824,9 @@ module.exports = {
                         publicationKey
                     );
 
-                if (!scheduledPublication) {
+                if (
+                    !scheduledPublication
+                ) {
                     await sendRankTrialError(
                         interaction,
                         '❌ Announcement Disabled',
@@ -744,8 +865,11 @@ module.exports = {
                             rankTrialConfig
                                 .branding
                                 .footerText,
+
                             'Preview Only'
-                        ].join(' • '),
+                        ].join(
+                            ' • '
+                        ),
 
                     iconURL:
                         interaction.guild.iconURL({
@@ -835,7 +959,9 @@ module.exports = {
                         publicationKey
                     );
 
-                if (!scheduledPublication) {
+                if (
+                    !scheduledPublication
+                ) {
                     await interaction.editReply({
                         embeds: [
                             createErrorEmbed(
@@ -863,6 +989,45 @@ module.exports = {
                     result.status ===
                     'published'
                 ) {
+                    const scheduledEventLines =
+                        [];
+
+                    if (
+                        result.scheduledEvent
+                            ?.attempted
+                    ) {
+                        scheduledEventLines.push(
+                            '',
+                            '**Discord Scheduled Event**',
+                            `**Status:** ${formatEventManagerStatus(
+                                result.scheduledEvent
+                                    .status
+                            )}`
+                        );
+
+                        if (
+                            result.scheduledEvent
+                                .discordEventId
+                        ) {
+                            scheduledEventLines.push(
+                                `**Event:** ${buildScheduledEventLink(
+                                    interaction.guild.id,
+                                    result.scheduledEvent
+                                        .discordEventId
+                                )}`
+                            );
+                        }
+
+                        if (
+                            result.scheduledEvent
+                                .reason
+                        ) {
+                            scheduledEventLines.push(
+                                `**Event Notice:** ${result.scheduledEvent.reason}`
+                            );
+                        }
+                    }
+
                     await interaction.editReply({
                         embeds: [
                             createSuccessEmbed(
@@ -875,7 +1040,8 @@ module.exports = {
                                     `**Channel:** <#${rankTrialConfig.channelId}>`,
                                     `**Message ID:** \`${result.messageId}\``,
                                     '',
-                                    'The publication was saved permanently in PostgreSQL.'
+                                    'The publication was saved permanently in PostgreSQL.',
+                                    ...scheduledEventLines
                                 ].join('\n')
                             )
                         ],
@@ -1017,37 +1183,63 @@ module.exports = {
                     history.length ===
                     0
                 ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createEmbed({
-                                title:
-                                    '📜 Rank Trial Publication History',
+                    const emptyHistoryEmbed =
+                        createEmbed({
+                            title:
+                                '📜 Rank Trial Publication History',
 
-                                description:
-                                    [
-                                        'No Rank Trial publications have been recorded yet.',
-                                        '',
-                                        'History will appear after Umbra publishes or reserves its first automatic announcement.'
-                                    ].join('\n'),
+                            description:
+                                [
+                                    'No Rank Trial publications have been recorded yet.',
+                                    '',
+                                    'History will appear after Umbra publishes or reserves its first automatic announcement.'
+                                ].join('\n'),
 
-                                thumbnail:
-                                    interaction.guild.iconURL({
+                            thumbnail:
+                                interaction.guild.iconURL({
+                                    size:
+                                        512,
+
+                                    forceStatic:
+                                        false
+                                }) ??
+                                interaction.client.user
+                                    .displayAvatarURL({
                                         size:
                                             512,
 
                                         forceStatic:
                                             false
-                                    }) ??
-                                    interaction.client.user
-                                        .displayAvatarURL({
-                                            size:
-                                                512,
+                                    })
+                        });
 
-                                            forceStatic:
-                                                false
-                                        })
-                            })
-                        ],
+                    emptyHistoryEmbed.setAuthor({
+                        name:
+                            rankTrialConfig
+                                .branding
+                                .authorName,
+
+                        iconURL:
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    size:
+                                        256,
+
+                                    forceStatic:
+                                        false
+                                })
+                    });
+
+                    emptyHistoryEmbed.setFooter({
+                        text:
+                            'Umbra • Rank Trials Archive'
+                    });
+
+                    emptyHistoryEmbed.setTimestamp();
+
+                    await interaction.editReply({
+                        embeds:
+                            [emptyHistoryEmbed],
 
                         components:
                             []
@@ -1141,6 +1333,621 @@ module.exports = {
                 });
 
                 return;
+            }            /*
+             * EVENT
+             */
+            if (
+                subcommand ===
+                'event'
+            ) {
+                await interaction.deferReply({
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                const schedule =
+                    getRelevantRankTrialSchedule();
+
+                const permissionState =
+                    getScheduledEventPermissions(
+                        interaction.guild
+                    );
+
+                const eventState =
+                    await getRankTrialScheduledEventState(
+                        interaction.guild,
+                        schedule
+                    );
+
+                const databaseRecord =
+                    eventState.record;
+
+                const discordEvent =
+                    eventState.discordEvent;
+
+                if (
+                    !databaseRecord &&
+                    !discordEvent
+                ) {
+                    const notCreatedEmbed =
+                        createEmbed({
+                            title:
+                                '📅 Rank Trial Scheduled Event',
+
+                            description:
+                                [
+                                    `No Discord Scheduled Event exists for cycle \`${schedule.trialKey}\`.`,
+                                    '',
+                                    'Use `/ranktrials sync` to create it safely.',
+                                    '',
+                                    `**Battle Start:** ${toDiscordTimestamp(
+                                        schedule.battleStart,
+                                        'F'
+                                    )}`,
+                                    `**Relative Time:** ${toDiscordTimestamp(
+                                        schedule.battleStart,
+                                        'R'
+                                    )}`
+                                ].join('\n'),
+
+                            fields: [
+                                {
+                                    name:
+                                        '🛡️ Umbra Event Permissions',
+
+                                    value:
+                                        [
+                                            `**Allowed:** ${
+                                                permissionState.allowed
+                                                    ? '`YES`'
+                                                    : '`NO`'
+                                            }`,
+                                            `**Administrator:** ${
+                                                permissionState.hasAdministrator
+                                                    ? '`YES`'
+                                                    : '`NO`'
+                                            }`,
+                                            `**Create Events:** ${
+                                                permissionState.hasCreateEvents
+                                                    ? '`YES`'
+                                                    : '`NO`'
+                                            }`,
+                                            `**Manage Events:** ${
+                                                permissionState.hasManageEvents
+                                                    ? '`YES`'
+                                                    : '`NO`'
+                                            }`
+                                        ].join('\n'),
+
+                                    inline:
+                                        false
+                                }
+                            ],
+
+                            thumbnail:
+                                interaction.guild.iconURL({
+                                    size:
+                                        512,
+
+                                    forceStatic:
+                                        false
+                                }) ??
+                                interaction.client.user
+                                    .displayAvatarURL({
+                                        size:
+                                            512,
+
+                                        forceStatic:
+                                            false
+                                    })
+                        });
+
+                    notCreatedEmbed.setAuthor({
+                        name:
+                            rankTrialConfig
+                                .branding
+                                .authorName,
+
+                        iconURL:
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    size:
+                                        256,
+
+                                    forceStatic:
+                                        false
+                                })
+                    });
+
+                    notCreatedEmbed.setFooter({
+                        text:
+                            'Umbra • Rank Trial Event Manager'
+                    });
+
+                    notCreatedEmbed.setTimestamp();
+
+                    await interaction.editReply({
+                        embeds:
+                            [notCreatedEmbed],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                const eventId =
+                    discordEvent
+                        ?.id ??
+                    databaseRecord
+                        ?.discordEventId ??
+                    null;
+
+                const eventStatus =
+                    discordEvent
+                        ?.status ??
+                    databaseRecord
+                        ?.status ??
+                    null;
+
+                const eventName =
+                    discordEvent
+                        ?.name ??
+                    databaseRecord
+                        ?.eventName ??
+                    'Monthly Rank Trials';
+
+                const startsAt =
+                    discordEvent
+                        ?.scheduledStartAt ??
+                    databaseRecord
+                        ?.startsAt ??
+                    schedule.battleStart;
+
+                const endsAt =
+                    discordEvent
+                        ?.scheduledEndAt ??
+                    databaseRecord
+                        ?.endsAt ??
+                    null;
+
+                const eventLocation =
+                    discordEvent
+                        ?.entityMetadata
+                        ?.location ??
+                    databaseRecord
+                        ?.eventLocation ??
+                    rankTrialConfig
+                        .scheduledEvent
+                        .location;
+
+                const eventDescription =
+                    discordEvent
+                        ?.description ??
+                    databaseRecord
+                        ?.eventDescription ??
+                    'No Event description is currently available.';
+
+                const eventLink =
+                    buildScheduledEventLink(
+                        interaction.guild.id,
+                        eventId
+                    );
+
+                const eventFields = [
+                    {
+                        name:
+                            '📖 Event Identity',
+
+                        value:
+                            [
+                                `**Name:** ${eventName}`,
+                                `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                `**Status:** ${formatEventManagerStatus(
+                                    eventStatus
+                                )}`,
+                                `**Discord Event ID:** ${
+                                    eventId
+                                        ? `\`${eventId}\``
+                                        : '`Unavailable`'
+                                }`
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '⏰ Schedule',
+
+                        value:
+                            [
+                                `**Starts:** ${
+                                    startsAt
+                                        ? toDiscordTimestamp(
+                                            startsAt,
+                                            'F'
+                                        )
+                                        : '`Unavailable`'
+                                }`,
+                                `**Relative:** ${
+                                    startsAt
+                                        ? toDiscordTimestamp(
+                                            startsAt,
+                                            'R'
+                                        )
+                                        : '`Unavailable`'
+                                }`,
+                                `**Ends:** ${
+                                    endsAt
+                                        ? toDiscordTimestamp(
+                                            endsAt,
+                                            'F'
+                                        )
+                                        : '`Unavailable`'
+                                }`
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '📍 Arena',
+
+                        value:
+                            eventLocation ||
+                            '`No location configured`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '👥 Interested Souls',
+
+                        value:
+                            `\`${eventState.interestedCount}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🔗 Discord Event',
+
+                        value:
+                            eventId
+                                ? `[Open Scheduled Event](${eventLink})`
+                                : '`Unavailable`',
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '🛡️ Umbra Permissions',
+
+                        value:
+                            [
+                                `**Allowed:** ${
+                                    permissionState.allowed
+                                        ? '`YES`'
+                                        : '`NO`'
+                                }`,
+                                `**Create Events:** ${
+                                    permissionState.hasCreateEvents
+                                        ? '`YES`'
+                                        : '`NO`'
+                                }`,
+                                `**Manage Events:** ${
+                                    permissionState.hasManageEvents
+                                        ? '`YES`'
+                                        : '`NO`'
+                                }`
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    }
+                ];
+
+                if (
+                    databaseRecord
+                        ?.syncedAt
+                ) {
+                    eventFields.push({
+                        name:
+                            '🔄 Last Database Sync',
+
+                        value:
+                            toDiscordTimestamp(
+                                databaseRecord.syncedAt,
+                                'F'
+                            ),
+
+                        inline:
+                            false
+                    });
+                }
+
+                const eventEmbed =
+                    createEmbed({
+                        title:
+                            '📅 Rank Trial Scheduled Event',
+
+                        description:
+                            [
+                                eventDescription,
+                                '',
+                                discordEvent
+                                    ? 'The Discord Scheduled Event is currently connected to Umbra.'
+                                    : 'The PostgreSQL record exists, but the Discord Scheduled Event is currently missing.'
+                            ].join('\n'),
+
+                        fields:
+                            eventFields,
+
+                        thumbnail:
+                            interaction.guild.iconURL({
+                                size:
+                                    512,
+
+                                forceStatic:
+                                    false
+                            }) ??
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    size:
+                                        512,
+
+                                    forceStatic:
+                                        false
+                                })
+                    });
+
+                eventEmbed.setAuthor({
+                    name:
+                        rankTrialConfig
+                            .branding
+                            .authorName,
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    256,
+
+                                forceStatic:
+                                    false
+                            })
+                });
+
+                eventEmbed.setFooter({
+                    text:
+                        'Umbra • Rank Trial Event Manager'
+                });
+
+                eventEmbed.setTimestamp();
+
+                await interaction.editReply({
+                    embeds:
+                        [eventEmbed],
+
+                    components:
+                        []
+                });
+
+                return;
+            }
+
+            /*
+             * SYNC
+             */
+            if (
+                subcommand ===
+                'sync'
+            ) {
+                await interaction.deferReply({
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                const schedule =
+                    getRelevantRankTrialSchedule();
+
+                const permissionState =
+                    getScheduledEventPermissions(
+                        interaction.guild
+                    );
+
+                if (
+                    !permissionState.allowed
+                ) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Missing Event Permissions',
+                                [
+                                    'Umbra cannot create or synchronize the Discord Scheduled Event.',
+                                    '',
+                                    'Required bot permission:',
+                                    '• Create Events',
+                                    '',
+                                    'Recommended additional permission:',
+                                    '• Manage Events',
+                                    '',
+                                    `**Administrator:** ${
+                                        permissionState.hasAdministrator
+                                            ? '`YES`'
+                                            : '`NO`'
+                                    }`,
+                                    `**Create Events:** ${
+                                        permissionState.hasCreateEvents
+                                            ? '`YES`'
+                                            : '`NO`'
+                                    }`,
+                                    `**Manage Events:** ${
+                                        permissionState.hasManageEvents
+                                            ? '`YES`'
+                                            : '`NO`'
+                                    }`
+                                ].join('\n')
+                            )
+                        ],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                const result =
+                    await synchronizeRankTrialScheduledEvent(
+                        interaction.guild,
+                        schedule
+                    );
+
+                if (
+                    result.status ===
+                        'created' ||
+                    result.status ===
+                        'recreated' ||
+                    result.status ===
+                        'updated' ||
+                    result.status ===
+                        'synchronized'
+                ) {
+                    const discordEventId =
+                        result.discordEvent
+                            ?.id ??
+                        result.record
+                            ?.discordEventId ??
+                        null;
+
+                    const eventLink =
+                        buildScheduledEventLink(
+                            interaction.guild.id,
+                            discordEventId
+                        );
+
+                    const successTitle =
+                        result.status ===
+                            'created'
+                            ? '✅ Rank Trial Event Created'
+                            : result.status ===
+                                'recreated'
+                                ? '✅ Rank Trial Event Recreated'
+                                : result.status ===
+                                    'updated'
+                                    ? '✅ Rank Trial Event Updated'
+                                    : '✅ Rank Trial Event Synchronized';
+
+                    await interaction.editReply({
+                        embeds: [
+                            createSuccessEmbed(
+                                successTitle,
+                                [
+                                    `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                    `**Result:** ${formatEventManagerStatus(
+                                        result.status
+                                    )}`,
+                                    `**Battle Start:** ${toDiscordTimestamp(
+                                        schedule.battleStart,
+                                        'F'
+                                    )}`,
+                                    `**Discord Event ID:** ${
+                                        discordEventId
+                                            ? `\`${discordEventId}\``
+                                            : '`Unavailable`'
+                                    }`,
+                                    '',
+                                    discordEventId
+                                        ? `**Event:** [Open Scheduled Event](${eventLink})`
+                                        : '**Event:** `Unavailable`',
+                                    '',
+                                    'PostgreSQL and Discord are now synchronized.'
+                                ].join('\n')
+                            )
+                        ],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                if (
+                    result.status ===
+                    'disabled'
+                ) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '⚠️ Scheduled Events Disabled',
+                                result.reason ??
+                                'Rank Trial Scheduled Events are disabled in configuration.'
+                            )
+                        ],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                if (
+                    result.status ===
+                    'missing'
+                ) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '⚠️ Scheduled Event Missing',
+                                [
+                                    result.reason ??
+                                    'The Discord Scheduled Event is missing.',
+                                    '',
+                                    'Enable `recreateIfDeleted` in `config/rankTrials.js` to allow automatic recovery.'
+                                ].join('\n')
+                            )
+                        ],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                await interaction.editReply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Event Synchronization Failed',
+                            [
+                                'Umbra could not synchronize the Rank Trial Scheduled Event.',
+                                '',
+                                `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                `**Result:** ${formatEventManagerStatus(
+                                    result.status
+                                )}`,
+                                `**Reason:** ${
+                                    result.reason ??
+                                    'Unknown Event Manager error.'
+                                }`
+                            ].join('\n')
+                        )
+                    ],
+
+                    components:
+                        []
+                });
+
+                return;
             }
 
             await sendRankTrialError(
@@ -1171,7 +1978,7 @@ module.exports = {
                 [
                     'Umbra could not complete this Rank Trials action.',
                     '',
-                    'Please check the PostgreSQL connection, scheduler configuration and channel permissions.'
+                    'Please check the PostgreSQL connection, Event permissions, scheduler configuration and channel access.'
                 ].join('\n')
             ).catch(
                 responseError => {

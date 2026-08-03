@@ -18,6 +18,10 @@ const {
     buildClosingEmbed
 } = require('./embeds');
 
+const {
+    synchronizeRankTrialScheduledEvent
+} = require('./eventManager');
+
 /**
  * Build the correct Embed for one
  * Rank Trial publication type.
@@ -175,6 +179,205 @@ function getPublicationLabel(
 }
 
 /**
+ * Check whether the selected publication
+ * should create or synchronize the Discord
+ * Scheduled Event.
+ *
+ * @param {string} publicationKey
+ * @returns {boolean}
+ */
+function shouldSynchronizeScheduledEvent(
+    publicationKey
+) {
+    return (
+        publicationKey ===
+            'opening' &&
+
+        rankTrialConfig.enabled ===
+            true &&
+
+        rankTrialConfig
+            .scheduledEvent
+            ?.enabled ===
+            true &&
+
+        rankTrialConfig
+            .scheduledEvent
+            ?.createWithOpeningAnnouncement ===
+            true
+    );
+}
+
+/**
+ * Create or synchronize the Discord Scheduled
+ * Event after the Opening Announcement.
+ *
+ * Event synchronization failure must not undo
+ * an announcement that was already successfully
+ * sent and saved in PostgreSQL.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {Object} schedule
+ * @param {string} publicationKey
+ * @returns {Promise<{
+ *     attempted: boolean,
+ *     status: string,
+ *     discordEventId?: string,
+ *     reason?: string
+ * }>}
+ */
+async function synchronizeScheduledEventAfterPublication(
+    guild,
+    schedule,
+    publicationKey
+) {
+    if (
+        !shouldSynchronizeScheduledEvent(
+            publicationKey
+        )
+    ) {
+        return {
+            attempted:
+                false,
+
+            status:
+                'not-required'
+        };
+    }
+
+    try {
+        const result =
+            await synchronizeRankTrialScheduledEvent(
+                guild,
+                schedule
+            );
+
+        const discordEventId =
+            result.discordEvent
+                ?.id;
+
+        if (
+            result.status ===
+                'created' ||
+            result.status ===
+                'recreated' ||
+            result.status ===
+                'updated' ||
+            result.status ===
+                'synchronized'
+        ) {
+            console.log(
+                '======================================'
+            );
+
+            console.log(
+                '📅 Rank Trial Scheduled Event Ready'
+            );
+
+            console.log(
+                `🗓️ Trial Cycle: ${schedule.trialKey}`
+            );
+
+            console.log(
+                `🔄 Event Result: ${result.status}`
+            );
+
+            console.log(
+                `🆔 Discord Event ID: ${discordEventId ?? 'Unavailable'}`
+            );
+
+            console.log(
+                `🏰 Server: ${guild.name}`
+            );
+
+            console.log(
+                '======================================'
+            );
+        } else {
+            console.warn(
+                '======================================'
+            );
+
+            console.warn(
+                '⚠️ Rank Trial announcement was published, but the Scheduled Event was not prepared.'
+            );
+
+            console.warn(
+                `🗓️ Trial Cycle: ${schedule.trialKey}`
+            );
+
+            console.warn(
+                `🔄 Event Result: ${result.status}`
+            );
+
+            console.warn(
+                `📖 Reason: ${result.reason ?? 'No reason was provided.'}`
+            );
+
+            console.warn(
+                `🏰 Server: ${guild.name}`
+            );
+
+            console.warn(
+                '======================================'
+            );
+        }
+
+        return {
+            attempted:
+                true,
+
+            status:
+                result.status,
+
+            discordEventId,
+
+            reason:
+                result.reason
+        };
+    } catch (error) {
+        console.error(
+            '======================================'
+        );
+
+        console.error(
+            '❌ Rank Trial Scheduled Event integration failed.'
+        );
+
+        console.error(
+            `🗓️ Trial Cycle: ${schedule.trialKey}`
+        );
+
+        console.error(
+            `🏰 Server: ${guild.name}`
+        );
+
+        console.error(
+            error
+        );
+
+        console.error(
+            '======================================'
+        );
+
+        return {
+            attempted:
+                true,
+
+            status:
+                'failed',
+
+            reason:
+                error instanceof Error
+                    ? error.message
+                    : String(
+                        error
+                    )
+        };
+    }
+}
+
+/**
  * Publish one monthly Rank Trial announcement.
  *
  * PostgreSQL reservation happens before the
@@ -196,7 +399,13 @@ function getPublicationLabel(
  * @returns {Promise<{
  *     status: 'published'|'duplicate'|'failed',
  *     messageId?: string,
- *     reason?: string
+ *     reason?: string,
+ *     scheduledEvent?: {
+ *         attempted: boolean,
+ *         status: string,
+ *         discordEventId?: string,
+ *         reason?: string
+ *     }
  * }>}
  */
 async function publishRankTrialAnnouncement(
@@ -405,7 +614,12 @@ async function publishRankTrialAnnouncement(
             throw new Error(
                 'Rank Trial publication was sent, but PostgreSQL completion failed.'
             );
-        }
+        }        const scheduledEventResult =
+            await synchronizeScheduledEventAfterPublication(
+                guild,
+                schedule,
+                publication.key
+            );
 
         console.log(
             '======================================'
@@ -439,6 +653,24 @@ async function publishRankTrialAnnouncement(
             `📣 Mention Everyone: ${publication.mentionEveryone}`
         );
 
+        if (
+            scheduledEventResult
+                .attempted
+        ) {
+            console.log(
+                `📅 Scheduled Event: ${scheduledEventResult.status}`
+            );
+
+            if (
+                scheduledEventResult
+                    .discordEventId
+            ) {
+                console.log(
+                    `🆔 Scheduled Event ID: ${scheduledEventResult.discordEventId}`
+                );
+            }
+        }
+
         console.log(
             '💾 Publication saved permanently in PostgreSQL.'
         );
@@ -452,15 +684,19 @@ async function publishRankTrialAnnouncement(
                 'published',
 
             messageId:
-                sentMessage.id
+                sentMessage.id,
+
+            scheduledEvent:
+                scheduledEventResult
         };
     } catch (error) {
         /*
-         * Remove only the unfinished reservation.
+         * Remove only the unfinished publication
+         * reservation.
          *
-         * Umbra may retry on the next scheduler
-         * cycle while the recovery window remains
-         * open.
+         * Once completePublication succeeds,
+         * releasePublication will no longer
+         * delete the row.
          */
         await rankTrialDatabase
             .releasePublication(
@@ -524,10 +760,6 @@ async function publishRankTrialAnnouncement(
  * Publish one announcement in every active
  * configured Las Noches guild.
  *
- * In the current setup Umbra is expected to
- * use one active guild, but this function
- * remains safe for multiple guilds.
- *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} schedule
  * @param {Object} publication
@@ -536,7 +768,8 @@ async function publishRankTrialAnnouncement(
  *     guildId: string,
  *     status: string,
  *     messageId?: string,
- *     reason?: string
+ *     reason?: string,
+ *     scheduledEvent?: Object
  * }>>}
  */
 async function publishRankTrialToGuilds(
@@ -602,6 +835,8 @@ module.exports = {
     fetchRankTrialChannel,
     hasRequiredPermissions,
     getPublicationLabel,
+    shouldSynchronizeScheduledEvent,
+    synchronizeScheduledEventAfterPublication,
     publishRankTrialAnnouncement,
     publishRankTrialToGuilds
 };

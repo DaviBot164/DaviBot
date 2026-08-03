@@ -3,9 +3,10 @@
  * Umbra Automatic Rank Trials Configuration
  * ======================================================
  *
- * Controls the monthly Las Noches Rank Trials.
+ * Controls the monthly Las Noches Rank Trials,
+ * announcements and Discord Scheduled Event.
  *
- * The actual publication history will be stored
+ * Publication and Event history are stored
  * permanently inside PostgreSQL.
  */
 
@@ -13,14 +14,14 @@ module.exports = {
     /**
      * Main Rank Trials system switch.
      *
-     * false = completely disables automatic
-     * Rank Trial announcements.
+     * false disables automatic announcements
+     * and Discord Scheduled Event management.
      */
     enabled:
         true,
 
     /**
-     * Official Rank Trials channel.
+     * Official Rank Trials text channel.
      *
      * Current channel:
      * ⚔️・rank-trials
@@ -29,17 +30,14 @@ module.exports = {
         '1531706846531031060',
 
     /**
-     * Timezone used when calculating the
-     * monthly Rank Trial schedule.
-     *
-     * Las Noches currently uses Georgia time.
+     * Timezone used for every Rank Trial date.
      */
     timezone:
         'Asia/Tbilisi',
 
     /**
-     * Rank Trials are held on the final
-     * Saturday of every month.
+     * Rank Trials occur on the final Saturday
+     * of every month.
      *
      * JavaScript weekday numbers:
      *
@@ -55,10 +53,10 @@ module.exports = {
         6,
 
     /**
-     * Battle start time in local Las Noches time.
+     * Official battle start time.
      *
      * Current setting:
-     * 20:00 — 8:00 PM
+     * 20:00 — 8:00 PM Georgia time.
      */
     battleStartHour:
         20,
@@ -67,35 +65,92 @@ module.exports = {
         0,
 
     /**
-     * How often Umbra checks whether an
-     * announcement is due.
-     *
-     * Five minutes is frequent enough while
-     * keeping the system lightweight.
+     * Scheduler checks every five minutes.
      */
     schedulerIntervalMs:
         5 * 60 * 1000,
 
     /**
-     * Maximum age of a missed publication.
-     *
-     * Example:
-     * If Umbra was offline when an announcement
-     * became due, it may publish it after restart
-     * only if the announcement is not older than
-     * this recovery window.
-     *
-     * 24 hours prevents very old reminders from
-     * being published unexpectedly.
+     * Recently missed announcements may be
+     * recovered for up to 24 hours.
      */
     recoveryWindowMs:
         24 * 60 * 60 * 1000,
 
     /**
+     * ======================================================
+     * Discord Scheduled Event
+     * ======================================================
+     */
+    scheduledEvent: {
+        /**
+         * Enables automatic creation and
+         * synchronization of the Discord Event.
+         */
+        enabled:
+            true,
+
+        /**
+         * Create the Discord Event when the
+         * Opening Announcement is published.
+         */
+        createWithOpeningAnnouncement:
+            true,
+
+        /**
+         * Event duration after battle start.
+         *
+         * Current setting:
+         * Three hours.
+         */
+        durationMinutes:
+            180,
+
+        /**
+         * External Event location displayed
+         * inside Discord.
+         */
+        location:
+            'Las Noches Arena • Battle Room',
+
+        /**
+         * Event name format.
+         *
+         * The manager adds the month and year.
+         */
+        namePrefix:
+            '⚔️ Monthly Rank Trials',
+
+        /**
+         * Event description limit safeguard.
+         *
+         * Discord currently allows longer text,
+         * but Umbra keeps it compact.
+         */
+        descriptionMaxLength:
+            900,
+
+        /**
+         * If the Event is deleted manually,
+         * automatic sync may recreate it.
+         */
+        recreateIfDeleted:
+            true,
+
+        /**
+         * When true, Umbra updates an existing
+         * Scheduled Event if its configured
+         * name, times, location or description
+         * no longer match.
+         */
+        updateExistingEvent:
+            true
+    },
+
+    /**
      * Announcement schedule.
      *
-     * All offsets are calculated relative to
-     * the Rank Trial battle start.
+     * All offsets are relative to battle start.
      */
     announcements: {
         /**
@@ -120,8 +175,7 @@ module.exports = {
         },
 
         /**
-         * Main registration reminder one week
-         * before the Rank Trials.
+         * Registration reminder one week before.
          */
         registrationReminder: {
             enabled:
@@ -141,7 +195,7 @@ module.exports = {
         },
 
         /**
-         * Final reminder one day before battle.
+         * Final reminder one day before.
          */
         finalReminder: {
             enabled:
@@ -161,8 +215,7 @@ module.exports = {
         },
 
         /**
-         * Published when the monthly Rank Trials
-         * officially begin.
+         * Published when battles begin.
          */
         battleStart: {
             enabled:
@@ -182,8 +235,6 @@ module.exports = {
         },
 
         /**
-         * Optional closing notice.
-         *
          * Published one day after Rank Trials.
          */
         closing: {
@@ -205,11 +256,7 @@ module.exports = {
     },
 
     /**
-     * Rank Trial evaluation principles.
-     *
-     * These will be displayed inside automatic
-     * announcements so members understand that
-     * victory alone does not guarantee promotion.
+     * Promotion evaluation principles.
      */
     evaluationCriteria: [
         'Combat performance',
@@ -221,7 +268,7 @@ module.exports = {
     ],
 
     /**
-     * Core announcement branding.
+     * Core branding.
      */
     branding: {
         authorName:
@@ -240,9 +287,8 @@ module.exports = {
     /**
      * PostgreSQL publication identifiers.
      *
-     * These values are stored in the database.
-     * Do not rename them after the system begins
-     * publishing announcements.
+     * Do not rename these values after
+     * publication history has been created.
      */
     publicationTypes: {
         opening:
@@ -259,5 +305,27 @@ module.exports = {
 
         closing:
             'CLOSING'
+    },
+
+    /**
+     * PostgreSQL Scheduled Event states.
+     *
+     * These values will be stored permanently.
+     */
+    eventStatuses: {
+        scheduled:
+            'SCHEDULED',
+
+        active:
+            'ACTIVE',
+
+        completed:
+            'COMPLETED',
+
+        cancelled:
+            'CANCELLED',
+
+        deleted:
+            'DELETED'
     }
 };

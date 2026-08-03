@@ -7,6 +7,10 @@ const {
     initializeSchema
 } = require('./schema');
 
+const {
+    initializeRankTrialEventSchema
+} = require('./rankTrialEventSchema');
+
 const warningDatabase =
     require('./warnings');
 
@@ -42,6 +46,9 @@ const titleDatabase =
 
 const rankTrialDatabase =
     require('./rankTrials');
+
+const rankTrialEventDatabase =
+    require('./rankTrialEvents');
 
 /**
  * Connect to PostgreSQL and initialize
@@ -97,10 +104,23 @@ async function initializeDatabase() {
             '✅ Connected to PostgreSQL.'
         );
 
+        /*
+         * Initialize Umbra's primary schema.
+         */
         await initializeSchema();
 
         console.log(
             '✅ Database schema initialized.'
+        );
+
+        /*
+         * Initialize the isolated Rank Trials
+         * Discord Scheduled Event schema.
+         */
+        await initializeRankTrialEventSchema();
+
+        console.log(
+            '✅ Rank Trial Event Manager schema initialized.'
         );
 
         console.log(
@@ -141,6 +161,10 @@ async function initializeDatabase() {
 
         console.log(
             '✅ Monthly Rank Trials database initialized.'
+        );
+
+        console.log(
+            '✅ Rank Trials Scheduled Event Manager initialized.'
         );
 
         const achievementCount =
@@ -219,5 +243,8 @@ module.exports = {
         titleDatabase,
 
     rankTrials:
-        rankTrialDatabase
+        rankTrialDatabase,
+
+    rankTrialEvents:
+        rankTrialEventDatabase
 };
