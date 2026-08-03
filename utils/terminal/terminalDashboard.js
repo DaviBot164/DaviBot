@@ -9,8 +9,13 @@ const {
 
 const {
     TERMINAL_CHANNEL_ID,
-    formatUptime
+    formatUptime,
+    logTerminal
 } = require('./terminalLogger');
+
+const {
+    logAlert
+} = require('./alertLogger');
 
 /**
  * Health Dashboard refresh interval.
@@ -19,15 +24,49 @@ const DASHBOARD_REFRESH_INTERVAL =
     60_000;
 
 /**
- * Stored dashboard message reference.
+ * Gateway latency thresholds.
+ */
+const GATEWAY_WARNING_LATENCY =
+    500;
+
+const GATEWAY_CRITICAL_LATENCY =
+    1_500;
+
+/**
+ * Process memory thresholds.
+ *
+ * These values may be adjusted later
+ * according to the Northflank plan.
+ */
+const MEMORY_WARNING_BYTES =
+    512 *
+    1_024 *
+    1_024;
+
+const MEMORY_CRITICAL_BYTES =
+    768 *
+    1_024 *
+    1_024;
+
+/**
+ * Stored Dashboard message reference.
  */
 let dashboardMessageId =
     null;
 
 /**
- * Active dashboard interval.
+ * Active Dashboard refresh interval.
  */
 let dashboardInterval =
+    null;
+
+/**
+ * Last known system-health snapshot.
+ *
+ * The first Dashboard update establishes
+ * the baseline and does not send alerts.
+ */
+let previousHealthSnapshot =
     null;
 
 /**
@@ -144,6 +183,10 @@ async function getDashboardChannel(
         channel.guild.members.me;
 
     if (!botMember) {
+        console.warn(
+            '⚠️ Umbra could not access its GuildMember record for the Dashboard channel.'
+        );
+
         return null;
     }
 
@@ -171,14 +214,68 @@ async function getDashboardChannel(
 }
 
 /**
+ * Determine the current memory state.
+ *
+ * @param {number} rss
+ * @returns {'normal'|'warning'|'critical'}
+ */
+function getMemoryState(
+    rss
+) {
+    if (
+        rss >=
+        MEMORY_CRITICAL_BYTES
+    ) {
+        return 'critical';
+    }
+
+    if (
+        rss >=
+        MEMORY_WARNING_BYTES
+    ) {
+        return 'warning';
+    }
+
+    return 'normal';
+}
+
+/**
+ * Determine the current Gateway
+ * latency state.
+ *
+ * @param {number} gatewayPing
+ * @returns {'normal'|'warning'|'critical'}
+ */
+function getGatewayLatencyState(
+    gatewayPing
+) {
+    if (
+        gatewayPing >=
+        GATEWAY_CRITICAL_LATENCY
+    ) {
+        return 'critical';
+    }
+
+    if (
+        gatewayPing >=
+        GATEWAY_WARNING_LATENCY
+    ) {
+        return 'warning';
+    }
+
+    return 'normal';
+}
+
+/**
  * Determine overall Umbra system health.
  *
  * @param {Object} health
  * @param {boolean} health.gatewayConnected
  * @param {boolean} health.databaseConnected
- * @param {number} health.gatewayPing
+ * @param {'normal'|'warning'|'critical'} health.gatewayLatencyState
+ * @param {'normal'|'warning'|'critical'} health.memoryState
  * @returns {{
- *     label: string,
+ *     label: 'HEALTHY'|'DEGRADED'|'CRITICAL',
  *     emoji: string,
  *     color: string,
  *     message: string
@@ -187,11 +284,16 @@ async function getDashboardChannel(
 function getOverallHealth({
     gatewayConnected,
     databaseConnected,
-    gatewayPing
+    gatewayLatencyState,
+    memoryState
 }) {
     if (
         !gatewayConnected ||
-        !databaseConnected
+        !databaseConnected ||
+        gatewayLatencyState ===
+            'critical' ||
+        memoryState ===
+            'critical'
     ) {
         return {
             label:
@@ -204,13 +306,15 @@ function getOverallHealth({
                 '#ED4245',
 
             message:
-                'One or more critical systems are unavailable.'
+                'One or more critical systems require immediate attention.'
         };
     }
 
     if (
-        gatewayPing >
-        500
+        gatewayLatencyState ===
+            'warning' ||
+        memoryState ===
+            'warning'
     ) {
         return {
             label:
@@ -223,7 +327,7 @@ function getOverallHealth({
                 '#FEE75C',
 
             message:
-                'Umbra is operational, but performance degradation was detected.'
+                'Umbra remains operational, but performance degradation was detected.'
         };
     }
 
@@ -243,12 +347,31 @@ function getOverallHealth({
 }
 
 /**
- * Build the live Umbra Health Dashboard.
+ * Collect one complete Umbra
+ * system-health snapshot.
  *
  * @param {import('discord.js').Client<true>} client
- * @returns {Promise<EmbedBuilder>}
+ * @returns {Promise<{
+ *     gatewayConnected: boolean,
+ *     gatewayPing: number,
+ *     gatewayLatencyState: 'normal'|'warning'|'critical',
+ *     databaseConnected: boolean,
+ *     databaseLatency: number|null,
+ *     memoryUsage: NodeJS.MemoryUsage,
+ *     memoryState: 'normal'|'warning'|'critical',
+ *     guildCount: number,
+ *     memberCount: number,
+ *     commandCount: number,
+ *     checkedAt: number,
+ *     overallHealth: {
+ *         label: 'HEALTHY'|'DEGRADED'|'CRITICAL',
+ *         emoji: string,
+ *         color: string,
+ *         message: string
+ *     }
+ * }>}
  */
-async function buildDashboardEmbed(
+async function collectHealthSnapshot(
     client
 ) {
     const gatewayConnected =
@@ -267,6 +390,16 @@ async function buildDashboardEmbed(
 
     const memoryUsage =
         process.memoryUsage();
+
+    const gatewayLatencyState =
+        getGatewayLatencyState(
+            gatewayPing
+        );
+
+    const memoryState =
+        getMemoryState(
+            memoryUsage.rss
+        );
 
     const guildCount =
         client.guilds.cache.size;
@@ -296,10 +429,58 @@ async function buildDashboardEmbed(
     const overallHealth =
         getOverallHealth({
             gatewayConnected,
+
             databaseConnected:
                 databaseHealth.connected,
-            gatewayPing
+
+            gatewayLatencyState,
+
+            memoryState
         });
+
+    return {
+        gatewayConnected,
+        gatewayPing,
+        gatewayLatencyState,
+
+        databaseConnected:
+            databaseHealth.connected,
+
+        databaseLatency:
+            databaseHealth.latency,
+
+        memoryUsage,
+        memoryState,
+
+        guildCount,
+        memberCount,
+        commandCount,
+        checkedAt,
+        overallHealth
+    };
+}/**
+ * Build the live Umbra Health Dashboard.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
+ * @returns {EmbedBuilder}
+ */
+function buildDashboardEmbed(
+    client,
+    snapshot
+) {
+    const {
+        gatewayConnected,
+        gatewayPing,
+        databaseConnected,
+        databaseLatency,
+        memoryUsage,
+        guildCount,
+        memberCount,
+        commandCount,
+        checkedAt,
+        overallHealth
+    } = snapshot;
 
     return new EmbedBuilder()
         .setColor(
@@ -328,7 +509,7 @@ async function buildDashboardEmbed(
         .setDescription(
             [
                 '```ansi',
-                `\u001b[2;35mUMBRA CORE DIAGNOSTICS\u001b[0m`,
+                '\u001b[2;35mUMBRA CORE DIAGNOSTICS\u001b[0m',
                 '',
                 overallHealth.message,
                 '```'
@@ -359,14 +540,14 @@ async function buildDashboardEmbed(
                 value:
                     [
                         `**Status:** ${
-                            databaseHealth.connected
+                            databaseConnected
                                 ? '`CONNECTED`'
                                 : '`DISCONNECTED`'
                         }`,
                         `**Latency:** ${
-                            databaseHealth.latency !==
+                            databaseLatency !==
                             null
-                                ? `\`${databaseHealth.latency} ms\``
+                                ? `\`${databaseLatency} ms\``
                                 : '`Unavailable`'
                         }`
                     ].join('\n'),
@@ -478,6 +659,503 @@ async function buildDashboardEmbed(
                 'Umbra • Live System Diagnostics'
         })
         .setTimestamp();
+}
+
+/**
+ * Convert one snapshot into compact
+ * alert diagnostic fields.
+ *
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
+ * @returns {Array<{
+ *     name: string,
+ *     value: string,
+ *     inline: boolean
+ * }>}
+ */
+function createHealthAlertFields(
+    snapshot
+) {
+    return [
+        {
+            name:
+                '📡 Gateway',
+
+            value:
+                [
+                    `**Status:** ${
+                        snapshot.gatewayConnected
+                            ? '`CONNECTED`'
+                            : '`DISCONNECTED`'
+                    }`,
+                    `**Latency:** \`${snapshot.gatewayPing} ms\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🗄️ PostgreSQL',
+
+            value:
+                [
+                    `**Status:** ${
+                        snapshot.databaseConnected
+                            ? '`CONNECTED`'
+                            : '`DISCONNECTED`'
+                    }`,
+                    `**Latency:** ${
+                        snapshot.databaseLatency !==
+                        null
+                            ? `\`${snapshot.databaseLatency} ms\``
+                            : '`Unavailable`'
+                    }`
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🧠 Memory',
+
+            value:
+                [
+                    `**RSS:** \`${formatBytes(
+                        snapshot.memoryUsage.rss
+                    )}\``,
+                    `**State:** \`${snapshot.memoryState.toUpperCase()}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌙 Overall State',
+
+            value:
+                `\`${snapshot.overallHealth.label}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🕒 Detected At',
+
+            value:
+                `<t:${snapshot.checkedAt}:F>\n<t:${snapshot.checkedAt}:R>`,
+
+            inline:
+                true
+        }
+    ];
+}
+
+/**
+ * Publish an alert when overall system
+ * health changes.
+ *
+ * The first collected snapshot establishes
+ * a baseline and does not create an alert.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
+ * @returns {Promise<void>}
+ */
+async function processOverallHealthTransition(
+    client,
+    snapshot
+) {
+    if (!previousHealthSnapshot) {
+        previousHealthSnapshot =
+            snapshot;
+
+        return;
+    }
+
+    const previousLabel =
+        previousHealthSnapshot
+            .overallHealth
+            .label;
+
+    const currentLabel =
+        snapshot
+            .overallHealth
+            .label;
+
+    if (
+        previousLabel ===
+        currentLabel
+    ) {
+        return;
+    }
+
+    const fields =
+        createHealthAlertFields(
+            snapshot
+        );
+
+    if (
+        currentLabel ===
+        'HEALTHY'
+    ) {
+        await logTerminal(
+            client,
+            {
+                level:
+                    'success',
+
+                title:
+                    'System Health Restored',
+
+                message:
+                    `Umbra recovered from ${previousLabel} status. All monitored systems are operating normally again.`,
+
+                fields
+            }
+        );
+
+        return;
+    }
+
+    await logAlert(
+        client,
+        {
+            title:
+                currentLabel ===
+                    'CRITICAL'
+                    ? 'Critical System Health Alert'
+                    : 'System Performance Warning',
+
+            message:
+                currentLabel ===
+                    'CRITICAL'
+                    ? 'Umbra detected a critical system condition requiring immediate investigation.'
+                    : 'Umbra detected degraded performance in one or more monitored systems.',
+
+            severity:
+                currentLabel ===
+                    'CRITICAL'
+                    ? 'critical'
+                    : 'warning',
+
+            fields
+        }
+    );
+}
+
+/**
+ * Publish targeted alerts for specific
+ * component-state changes.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} current
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} previous
+ * @returns {Promise<void>}
+ */
+async function processComponentTransitions(
+    client,
+    current,
+    previous
+) {
+    if (
+        previous.databaseConnected &&
+        !current.databaseConnected
+    ) {
+        await logAlert(
+            client,
+            {
+                title:
+                    'PostgreSQL Connection Lost',
+
+                message:
+                    'Umbra can no longer communicate with the PostgreSQL database.',
+
+                severity:
+                    'critical',
+
+                fields: [
+                    {
+                        name:
+                            '🗄️ Database State',
+
+                        value:
+                            '`DISCONNECTED`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🌙 Affected Systems',
+
+                        value:
+                            [
+                                '• Soul Records',
+                                '• Levels',
+                                '• Achievements',
+                                '• Chronicle Titles',
+                                '• Arrancar Ranks',
+                                '• Kingdom Records'
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        !previous.databaseConnected &&
+        current.databaseConnected
+    ) {
+        await logTerminal(
+            client,
+            {
+                level:
+                    'success',
+
+                title:
+                    'PostgreSQL Connection Restored',
+
+                message:
+                    'Database communication has been restored and dependent systems may resume normal operation.',
+
+                fields: [
+                    {
+                        name:
+                            '🗄️ Database State',
+
+                        value:
+                            '`CONNECTED`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '⚡ Current Latency',
+
+                        value:
+                            current.databaseLatency !==
+                            null
+                                ? `\`${current.databaseLatency} ms\``
+                                : '`Unavailable`',
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        previous.gatewayLatencyState ===
+            'normal' &&
+        current.gatewayLatencyState !==
+            'normal'
+    ) {
+        await logAlert(
+            client,
+            {
+                title:
+                    'Gateway Latency Increased',
+
+                message:
+                    'Umbra detected unusually high Discord Gateway latency.',
+
+                severity:
+                    current.gatewayLatencyState ===
+                        'critical'
+                        ? 'critical'
+                        : 'warning',
+
+                fields: [
+                    {
+                        name:
+                            '📡 Current Latency',
+
+                        value:
+                            `\`${current.gatewayPing} ms\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '⚠️ Latency State',
+
+                        value:
+                            `\`${current.gatewayLatencyState.toUpperCase()}\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        previous.gatewayLatencyState !==
+            'normal' &&
+        current.gatewayLatencyState ===
+            'normal'
+    ) {
+        await logTerminal(
+            client,
+            {
+                level:
+                    'success',
+
+                title:
+                    'Gateway Latency Normalized',
+
+                message:
+                    'Discord Gateway latency has returned to a normal operating range.',
+
+                fields: [
+                    {
+                        name:
+                            '📡 Current Latency',
+
+                        value:
+                            `\`${current.gatewayPing} ms\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        previous.memoryState ===
+            'normal' &&
+        current.memoryState !==
+            'normal'
+    ) {
+        await logAlert(
+            client,
+            {
+                title:
+                    'High Memory Usage Detected',
+
+                message:
+                    'Umbra process memory usage exceeded the configured safety threshold.',
+
+                severity:
+                    current.memoryState ===
+                        'critical'
+                        ? 'critical'
+                        : 'warning',
+
+                fields: [
+                    {
+                        name:
+                            '🧠 Current RSS',
+
+                        value:
+                            `\`${formatBytes(
+                                current.memoryUsage.rss
+                            )}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '⚠️ Memory State',
+
+                        value:
+                            `\`${current.memoryState.toUpperCase()}\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        previous.memoryState !==
+            'normal' &&
+        current.memoryState ===
+            'normal'
+    ) {
+        await logTerminal(
+            client,
+            {
+                level:
+                    'success',
+
+                title:
+                    'Memory Usage Normalized',
+
+                message:
+                    'Umbra process memory usage returned below the configured warning threshold.',
+
+                fields: [
+                    {
+                        name:
+                            '🧠 Current RSS',
+
+                        value:
+                            `\`${formatBytes(
+                                current.memoryUsage.rss
+                            )}\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+}
+
+/**
+ * Compare the latest snapshot with the
+ * previous snapshot and publish alerts.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
+ * @returns {Promise<void>}
+ */
+async function processHealthTransitions(
+    client,
+    snapshot
+) {
+    if (!previousHealthSnapshot) {
+        previousHealthSnapshot =
+            snapshot;
+
+        return;
+    }
+
+    const previousSnapshot =
+        previousHealthSnapshot;
+
+    await processComponentTransitions(
+        client,
+        snapshot,
+        previousSnapshot
+    );
+
+    await processOverallHealthTransition(
+        client,
+        snapshot
+    );
+
+    previousHealthSnapshot =
+        snapshot;
 }/**
  * Find the existing Dashboard message.
  *
@@ -576,9 +1254,20 @@ async function updateTerminalDashboard(
             return false;
         }
 
-        const dashboardEmbed =
-            await buildDashboardEmbed(
+        const snapshot =
+            await collectHealthSnapshot(
                 client
+            );
+
+        await processHealthTransitions(
+            client,
+            snapshot
+        );
+
+        const dashboardEmbed =
+            buildDashboardEmbed(
+                client,
+                snapshot
             );
 
         const existingDashboard =
@@ -634,8 +1323,9 @@ async function updateTerminalDashboard(
  * Start the live Umbra Health
  * Dashboard refresh cycle.
  *
- * The Dashboard updates the same message
- * every 60 seconds.
+ * The first update establishes the
+ * health baseline. Every later update
+ * may publish alerts when state changes.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
@@ -662,6 +1352,9 @@ async function startTerminalDashboard(
         dashboardInterval =
             null;
     }
+
+    previousHealthSnapshot =
+        null;
 
     const initialUpdate =
         await updateTerminalDashboard(
@@ -695,15 +1388,16 @@ async function startTerminalDashboard(
  * @returns {void}
  */
 function stopTerminalDashboard() {
-    if (!dashboardInterval) {
-        return;
+    if (dashboardInterval) {
+        clearInterval(
+            dashboardInterval
+        );
+
+        dashboardInterval =
+            null;
     }
 
-    clearInterval(
-        dashboardInterval
-    );
-
-    dashboardInterval =
+    previousHealthSnapshot =
         null;
 }
 
@@ -719,9 +1413,19 @@ function getDashboardRefreshInterval() {
 
 module.exports = {
     DASHBOARD_REFRESH_INTERVAL,
+    GATEWAY_WARNING_LATENCY,
+    GATEWAY_CRITICAL_LATENCY,
+    MEMORY_WARNING_BYTES,
+    MEMORY_CRITICAL_BYTES,
+
     formatBytes,
     getDatabaseHealth,
+    getMemoryState,
+    getGatewayLatencyState,
+    getOverallHealth,
+    collectHealthSnapshot,
     buildDashboardEmbed,
+    processHealthTransitions,
     updateTerminalDashboard,
     startTerminalDashboard,
     stopTerminalDashboard,
