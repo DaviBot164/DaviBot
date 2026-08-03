@@ -1,5 +1,6 @@
 const {
-    EmbedBuilder
+    EmbedBuilder,
+    PermissionFlagsBits
 } = require('discord.js');
 
 const {
@@ -118,6 +119,43 @@ const MESSAGE_ACHIEVEMENT_RULES = [
 ];
 
 /**
+ * Achievement category colors.
+ */
+const ACHIEVEMENT_CATEGORY_COLORS = {
+    Activity:
+        '#8B0000',
+
+    Progression:
+        '#6A0DAD',
+
+    Exploration:
+        '#5865F2',
+
+    Community:
+        '#57F287',
+
+    Special:
+        '#D4AF37'
+};
+
+/**
+ * Return a valid Achievement color.
+ *
+ * @param {string|null|undefined} category
+ * @returns {string}
+ */
+function getAchievementColor(
+    category
+) {
+    return (
+        ACHIEVEMENT_CATEGORY_COLORS[
+            category
+        ] ||
+        '#8B0000'
+    );
+}
+
+/**
  * Return a thematic message for an
  * unlocked Achievement.
  *
@@ -129,7 +167,7 @@ function getAchievementMessage(
 ) {
     const messages = {
         first_words:
-            'Your first words have been recorded beneath the crimson moon.',
+            'Your first words have been recorded beneath the moon.',
 
         awakened_soul:
             'The dormant power within this Soul has begun to awaken.',
@@ -138,7 +176,7 @@ function getAchievementMessage(
             'Umbra has witnessed this Soul rise beyond the shadows.',
 
         crimson_soul:
-            'The Crimson Moon has acknowledged this Soul’s strength.',
+            'The moon has acknowledged this Soul’s growing strength.',
 
         eternal_soul:
             'This name has been written permanently into the Chronicles.'
@@ -147,13 +185,14 @@ function getAchievementMessage(
     return (
         messages[
             achievementId
-        ] ??
+        ] ||
         'Umbra has recorded a new chapter in this Soul’s journey.'
     );
 }
 
 /**
- * Build the Achievement Unlocked embed.
+ * Create a compact Achievement
+ * unlock Embed.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} achievement
@@ -164,85 +203,140 @@ function createAchievementEmbed(
     achievement
 ) {
     const icon =
-        achievement.icon ||
+        achievement?.icon ||
         '🏆';
+
+    const name =
+        achievement?.name ||
+        'Unknown Achievement';
+
+    const description =
+        achievement?.description ||
+        'No Achievement description is available.';
+
+    const category =
+        achievement?.category ||
+        'General';
+
+    const unlockedAt =
+        Math.floor(
+            Date.now() /
+            1_000
+        );
 
     return new EmbedBuilder()
         .setColor(
-            '#8B0000'
+            getAchievementColor(
+                category
+            )
         )
-
         .setAuthor({
             name:
-                'Umbra Achievement System',
+                'Umbra • Achievement Unlocked',
 
             iconURL:
                 message.client.user
                     .displayAvatarURL({
                         size:
-                            256,
+                            128,
 
                         forceStatic:
                             false
                     })
         })
-
         .setTitle(
-            `${icon} Achievement Unlocked`
+            `${icon} ${name}`
         )
-
         .setDescription(
             [
-                `${message.author}, a new chapter has been added to your Soul Record.`,
+                `${message.author} completed a new Soul Chronicle.`,
                 '',
-                '━━━━━━━━━━━━━━━━━━━━',
+                description,
                 '',
-                `${icon} **${achievement.name}**`,
-                '',
-                achievement.description,
-                '',
-                `*${getAchievementMessage(achievement.id)}*`,
-                '',
-                '━━━━━━━━━━━━━━━━━━━━'
-            ].join(
-                '\n'
-            )
+                `*${getAchievementMessage(
+                    achievement?.id
+                )}*`
+            ].join('\n')
         )
+        .addFields(
+            {
+                name:
+                    '📚 Category',
 
+                value:
+                    `\`${category}\``,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🕒 Unlocked',
+
+                value:
+                    `<t:${unlockedAt}:R>`,
+
+                inline:
+                    true
+            }
+        )
         .setThumbnail(
             message.author
                 .displayAvatarURL({
                     size:
-                        512,
+                        256,
 
                     forceStatic:
                         false
                 })
         )
-
-        .addFields({
-            name:
-                '📜 Chronicle Entry',
-
-            value:
-                [
-                    `**Category:** ${achievement.category}`,
-                    `**Soul:** ${message.author}`,
-                    `**Unlocked:** <t:${Math.floor(Date.now() / 1000)}:R>`
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                false
-        })
-
         .setFooter({
             text:
-                '🌑 Every Soul has a story. Umbra remembers them all.'
+                'Umbra • Soul Archives'
         })
-
         .setTimestamp();
+}
+
+/**
+ * Check whether Umbra may send an
+ * Achievement notification.
+ *
+ * @param {import('discord.js').GuildTextBasedChannel} channel
+ * @param {import('discord.js').GuildMember|null} botMember
+ * @returns {boolean}
+ */
+function canSendAchievementNotification(
+    channel,
+    botMember
+) {
+    if (
+        !channel ||
+        !channel.isTextBased() ||
+        !botMember
+    ) {
+        return false;
+    }
+
+    const permissions =
+        channel.permissionsFor(
+            botMember
+        );
+
+    if (!permissions) {
+        return false;
+    }
+
+    return (
+        permissions.has(
+            PermissionFlagsBits.ViewChannel
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.SendMessages
+        ) &&
+        permissions.has(
+            PermissionFlagsBits.EmbedLinks
+        )
+    );
 }
 
 /**
@@ -254,7 +348,7 @@ function createAchievementEmbed(
  *
  * @param {import('discord.js').Message} message
  * @param {Object} achievement
- * @returns {Promise<void>}
+ * @returns {Promise<import('discord.js').Message|null>}
  */
 async function sendAchievementNotification(
     message,
@@ -264,37 +358,23 @@ async function sendAchievementNotification(
         !message.channel
             ?.isTextBased()
     ) {
-        return;
+        return null;
     }
 
     const botMember =
         message.guild.members.me;
 
-    if (!botMember) {
-        return;
-    }
-
-    const permissions =
-        message.channel.permissionsFor(
-            botMember
-        );
-
     if (
-        !permissions?.has(
-            'ViewChannel'
-        ) ||
-        !permissions?.has(
-            'SendMessages'
-        ) ||
-        !permissions?.has(
-            'EmbedLinks'
+        !canSendAchievementNotification(
+            message.channel,
+            botMember
         )
     ) {
         console.warn(
             `⚠️ Umbra cannot send an Achievement notification in #${message.channel.name}.`
         );
 
-        return;
+        return null;
     }
 
     const achievementEmbed =
@@ -304,9 +384,15 @@ async function sendAchievementNotification(
         );
 
     try {
-        await message.channel.send({
-            embeds:
-                [achievementEmbed]
+        return await message.channel.send({
+            embeds: [
+                achievementEmbed
+            ],
+
+            allowedMentions: {
+                parse:
+                    []
+            }
         });
     } catch (error) {
         console.error(
@@ -316,6 +402,8 @@ async function sendAchievementNotification(
         console.error(
             error
         );
+
+        return null;
     }
 }
 
@@ -349,9 +437,7 @@ async function getMessageLevelRecord(
 
         return null;
     }
-}
-
-/**
+}/**
  * Check every Achievement that may be
  * unlocked through message activity.
  *
@@ -362,12 +448,7 @@ async function checkMessageAchievements(
     message
 ) {
     if (
-        !message?.inGuild?.()
-    ) {
-        return [];
-    }
-
-    if (
+        !message?.inGuild?.() ||
         message.author.bot
     ) {
         return [];
@@ -460,10 +541,7 @@ async function checkMessageAchievements(
 
 /**
  * Check Level-based Achievements using
- * Level data already available to the caller.
- *
- * This will be useful inside the Level System,
- * where the newest Level record is already known.
+ * existing Level data.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -478,13 +556,13 @@ async function checkLevelAchievements({
 }) {
     if (!guildId) {
         throw new TypeError(
-            'A guild ID is required to check Level Achievements.'
+            'A guild ID is required.'
         );
     }
 
     if (!userId) {
         throw new TypeError(
-            'A user ID is required to check Level Achievements.'
+            'A user ID is required.'
         );
     }
 
@@ -510,19 +588,15 @@ async function checkLevelAchievements({
             continue;
         }
 
-        const fakeLevelRecord = {
-            level:
-                safeLevel,
-
-            messageCount:
-                0
-        };
-
         const requirementMet =
             Boolean(
-                rule.check(
-                    fakeLevelRecord
-                )
+                rule.check({
+                    level:
+                        safeLevel,
+
+                    messageCount:
+                        0
+                })
             );
 
         if (!requirementMet) {
@@ -563,8 +637,13 @@ async function checkLevelAchievements({
 module.exports = {
     MESSAGE_ACHIEVEMENT_RULES,
 
-    checkMessageAchievements,
-    checkLevelAchievements,
+    getAchievementColor,
+    getAchievementMessage,
+    createAchievementEmbed,
 
-    sendAchievementNotification
+    canSendAchievementNotification,
+    sendAchievementNotification,
+
+    checkMessageAchievements,
+    checkLevelAchievements
 };

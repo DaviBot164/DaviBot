@@ -57,10 +57,10 @@ const DEFAULT_TITLE_COLOR =
 
 /**
  * Maximum number of Titles displayed
- * inside one notification.
+ * inside one compact notification.
  */
 const MAX_DISPLAYED_TITLES =
-    10;
+    5;
 
 /**
  * Return a valid Title rarity color.
@@ -97,7 +97,8 @@ function getTitleRarityIcon(
 }
 
 /**
- * Safely format one unlocked Title.
+ * Safely format one unlocked Title
+ * for the compact notification.
  *
  * @param {Object} title
  * @returns {string}
@@ -112,20 +113,17 @@ function formatUnlockedTitle(
 
     const rarity =
         title?.rarity ||
-        'Unknown';
+        'Common';
 
     const category =
         title?.category ||
-        'Unknown';
-
-    const description =
-        title?.description ||
-        'No Chronicle description is available.';
+        'General';
 
     return [
-        `${getTitleRarityIcon(rarity)} **${displayName}**`,
-        `-# ${rarity} • ${category}`,
-        `-# ${description}`
+        `${getTitleRarityIcon(
+            rarity
+        )} **${displayName}**`,
+        `-# ${rarity} • ${category}`
     ].join('\n');
 }
 
@@ -172,7 +170,8 @@ function getNotificationColor(
 }
 
 /**
- * Create a Chronicle Title unlock Embed.
+ * Create a compact Chronicle Title
+ * unlock Embed.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -190,7 +189,8 @@ function createTitleUnlockEmbed({
         !Array.isArray(
             titles
         ) ||
-        titles.length === 0
+        titles.length ===
+            0
     ) {
         return null;
     }
@@ -213,121 +213,125 @@ function createTitleUnlockEmbed({
             .map(
                 formatUnlockedTitle
             )
-            .join(
-                '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
-            );
+            .join('\n\n');
 
-    const titleWord =
-        titles.length === 1
-            ? 'Title'
-            : 'Titles';
+    const firstTitle =
+        visibleTitles[0];
 
-    const embed =
-        new EmbedBuilder()
-            .setColor(
-                getNotificationColor(
-                    titles
-                )
+    const description =
+        firstTitle?.description ||
+        'A new Chronicle Title has been added to this Soul Record.';
+
+    const unlockedAt =
+        Math.floor(
+            Date.now() /
+            1_000
+        );
+
+    return new EmbedBuilder()
+        .setColor(
+            getNotificationColor(
+                titles
             )
-            .setAuthor({
-                name:
-                    `${member.displayName} • Soul Archives`,
+        )
+        .setAuthor({
+            name:
+                'Umbra • Chronicle Title Unlocked',
 
-                iconURL:
-                    member.user
-                        .displayAvatarURL({
-                            size:
-                                256,
-
-                            forceStatic:
-                                false
-                        })
-            })
-            .setTitle(
-                titles.length === 1
-                    ? '🏷️ New Chronicle Title Unlocked'
-                    : `🏷️ ${titles.length} Chronicle Titles Unlocked`
-            )
-            .setDescription(
-                [
-                    `${member} has earned new recognition within Las Noches.`,
-                    '',
-                    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-                    '',
-                    '*Umbra has permanently preserved this designation inside the Soul Archives.*'
-                ].join('\n')
-            )
-            .addFields(
-                {
-                    name:
-                        `📖 Unlocked ${titleWord}`,
-
-                    value:
-                        [
-                            titleList,
-
-                            hiddenTitleCount > 0
-                                ? `\n-# +${hiddenTitleCount} additional Titles were recorded.`
-                                : null
-                        ]
-                            .filter(
-                                Boolean
-                            )
-                            .join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🌙 Unlock Source',
-
-                    value:
-                        source,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '⚔️ Activation',
-
-                    value:
-                        [
-                            'Use `/settitle` to select one of your unlocked Titles.',
-                            '',
-                            '-# Unlocking a Title does not automatically replace the currently active Title.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                }
-            )
-            .setThumbnail(
+            iconURL:
                 member.user
                     .displayAvatarURL({
                         size:
-                            1024,
+                            128,
 
                         forceStatic:
                             false
                     })
-            )
-            .setFooter({
-                text:
-                    '🌙 Umbra • Guardian of Las Noches'
-            })
-            .setTimestamp();
+        })
+        .setTitle(
+            titles.length ===
+                1
+                ? '🏷️ New Title Earned'
+                : `🏷️ ${titles.length} New Titles Earned`
+        )
+        .setDescription(
+            [
+                `${member} received new recognition within Las Noches.`,
+                '',
+                titleList,
+                '',
+                hiddenTitleCount > 0
+                    ? `-# +${hiddenTitleCount} additional Titles were recorded.`
+                    : null
+            ]
+                .filter(
+                    Boolean
+                )
+                .join('\n')
+        )
+        .addFields(
+            {
+                name:
+                    '📖 Chronicle',
 
-    return embed;
-}
+                value:
+                    description,
 
-/**
+                inline:
+                    false
+            },
+            {
+                name:
+                    '⚙️ Source',
+
+                value:
+                    `\`${source}\``,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🕒 Unlocked',
+
+                value:
+                    `<t:${unlockedAt}:R>`,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '⚔️ Activation',
+
+                value:
+                    'Use `/settitle` to activate an unlocked Title.',
+
+                inline:
+                    false
+            }
+        )
+        .setThumbnail(
+            member.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
+        )
+        .setFooter({
+            text:
+                'Umbra • Soul Archives'
+        })
+        .setTimestamp();
+}/**
  * Check whether Umbra may send messages
  * and embeds in a channel.
  *
  * @param {import('discord.js').GuildTextBasedChannel} channel
- * @param {import('discord.js').GuildMember} botMember
+ * @param {import('discord.js').GuildMember|null} botMember
  * @returns {boolean}
  */
 function canSendTitleNotification(
@@ -365,12 +369,11 @@ function canSendTitleNotification(
 }
 
 /**
- * Send a Chronicle Title notification.
+ * Send a compact Chronicle Title
+ * notification.
  *
- * The notification is intentionally
- * non-fatal. A failed notification must
- * never interrupt XP, Achievement,
- * Rank or Title database operations.
+ * Notification failures never interrupt
+ * Achievement, Level, Rank or Title logic.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -391,7 +394,8 @@ async function sendTitleUnlockNotification({
         !Array.isArray(
             titles
         ) ||
-        titles.length === 0
+        titles.length ===
+            0
     ) {
         return null;
     }
@@ -425,17 +429,13 @@ async function sendTitleUnlockNotification({
 
     try {
         return await channel.send({
-            content:
-                `${member}`,
-
             embeds: [
                 embed
             ],
 
             allowedMentions: {
-                users: [
-                    member.id
-                ]
+                parse:
+                    []
             }
         });
     } catch (error) {
