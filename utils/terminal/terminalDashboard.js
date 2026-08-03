@@ -9,17 +9,17 @@ const {
 
 const {
     TERMINAL_CHANNEL_ID,
-    formatUptime,
-    logTerminal
+    formatUptime
 } = require('./terminalLogger');
-
-const {
-    logAlert
-} = require('./alertLogger');
 
 const {
     logIncident
 } = require('./incidentLogger');
+
+const {
+    collectTerminalStatistics,
+    createStatisticsFields
+} = require('./terminalStatistics');
 
 /**
  * Health Dashboard refresh interval.
@@ -28,7 +28,7 @@ const DASHBOARD_REFRESH_INTERVAL =
     60_000;
 
 /**
- * Gateway latency thresholds.
+ * Discord Gateway latency thresholds.
  */
 const GATEWAY_WARNING_LATENCY =
     500;
@@ -68,7 +68,7 @@ let dashboardInterval =
  * Last known system-health snapshot.
  *
  * The first Dashboard update establishes
- * the baseline and does not send alerts.
+ * the baseline and does not send Incidents.
  */
 let previousHealthSnapshot =
     null;
@@ -143,6 +143,35 @@ async function getDatabaseHealth() {
             latency:
                 null
         };
+    }
+}
+
+/**
+ * Safely collect Umbra Core Statistics.
+ *
+ * A Statistics failure must not prevent
+ * the Health Dashboard from updating.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @returns {Promise<Object|null>}
+ */
+async function getTerminalStatistics(
+    client
+) {
+    try {
+        return await collectTerminalStatistics(
+            client
+        );
+    } catch (error) {
+        console.error(
+            '⚠️ Umbra Terminal statistics collection failed:'
+        );
+
+        console.error(
+            error
+        );
+
+        return null;
     }
 }
 
@@ -367,6 +396,7 @@ function getOverallHealth({
  *     memberCount: number,
  *     commandCount: number,
  *     checkedAt: number,
+ *     statistics: Object|null,
  *     overallHealth: {
  *         label: 'HEALTHY'|'DEGRADED'|'CRITICAL',
  *         emoji: string,
@@ -389,8 +419,16 @@ async function collectHealthSnapshot(
             )
         );
 
-    const databaseHealth =
-        await getDatabaseHealth();
+    const [
+        databaseHealth,
+        statistics
+    ] = await Promise.all([
+        getDatabaseHealth(),
+
+        getTerminalStatistics(
+            client
+        )
+    ]);
 
     const memoryUsage =
         process.memoryUsage();
@@ -406,9 +444,11 @@ async function collectHealthSnapshot(
         );
 
     const guildCount =
+        statistics?.guildCount ??
         client.guilds.cache.size;
 
     const memberCount =
+        statistics?.memberCount ??
         client.guilds.cache.reduce(
             (
                 total,
@@ -421,6 +461,7 @@ async function collectHealthSnapshot(
         );
 
     const commandCount =
+        statistics?.commandCount ??
         client.commands?.size ??
         0;
 
@@ -460,6 +501,9 @@ async function collectHealthSnapshot(
         memberCount,
         commandCount,
         checkedAt,
+
+        statistics,
+
         overallHealth
     };
 }/**
@@ -483,8 +527,185 @@ function buildDashboardEmbed(
         memberCount,
         commandCount,
         checkedAt,
+        statistics,
         overallHealth
     } = snapshot;
+
+    const dashboardFields = [
+        {
+            name:
+                '📡 Discord Gateway',
+
+            value:
+                [
+                    `**Status:** ${
+                        gatewayConnected
+                            ? '`CONNECTED`'
+                            : '`DISCONNECTED`'
+                    }`,
+                    `**Latency:** \`${gatewayPing} ms\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🗄️ PostgreSQL',
+
+            value:
+                [
+                    `**Status:** ${
+                        databaseConnected
+                            ? '`CONNECTED`'
+                            : '`DISCONNECTED`'
+                    }`,
+                    `**Latency:** ${
+                        databaseLatency !==
+                        null
+                            ? `\`${databaseLatency} ms\``
+                            : '`Unavailable`'
+                    }`
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '⏱️ Process',
+
+            value:
+                [
+                    `**Uptime:** \`${formatUptime(
+                        process.uptime() *
+                        1_000
+                    )}\``,
+                    `**PID:** \`${process.pid}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🧠 Memory',
+
+            value:
+                [
+                    `**RSS:** \`${formatBytes(
+                        memoryUsage.rss
+                    )}\``,
+                    `**Heap Used:** \`${formatBytes(
+                        memoryUsage.heapUsed
+                    )}\``,
+                    `**Heap Total:** \`${formatBytes(
+                        memoryUsage.heapTotal
+                    )}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '⚙️ Command Core',
+
+            value:
+                [
+                    '**Status:** `READY`',
+                    `**Loaded:** \`${commandCount}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🌙 Kingdom Network',
+
+            value:
+                [
+                    `**Servers:** \`${guildCount}\``,
+                    `**Souls:** \`${memberCount}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🛡️ Guardian',
+
+            value:
+                [
+                    '**Status:** `ACTIVE`',
+                    '**Monitoring:** `ENABLED`'
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🎫 Ticket Core',
+
+            value:
+                [
+                    '**Status:** `READY`',
+                    '**System:** `OPERATIONAL`'
+                ].join('\n'),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🕒 Last Health Check',
+
+            value:
+                `<t:${checkedAt}:F>\n<t:${checkedAt}:R>`,
+
+            inline:
+                true
+        }
+    ];
+
+    if (statistics) {
+        dashboardFields.push(
+            {
+                name:
+                    '━━━━━━━━ UMBRA CORE STATISTICS ━━━━━━━━',
+
+                value:
+                    [
+                        'Live operational statistics collected from',
+                        'Discord, PostgreSQL and the current Node.js process.'
+                    ].join('\n'),
+
+                inline:
+                    false
+            },
+            ...createStatisticsFields(
+                statistics
+            )
+        );
+    } else {
+        dashboardFields.push({
+            name:
+                '📊 Umbra Core Statistics',
+
+            value:
+                [
+                    '`STATISTICS TEMPORARILY UNAVAILABLE`',
+                    '',
+                    'The Health Dashboard remains operational.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
 
     return new EmbedBuilder()
         .setColor(
@@ -520,154 +741,18 @@ function buildDashboardEmbed(
             ].join('\n')
         )
         .addFields(
-            {
-                name:
-                    '📡 Discord Gateway',
-
-                value:
-                    [
-                        `**Status:** ${
-                            gatewayConnected
-                                ? '`CONNECTED`'
-                                : '`DISCONNECTED`'
-                        }`,
-                        `**Latency:** \`${gatewayPing} ms\``
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🗄️ PostgreSQL',
-
-                value:
-                    [
-                        `**Status:** ${
-                            databaseConnected
-                                ? '`CONNECTED`'
-                                : '`DISCONNECTED`'
-                        }`,
-                        `**Latency:** ${
-                            databaseLatency !==
-                            null
-                                ? `\`${databaseLatency} ms\``
-                                : '`Unavailable`'
-                        }`
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '⏱️ Process',
-
-                value:
-                    [
-                        `**Uptime:** \`${formatUptime(
-                            process.uptime() *
-                            1_000
-                        )}\``,
-                        `**PID:** \`${process.pid}\``
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🧠 Memory',
-
-                value:
-                    [
-                        `**RSS:** \`${formatBytes(
-                            memoryUsage.rss
-                        )}\``,
-                        `**Heap Used:** \`${formatBytes(
-                            memoryUsage.heapUsed
-                        )}\``,
-                        `**Heap Total:** \`${formatBytes(
-                            memoryUsage.heapTotal
-                        )}\``
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '⚙️ Command Core',
-
-                value:
-                    [
-                        '**Status:** `READY`',
-                        `**Loaded:** \`${commandCount}\``
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🌙 Kingdom Network',
-
-                value:
-                    [
-                        `**Servers:** \`${guildCount}\``,
-                        `**Souls:** \`${memberCount}\``
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🛡️ Guardian',
-
-                value:
-                    [
-                        '**Status:** `ACTIVE`',
-                        '**Monitoring:** `ENABLED`'
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🎫 Ticket Core',
-
-                value:
-                    [
-                        '**Status:** `READY`',
-                        '**System:** `OPERATIONAL`'
-                    ].join('\n'),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🕒 Last Health Check',
-
-                value:
-                    `<t:${checkedAt}:F>\n<t:${checkedAt}:R>`,
-
-                inline:
-                    true
-            }
+            dashboardFields
         )
         .setFooter({
             text:
-                'Umbra • Live System Diagnostics'
+                'Umbra • Live System Diagnostics & Statistics'
         })
         .setTimestamp();
 }
 
 /**
  * Convert one snapshot into compact
- * diagnostic fields.
+ * Incident diagnostic fields.
  *
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
  * @returns {Array<{
@@ -850,9 +935,7 @@ async function processOverallHealthTransition(
             ]
         }
     );
-}
-
-/**
+}/**
  * Publish standardized Incidents for
  * individual component-state changes.
  *
@@ -1130,6 +1213,18 @@ async function processComponentTransitions(
 
                         inline:
                             true
+                    },
+                    {
+                        name:
+                            '📊 Memory Share',
+
+                        value:
+                            current.statistics
+                                ? `\`${current.statistics.memoryPercentage.toFixed(2)}%\``
+                                : '`Unavailable`',
+
+                        inline:
+                            true
                     }
                 ]
             }
@@ -1157,6 +1252,18 @@ async function processComponentTransitions(
                             `\`${formatBytes(
                                 current.memoryUsage.rss
                             )}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '📊 Memory Share',
+
+                        value:
+                            current.statistics
+                                ? `\`${current.statistics.memoryPercentage.toFixed(2)}%\``
+                                : '`Unavailable`',
 
                         inline:
                             true
@@ -1242,8 +1349,7 @@ async function findDashboardMessage(
     const recentMessages =
         await channel.messages
             .fetch({
-                limit:
-                    25
+                limit: 25
             })
             .catch(
                 () => null
@@ -1253,7 +1359,7 @@ async function findDashboardMessage(
         return null;
     }
 
-    const existingDashboard =
+    const dashboard =
         recentMessages.find(
             message =>
                 message.author.id ===
@@ -1263,20 +1369,18 @@ async function findDashboardMessage(
                         embed.author?.name ===
                         'Umbra Core Health Monitor'
                 )
-        ) ||
-        null;
+        ) || null;
 
-    if (existingDashboard) {
+    if (dashboard) {
         dashboardMessageId =
-            existingDashboard.id;
+            dashboard.id;
     }
 
-    return existingDashboard;
+    return dashboard;
 }
 
 /**
- * Create or update the live
- * Umbra Health Dashboard.
+ * Update or create the Dashboard.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
@@ -1311,51 +1415,37 @@ async function updateTerminalDashboard(
             snapshot
         );
 
-        const dashboardEmbed =
+        const embed =
             buildDashboardEmbed(
                 client,
                 snapshot
             );
 
-        const existingDashboard =
+        const existing =
             await findDashboardMessage(
                 channel
             );
 
-        if (existingDashboard) {
-            await existingDashboard.edit({
-                embeds: [
-                    dashboardEmbed
-                ],
-
-                allowedMentions: {
-                    parse:
-                        []
-                }
+        if (existing) {
+            await existing.edit({
+                embeds: [embed]
             });
 
             return true;
         }
 
-        const newDashboardMessage =
+        const created =
             await channel.send({
-                embeds: [
-                    dashboardEmbed
-                ],
-
-                allowedMentions: {
-                    parse:
-                        []
-                }
+                embeds: [embed]
             });
 
         dashboardMessageId =
-            newDashboardMessage.id;
+            created.id;
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra Health Dashboard update failed:'
+            '❌ Failed to update Umbra Dashboard:'
         );
 
         console.error(
@@ -1367,12 +1457,7 @@ async function updateTerminalDashboard(
 }
 
 /**
- * Start the live Umbra Health
- * Dashboard refresh cycle.
- *
- * The first update establishes the
- * health baseline. Every later update
- * may publish standardized Incidents.
+ * Start Dashboard updates.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
@@ -1381,29 +1466,17 @@ async function startTerminalDashboard(
     client
 ) {
     if (
-        !client ||
-        !client.isReady()
+        dashboardInterval
     ) {
-        console.warn(
-            '⚠️ Umbra Health Dashboard could not start because the client is not ready.'
-        );
-
-        return false;
-    }
-
-    if (dashboardInterval) {
         clearInterval(
             dashboardInterval
         );
-
-        dashboardInterval =
-            null;
     }
 
     previousHealthSnapshot =
         null;
 
-    const initialUpdate =
+    const initial =
         await updateTerminalDashboard(
             client
         );
@@ -1415,27 +1488,21 @@ async function startTerminalDashboard(
                     client
                 );
             },
-
             DASHBOARD_REFRESH_INTERVAL
         );
 
-    /*
-     * Allow Node.js to exit naturally
-     * during shutdown.
-     */
     dashboardInterval.unref?.();
 
-    return initialUpdate;
+    return initial;
 }
 
 /**
- * Stop the live Umbra Health
- * Dashboard refresh cycle.
- *
- * @returns {void}
+ * Stop Dashboard updates.
  */
 function stopTerminalDashboard() {
-    if (dashboardInterval) {
+    if (
+        dashboardInterval
+    ) {
         clearInterval(
             dashboardInterval
         );
@@ -1449,8 +1516,7 @@ function stopTerminalDashboard() {
 }
 
 /**
- * Return the current Dashboard
- * refresh interval.
+ * Return refresh interval.
  *
  * @returns {number}
  */
@@ -1460,21 +1526,31 @@ function getDashboardRefreshInterval() {
 
 module.exports = {
     DASHBOARD_REFRESH_INTERVAL,
+
     GATEWAY_WARNING_LATENCY,
     GATEWAY_CRITICAL_LATENCY,
+
     MEMORY_WARNING_BYTES,
     MEMORY_CRITICAL_BYTES,
 
     formatBytes,
+
     getDatabaseHealth,
+
     getMemoryState,
     getGatewayLatencyState,
     getOverallHealth,
+
     collectHealthSnapshot,
+
     buildDashboardEmbed,
+
     processHealthTransitions,
+
     updateTerminalDashboard,
+
     startTerminalDashboard,
     stopTerminalDashboard,
+
     getDashboardRefreshInterval
 };
