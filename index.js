@@ -21,18 +21,11 @@ const {
     closeConnection
 } = require('./database');
 
-const {
-    logTerminal
-} = require('./utils/terminal/terminalLogger');
-
-const {
-    logAlert
-} = require('./utils/terminal/alertLogger');
-
-const {
-    startTerminalDashboard,
-    stopTerminalDashboard
-} = require('./utils/terminal/terminalDashboard');
+/**
+ * Central Umbra Core Terminal API.
+ */
+const terminal =
+    require('./utils/terminal');
 
 /**
  * Server that Umbra must leave.
@@ -329,12 +322,9 @@ async function publishBootSequence(
             0
         );
 
-    return logTerminal(
+    return terminal.success(
         readyClient,
         {
-            level:
-                'success',
-
             title:
                 'Umbra Core Online',
 
@@ -357,6 +347,7 @@ async function publishBootSequence(
                             '+ Kingdom Records Available',
                             '+ Arrancar Registry Online',
                             '+ Alert Engine Armed',
+                            '+ Incident Engine Ready',
                             '+ Health Monitor Active',
                             '```'
                         ].join('\n'),
@@ -610,7 +601,7 @@ client.once(
          */
         try {
             const dashboardStarted =
-                await startTerminalDashboard(
+                await terminal.dashboard.start(
                     readyClient
                 );
 
@@ -680,6 +671,72 @@ client.on(
             console.error(
                 error
             );
+
+            /*
+             * Publish a standardized
+             * command-failure incident.
+             */
+            if (
+                client.isReady()
+            ) {
+                await terminal.incident(
+                    client,
+                    {
+                        type:
+                            'COMMAND_FAILURE',
+
+                        message:
+                            `Umbra encountered an unexpected error while executing /${interaction.commandName}.`,
+
+                        fields: [
+                            {
+                                name:
+                                    '⚙️ Command',
+
+                                value:
+                                    `/${interaction.commandName}`,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🌙 User',
+
+                                value:
+                                    `${interaction.user.tag}\n\`${interaction.user.id}\``,
+
+                                inline:
+                                    true
+                            },
+                            {
+                                name:
+                                    '🏰 Server',
+
+                                value:
+                                    interaction.guild
+                                        ? `${interaction.guild.name}\n\`${interaction.guild.id}\``
+                                        : 'Direct Message',
+
+                                inline:
+                                    true
+                            }
+                        ],
+
+                        error
+                    }
+                ).catch(
+                    terminalError => {
+                        console.error(
+                            '❌ Failed to publish the command incident:'
+                        );
+
+                        console.error(
+                            terminalError
+                        );
+                    }
+                );
+            }
 
             await sendCommandError(
                 interaction
@@ -760,7 +817,7 @@ async function shutdown(
      * Stop Dashboard updates before
      * beginning the shutdown sequence.
      */
-    stopTerminalDashboard();
+    terminal.dashboard.stop();
 
     /*
      * Attempt to publish a final Terminal
@@ -770,12 +827,9 @@ async function shutdown(
         if (
             client.isReady()
         ) {
-            await logTerminal(
+            await terminal.warning(
                 client,
                 {
-                    level:
-                        'warning',
-
                     title:
                         'Umbra Core Shutdown',
 
@@ -942,7 +996,7 @@ function limitDiagnosticText(
 ) {
     if (
         typeof text !==
-        'string' ||
+            'string' ||
         text.length ===
             0
     ) {
@@ -968,7 +1022,7 @@ function limitDiagnosticText(
 
 /**
  * Publish one process-level warning
- * inside Umbra Core Terminal.
+ * through the central Terminal API.
  *
  * @param {string} title
  * @param {string} message
@@ -995,7 +1049,7 @@ async function publishProcessWarning(
         return;
     }
 
-    await logAlert(
+    await terminal.alert(
         client,
         {
             title,
@@ -1072,12 +1126,12 @@ async function handleFatalProcessError(
         '======================================'
     );
 
-    stopTerminalDashboard();
+    terminal.dashboard.stop();
 
     if (
         client.isReady()
     ) {
-        await logAlert(
+        await terminal.alert(
             client,
             {
                 title:

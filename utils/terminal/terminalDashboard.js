@@ -17,6 +17,10 @@ const {
     logAlert
 } = require('./alertLogger');
 
+const {
+    logIncident
+} = require('./incidentLogger');
+
 /**
  * Health Dashboard refresh interval.
  */
@@ -663,7 +667,7 @@ function buildDashboardEmbed(
 
 /**
  * Convert one snapshot into compact
- * alert diagnostic fields.
+ * diagnostic fields.
  *
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
  * @returns {Array<{
@@ -754,29 +758,21 @@ function createHealthAlertFields(
 }
 
 /**
- * Publish an alert when overall system
- * health changes.
- *
- * The first collected snapshot establishes
- * a baseline and does not create an alert.
+ * Publish a standardized Incident when
+ * the overall system health changes.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
+ * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} previous
  * @returns {Promise<void>}
  */
 async function processOverallHealthTransition(
     client,
-    snapshot
+    snapshot,
+    previous
 ) {
-    if (!previousHealthSnapshot) {
-        previousHealthSnapshot =
-            snapshot;
-
-        return;
-    }
-
     const previousLabel =
-        previousHealthSnapshot
+        previous
             .overallHealth
             .label;
 
@@ -801,14 +797,11 @@ async function processOverallHealthTransition(
         currentLabel ===
         'HEALTHY'
     ) {
-        await logTerminal(
+        await logIncident(
             client,
             {
-                level:
-                    'success',
-
-                title:
-                    'System Health Restored',
+                type:
+                    'SYSTEM_RECOVERED',
 
                 message:
                     `Umbra recovered from ${previousLabel} status. All monitored systems are operating normally again.`,
@@ -820,14 +813,11 @@ async function processOverallHealthTransition(
         return;
     }
 
-    await logAlert(
+    await logIncident(
         client,
         {
-            title:
-                currentLabel ===
-                    'CRITICAL'
-                    ? 'Critical System Health Alert'
-                    : 'System Performance Warning',
+            type:
+                'SYSTEM_WARNING',
 
             message:
                 currentLabel ===
@@ -835,20 +825,36 @@ async function processOverallHealthTransition(
                     ? 'Umbra detected a critical system condition requiring immediate investigation.'
                     : 'Umbra detected degraded performance in one or more monitored systems.',
 
-            severity:
-                currentLabel ===
-                    'CRITICAL'
-                    ? 'critical'
-                    : 'warning',
+            fields: [
+                ...fields,
+                {
+                    name:
+                        '⚠️ Previous State',
 
-            fields
+                    value:
+                        `\`${previousLabel}\``,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🚨 Current State',
+
+                    value:
+                        `\`${currentLabel}\``,
+
+                    inline:
+                        true
+                }
+            ]
         }
     );
 }
 
 /**
- * Publish targeted alerts for specific
- * component-state changes.
+ * Publish standardized Incidents for
+ * individual component-state changes.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} current
@@ -864,17 +870,11 @@ async function processComponentTransitions(
         previous.databaseConnected &&
         !current.databaseConnected
     ) {
-        await logAlert(
+        await logIncident(
             client,
             {
-                title:
-                    'PostgreSQL Connection Lost',
-
-                message:
-                    'Umbra can no longer communicate with the PostgreSQL database.',
-
-                severity:
-                    'critical',
+                type:
+                    'DATABASE_DISCONNECTED',
 
                 fields: [
                     {
@@ -889,7 +889,17 @@ async function processComponentTransitions(
                     },
                     {
                         name:
-                            '🌙 Affected Systems',
+                            '🌙 Overall Health',
+
+                        value:
+                            `\`${current.overallHealth.label}\``,
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '⚠️ Affected Systems',
 
                         value:
                             [
@@ -913,17 +923,11 @@ async function processComponentTransitions(
         !previous.databaseConnected &&
         current.databaseConnected
     ) {
-        await logTerminal(
+        await logIncident(
             client,
             {
-                level:
-                    'success',
-
-                title:
-                    'PostgreSQL Connection Restored',
-
-                message:
-                    'Database communication has been restored and dependent systems may resume normal operation.',
+                type:
+                    'DATABASE_RESTORED',
 
                 fields: [
                     {
@@ -955,25 +959,88 @@ async function processComponentTransitions(
     }
 
     if (
+        previous.gatewayConnected &&
+        !current.gatewayConnected
+    ) {
+        await logIncident(
+            client,
+            {
+                type:
+                    'GATEWAY_DISCONNECTED',
+
+                fields: [
+                    {
+                        name:
+                            '📡 Gateway State',
+
+                        value:
+                            '`DISCONNECTED`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '🌙 Overall Health',
+
+                        value:
+                            `\`${current.overallHealth.label}\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
+        !previous.gatewayConnected &&
+        current.gatewayConnected
+    ) {
+        await logIncident(
+            client,
+            {
+                type:
+                    'GATEWAY_RESTORED',
+
+                fields: [
+                    {
+                        name:
+                            '📡 Gateway State',
+
+                        value:
+                            '`CONNECTED`',
+
+                        inline:
+                            true
+                    },
+                    {
+                        name:
+                            '⚡ Current Latency',
+
+                        value:
+                            `\`${current.gatewayPing} ms\``,
+
+                        inline:
+                            true
+                    }
+                ]
+            }
+        );
+    }
+
+    if (
         previous.gatewayLatencyState ===
             'normal' &&
         current.gatewayLatencyState !==
             'normal'
     ) {
-        await logAlert(
+        await logIncident(
             client,
             {
-                title:
-                    'Gateway Latency Increased',
-
-                message:
-                    'Umbra detected unusually high Discord Gateway latency.',
-
-                severity:
-                    current.gatewayLatencyState ===
-                        'critical'
-                        ? 'critical'
-                        : 'warning',
+                type:
+                    'HIGH_GATEWAY_LATENCY',
 
                 fields: [
                     {
@@ -1007,17 +1074,11 @@ async function processComponentTransitions(
         current.gatewayLatencyState ===
             'normal'
     ) {
-        await logTerminal(
+        await logIncident(
             client,
             {
-                level:
-                    'success',
-
-                title:
-                    'Gateway Latency Normalized',
-
-                message:
-                    'Discord Gateway latency has returned to a normal operating range.',
+                type:
+                    'GATEWAY_LATENCY_NORMALIZED',
 
                 fields: [
                     {
@@ -1041,20 +1102,11 @@ async function processComponentTransitions(
         current.memoryState !==
             'normal'
     ) {
-        await logAlert(
+        await logIncident(
             client,
             {
-                title:
-                    'High Memory Usage Detected',
-
-                message:
-                    'Umbra process memory usage exceeded the configured safety threshold.',
-
-                severity:
-                    current.memoryState ===
-                        'critical'
-                        ? 'critical'
-                        : 'warning',
+                type:
+                    'HIGH_MEMORY_USAGE',
 
                 fields: [
                     {
@@ -1090,17 +1142,11 @@ async function processComponentTransitions(
         current.memoryState ===
             'normal'
     ) {
-        await logTerminal(
+        await logIncident(
             client,
             {
-                level:
-                    'success',
-
-                title:
-                    'Memory Usage Normalized',
-
-                message:
-                    'Umbra process memory usage returned below the configured warning threshold.',
+                type:
+                    'MEMORY_USAGE_NORMALIZED',
 
                 fields: [
                     {
@@ -1123,7 +1169,7 @@ async function processComponentTransitions(
 
 /**
  * Compare the latest snapshot with the
- * previous snapshot and publish alerts.
+ * previous snapshot and publish Incidents.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
@@ -1151,7 +1197,8 @@ async function processHealthTransitions(
 
     await processOverallHealthTransition(
         client,
-        snapshot
+        snapshot,
+        previousSnapshot
     );
 
     previousHealthSnapshot =
@@ -1325,7 +1372,7 @@ async function updateTerminalDashboard(
  *
  * The first update establishes the
  * health baseline. Every later update
- * may publish alerts when state changes.
+ * may publish standardized Incidents.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
