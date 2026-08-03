@@ -27,12 +27,17 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS warnings_guild_user_index
-        ON warnings (guild_id, user_id);
+        ON warnings (
+            guild_id,
+            user_id
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS warnings_created_at_index
-        ON warnings (created_at DESC);
+        ON warnings (
+            created_at DESC
+        );
     `);
 
     /*
@@ -61,17 +66,25 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS automod_cases_guild_user_index
-        ON automod_cases (guild_id, user_id);
+        ON automod_cases (
+            guild_id,
+            user_id
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS automod_cases_guild_id_index
-        ON automod_cases (guild_id, id DESC);
+        ON automod_cases (
+            guild_id,
+            id DESC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS automod_cases_created_at_index
-        ON automod_cases (created_at DESC);
+        ON automod_cases (
+            created_at DESC
+        );
     `);
 
     /*
@@ -101,21 +114,137 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS raid_cases_guild_status_index
-        ON raid_cases (guild_id, status);
+        ON raid_cases (
+            guild_id,
+            status
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS raid_cases_guild_id_index
-        ON raid_cases (guild_id, id DESC);
+        ON raid_cases (
+            guild_id,
+            id DESC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS raid_cases_detected_at_index
-        ON raid_cases (detected_at DESC);
+        ON raid_cases (
+            detected_at DESC
+        );
     `);
 
     /*
-     * Crimson Eclipse Event System
+     * ======================================================
+     * Umbra Monthly Rank Trials System
+     * ======================================================
+     *
+     * Stores every automatic Rank Trial
+     * announcement published by Umbra.
+     *
+     * The unique constraint prevents duplicate
+     * announcements after restart or redeploy.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS rank_trial_publications (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+
+            trial_key VARCHAR(7) NOT NULL,
+
+            publication_type VARCHAR(50) NOT NULL,
+
+            channel_id VARCHAR(32) NOT NULL,
+
+            message_id VARCHAR(32),
+
+            scheduled_for TIMESTAMPTZ NOT NULL,
+
+            published_at TIMESTAMPTZ,
+
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            CONSTRAINT rank_trial_publications_type_valid
+                CHECK (
+                    publication_type IN (
+                        'OPENING',
+                        'REGISTRATION_REMINDER',
+                        'FINAL_REMINDER',
+                        'BATTLE_START',
+                        'CLOSING'
+                    )
+                ),
+
+            CONSTRAINT rank_trial_publications_trial_key_valid
+                CHECK (
+                    trial_key ~
+                    '^[0-9]{4}-(0[1-9]|1[0-2])$'
+                ),
+
+            CONSTRAINT rank_trial_publications_unique
+                UNIQUE (
+                    guild_id,
+                    trial_key,
+                    publication_type
+                )
+        );
+    `);
+
+    /*
+     * Quickly loads the complete announcement
+     * history of one monthly Rank Trial.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_publications_trial_index
+        ON rank_trial_publications (
+            guild_id,
+            trial_key,
+            scheduled_for ASC
+        );
+    `);
+
+    /*
+     * Used when checking scheduled and
+     * unfinished Rank Trial publications.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_publications_schedule_index
+        ON rank_trial_publications (
+            scheduled_for ASC
+        );
+    `);
+
+    /*
+     * Used when loading recently published
+     * Rank Trial announcements.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_publications_published_index
+        ON rank_trial_publications (
+            guild_id,
+            published_at DESC
+        )
+        WHERE published_at IS NOT NULL;
+    `);
+
+    /*
+     * Used to find abandoned reservations
+     * after an interrupted deployment.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_publications_pending_index
+        ON rank_trial_publications (
+            created_at ASC
+        )
+        WHERE message_id IS NULL
+          AND published_at IS NULL;
+    `);
+
+    /*
+     * Las Noches Event System
      */
     await query(`
         CREATE TABLE IF NOT EXISTS events (
@@ -147,22 +276,34 @@ async function initializeSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS events_guild_status_index
-        ON events (guild_id, status);
+        ON events (
+            guild_id,
+            status
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS events_guild_created_at_index
-        ON events (guild_id, created_at DESC);
+        ON events (
+            guild_id,
+            created_at DESC
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS events_host_index
-        ON events (guild_id, host_id);
+        ON events (
+            guild_id,
+            host_id
+        );
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS events_message_index
-        ON events (guild_id, message_id);
+        ON events (
+            guild_id,
+            message_id
+        );
     `);
 
     /*
@@ -213,10 +354,8 @@ async function initializeSchema() {
         ON event_participants (
             joined_at DESC
         );
-    `);
-
-    /*
-     * Crimson Eclipse Giveaway System
+    `);    /*
+     * Las Noches Giveaway System
      */
     await query(`
         CREATE TABLE IF NOT EXISTS giveaways (
@@ -374,8 +513,12 @@ async function initializeSchema() {
             guild_id,
             user_id
         );
-    `);    /*
+    `);
+
+    /*
+     * ======================================================
      * Umbra Level System
+     * ======================================================
      *
      * Stores each Soul's XP, Level and
      * message activity separately per server.
@@ -494,7 +637,13 @@ async function initializeSchema() {
     `);
 
     /*
-     * Umbra Achievement Definitions
+     * ======================================================
+     * Umbra Achievement System
+     * ======================================================
+     */
+
+    /*
+     * Achievement Definitions
      *
      * Stores every Achievement available
      * inside Umbra.
@@ -870,7 +1019,7 @@ async function initializeSchema() {
 
     /*
      * Quickly loads the currently active
-     * Title displayed inside /soul.
+     * Title displayed inside /profile.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS soul_titles_active_lookup_index

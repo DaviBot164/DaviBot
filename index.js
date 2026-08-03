@@ -28,6 +28,15 @@ const terminal =
     require('./utils/terminal');
 
 /**
+ * Automatic Monthly Rank Trials System.
+ */
+const {
+    startRankTrialScheduler,
+    stopRankTrialScheduler,
+    isRankTrialSchedulerRunning
+} = require('./utils/rankTrials/scheduler');
+
+/**
  * Server that Umbra must leave.
  */
 const SERVER_TO_LEAVE_ID =
@@ -322,6 +331,11 @@ async function publishBootSequence(
             0
         );
 
+    const rankTrialState =
+        isRankTrialSchedulerRunning()
+            ? 'ACTIVE'
+            : 'STARTING';
+
     return terminal.success(
         readyClient,
         {
@@ -346,6 +360,7 @@ async function publishBootSequence(
                             '+ Guardian Systems Ready',
                             '+ Kingdom Records Available',
                             '+ Arrancar Registry Online',
+                            '+ Monthly Rank Trials Ready',
                             '+ Alert Engine Armed',
                             '+ Incident Engine Ready',
                             '+ Health Monitor Active',
@@ -389,6 +404,19 @@ async function publishBootSequence(
                         [
                             `**Servers:** \`${guildCount}\``,
                             `**Souls:** \`${memberCount}\``
+                        ].join('\n'),
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '⚔️ Rank Trials',
+
+                    value:
+                        [
+                            `**Scheduler:** \`${rankTrialState}\``,
+                            '**Cycle:** `MONTHLY`'
                         ].join('\n'),
 
                     inline:
@@ -550,6 +578,9 @@ client.once(
             readyClient
         );
 
+        /*
+         * Register all loaded Slash Commands.
+         */
         try {
             await registerGuildCommands(
                 readyClient
@@ -565,8 +596,96 @@ client.once(
         }
 
         /*
+         * Start the Automatic Monthly Rank
+         * Trials scheduler.
+         *
+         * The scheduler performs an immediate
+         * recovery check before starting its
+         * recurring interval.
+         */
+        try {
+            const rankTrialSchedulerStarted =
+                await startRankTrialScheduler(
+                    readyClient
+                );
+
+            if (
+                rankTrialSchedulerStarted
+            ) {
+                console.log(
+                    '✅ Automatic Rank Trials scheduler started.'
+                );
+            } else if (
+                isRankTrialSchedulerRunning()
+            ) {
+                console.log(
+                    'ℹ️ Automatic Rank Trials scheduler was already running.'
+                );
+            } else {
+                console.warn(
+                    '⚠️ Automatic Rank Trials scheduler did not start.'
+                );
+            }
+        } catch (error) {
+            console.error(
+                '❌ Automatic Rank Trials scheduler failed to start:'
+            );
+
+            console.error(
+                error
+            );
+
+            await terminal.incident(
+                readyClient,
+                {
+                    type:
+                        'SYSTEM_FAILURE',
+
+                    message:
+                        'Umbra failed to start the Automatic Monthly Rank Trials scheduler.',
+
+                    fields: [
+                        {
+                            name:
+                                '⚔️ System',
+
+                            value:
+                                '`MONTHLY RANK TRIALS`',
+
+                            inline:
+                                true
+                        },
+                        {
+                            name:
+                                '🌙 State',
+
+                            value:
+                                '`STARTUP FAILED`',
+
+                            inline:
+                                true
+                        }
+                    ],
+
+                    error
+                }
+            ).catch(
+                terminalError => {
+                    console.error(
+                        '❌ Failed to publish the Rank Trials startup incident:'
+                    );
+
+                    console.error(
+                        terminalError
+                    );
+                }
+            );
+        }
+
+        /*
          * Publish one Boot Sequence event
-         * after Umbra is fully ready.
+         * after Umbra and the Rank Trials
+         * scheduler are fully initialized.
          */
         try {
             const terminalPublished =
@@ -743,9 +862,7 @@ client.on(
             );
         }
     }
-);
-
-/**
+);/**
  * Start Umbra.
  *
  * PostgreSQL initializes before Discord
@@ -814,6 +931,21 @@ async function shutdown(
     );
 
     /*
+     * Stop automatic Rank Trial checks
+     * before beginning shutdown.
+     */
+    const rankTrialSchedulerStopped =
+        stopRankTrialScheduler();
+
+    if (
+        rankTrialSchedulerStopped
+    ) {
+        console.log(
+            '✅ Rank Trials scheduler stopped.'
+        );
+    }
+
+    /*
      * Stop Dashboard updates before
      * beginning the shutdown sequence.
      */
@@ -844,6 +976,7 @@ async function shutdown(
                             value:
                                 [
                                     '```diff',
+                                    '- Rank Trials scheduler stopped',
                                     '- Health Dashboard stopped',
                                     '- Gateway connection closing',
                                     '- PostgreSQL connection closing',
@@ -917,7 +1050,9 @@ async function shutdown(
             1
         );
     }
-}/**
+}
+
+/**
  * Convert an unknown error value into
  * safe diagnostic information.
  *
@@ -1071,9 +1206,7 @@ async function publishProcessWarning(
             );
         }
     );
-}
-
-/**
+}/**
  * Handle a fatal Node.js process error.
  *
  * Continuing after an uncaught exception
@@ -1125,6 +1258,12 @@ async function handleFatalProcessError(
     console.error(
         '======================================'
     );
+
+    /*
+     * Stop recurring systems before
+     * emergency shutdown begins.
+     */
+    stopRankTrialScheduler();
 
     terminal.dashboard.stop();
 
