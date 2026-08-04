@@ -17,9 +17,6 @@ const Terminal =
 
 /**
  * Umbra Terminal visual color.
- *
- * This color is used only when a more
- * specific health-state color is unavailable.
  */
 const CONTROL_PANEL_COLOR =
     '#C8CDD4';
@@ -30,6 +27,16 @@ const CONTROL_PANEL_COLOR =
  */
 const CONTROL_PANEL_CUSTOM_ID =
     'umbra:control:select';
+
+/**
+ * Maximum time allowed for a live
+ * health snapshot.
+ *
+ * The command will use a safe fallback
+ * instead of waiting forever.
+ */
+const HEALTH_SNAPSHOT_TIMEOUT =
+    12_000;
 
 /**
  * Convert one boolean system state into
@@ -76,6 +83,189 @@ function formatHealthState(
 
         default:
             return '⚪ `UNKNOWN`';
+    }
+}
+
+/**
+ * Build a safe fallback snapshot.
+ *
+ * This is used only when the complete
+ * Terminal health check takes too long
+ * or unexpectedly fails.
+ *
+ * @param {import('discord.js').Client} client
+ * @returns {Object}
+ */
+function buildFallbackSnapshot(
+    client
+) {
+    const gatewayConnected =
+        client.isReady();
+
+    const gatewayPing =
+        Number.isFinite(
+            client.ws.ping
+        )
+            ? Math.max(
+                0,
+                Math.round(
+                    client.ws.ping
+                )
+            )
+            : 0;
+
+    const memoryUsage =
+        process.memoryUsage();
+
+    const checkedAt =
+        Math.floor(
+            Date.now() /
+            1_000
+        );
+
+    return {
+        gatewayConnected,
+
+        gatewayPing,
+
+        gatewayLatencyState:
+            gatewayPing >= 1_500
+                ? 'critical'
+                : gatewayPing >= 500
+                    ? 'warning'
+                    : 'normal',
+
+        databaseConnected:
+            false,
+
+        databaseLatency:
+            null,
+
+        memoryUsage,
+
+        memoryState:
+            memoryUsage.rss >=
+                768 *
+                1_024 *
+                1_024
+                ? 'critical'
+                : memoryUsage.rss >=
+                    512 *
+                    1_024 *
+                    1_024
+                    ? 'warning'
+                    : 'normal',
+
+        guildCount:
+            client.guilds.cache.size,
+
+        memberCount:
+            client.guilds.cache.reduce(
+                (
+                    total,
+                    guild
+                ) =>
+                    total +
+                    guild.memberCount,
+
+                0
+            ),
+
+        commandCount:
+            client.commands?.size ??
+            0,
+
+        checkedAt,
+
+        statistics:
+            null,
+
+        fallback:
+            true,
+
+        overallHealth: {
+            label:
+                'DEGRADED',
+
+            emoji:
+                '🟡',
+
+            color:
+                '#FEE75C',
+
+            message:
+                'The basic Terminal is available, but complete database diagnostics did not finish in time.'
+        }
+    };
+}
+
+/**
+ * Collect a complete health snapshot with
+ * a strict timeout.
+ *
+ * @param {import('discord.js').Client} client
+ * @returns {Promise<Object>}
+ */
+async function collectHealthSafely(
+    client
+) {
+    let timeoutId =
+        null;
+
+    const timeoutPromise =
+        new Promise(
+            resolve => {
+                timeoutId =
+                    setTimeout(
+                        () => {
+                            console.warn(
+                                `⚠️ Umbra Terminal health collection exceeded ${HEALTH_SNAPSHOT_TIMEOUT} ms.`
+                            );
+
+                            resolve(
+                                buildFallbackSnapshot(
+                                    client
+                                )
+                            );
+                        },
+
+                        HEALTH_SNAPSHOT_TIMEOUT
+                    );
+
+                timeoutId.unref?.();
+            }
+        );
+
+    try {
+        const snapshot =
+            await Promise.race([
+                Terminal.dashboard
+                    .collectHealth(
+                        client
+                    ),
+
+                timeoutPromise
+            ]);
+
+        return snapshot;
+    } catch (error) {
+        console.error(
+            '❌ Umbra Terminal health collection failed:'
+        );
+
+        console.error(
+            error
+        );
+
+        return buildFallbackSnapshot(
+            client
+        );
+    } finally {
+        if (timeoutId) {
+            clearTimeout(
+                timeoutId
+            );
+        }
     }
 }
 
@@ -193,9 +383,7 @@ function buildControlPanelMenu() {
  * Build the live Umbra Terminal home Embed.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {Awaited<ReturnType<
- *     typeof Terminal.dashboard.collectHealth
- * >>} snapshot
+ * @param {Object} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildControlPanelEmbed(
@@ -247,19 +435,30 @@ function buildControlPanelEmbed(
             snapshot.memoryUsage.heapUsed
         );
 
+    const descriptionLines = [
+        `**System State:** \`${overallHealth.label}\``,
+        '',
+        overallHealth.message,
+        '',
+        `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
+    ];
+
+    if (
+        snapshot.fallback
+    ) {
+        descriptionLines.push(
+            '',
+            '⚠️ Some PostgreSQL statistics are temporarily unavailable.'
+        );
+    }
+
     const terminalEmbed =
         createEmbed({
             title:
                 `${overallHealth.emoji} Umbra Terminal`,
 
             description:
-                [
-                    `**System State:** \`${overallHealth.label}\``,
-                    '',
-                    overallHealth.message,
-                    '',
-                    `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
-                ].join(
+                descriptionLines.join(
                     '\n'
                 ),
 
@@ -302,7 +501,7 @@ function buildControlPanelEmbed(
                             formatBooleanStatus(
                                 snapshot.databaseConnected,
                                 'CONNECTED',
-                                'DISCONNECTED'
+                                'UNAVAILABLE'
                             ),
                             `**Latency:** \`${databaseLatency}\``
                         ].join(
@@ -423,10 +622,18 @@ function buildControlPanelEmbed(
     async execute(
         interaction
     ) {
+        console.log(
+            '🧪 /controlpanel execution started.'
+        );
+
         try {
             if (
                 !interaction.inGuild()
             ) {
+                console.log(
+                    '🧪 /controlpanel stopped: interaction is not in a Guild.'
+                );
+
                 await interaction.reply({
                     flags:
                         MessageFlags.Ephemeral,
@@ -448,6 +655,10 @@ function buildControlPanelEmbed(
                         PermissionFlagsBits.Administrator
                     )
             ) {
+                console.log(
+                    '🧪 /controlpanel stopped: Administrator permission missing.'
+                );
+
                 await interaction.reply({
                     flags:
                         MessageFlags.Ephemeral,
@@ -463,22 +674,47 @@ function buildControlPanelEmbed(
                 return;
             }
 
+            console.log(
+                '🧪 /controlpanel preparing to defer reply.'
+            );
+
             await interaction.deferReply({
                 flags:
                     MessageFlags.Ephemeral
             });
 
+            console.log(
+                '🧪 /controlpanel reply deferred successfully.'
+            );
+
+            console.log(
+                '🧪 /controlpanel collecting health snapshot.'
+            );
+
             const snapshot =
-                await Terminal.dashboard
-                    .collectHealth(
-                        interaction.client
-                    );
+                await collectHealthSafely(
+                    interaction.client
+                );
+
+            console.log(
+                '🧪 /controlpanel health snapshot collected.'
+            );
+
+            console.log(
+                `🧪 Snapshot fallback: ${Boolean(
+                    snapshot.fallback
+                )}`
+            );
 
             const terminalEmbed =
                 buildControlPanelEmbed(
                     interaction,
                     snapshot
                 );
+
+            console.log(
+                '🧪 /controlpanel Terminal Embed built.'
+            );
 
             const terminalMenu =
                 buildControlPanelMenu();
@@ -489,6 +725,10 @@ function buildControlPanelEmbed(
                         terminalMenu
                     );
 
+            console.log(
+                '🧪 /controlpanel components built.'
+            );
+
             await interaction.editReply({
                 embeds: [
                     terminalEmbed
@@ -498,6 +738,10 @@ function buildControlPanelEmbed(
                     terminalRow
                 ]
             });
+
+            console.log(
+                '🧪 /controlpanel reply completed successfully.'
+            );
 
             console.log(
                 '======================================'
@@ -527,12 +771,20 @@ function buildControlPanelEmbed(
                 `🗄️ Database: ${
                     snapshot.databaseConnected
                         ? 'CONNECTED'
-                        : 'DISCONNECTED'
+                        : 'UNAVAILABLE'
                 }`
             );
 
             console.log(
                 `🌙 Overall Health: ${snapshot.overallHealth.label}`
+            );
+
+            console.log(
+                `⚠️ Fallback Snapshot: ${
+                    snapshot.fallback
+                        ? 'YES'
+                        : 'NO'
+                }`
             );
 
             console.log(
@@ -551,9 +803,9 @@ function buildControlPanelEmbed(
                 createErrorEmbed(
                     '❌ Umbra Terminal Failed',
                     [
-                        'Umbra could not collect the live system-health snapshot.',
+                        'Umbra could not open the administrative Terminal.',
                         '',
-                        'Check the PostgreSQL connection, Discord Gateway state and Terminal modules.'
+                        'Check the Discord Gateway, command dispatcher and Terminal modules.'
                     ].join(
                         '\n'
                     )
@@ -572,7 +824,15 @@ function buildControlPanelEmbed(
                             []
                     })
                     .catch(
-                        () => null
+                        responseError => {
+                            console.error(
+                                '❌ Failed to edit the deferred Control Panel response:'
+                            );
+
+                            console.error(
+                                responseError
+                            );
+                        }
                     );
 
                 return;
@@ -591,7 +851,15 @@ function buildControlPanelEmbed(
                         ]
                     })
                     .catch(
-                        () => null
+                        responseError => {
+                            console.error(
+                                '❌ Failed to send the Control Panel follow-up error:'
+                            );
+
+                            console.error(
+                                responseError
+                            );
+                        }
                     );
 
                 return;
@@ -607,16 +875,28 @@ function buildControlPanelEmbed(
                     ]
                 })
                 .catch(
-                    () => null
+                    responseError => {
+                        console.error(
+                            '❌ Failed to send the Control Panel error response:'
+                        );
+
+                        console.error(
+                            responseError
+                        );
+                    }
                 );
         }
     },
 
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
+    HEALTH_SNAPSHOT_TIMEOUT,
 
     formatBooleanStatus,
     formatHealthState,
+
+    buildFallbackSnapshot,
+    collectHealthSafely,
 
     buildControlPanelMenu,
     buildControlPanelEmbed
