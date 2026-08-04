@@ -12,18 +12,330 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-module.exports = {
-    category: 'information',
+/**
+ * Umbra Setup Wizard visual color.
+ *
+ * Cold silver-blue matches the current
+ * Las Noches visual identity.
+ */
+const SETUP_EMBED_COLOR =
+    '#C8CDD4';
 
-    data: new SlashCommandBuilder()
-        .setName('setup')
-        .setDescription(
-            'Open the Umbra server setup wizard.'
+/**
+ * Build the Setup Wizard selection menu.
+ *
+ * @returns {StringSelectMenuBuilder}
+ */
+function buildSetupMenu() {
+    return new StringSelectMenuBuilder()
+        .setCustomId(
+            'umbra:setup:select'
         )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator
+
+        .setPlaceholder(
+            'Select a Las Noches setup module...'
         )
-        .setDMPermission(false),
+
+        .setMinValues(
+            1
+        )
+
+        .setMaxValues(
+            1
+        )
+
+        .addOptions(
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Verification Guide'
+                )
+                .setDescription(
+                    'Publish the official verification instructions'
+                )
+                .setEmoji(
+                    '⛩️'
+                )
+                .setValue(
+                    'verification-guide'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Sacred Laws'
+                )
+                .setDescription(
+                    'Publish the official laws of Las Noches'
+                )
+                .setEmoji(
+                    '📜'
+                )
+                .setValue(
+                    'sacred-laws'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Official Decrees'
+                )
+                .setDescription(
+                    'Open the official announcement module'
+                )
+                .setEmoji(
+                    '📢'
+                )
+                .setValue(
+                    'official-decrees'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Server Guide'
+                )
+                .setDescription(
+                    'Publish the guide for new Souls'
+                )
+                .setEmoji(
+                    '📖'
+                )
+                .setValue(
+                    'server-guide'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Role Information'
+                )
+                .setDescription(
+                    'Publish information about server ranks and roles'
+                )
+                .setEmoji(
+                    '🎖️'
+                )
+                .setValue(
+                    'role-information'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Frequently Asked Questions'
+                )
+                .setDescription(
+                    'Publish answers to common questions'
+                )
+                .setEmoji(
+                    '❓'
+                )
+                .setValue(
+                    'faq'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Ticket Guide'
+                )
+                .setDescription(
+                    'Publish instructions for the support system'
+                )
+                .setEmoji(
+                    '🎫'
+                )
+                .setValue(
+                    'ticket-guide'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Full Server Setup'
+                )
+                .setDescription(
+                    'Publish every available setup module'
+                )
+                .setEmoji(
+                    '🚀'
+                )
+                .setValue(
+                    'full-setup'
+                )
+        );
+}
+
+/**
+ * Build the main Setup Wizard Embed.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildSetupEmbed(
+    interaction
+) {
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
+
+    const setupEmbed =
+        createEmbed({
+            title:
+                '🌙 Umbra Setup Wizard',
+
+            description:
+                [
+                    `Welcome, ${interaction.user}.`,
+                    '',
+                    'Select a module below to publish or update the official systems of **Las Noches**.',
+                    '',
+                    'Only Administrators may use this control panel.'
+                ].join(
+                    '\n'
+                ),
+
+            color:
+                SETUP_EMBED_COLOR,
+
+            thumbnail:
+                botAvatar,
+
+            fields: [
+                {
+                    name:
+                        '⛩️ Verification Guide',
+
+                    value:
+                        'Publish the official Bloxlink verification instructions.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📜 Sacred Laws',
+
+                    value:
+                        'Publish the rules and standards of Las Noches.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📢 Official Decrees',
+
+                    value:
+                        'Manage the official announcement module.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '📖 Server Guide',
+
+                    value:
+                        'Publish a simple guide for new Souls.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🎖️ Role Information',
+
+                    value:
+                        'Explain staff roles and Arrancar ranks.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '❓ FAQ',
+
+                    value:
+                        'Publish answers to common server questions.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🎫 Ticket Guide',
+
+                    value:
+                        'Explain how members can request support.',
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '🚀 Full Setup',
+
+                    value:
+                        'Publish all available setup modules.',
+
+                    inline:
+                        true
+                }
+            ]
+        });
+
+    setupEmbed.setAuthor({
+        name:
+            'Umbra • Guardian of Las Noches',
+
+        iconURL:
+            botAvatar
+    });
+
+    setupEmbed.setFooter({
+        text:
+            'Las Noches • Setup Center',
+
+        iconURL:
+            guildIcon
+    });
+
+    setupEmbed.setTimestamp();
+
+    return setupEmbed;
+}
+
+module.exports = {
+    category:
+        'information',
+
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'setup'
+            )
+
+            .setDescription(
+                'Open the Umbra server setup wizard.'
+            )
+
+            .setDefaultMemberPermissions(
+                PermissionFlagsBits.Administrator
+            )
+
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Open the Umbra Setup Wizard.
@@ -31,9 +343,13 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
-            if (!interaction.inGuild()) {
+            if (
+                !interaction.inGuild()
+            ) {
                 await interaction.reply({
                     flags:
                         MessageFlags.Ephemeral,
@@ -41,7 +357,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'The Umbra Setup Wizard can only be opened inside a server.'
+                            'The Umbra Setup Wizard can only be opened inside Las Noches.'
                         )
                     ]
                 });
@@ -50,9 +366,10 @@ module.exports = {
             }
 
             if (
-                !interaction.memberPermissions?.has(
-                    PermissionFlagsBits.Administrator
-                )
+                !interaction.memberPermissions
+                    ?.has(
+                        PermissionFlagsBits.Administrator
+                    )
             ) {
                 await interaction.reply({
                     flags:
@@ -61,7 +378,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only an Administrator may access the Umbra Setup Wizard.'
+                            'Only a Las Noches Administrator may access the Umbra Setup Wizard.'
                         )
                     ]
                 });
@@ -70,207 +387,28 @@ module.exports = {
             }
 
             const setupEmbed =
-                createEmbed({
-                    title:
-                        '🌑 Umbra Setup Wizard',
-
-                    description:
-                        [
-                            `Welcome, ${interaction.user}.`,
-                            '',
-                            'Umbra is ready to prepare the official systems of **Crimson Eclipse**.',
-                            '',
-                            'Select a module from the menu below.',
-                            '',
-                            '━━━━━━━━━━━━━━━━━━━━',
-                            '',
-                            '⛩️ **Verification Guide**',
-                            'Publish the official verification instructions.',
-                            '',
-                            '📜 **Sacred Laws**',
-                            'Publish the official laws of the Order.',
-                            '',
-                            '📢 **Official Decrees**',
-                            'Manage official server announcements.',
-                            '',
-                            '📖 **Server Guide**',
-                            'Publish a guide for new Souls.',
-                            '',
-                            '🎖️ **Role Information**',
-                            'Explain the ranks of Crimson Eclipse.',
-                            '',
-                            '❓ **Frequently Asked Questions**',
-                            'Publish answers to common questions.',
-                            '',
-                            '🎫 **Ticket Guide**',
-                            'Explain how the Umbra support system works.',
-                            '',
-                            '🚀 **Full Server Setup**',
-                            'Publish all available setup modules.',
-                            '',
-                            '━━━━━━━━━━━━━━━━━━━━',
-                            '',
-                            '-# Setup access is restricted to Administrators.'
-                        ].join('\n'),
-
-                    thumbnail:
-                        interaction.client.user.displayAvatarURL({
-                            size: 512,
-                            forceStatic: false
-                        })
-                });
-
-            setupEmbed.setAuthor({
-                name:
-                    'Umbra • Guardian of Crimson Eclipse',
-
-                iconURL:
-                    interaction.client.user.displayAvatarURL({
-                        size: 256,
-                        forceStatic: false
-                    })
-            });
-
-            setupEmbed.setFooter({
-                text:
-                    '🌑 Crimson Eclipse • Setup Center',
-
-                iconURL:
-                    interaction.guild.iconURL({
-                        size: 128,
-                        forceStatic: false
-                    }) ??
-                    interaction.client.user.displayAvatarURL({
-                        size: 128,
-                        forceStatic: false
-                    })
-            });
-
-            setupEmbed.setTimestamp();
+                buildSetupEmbed(
+                    interaction
+                );
 
             const setupMenu =
-                new StringSelectMenuBuilder()
-                    .setCustomId(
-                        'umbra:setup:select'
-                    )
-                    .setPlaceholder(
-                        'Select a setup module...'
-                    )
-                    .setMinValues(1)
-                    .setMaxValues(1)
-                    .addOptions(
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Verification Guide'
-                            )
-                            .setDescription(
-                                'Publish the official verification instructions'
-                            )
-                            .setEmoji('⛩️')
-                            .setValue(
-                                'verification-guide'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Sacred Laws'
-                            )
-                            .setDescription(
-                                'Publish the official Crimson Eclipse laws'
-                            )
-                            .setEmoji('📜')
-                            .setValue(
-                                'sacred-laws'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Official Decrees'
-                            )
-                            .setDescription(
-                                'Open the announcement setup module'
-                            )
-                            .setEmoji('📢')
-                            .setValue(
-                                'official-decrees'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Server Guide'
-                            )
-                            .setDescription(
-                                'Publish a guide for new Souls'
-                            )
-                            .setEmoji('📖')
-                            .setValue(
-                                'server-guide'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Role Information'
-                            )
-                            .setDescription(
-                                'Publish information about server ranks'
-                            )
-                            .setEmoji('🎖️')
-                            .setValue(
-                                'role-information'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Frequently Asked Questions'
-                            )
-                            .setDescription(
-                                'Publish answers to common questions'
-                            )
-                            .setEmoji('❓')
-                            .setValue(
-                                'faq'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Ticket Guide'
-                            )
-                            .setDescription(
-                                'Publish instructions for the ticket system'
-                            )
-                            .setEmoji('🎫')
-                            .setValue(
-                                'ticket-guide'
-                            ),
-
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel(
-                                'Full Server Setup'
-                            )
-                            .setDescription(
-                                'Publish every available setup module'
-                            )
-                            .setEmoji('🚀')
-                            .setValue(
-                                'full-setup'
-                            )
-                    );
+                buildSetupMenu();
 
             const setupRow =
                 new ActionRowBuilder()
                     .addComponents(
                         setupMenu
-                    );
-
-            await interaction.reply({
+                    );            await interaction.reply({
                 flags:
                     MessageFlags.Ephemeral,
 
-                embeds:
-                    [setupEmbed],
+                embeds: [
+                    setupEmbed
+                ],
 
-                components:
-                    [setupRow]
+                components: [
+                    setupRow
+                ]
             });
 
             console.log(
@@ -278,7 +416,7 @@ module.exports = {
             );
 
             console.log(
-                '🌑 Umbra Setup Wizard Opened'
+                '🌙 Umbra Setup Wizard Opened'
             );
 
             console.log(
@@ -297,22 +435,27 @@ module.exports = {
                 '❌ Umbra setup command error:'
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Setup Wizard Failed',
-                    'Umbra could not open the Setup Wizard. Please try again later.'
+                    'Umbra could not open the Las Noches Setup Wizard. Please try again later.'
                 );
 
-            if (interaction.replied) {
+            if (
+                interaction.replied
+            ) {
                 await interaction
                     .followUp({
                         flags:
                             MessageFlags.Ephemeral,
 
-                        embeds:
-                            [errorEmbed]
+                        embeds: [
+                            errorEmbed
+                        ]
                     })
                     .catch(
                         () => null
@@ -321,13 +464,17 @@ module.exports = {
                 return;
             }
 
-            if (interaction.deferred) {
+            if (
+                interaction.deferred
+            ) {
                 await interaction
                     .editReply({
-                        embeds:
-                            [errorEmbed],
+                        embeds: [
+                            errorEmbed
+                        ],
 
-                        components: []
+                        components:
+                            []
                     })
                     .catch(
                         () => null
@@ -341,8 +488,9 @@ module.exports = {
                     flags:
                         MessageFlags.Ephemeral,
 
-                    embeds:
-                        [errorEmbed]
+                    embeds: [
+                        errorEmbed
+                    ]
                 })
                 .catch(
                     () => null

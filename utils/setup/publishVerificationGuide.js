@@ -8,26 +8,41 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+/**
+ * Official Las Noches verification channel.
+ */
 const VERIFY_CHANNEL_ID =
     '1528402259699044352';
+
+/**
+ * Cold silver tone matching the current
+ * Las Noches visual identity.
+ */
+const VERIFICATION_EMBED_COLOR =
+    '#C8CDD4';
 
 /**
  * Get and validate the verification channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getVerificationChannel(
     interaction
 ) {
     const verifyChannel =
-        await interaction.guild.channels.fetch(
-            VERIFY_CHANNEL_ID
-        );
+        await interaction.guild.channels
+            .fetch(
+                VERIFY_CHANNEL_ID
+            )
+            .catch(
+                () => null
+            );
 
     if (
         !verifyChannel ||
-        !verifyChannel.isTextBased()
+        !verifyChannel.isTextBased() ||
+        verifyChannel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -68,23 +83,27 @@ async function getVerificationChannel(
             botMember
         );
 
+    const requiredPermissions = [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks
+    ];
+
     if (
-        !channelPermissions?.has([
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks
-        ])
+        !channelPermissions?.has(
+            requiredPermissions
+        )
     ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
                     [
-                        'Umbra requires the following permissions inside the verification channel:',
+                        'Umbra requires these permissions in the verification channel:',
                         '',
-                        '• **View Channel**',
-                        '• **Send Messages**',
-                        '• **Embed Links**'
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
                     ].join('\n')
                 )
             ],
@@ -100,10 +119,148 @@ async function getVerificationChannel(
 }
 
 /**
- * Publish the Las Noches verification guide.
+ * Build the compact Las Noches
+ * verification guide Embed.
  *
- * Bloxlink continues to handle the real
- * Roblox account verification process.
+ * Bloxlink handles the real Roblox
+ * account verification process.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildVerificationGuideEmbed(
+    interaction
+) {
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
+
+    const guideEmbed =
+        createEmbed({
+            title:
+                '⛩️ Verification Gate',
+
+            description:
+                [
+                    'Verify your Roblox account through **Bloxlink** to enter Las Noches.',
+                    '',
+                    'Use the instructions below and make sure the correct Roblox account is connected.'
+                ].join(
+                    '\n'
+                ),
+
+            color:
+                VERIFICATION_EMBED_COLOR,
+
+            thumbnail:
+                interaction.guild.iconURL({
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
+                }) ??
+                botAvatar,
+
+            fields: [
+                {
+                    name:
+                        '🔗 How to Verify',
+
+                    value:
+                        [
+                            '1. Use `/verify` in this channel.',
+                            '2. Select the Bloxlink command.',
+                            '3. Open the verification link.',
+                            '4. Connect the correct Roblox account.',
+                            '5. Return to Discord and finish verification.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '✅ After Verification',
+
+                    value:
+                        [
+                            '• The Verified role will be granted.',
+                            '• The Unverified role will be removed.',
+                            '• Las Noches community channels will unlock.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🛡️ Safety',
+
+                    value:
+                        [
+                            '• Never share your Discord or Roblox password.',
+                            '• Confirm the connected Roblox username.',
+                            '• Umbra and Las Noches staff will never request login codes.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+                {
+                    name:
+                        '🎫 Need Help?',
+
+                    value:
+                        [
+                            'Try `/verify` again after a short wait.',
+                            'If the problem continues, open a private support ticket.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                }
+            ]
+        });
+
+    guideEmbed.setAuthor({
+        name:
+            'Umbra • Guardian of Las Noches',
+
+        iconURL:
+            botAvatar
+    });
+
+    guideEmbed.setFooter({
+        text:
+            'Las Noches • Verification Gate',
+
+        iconURL:
+            guildIcon
+    });
+
+    guideEmbed.setTimestamp();
+
+    return guideEmbed;
+}/**
+ * Publish the compact Las Noches
+ * verification guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -121,182 +278,9 @@ async function publishVerificationGuide(
     }
 
     const guideEmbed =
-        createEmbed({
-            title:
-                '⛩️ Gate of Las Noches',
-
-            description:
-                [
-                    '## Welcome, wandering Soul.',
-                    '',
-                    'Before entering **Las Noches**, your Roblox identity must be verified through **Bloxlink**.',
-                    '',
-                    'Complete the ritual below to receive access to the kingdom and begin your progression.'
-                ].join('\n'),
-
-            color:
-                '#6F42C1',
-
-            thumbnail:
-                interaction.guild.iconURL({
-                    size:
-                        512,
-
-                    forceStatic:
-                        false
-                }) ??
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
-
-            fields: [
-                {
-                    name:
-                        '╭・🔗 VERIFICATION RITUAL',
-
-                    value:
-                        [
-                            '1. Use the `/verify` command in this channel.',
-                            '2. Select the command provided by **Bloxlink**.',
-                            '3. Open the secure verification link.',
-                            '4. Connect the correct Roblox account.',
-                            '5. Return to Discord and finish the process.',
-                            '',
-                            '-# Bloxlink manages the actual Roblox verification process.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・✅ AFTER VERIFICATION',
-
-                    value:
-                        [
-                            '• The **Verified** role will be granted.',
-                            '• The **Unverified** role will be removed.',
-                            '• Las Noches community channels will unlock.',
-                            '• Your Roblox identity will be linked to your Discord account.',
-                            '• You may begin building your Soul Record and Spiritual Power.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🛡️ SECURITY NOTICE',
-
-                    value:
-                        [
-                            '• Connect only an account that belongs to you.',
-                            '• Confirm that the Roblox username is correct.',
-                            '• Never share your Roblox or Discord password.',
-                            '• Do not repeatedly spam the verification command.',
-                            '• Las Noches staff will never request your password.',
-                            '• Umbra will never send private login requests.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🔄 ALREADY CONNECTED?',
-
-                    value:
-                        [
-                            'If your Roblox account is already linked to Bloxlink, use `/verify` again.',
-                            '',
-                            'Bloxlink should refresh your server information and update your roles automatically.',
-                            '',
-                            '-# Role updates may take a short moment to appear.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🎫 VERIFICATION SUPPORT',
-
-                    value:
-                        [
-                            'If verification does not work:',
-                            '',
-                            '1. Wait briefly and try `/verify` again.',
-                            '2. Confirm that the correct Roblox account is connected.',
-                            '3. Read the Las Noches Ticket Guide.',
-                            '4. Open a private support ticket.',
-                            '5. Explain the issue clearly to the Las Noches staff.',
-                            '',
-                            '-# Never post passwords, login codes, or private account information.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '╰・🌙 FINAL DECREE',
-
-                    value:
-                        [
-                            'Verification protects Las Noches from impersonation and keeps every Soul connected to the correct Roblox identity.',
-                            '',
-                            '> **Reveal your identity, cross the gate, and enter the kingdom beneath the eternal night.**'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                }
-            ]
-        });
-
-    guideEmbed.setAuthor({
-        name:
-            'Umbra • Guardian of Las Noches',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setFooter({
-        text:
-            'Las Noches • Soul Verification Gate',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setTimestamp();
+        buildVerificationGuideEmbed(
+            interaction
+        );
 
     await verifyChannel.send({
         embeds: [
@@ -313,7 +297,7 @@ async function publishVerificationGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Verification Guide Published',
-                `Umbra successfully published the Las Noches verification guide in ${verifyChannel}.`
+                `Umbra published the Las Noches verification guide in ${verifyChannel}.`
             )
         ],
 
@@ -338,7 +322,7 @@ async function publishVerificationGuide(
     );
 
     console.log(
-        `🏰 Kingdom: ${interaction.guild.name}`
+        `🏰 Server: ${interaction.guild.name}`
     );
 
     console.log(
@@ -347,5 +331,9 @@ async function publishVerificationGuide(
 }
 
 module.exports = {
+    VERIFY_CHANNEL_ID,
+    VERIFICATION_EMBED_COLOR,
+    getVerificationChannel,
+    buildVerificationGuideEmbed,
     publishVerificationGuide
 };
