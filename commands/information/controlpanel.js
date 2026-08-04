@@ -12,21 +12,75 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const Terminal =
+    require('../../utils/terminal');
+
 /**
- * Umbra Control Panel visual color.
+ * Umbra Terminal visual color.
+ *
+ * This color is used only when a more
+ * specific health-state color is unavailable.
  */
 const CONTROL_PANEL_COLOR =
     '#C8CDD4';
 
 /**
- * Custom ID used by the Control Panel
+ * Custom ID used by the Umbra Terminal
  * selection menu.
  */
 const CONTROL_PANEL_CUSTOM_ID =
     'umbra:control:select';
 
 /**
- * Build the Control Panel selection menu.
+ * Convert one boolean system state into
+ * a compact Terminal status.
+ *
+ * @param {boolean} active
+ * @param {string} activeLabel
+ * @param {string} inactiveLabel
+ * @returns {string}
+ */
+function formatBooleanStatus(
+    active,
+    activeLabel =
+        'ONLINE',
+    inactiveLabel =
+        'OFFLINE'
+) {
+    return active
+        ? `🟢 \`${activeLabel}\``
+        : `🔴 \`${inactiveLabel}\``;
+}
+
+/**
+ * Convert one health state into
+ * a readable Terminal status.
+ *
+ * @param {'normal'|'warning'|'critical'} state
+ * @returns {string}
+ */
+function formatHealthState(
+    state
+) {
+    switch (
+        state
+    ) {
+        case 'normal':
+            return '🟢 `HEALTHY`';
+
+        case 'warning':
+            return '🟡 `WARNING`';
+
+        case 'critical':
+            return '🔴 `CRITICAL`';
+
+        default:
+            return '⚪ `UNKNOWN`';
+    }
+}
+
+/**
+ * Build the Umbra Terminal selection menu.
  *
  * @returns {StringSelectMenuBuilder}
  */
@@ -37,7 +91,7 @@ function buildControlPanelMenu() {
         )
 
         .setPlaceholder(
-            'Select an Umbra control module...'
+            'Select an Umbra Terminal module...'
         )
 
         .setMinValues(
@@ -51,10 +105,10 @@ function buildControlPanelMenu() {
         .addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'System Overview'
+                    'Terminal Overview'
                 )
                 .setDescription(
-                    'View Umbra systems and management commands'
+                    'View live Umbra health and system information'
                 )
                 .setEmoji(
                     '🖥️'
@@ -96,7 +150,7 @@ function buildControlPanelMenu() {
                     'Arrancar Ranks'
                 )
                 .setDescription(
-                    'View Arrancar hierarchy management controls'
+                    'View hierarchy management controls'
                 )
                 .setEmoji(
                     '👑'
@@ -110,7 +164,7 @@ function buildControlPanelMenu() {
                     'Setup Center'
                 )
                 .setDescription(
-                    'View Las Noches setup and publication controls'
+                    'View Las Noches setup controls'
                 )
                 .setEmoji(
                     '📚'
@@ -136,13 +190,17 @@ function buildControlPanelMenu() {
 }
 
 /**
- * Build the main Umbra Control Panel Embed.
+ * Build the live Umbra Terminal home Embed.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {Awaited<ReturnType<
+ *     typeof Terminal.dashboard.collectHealth
+ * >>} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildControlPanelEmbed(
-    interaction
+    interaction,
+    snapshot
 ) {
     const botAvatar =
         interaction.client.user
@@ -164,23 +222,49 @@ function buildControlPanelEmbed(
         }) ??
         botAvatar;
 
-    const controlEmbed =
+    const overallHealth =
+        snapshot.overallHealth;
+
+    const databaseLatency =
+        snapshot.databaseLatency !==
+        null
+            ? `${snapshot.databaseLatency} ms`
+            : 'Unavailable';
+
+    const processUptime =
+        Terminal.formatters.uptime(
+            process.uptime() *
+            1_000
+        );
+
+    const memoryUsage =
+        Terminal.formatters.bytes(
+            snapshot.memoryUsage.rss
+        );
+
+    const heapUsage =
+        Terminal.formatters.bytes(
+            snapshot.memoryUsage.heapUsed
+        );
+
+    const terminalEmbed =
         createEmbed({
             title:
-                '🖥️ Umbra Control Panel',
+                `${overallHealth.emoji} Umbra Terminal`,
 
             description:
                 [
-                    `Welcome, ${interaction.user}.`,
+                    `**System State:** \`${overallHealth.label}\``,
                     '',
-                    'Use this panel to review and manage the primary systems of **Las Noches**.',
+                    overallHealth.message,
                     '',
-                    'Select a module from the menu below.'
+                    `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
                 ].join(
                     '\n'
                 ),
 
             color:
+                overallHealth.color ??
                 CONTROL_PANEL_COLOR,
 
             thumbnail:
@@ -189,60 +273,99 @@ function buildControlPanelEmbed(
             fields: [
                 {
                     name:
-                        '⚔️ Rank Trials',
+                        '📡 Discord Gateway',
 
                     value:
-                        'Monthly announcements, scheduler status and Discord Events.',
+                        [
+                            formatBooleanStatus(
+                                snapshot.gatewayConnected,
+                                'CONNECTED',
+                                'DISCONNECTED'
+                            ),
+                            `**Latency:** \`${snapshot.gatewayPing} ms\``,
+                            `**State:** ${formatHealthState(
+                                snapshot.gatewayLatencyState
+                            )}`
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
                 },
                 {
                     name:
-                        '🎫 Tickets',
+                        '🗄️ PostgreSQL',
 
                     value:
-                        'Support panel creation and ticket system management.',
+                        [
+                            formatBooleanStatus(
+                                snapshot.databaseConnected,
+                                'CONNECTED',
+                                'DISCONNECTED'
+                            ),
+                            `**Latency:** \`${databaseLatency}\``
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
                 },
                 {
                     name:
-                        '👑 Arrancar Ranks',
+                        '🧠 Process Memory',
 
                     value:
-                        'Official hierarchy assignments and Rank records.',
+                        [
+                            `**RSS:** \`${memoryUsage}\``,
+                            `**Heap:** \`${heapUsage}\``,
+                            `**State:** ${formatHealthState(
+                                snapshot.memoryState
+                            )}`
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
                 },
                 {
                     name:
-                        '📚 Setup Center',
+                        '⏱️ Runtime',
 
                     value:
-                        'Publish official Las Noches guides and information.',
+                        [
+                            `**Uptime:** \`${processUptime}\``,
+                            `**Process ID:** \`${process.pid}\``
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
                 },
                 {
                     name:
-                        '🛡️ Guardian',
+                        '🌙 Las Noches',
 
                     value:
-                        'Review moderation, spam and protection systems.',
+                        [
+                            `**Members:** \`${interaction.guild.memberCount}\``,
+                            `**Commands:** \`${snapshot.commandCount}\``
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
                 },
                 {
                     name:
-                        '🖥️ System Overview',
+                        '🖥️ Terminal Channel',
 
                     value:
-                        'View the commands used to control each module.',
+                        `<#${Terminal.TERMINAL_CHANNEL_ID}>`,
 
                     inline:
                         true
@@ -250,25 +373,25 @@ function buildControlPanelEmbed(
             ]
         });
 
-    controlEmbed.setAuthor({
+    terminalEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'Umbra • Core Operations',
 
         iconURL:
             botAvatar
     });
 
-    controlEmbed.setFooter({
+    terminalEmbed.setFooter({
         text:
-            'Las Noches • Administrative Control Center',
+            'Las Noches • Administrative Terminal',
 
         iconURL:
             guildIcon
     });
 
-    controlEmbed.setTimestamp();
+    terminalEmbed.setTimestamp();
 
-    return controlEmbed;
+    return terminalEmbed;
 }module.exports = {
     category:
         'information',
@@ -280,7 +403,7 @@ function buildControlPanelEmbed(
             )
 
             .setDescription(
-                'Open the Umbra administrative control panel.'
+                'Open the live Umbra administrative terminal.'
             )
 
             .setDefaultMemberPermissions(
@@ -292,7 +415,7 @@ function buildControlPanelEmbed(
             ),
 
     /**
-     * Open the Umbra Control Panel.
+     * Open the live Umbra Terminal.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -311,7 +434,7 @@ function buildControlPanelEmbed(
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'The Umbra Control Panel can only be opened inside Las Noches.'
+                            'The Umbra Terminal can only be opened inside Las Noches.'
                         )
                     ]
                 });
@@ -332,7 +455,7 @@ function buildControlPanelEmbed(
                     embeds: [
                         createErrorEmbed(
                             '❌ Authority Denied',
-                            'Only a Las Noches Administrator may access the Umbra Control Panel.'
+                            'Only a Las Noches Administrator may access the Umbra Terminal.'
                         )
                     ]
                 });
@@ -340,30 +463,39 @@ function buildControlPanelEmbed(
                 return;
             }
 
-            const controlEmbed =
-                buildControlPanelEmbed(
-                    interaction
-                );
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
 
-            const controlMenu =
-                buildControlPanelMenu();
-
-            const controlRow =
-                new ActionRowBuilder()
-                    .addComponents(
-                        controlMenu
+            const snapshot =
+                await Terminal.dashboard
+                    .collectHealth(
+                        interaction.client
                     );
 
-            await interaction.reply({
-                flags:
-                    MessageFlags.Ephemeral,
+            const terminalEmbed =
+                buildControlPanelEmbed(
+                    interaction,
+                    snapshot
+                );
 
+            const terminalMenu =
+                buildControlPanelMenu();
+
+            const terminalRow =
+                new ActionRowBuilder()
+                    .addComponents(
+                        terminalMenu
+                    );
+
+            await interaction.editReply({
                 embeds: [
-                    controlEmbed
+                    terminalEmbed
                 ],
 
                 components: [
-                    controlRow
+                    terminalRow
                 ]
             });
 
@@ -372,7 +504,7 @@ function buildControlPanelEmbed(
             );
 
             console.log(
-                '🖥️ Umbra Control Panel Opened'
+                '🖥️ Umbra Terminal Opened'
             );
 
             console.log(
@@ -384,11 +516,31 @@ function buildControlPanelEmbed(
             );
 
             console.log(
+                `📡 Gateway: ${
+                    snapshot.gatewayConnected
+                        ? 'CONNECTED'
+                        : 'DISCONNECTED'
+                }`
+            );
+
+            console.log(
+                `🗄️ Database: ${
+                    snapshot.databaseConnected
+                        ? 'CONNECTED'
+                        : 'DISCONNECTED'
+                }`
+            );
+
+            console.log(
+                `🌙 Overall Health: ${snapshot.overallHealth.label}`
+            );
+
+            console.log(
                 '======================================'
             );
         } catch (error) {
             console.error(
-                '❌ Umbra Control Panel command error:'
+                '❌ Umbra Terminal command error:'
             );
 
             console.error(
@@ -397,28 +549,15 @@ function buildControlPanelEmbed(
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Control Panel Failed',
-                    'Umbra could not open the administrative Control Panel.'
+                    '❌ Umbra Terminal Failed',
+                    [
+                        'Umbra could not collect the live system-health snapshot.',
+                        '',
+                        'Check the PostgreSQL connection, Discord Gateway state and Terminal modules.'
+                    ].join(
+                        '\n'
+                    )
                 );
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        flags:
-                            MessageFlags.Ephemeral,
-
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
 
             if (
                 interaction.deferred
@@ -431,6 +570,25 @@ function buildControlPanelEmbed(
 
                         components:
                             []
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp({
+                        flags:
+                            MessageFlags.Ephemeral,
+
+                        embeds: [
+                            errorEmbed
+                        ]
                     })
                     .catch(
                         () => null
@@ -456,6 +614,10 @@ function buildControlPanelEmbed(
 
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
+
+    formatBooleanStatus,
+    formatHealthState,
+
     buildControlPanelMenu,
     buildControlPanelEmbed
 };

@@ -12,16 +12,18 @@ const {
     createErrorEmbed
 } = require('../utils/embeds');
 
+const Terminal =
+    require('../utils/terminal');
+
 const {
     CONTROL_PANEL_COLOR,
-    CONTROL_PANEL_CUSTOM_ID
+    CONTROL_PANEL_CUSTOM_ID,
+    formatBooleanStatus,
+    formatHealthState
 } = require('../commands/information/controlpanel');
 
 /**
- * Build the shared Control Panel menu.
- *
- * The menu remains available after
- * switching between module pages.
+ * Build the shared Umbra Terminal menu.
  *
  * @returns {StringSelectMenuBuilder}
  */
@@ -32,7 +34,7 @@ function buildControlPanelMenu() {
         )
 
         .setPlaceholder(
-            'Select an Umbra control module...'
+            'Select an Umbra Terminal module...'
         )
 
         .setMinValues(
@@ -46,10 +48,10 @@ function buildControlPanelMenu() {
         .addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'System Overview'
+                    'Terminal Overview'
                 )
                 .setDescription(
-                    'View Umbra systems and management commands'
+                    'View live Umbra health and system information'
                 )
                 .setEmoji(
                     '🖥️'
@@ -143,20 +145,23 @@ function buildControlPanelRow() {
 }
 
 /**
- * Build a common Control Panel Embed.
+ * Build a common Umbra Terminal module Embed.
  *
  * @param {Object} options
  * @param {import('discord.js').Interaction} options.interaction
  * @param {string} options.title
  * @param {string} options.description
  * @param {Object[]} [options.fields]
+ * @param {string} [options.color]
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildModuleEmbed({
     interaction,
     title,
     description,
-    fields = []
+    fields = [],
+    color =
+        CONTROL_PANEL_COLOR
 }) {
     const botAvatar =
         interaction.client.user
@@ -184,8 +189,7 @@ function buildModuleEmbed({
 
             description,
 
-            color:
-                CONTROL_PANEL_COLOR,
+            color,
 
             thumbnail:
                 botAvatar,
@@ -195,7 +199,7 @@ function buildModuleEmbed({
 
     embed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'Umbra • Core Operations',
 
         iconURL:
             botAvatar
@@ -203,7 +207,7 @@ function buildModuleEmbed({
 
     embed.setFooter({
         text:
-            'Las Noches • Administrative Control Center',
+            'Las Noches • Administrative Terminal',
 
         iconURL:
             guildIcon
@@ -215,110 +219,157 @@ function buildModuleEmbed({
 }
 
 /**
- * Build the System Overview page.
+ * Build the live Terminal Overview page.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {Awaited<ReturnType<
+ *     typeof Terminal.dashboard.collectHealth
+ * >>} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildSystemOverviewEmbed(
-    interaction
+    interaction,
+    snapshot
 ) {
+    const processUptime =
+        Terminal.formatters.uptime(
+            process.uptime() *
+            1_000
+        );
+
+    const rssMemory =
+        Terminal.formatters.bytes(
+            snapshot.memoryUsage.rss
+        );
+
+    const heapMemory =
+        Terminal.formatters.bytes(
+            snapshot.memoryUsage.heapUsed
+        );
+
+    const databaseLatency =
+        snapshot.databaseLatency !==
+        null
+            ? `${snapshot.databaseLatency} ms`
+            : 'Unavailable';
+
     return buildModuleEmbed({
         interaction,
 
         title:
-            '🖥️ Umbra System Overview',
+            `${snapshot.overallHealth.emoji} Umbra Terminal Overview`,
 
         description:
             [
-                'The primary Umbra systems are listed below.',
+                `**System State:** \`${snapshot.overallHealth.label}\``,
                 '',
-                'Use the related slash commands to manage each module safely.'
+                snapshot.overallHealth.message,
+                '',
+                `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
             ].join(
                 '\n'
             ),
 
+        color:
+            snapshot.overallHealth.color ??
+            CONTROL_PANEL_COLOR,
+
         fields: [
             {
                 name:
-                    '⚔️ Rank Trials',
+                    '📡 Discord Gateway',
 
                 value:
                     [
-                        '`/ranktrials status`',
-                        '`/ranktrials check`',
-                        '`/ranktrials sync`'
-                    ].join('\n'),
+                        formatBooleanStatus(
+                            snapshot.gatewayConnected,
+                            'CONNECTED',
+                            'DISCONNECTED'
+                        ),
+                        `**Latency:** \`${snapshot.gatewayPing} ms\``,
+                        `**State:** ${formatHealthState(
+                            snapshot.gatewayLatencyState
+                        )}`
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '🎫 Ticket System',
+                    '🗄️ PostgreSQL',
 
                 value:
                     [
-                        '`/ticketpanel`',
-                        '`/ticket`',
-                        '`/tickets`'
-                    ].join('\n'),
+                        formatBooleanStatus(
+                            snapshot.databaseConnected,
+                            'CONNECTED',
+                            'DISCONNECTED'
+                        ),
+                        `**Latency:** \`${databaseLatency}\``
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '👑 Arrancar Ranks',
+                    '🧠 Memory',
 
                 value:
                     [
-                        '`/setrank`',
-                        '`/removerank`',
-                        '`/rankhistory`'
-                    ].join('\n'),
+                        `**RSS:** \`${rssMemory}\``,
+                        `**Heap:** \`${heapMemory}\``,
+                        `**State:** ${formatHealthState(
+                            snapshot.memoryState
+                        )}`
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '📚 Setup Center',
+                    '⏱️ Runtime',
 
                 value:
                     [
-                        '`/setup`',
-                        '`/setuprules`'
-                    ].join('\n'),
+                        `**Uptime:** \`${processUptime}\``,
+                        `**PID:** \`${process.pid}\``
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '🛡️ Guardian',
+                    '🌙 Las Noches',
 
                 value:
                     [
-                        'Message protection',
-                        'Spam protection',
-                        'Invite protection',
-                        'Profanity filtering'
-                    ].join('\n'),
+                        `**Members:** \`${interaction.guild.memberCount}\``,
+                        `**Commands:** \`${snapshot.commandCount}\``
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '🖥️ Umbra Terminal',
+                    '🖥️ Terminal Channel',
 
                 value:
-                    [
-                        'Live health dashboard',
-                        'Alerts and incidents',
-                        'Database and gateway status'
-                    ].join('\n'),
+                    `<#${Terminal.TERMINAL_CHANNEL_ID}>`,
 
                 inline:
                     true
@@ -344,7 +395,7 @@ function buildRankTrialsEmbed(
             [
                 'Manage the Automatic Monthly Rank Trials system.',
                 '',
-                'Umbra protects scheduled announcements and Discord Events from duplicate creation.'
+                'Umbra protects announcements and Discord Scheduled Events from duplicate creation.'
             ].join(
                 '\n'
             ),
@@ -355,7 +406,7 @@ function buildRankTrialsEmbed(
                     '📊 Status',
 
                 value:
-                    '`/ranktrials status`\nView the current monthly schedule.',
+                    '`/ranktrials status`\nView the active monthly schedule.',
 
                 inline:
                     true
@@ -433,7 +484,7 @@ function buildTicketsEmbed(
             [
                 'Review and manage the Umbra support system.',
                 '',
-                'Ticket actions remain protected by channel permissions and staff-role checks.'
+                'Ticket actions remain protected by staff roles and Discord channel permissions.'
             ].join(
                 '\n'
             ),
@@ -454,7 +505,7 @@ function buildTicketsEmbed(
                     '🎫 Ticket Controls',
 
                 value:
-                    '`/ticket`\nUse available ticket management actions.',
+                    '`/ticket`\nUse the available ticket actions.',
 
                 inline:
                     true
@@ -509,7 +560,7 @@ function buildArrancarRanksEmbed(
             [
                 'Manage the official Las Noches hierarchy.',
                 '',
-                'All Rank changes are recorded inside PostgreSQL and published through Umbra feeds.'
+                'Every Rank change is preserved in PostgreSQL and published through Umbra progression feeds.'
             ].join(
                 '\n'
             ),
@@ -551,9 +602,9 @@ function buildArrancarRanksEmbed(
 
                 value:
                     [
-                        'Server Owner',
-                        'Administrator',
-                        'Configured High Command roles'
+                        '• Server Owner',
+                        '• Administrator',
+                        '• Configured High Command roles'
                     ].join(
                         '\n'
                     ),
@@ -582,9 +633,9 @@ function buildSetupCenterEmbed(
 
         description:
             [
-                'Publish and update official Las Noches guides.',
+                'Publish and update the official Las Noches guides.',
                 '',
-                'Use the Setup Wizard for safe, Administrator-only publication.'
+                'Use the Setup Wizard for safe Administrator-only publication.'
             ].join(
                 '\n'
             ),
@@ -626,10 +677,10 @@ function buildSetupCenterEmbed(
 
                 value:
                     [
-                        'Server Guide',
-                        'Role Information',
-                        'FAQ',
-                        'Ticket Guide'
+                        '• Server Guide',
+                        '• Role Information',
+                        '• FAQ',
+                        '• Ticket Guide'
                     ].join(
                         '\n'
                     ),
@@ -640,14 +691,26 @@ function buildSetupCenterEmbed(
         ]
     });
 }/**
- * Build the Guardian page.
+ * Build the live Guardian page.
+ *
+ * The Guardian state is inferred from the
+ * currently running Umbra process and the
+ * live health snapshot.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {Awaited<ReturnType<
+ *     typeof Terminal.dashboard.collectHealth
+ * >>} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildGuardianEmbed(
-    interaction
+    interaction,
+    snapshot
 ) {
+    const guardianOperational =
+        snapshot.gatewayConnected &&
+        snapshot.databaseConnected;
+
     return buildModuleEmbed({
         interaction,
 
@@ -656,57 +719,178 @@ function buildGuardianEmbed(
 
         description:
             [
-                'Guardian continuously protects Las Noches.',
+                'Guardian protects messages before other Umbra systems process them.',
                 '',
-                'Every incoming message passes through the protection pipeline before reaching other systems.'
+                guardianOperational
+                    ? 'The protection pipeline is currently operational.'
+                    : 'Guardian may be affected by the current system-health condition.'
             ].join(
                 '\n'
             ),
 
+        color:
+            guardianOperational
+                ? '#57F287'
+                : '#ED4245',
+
         fields: [
             {
                 name:
-                    '🛡️ Protection',
+                    '🛡️ Guardian State',
 
                 value:
-                    [
-                        'Spam Protection',
-                        'Invite Protection',
-                        'Profanity Filter',
-                        'Scam Detection'
-                    ].join('\n'),
+                    formatBooleanStatus(
+                        guardianOperational,
+                        'ACTIVE',
+                        'DEGRADED'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '📋 Logging',
+                    '📡 Gateway',
 
                 value:
                     [
-                        'Guardian Cases',
-                        'AutoMod Records',
-                        'Kingdom Feed'
-                    ].join('\n'),
+                        formatBooleanStatus(
+                            snapshot.gatewayConnected,
+                            'CONNECTED',
+                            'DISCONNECTED'
+                        ),
+                        `**Latency:** \`${snapshot.gatewayPing} ms\``
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '⚙️ Status',
+                    '🗄️ Database',
+
+                value:
+                    formatBooleanStatus(
+                        snapshot.databaseConnected,
+                        'CONNECTED',
+                        'DISCONNECTED'
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🔍 Protection Modules',
 
                 value:
                     [
-                        'Monitoring Messages',
-                        'Database Connected',
-                        'Ready'
-                    ].join('\n'),
+                        '• Spam Protection',
+                        '• Invite Protection',
+                        '• Profanity Filter',
+                        '• Scam Detection'
+                    ].join(
+                        '\n'
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📋 Records',
+
+                value:
+                    [
+                        '• AutoMod Cases',
+                        '• Guardian Warnings',
+                        '• Incident Logs',
+                        '• Moderation Logs'
+                    ].join(
+                        '\n'
+                    ),
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🧠 Process State',
+
+                value:
+                    [
+                        `**Memory:** ${formatHealthState(
+                            snapshot.memoryState
+                        )}`,
+                        `**Overall:** \`${snapshot.overallHealth.label}\``
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             }
+        ]
+    });
+}
+
+/**
+ * Safely send a Control Panel error.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {string} title
+ * @param {string} description
+ * @returns {Promise<void>}
+ */
+async function sendControlPanelError(
+    interaction,
+    title,
+    description
+) {
+    const errorEmbed =
+        createErrorEmbed(
+            title,
+            description
+        );
+
+    if (
+        interaction.deferred
+    ) {
+        await interaction.editReply({
+            embeds: [
+                errorEmbed
+            ],
+
+            components:
+                []
+        });
+
+        return;
+    }
+
+    if (
+        interaction.replied
+    ) {
+        await interaction.followUp({
+            flags:
+                MessageFlags.Ephemeral,
+
+            embeds: [
+                errorEmbed
+            ]
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        flags:
+            MessageFlags.Ephemeral,
+
+        embeds: [
+            errorEmbed
         ]
     });
 }
@@ -718,6 +902,12 @@ module.exports = {
     once:
         false,
 
+    /**
+     * Handle Umbra Terminal menu interactions.
+     *
+     * @param {import('discord.js').Interaction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(
         interaction
     ) {
@@ -738,42 +928,55 @@ module.exports = {
             if (
                 !interaction.inGuild()
             ) {
+                await sendControlPanelError(
+                    interaction,
+                    '❌ Server Only Action',
+                    'The Umbra Terminal can only be used inside Las Noches.'
+                );
+
                 return;
             }
 
             if (
-                !interaction.memberPermissions?.has(
-                    PermissionFlagsBits.Administrator
-                )
+                !interaction.memberPermissions
+                    ?.has(
+                        PermissionFlagsBits.Administrator
+                    )
             ) {
-                await interaction.reply({
-                    flags:
-                        MessageFlags.Ephemeral,
-
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Authority Denied',
-                            'Only a Las Noches Administrator may use the Umbra Control Panel.'
-                        )
-                    ]
-                });
+                await sendControlPanelError(
+                    interaction,
+                    '❌ Authority Denied',
+                    'Only a Las Noches Administrator may use the Umbra Terminal.'
+                );
 
                 return;
             }
 
             await interaction.deferUpdate();
 
+            const selectedModule =
+                interaction.values[0];
+
             let embed;
 
             switch (
-                interaction.values[0]
+                selectedModule
             ) {
-                case 'system-overview':
+                case 'system-overview': {
+                    const snapshot =
+                        await Terminal.dashboard
+                            .collectHealth(
+                                interaction.client
+                            );
+
                     embed =
                         buildSystemOverviewEmbed(
-                            interaction
+                            interaction,
+                            snapshot
                         );
+
                     break;
+                }
 
                 case 'rank-trials':
                     embed =
@@ -803,18 +1006,27 @@ module.exports = {
                         );
                     break;
 
-                case 'guardian-status':
+                case 'guardian-status': {
+                    const snapshot =
+                        await Terminal.dashboard
+                            .collectHealth(
+                                interaction.client
+                            );
+
                     embed =
                         buildGuardianEmbed(
-                            interaction
+                            interaction,
+                            snapshot
                         );
+
                     break;
+                }
 
                 default:
                     embed =
                         createErrorEmbed(
-                            '❌ Unknown Module',
-                            'Umbra could not load the selected Control Panel module.'
+                            '❌ Unknown Terminal Module',
+                            'Umbra could not load the selected Terminal module.'
                         );
             }
 
@@ -829,11 +1041,33 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra Control Panel interaction failed:'
+                '❌ Umbra Terminal interaction failed:'
             );
 
             console.error(
                 error
+            );
+
+            await sendControlPanelError(
+                interaction,
+                '❌ Terminal Module Failed',
+                [
+                    'Umbra could not load the selected Terminal module.',
+                    '',
+                    'Check the Discord Gateway, PostgreSQL connection and Terminal health modules.'
+                ].join(
+                    '\n'
+                )
+            ).catch(
+                responseError => {
+                    console.error(
+                        '❌ Failed to send Terminal interaction error:'
+                    );
+
+                    console.error(
+                        responseError
+                    );
+                }
             );
         }
     }
