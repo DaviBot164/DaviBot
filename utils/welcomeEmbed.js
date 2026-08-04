@@ -12,7 +12,16 @@ const WELCOME_BANNER_NAME =
     'welcome-banner.png';
 
 /**
- * Create the Umbra Welcome embed.
+ * Primary Welcome Embed color.
+ *
+ * Cold blue-silver tones match the
+ * Las Noches banner and visual identity.
+ */
+const WELCOME_EMBED_COLOR =
+    '#B8C4D6';
+
+/**
+ * Create the Umbra Welcome Embed.
  *
  * The banner image is attached inside:
  * - events/guildMemberAdd.js
@@ -80,55 +89,71 @@ function createWelcomeEmbed(
     const verificationText =
         verifyChannel &&
         verifyChannel.isTextBased()
-            ? `Complete verification in ${verifyChannel} to enter Las Noches.`
-            : 'Complete verification to enter Las Noches.';
+            ? `Complete verification in ${verifyChannel} to gain access to Las Noches.`
+            : 'Complete verification to gain access to Las Noches.';
 
     const arrivalNumber =
         guild.memberCount;
 
     return new EmbedBuilder()
         .setColor(
-            '#6F42C1'
+            WELCOME_EMBED_COLOR
         )
 
         .setAuthor({
             name:
-                `${guild.name} • New Arrival`,
+                `${guild.name} • Arrival Record`,
 
             iconURL:
                 serverIcon
         })
 
         .setTitle(
-            '🌙 A Soul Has Entered Las Noches'
+            '🌙 Welcome to Las Noches'
         )
 
         .setDescription(
             [
                 `Welcome, ${member}.`,
                 '',
-                `**${verificationText}**`
+                verificationText
             ].join(
                 '\n'
             )
         )
 
-        .addFields({
-            name:
-                '📜 Arrival Record',
+        .addFields(
+            {
+                name:
+                    '👤 Soul',
 
-            value:
-                [
-                    `👤 **Soul:** ${member}`,
-                    `🏅 **Number:** \`#${arrivalNumber}\``,
-                    `🕒 **Joined:** <t:${joinedTimestamp}:R>`
-                ].join(
-                    '\n'
-                ),
+                value:
+                    `${member}`,
 
-            inline:
-                false
-        })
+                inline:
+                    true
+            },
+            {
+                name:
+                    '📜 Arrival Number',
+
+                value:
+                    `\`#${arrivalNumber}\``,
+
+                inline:
+                    true
+            },
+            {
+                name:
+                    '🕒 Joined',
+
+                value:
+                    `<t:${joinedTimestamp}:R>`,
+
+                inline:
+                    true
+            }
+        )
 
         .setThumbnail(
             memberAvatar
@@ -151,5 +176,6 @@ function createWelcomeEmbed(
 
 module.exports = {
     WELCOME_BANNER_NAME,
+    WELCOME_EMBED_COLOR,
     createWelcomeEmbed
 };

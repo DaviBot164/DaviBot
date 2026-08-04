@@ -23,14 +23,14 @@ const {
 } = require('../database/raidCases');
 
 /**
- * Official Welcome channel.
+ * Official Las Noches Welcome channel.
  */
 const WELCOME_CHANNEL_ID =
     '1528401903438925906';
 
 /**
- * Role assigned automatically
- * when a new member joins.
+ * Role assigned automatically when
+ * a new member joins Las Noches.
  */
 const UNVERIFIED_ROLE_ID =
     '1530938389086601236';
@@ -44,8 +44,8 @@ const UNVERIFIED_ROLE_ID =
  * Value:
  * Array of:
  * {
- *   memberId: string,
- *   joinedAt: number
+ *     memberId: string,
+ *     joinedAt: number
  * }
  */
 const recentJoins =
@@ -59,36 +59,14 @@ const recentJoins =
  *
  * Value:
  * {
- *   caseId: string|number|null,
- *   startedAt: number,
- *   endsAt: number,
- *   memberIds: Set<string>
+ *     caseId: string|number|null,
+ *     startedAt: number,
+ *     endsAt: number,
+ *     memberIds: Set<string>
  * }
  */
 const activeRaids =
     new Map();
-
-/**
- * Find one guild role using
- * its exact configured name.
- *
- * @param {import('discord.js').Guild} guild
- * @param {string} roleName
- * @returns {import('discord.js').Role|null}
- */
-function findGuildRole(
-    guild,
-    roleName
-) {
-    return (
-        guild.roles.cache.find(
-            role =>
-                role.name ===
-                roleName
-        ) ||
-        null
-    );
-}
 
 /**
  * Check whether Umbra can assign
@@ -131,8 +109,8 @@ function canAssignRole(
 }
 
 /**
- * Assign the Unverified role
- * to one newly joined member.
+ * Assign the Unverified role to one
+ * newly joined human member.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {Promise<boolean>}
@@ -140,22 +118,22 @@ function canAssignRole(
 async function assignUnverifiedRole(
     member
 ) {
-    try {
-        if (
-            member.user.bot
-        ) {
-            return false;
-        }
+    if (
+        member.user.bot
+    ) {
+        return false;
+    }
 
+    try {
         const unverifiedRole =
-    member.guild.roles.cache.get(
-        UNVERIFIED_ROLE_ID
-    ) ||
-    null;
+            member.guild.roles.cache.get(
+                UNVERIFIED_ROLE_ID
+            ) ??
+            null;
 
         if (!unverifiedRole) {
             console.error(
-                `❌ Unverified role "${unverifiedRole.name}" was not found in ${member.guild.name}.`
+                `❌ Unverified role ID "${UNVERIFIED_ROLE_ID}" was not found in ${member.guild.name}.`
             );
 
             return false;
@@ -191,7 +169,7 @@ async function assignUnverifiedRole(
             )
         ) {
             console.error(
-                `❌ Umbra cannot assign ${unverifiedRole.name}. Move Umbra above this role.`
+                `❌ Umbra cannot assign ${unverifiedRole.name}. Move the Umbra role above it.`
             );
 
             return false;
@@ -211,13 +189,13 @@ async function assignUnverifiedRole(
         );
 
         console.log(
-            `🌑 Assigned ${unverifiedRole.name} to ${member.user.tag}.`
+            `🌙 Assigned ${unverifiedRole.name} to ${member.user.tag}.`
         );
 
         return true;
     } catch (error) {
         console.error(
-            `❌ Failed to assign ${unverifiedRole.name} to ${member.user.tag}:`
+            `❌ Failed to assign the Unverified role to ${member.user.tag}:`
         );
 
         console.error(
@@ -321,8 +299,8 @@ function formatDuration(
 }
 
 /**
- * Convert a timestamp into
- * Discord timestamp syntax.
+ * Convert a timestamp into Discord
+ * timestamp syntax.
  *
  * @param {number} timestamp
  * @returns {string}
@@ -396,36 +374,40 @@ async function sendRaidDetectedLog(
     const embed =
         new EmbedBuilder()
             .setColor(
-                '#FF0000'
+                '#D7263D'
             )
             .setAuthor({
                 name:
                     'Umbra Raid Shield',
 
                 iconURL:
-                    guild.client.user
-                        .displayAvatarURL({
-                            extension:
-                                'png',
+                    guild.client.user.displayAvatarURL({
+                        extension:
+                            'png',
 
-                            size:
-                                256
-                        })
+                        size:
+                            256
+                    })
             })
+
             .setTitle(
-                '🚨 RAID DETECTED'
+                '🚨 Raid Detected'
             )
+
             .setDescription(
                 [
-                    'Umbra detected an unusual number of member joins.',
+                    'Umbra detected unusual member activity.',
                     '',
-                    '🔴 **Raid Mode has been activated.**'
-                ].join('\n')
+                    '**Raid Mode has been activated.**'
+                ].join(
+                    '\n'
+                )
             )
+
             .addFields(
                 {
                     name:
-                        '🆔 Raid Case',
+                        '🆔 Case',
 
                     value:
                         savedRaidCase?.id
@@ -435,9 +417,10 @@ async function sendRaidDetectedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '👥 Detected Joins',
+                        '👥 Members',
 
                     value:
                         `\`${memberIds.length}\``,
@@ -445,6 +428,7 @@ async function sendRaidDetectedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
                         '🚧 Status',
@@ -455,23 +439,23 @@ async function sendRaidDetectedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '📊 Detection Rule',
+                        '📊 Detection',
 
                     value:
-                        `**${antiRaid.joinLimit} joins** within ` +
-                        `**${formatDuration(
-                            antiRaid
-                                .joinIntervalMilliseconds
+                        `**${antiRaid.joinLimit} joins** within **${formatDuration(
+                            antiRaid.joinIntervalMilliseconds
                         )}**`,
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '⏳ Raid Mode Duration',
+                        '⏳ Duration',
 
                     value:
                         formatDuration(
@@ -482,9 +466,10 @@ async function sendRaidDetectedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '🕒 Expected End',
+                        '🕒 Ends',
 
                     value:
                         formatDiscordTimestamp(
@@ -494,37 +479,25 @@ async function sendRaidDetectedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '👤 Detected Members',
+                        '👤 Members',
 
                     value:
                         memberList ||
-                        'No member IDs stored.',
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🛡️ Current Protection',
-
-                    value:
-                        [
-                            '✅ Raid activity is being recorded',
-                            '✅ New joins are being added to this Raid Case',
-                            '✅ Moderation logs are active',
-                            'ℹ️ Automatic channel lockdown is currently disabled'
-                        ].join('\n'),
+                        'No members recorded.',
 
                     inline:
                         false
                 }
             )
+
             .setFooter({
                 text:
-                    `Umbra Raid Shield • Case ${raidCaseId}`
+                    `Umbra • Raid Case ${raidCaseId}`
             })
+
             .setTimestamp();
 
     try {
@@ -567,44 +540,48 @@ async function sendRaidEndedLog(
     const embed =
         new EmbedBuilder()
             .setColor(
-                '#2ECC71'
+                '#7CFC98'
             )
+
             .setAuthor({
                 name:
                     'Umbra Raid Shield',
 
                 iconURL:
-                    guild.client.user
-                        .displayAvatarURL({
-                            extension:
-                                'png',
+                    guild.client.user.displayAvatarURL({
+                        extension:
+                            'png',
 
-                            size:
-                                256
-                        })
+                        size:
+                            256
+                    })
             })
+
             .setTitle(
                 '✅ Raid Mode Ended'
             )
+
             .setDescription(
-                'The Raid Mode monitoring period has ended.'
+                'Raid monitoring has ended successfully.'
             )
+
             .addFields(
                 {
                     name:
-                        '🆔 Raid Case',
+                        '🆔 Case',
 
                     value:
                         raidData.caseId
                             ? `\`${raidData.caseId}\``
-                            : '`Not stored`',
+                            : '`Unknown`',
 
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '👥 Recorded Members',
+                        '👥 Members',
 
                     value:
                         `\`${raidData.memberIds.size}\``,
@@ -612,9 +589,10 @@ async function sendRaidEndedLog(
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '🚧 Status',
+                        '📌 Status',
 
                     value:
                         '`CLOSED`',
@@ -623,10 +601,12 @@ async function sendRaidEndedLog(
                         true
                 }
             )
+
             .setFooter({
                 text:
-                    'Umbra Raid Shield'
+                    'Umbra • Raid Shield'
             })
+
             .setTimestamp();
 
     try {
@@ -644,10 +624,8 @@ async function sendRaidEndedLog(
             error
         );
     }
-}
-
-/**
- * End Raid Mode for a guild.
+}/**
+ * End Raid Mode for one guild.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<void>}
@@ -705,7 +683,7 @@ async function endRaidMode(
 }
 
 /**
- * Activate Raid Mode.
+ * Activate Raid Mode for one guild.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string[]} memberIds
@@ -822,31 +800,31 @@ async function activateRaidMode(
     const raidTimer =
         setTimeout(
             () => {
-                endRaidMode(
+                void endRaidMode(
                     guild
-                ).catch(error => {
-                    console.error(
-                        '❌ Failed to end Raid Mode:'
-                    );
+                ).catch(
+                    error => {
+                        console.error(
+                            '❌ Failed to end Raid Mode:'
+                        );
 
-                    console.error(
-                        error
-                    );
-                });
+                        console.error(
+                            error
+                        );
+                    }
+                );
             },
 
             antiRaid
                 .raidModeDurationMilliseconds
         );
 
-    if (
-        typeof raidTimer.unref ===
-        'function'
-    ) {
-        raidTimer.unref();
-    }
-}/**
- * Record a member join and detect raid activity.
+    raidTimer.unref?.();
+}
+
+/**
+ * Record one member join and detect
+ * possible raid activity.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {Promise<void>}
@@ -873,8 +851,10 @@ async function processRaidDetection(
         );
 
     /*
-     * A Raid Mode is already active.
-     * Add this new member to the existing case.
+     * Raid Mode is already active.
+     *
+     * Add this member to the current
+     * Raid Case.
      */
     if (currentRaid) {
         if (
@@ -1045,9 +1025,7 @@ function canSendWelcomeMessage(
             PermissionFlagsBits.AttachFiles
         )
     );
-}
-
-/**
+}/**
  * Send the Umbra Welcome message.
  *
  * @param {import('discord.js').GuildMember} member
@@ -1080,7 +1058,7 @@ async function sendWelcomeMessage(
             );
 
             console.error(
-                'Required channel permissions: View Channel, Send Messages, Embed Links and Attach Files.'
+                'Required permissions: View Channel, Send Messages, Embed Links and Attach Files.'
             );
 
             return false;
@@ -1173,7 +1151,9 @@ async function sendWelcomeMessage(
 
         return false;
     }
-}module.exports = {
+}
+
+module.exports = {
     name:
         Events.GuildMemberAdd,
 
@@ -1272,7 +1252,7 @@ async function sendWelcomeMessage(
         );
 
         console.log(
-            `🌑 Unverified Role: ${
+            `🌙 Unverified Role: ${
                 roleAssigned
                     ? 'Assigned'
                     : 'Not Assigned'
@@ -1288,7 +1268,7 @@ async function sendWelcomeMessage(
         );
 
         console.log(
-            `🛡️ Raid Shield: Processed`
+            '🛡️ Raid Shield: Processed'
         );
 
         console.log(
@@ -1318,8 +1298,7 @@ const cleanupTimer =
                 const [
                     guildId,
                     joins
-                ]
-                of recentJoins.entries()
+                ] of recentJoins.entries()
             ) {
                 const activeJoins =
                     joins.filter(
@@ -1349,9 +1328,4 @@ const cleanupTimer =
         60_000
     );
 
-if (
-    typeof cleanupTimer.unref ===
-    'function'
-) {
-    cleanupTimer.unref();
-}
+cleanupTimer.unref?.();
