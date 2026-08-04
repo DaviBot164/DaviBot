@@ -12,13 +12,11 @@ const WELCOME_BANNER_NAME =
     'welcome-banner.png';
 
 /**
- * Primary Welcome Embed color.
- *
- * Cold blue-silver tones match the
- * Las Noches banner and visual identity.
+ * Cold silver tone matching the
+ * current Las Noches welcome banner.
  */
 const WELCOME_EMBED_COLOR =
-    '#B8C4D6';
+    '#C8CDD4';
 
 /**
  * Create the Umbra Welcome Embed.
@@ -81,6 +79,12 @@ function createWelcomeEmbed(
             1_000
         );
 
+    const accountCreatedTimestamp =
+        Math.floor(
+            member.user.createdTimestamp /
+            1_000
+        );
+
     const verifyChannel =
         guild.channels.cache.get(
             channels.verifyChannelId
@@ -89,8 +93,8 @@ function createWelcomeEmbed(
     const verificationText =
         verifyChannel &&
         verifyChannel.isTextBased()
-            ? `Complete verification in ${verifyChannel} to gain access to Las Noches.`
-            : 'Complete verification to gain access to Las Noches.';
+            ? `Complete verification in ${verifyChannel} to enter Las Noches.`
+            : 'Complete verification to enter Las Noches.';
 
     const arrivalNumber =
         guild.memberCount;
@@ -102,21 +106,26 @@ function createWelcomeEmbed(
 
         .setAuthor({
             name:
-                `${guild.name} • Arrival Record`,
+                'Umbra • Arrival Record',
 
             iconURL:
+                botAvatar ||
                 serverIcon
         })
 
         .setTitle(
-            '🌙 Welcome to Las Noches'
+            '🌙 A New Soul Has Arrived'
         )
 
         .setDescription(
             [
                 `Welcome, ${member}.`,
                 '',
-                verificationText
+                'Beyond these gates begins your journey.',
+                '',
+                `**${verificationText}**`,
+                '',
+                '*Every Soul leaves a mark.*'
             ].join(
                 '\n'
             )
@@ -135,7 +144,7 @@ function createWelcomeEmbed(
             },
             {
                 name:
-                    '📜 Arrival Number',
+                    '📜 Arrival',
 
                 value:
                     `\`#${arrivalNumber}\``,
@@ -152,6 +161,21 @@ function createWelcomeEmbed(
 
                 inline:
                     true
+            },
+            {
+                name:
+                    '📅 Account Created',
+
+                value:
+                    [
+                        `<t:${accountCreatedTimestamp}:D>`,
+                        `<t:${accountCreatedTimestamp}:R>`
+                    ].join(
+                        '\n'
+                    ),
+
+                inline:
+                    false
             }
         )
 
