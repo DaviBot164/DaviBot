@@ -3,7 +3,10 @@ const rankTrialConfig =
 
 const {
     rankTrials:
-        rankTrialDatabase
+        rankTrialDatabase,
+
+    rankTrialEvents:
+        rankTrialEventDatabase
 } = require('../../database');
 
 const {
@@ -15,6 +18,10 @@ const {
 const {
     publishRankTrialToGuilds
 } = require('./publisher');
+
+const {
+    synchronizeRankTrialEventsForGuilds
+} = require('./eventManager');
 
 /**
  * Active Rank Trials scheduler interval.
@@ -29,10 +36,6 @@ let schedulerInterval =
 
 /**
  * Prevent overlapping scheduler checks.
- *
- * This may happen if a database or Discord
- * request takes longer than the configured
- * scheduler interval.
  */
 let schedulerCheckInProgress =
     false;
@@ -73,10 +76,6 @@ function getConfiguredGuildIds() {
  *
  * Umbra checks both the current and next month.
  *
- * The next month's Opening announcement may
- * become relevant before the calendar month
- * itself begins in unusual configurations.
- *
  * @param {Date} now
  * @returns {Array<
  *     ReturnType<typeof buildMonthlyRankTrialSchedule>
@@ -113,11 +112,6 @@ function getSchedulesToCheck(
 /**
  * Check whether one publication is currently
  * eligible to be published.
- *
- * A publication is due when:
- *
- * - Its scheduled time has passed.
- * - It is still inside the recovery window.
  *
  * @param {Date} now
  * @param {Date} scheduledFor
@@ -170,8 +164,227 @@ function isPublicationExpired(
 }
 
 /**
+ * Return the Opening publication belonging
+ * to one monthly Rank Trial schedule.
+ *
+ * @param {Object} schedule
+ * @returns {Object|null}
+ */
+function getOpeningPublication(
+    schedule
+) {
+    return (
+        schedule.publications.find(
+            publication =>
+                publication.key ===
+                'opening'
+        ) ??
+        null
+    );
+}
+
+/**
+ * Return the final publication belonging
+ * to one monthly Rank Trial schedule.
+ *
+ * This is normally the Closing Notice.
+ *
+ * @param {Object} schedule
+ * @returns {Object|null}
+ */
+function getFinalPublication(
+    schedule
+) {
+    if (
+        schedule.publications.length ===
+        0
+    ) {
+        return null;
+    }
+
+    return schedule.publications[
+        schedule.publications.length -
+        1
+    ];
+}
+
+/**
+ * Determine whether the Discord Scheduled
+ * Event should currently exist.
+ *
+ * The Event becomes eligible when Opening
+ * Registration begins.
+ *
+ * Umbra continues synchronizing it until the
+ * final monthly publication has passed.
+ *
+ * @param {Object} schedule
+ * @param {Date} now
+ * @returns {boolean}
+ */
+function shouldSynchronizeRankTrialEvent(
+    schedule,
+    now
+) {
+    if (
+        !rankTrialConfig.enabled ||
+        !rankTrialConfig
+            .scheduledEvent
+            ?.enabled
+    ) {
+        return false;
+    }
+
+    const openingPublication =
+        getOpeningPublication(
+            schedule
+        );
+
+    const finalPublication =
+        getFinalPublication(
+            schedule
+        );
+
+    if (
+        !openingPublication ||
+        !finalPublication
+    ) {
+        return false;
+    }
+
+    const currentTime =
+        now.getTime();
+
+    return (
+        currentTime >=
+            openingPublication
+                .scheduledFor
+                .getTime() &&
+
+        currentTime <=
+            finalPublication
+                .scheduledFor
+                .getTime()
+    );
+}
+
+/**
+ * Create, restore or update the Discord
+ * Scheduled Event for one monthly cycle.
+ *
+ * This runs independently from publication
+ * creation, so an existing announcement cannot
+ * prevent Event recovery.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Object} schedule
+ * @param {Date} now
+ * @param {string[]} guildIds
+ * @returns {Promise<{
+ *     attempted: number,
+ *     created: number,
+ *     recreated: number,
+ *     updated: number,
+ *     synchronized: number,
+ *     failed: number,
+ *     skipped: number
+ * }>}
+ */
+async function processScheduledEventSynchronization(
+    client,
+    schedule,
+    now,
+    guildIds
+) {
+    const summary = {
+        attempted:
+            0,
+
+        created:
+            0,
+
+        recreated:
+            0,
+
+        updated:
+            0,
+
+        synchronized:
+            0,
+
+        failed:
+            0,
+
+        skipped:
+            0
+    };
+
+    if (
+        !shouldSynchronizeRankTrialEvent(
+            schedule,
+            now
+        )
+    ) {
+        summary.skipped +=
+            1;
+
+        return summary;
+    }
+
+    const results =
+        await synchronizeRankTrialEventsForGuilds(
+            client,
+            schedule,
+            guildIds
+        );
+
+    for (
+        const result of
+        results
+    ) {
+        summary.attempted +=
+            1;
+
+        switch (
+            result.status
+        ) {
+            case 'created':
+                summary.created +=
+                    1;
+                break;
+
+            case 'recreated':
+                summary.recreated +=
+                    1;
+                break;
+
+            case 'updated':
+                summary.updated +=
+                    1;
+                break;
+
+            case 'synchronized':
+                summary.synchronized +=
+                    1;
+                break;
+
+            case 'disabled':
+            case 'missing':
+                summary.skipped +=
+                    1;
+                break;
+
+            default:
+                summary.failed +=
+                    1;
+                break;
+        }
+    }
+
+    return summary;
+}/**
  * Publish all currently due announcements
- * from one monthly schedule.
+ * from one monthly Rank Trial schedule.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {ReturnType<typeof buildMonthlyRankTrialSchedule>} schedule
@@ -277,8 +490,8 @@ async function processMonthlySchedule(
  * Run one complete Rank Trials scheduler check.
  *
  * PostgreSQL remains the final source of truth,
- * so running this function repeatedly cannot
- * publish the same announcement twice.
+ * so repeated checks cannot publish duplicate
+ * announcements or create duplicate Events.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Date} now
@@ -288,7 +501,15 @@ async function processMonthlySchedule(
  *     duplicates: number,
  *     failed: number,
  *     expired: number,
- *     staleReservationsRemoved: number
+ *     staleReservationsRemoved: number,
+ *     staleEventReservationsRemoved: number,
+ *     eventAttempted: number,
+ *     eventCreated: number,
+ *     eventRecreated: number,
+ *     eventUpdated: number,
+ *     eventSynchronized: number,
+ *     eventFailed: number,
+ *     eventSkipped: number
  * }>}
  */
 async function checkRankTrialSchedule(
@@ -296,28 +517,54 @@ async function checkRankTrialSchedule(
     now =
         new Date()
 ) {
+    const emptyResult = {
+        skipped:
+            true,
+
+        published:
+            0,
+
+        duplicates:
+            0,
+
+        failed:
+            0,
+
+        expired:
+            0,
+
+        staleReservationsRemoved:
+            0,
+
+        staleEventReservationsRemoved:
+            0,
+
+        eventAttempted:
+            0,
+
+        eventCreated:
+            0,
+
+        eventRecreated:
+            0,
+
+        eventUpdated:
+            0,
+
+        eventSynchronized:
+            0,
+
+        eventFailed:
+            0,
+
+        eventSkipped:
+            0
+    };
+
     if (
         !rankTrialConfig.enabled
     ) {
-        return {
-            skipped:
-                true,
-
-            published:
-                0,
-
-            duplicates:
-                0,
-
-            failed:
-                0,
-
-            expired:
-                0,
-
-            staleReservationsRemoved:
-                0
-        };
+        return emptyResult;
     }
 
     if (
@@ -327,25 +574,7 @@ async function checkRankTrialSchedule(
             'ℹ️ Rank Trials scheduler check skipped because another check is still running.'
         );
 
-        return {
-            skipped:
-                true,
-
-            published:
-                0,
-
-            duplicates:
-                0,
-
-            failed:
-                0,
-
-            expired:
-                0,
-
-            staleReservationsRemoved:
-                0
-        };
+        return emptyResult;
     }
 
     schedulerCheckInProgress =
@@ -355,25 +584,7 @@ async function checkRankTrialSchedule(
         if (
             !client.isReady()
         ) {
-            return {
-                skipped:
-                    true,
-
-                published:
-                    0,
-
-                duplicates:
-                    0,
-
-                failed:
-                    0,
-
-                expired:
-                    0,
-
-                staleReservationsRemoved:
-                    0
-            };
+            return emptyResult;
         }
 
         const guildIds =
@@ -387,34 +598,26 @@ async function checkRankTrialSchedule(
                 '⚠️ Rank Trials scheduler found no configured Guild IDs.'
             );
 
-            return {
-                skipped:
-                    true,
-
-                published:
-                    0,
-
-                duplicates:
-                    0,
-
-                failed:
-                    0,
-
-                expired:
-                    0,
-
-                staleReservationsRemoved:
-                    0
-            };
+            return emptyResult;
         }
 
         /*
-         * Remove abandoned reservations left
-         * behind by an interrupted process.
+         * Remove abandoned publication
+         * reservations.
          */
         const staleReservationsRemoved =
             await rankTrialDatabase
                 .clearStaleReservations(
+                    30
+                );
+
+        /*
+         * Remove abandoned Scheduled Event
+         * reservations.
+         */
+        const staleEventReservationsRemoved =
+            await rankTrialEventDatabase
+                .clearStaleRankTrialEventReservations(
                     30
                 );
 
@@ -424,6 +627,15 @@ async function checkRankTrialSchedule(
         ) {
             console.warn(
                 `⚠️ Removed ${staleReservationsRemoved} stale Rank Trial publication reservation(s).`
+            );
+        }
+
+        if (
+            staleEventReservationsRemoved >
+            0
+        ) {
+            console.warn(
+                `⚠️ Removed ${staleEventReservationsRemoved} stale Rank Trial Event reservation(s).`
             );
         }
 
@@ -448,14 +660,40 @@ async function checkRankTrialSchedule(
             expired:
                 0,
 
-            staleReservationsRemoved
+            staleReservationsRemoved,
+
+            staleEventReservationsRemoved,
+
+            eventAttempted:
+                0,
+
+            eventCreated:
+                0,
+
+            eventRecreated:
+                0,
+
+            eventUpdated:
+                0,
+
+            eventSynchronized:
+                0,
+
+            eventFailed:
+                0,
+
+            eventSkipped:
+                0
         };
 
         for (
             const schedule of
             schedules
         ) {
-            const scheduleSummary =
+            /*
+             * First process due announcements.
+             */
+            const publicationSummary =
                 await processMonthlySchedule(
                     client,
                     schedule,
@@ -464,23 +702,72 @@ async function checkRankTrialSchedule(
                 );
 
             totalSummary.published +=
-                scheduleSummary.published;
+                publicationSummary.published;
 
             totalSummary.duplicates +=
-                scheduleSummary.duplicates;
+                publicationSummary.duplicates;
 
             totalSummary.failed +=
-                scheduleSummary.failed;
+                publicationSummary.failed;
 
             totalSummary.expired +=
-                scheduleSummary.expired;
+                publicationSummary.expired;
+
+            /*
+             * Then independently create,
+             * restore or synchronize the
+             * Discord Scheduled Event.
+             */
+            const eventSummary =
+                await processScheduledEventSynchronization(
+                    client,
+                    schedule,
+                    now,
+                    guildIds
+                );
+
+            totalSummary.eventAttempted +=
+                eventSummary.attempted;
+
+            totalSummary.eventCreated +=
+                eventSummary.created;
+
+            totalSummary.eventRecreated +=
+                eventSummary.recreated;
+
+            totalSummary.eventUpdated +=
+                eventSummary.updated;
+
+            totalSummary.eventSynchronized +=
+                eventSummary.synchronized;
+
+            totalSummary.eventFailed +=
+                eventSummary.failed;
+
+            totalSummary.eventSkipped +=
+                eventSummary.skipped;
         }
 
-        if (
+        const shouldLogSummary =
             totalSummary.published >
                 0 ||
             totalSummary.failed >
-                0
+                0 ||
+            totalSummary.eventCreated >
+                0 ||
+            totalSummary.eventRecreated >
+                0 ||
+            totalSummary.eventUpdated >
+                0 ||
+            totalSummary.eventFailed >
+                0 ||
+            totalSummary.staleReservationsRemoved >
+                0 ||
+            totalSummary.staleEventReservationsRemoved >
+                0;
+
+        if (
+            shouldLogSummary
         ) {
             console.log(
                 '======================================'
@@ -491,23 +778,47 @@ async function checkRankTrialSchedule(
             );
 
             console.log(
-                `✅ Published: ${totalSummary.published}`
+                `✅ Announcements Published: ${totalSummary.published}`
             );
 
             console.log(
-                `ℹ️ Existing: ${totalSummary.duplicates}`
+                `ℹ️ Announcements Existing: ${totalSummary.duplicates}`
             );
 
             console.log(
-                `❌ Failed: ${totalSummary.failed}`
+                `❌ Announcement Failures: ${totalSummary.failed}`
             );
 
             console.log(
-                `⌛ Expired: ${totalSummary.expired}`
+                `⌛ Expired Announcements: ${totalSummary.expired}`
             );
 
             console.log(
-                `🧹 Stale Reservations Removed: ${totalSummary.staleReservationsRemoved}`
+                `📅 Events Created: ${totalSummary.eventCreated}`
+            );
+
+            console.log(
+                `♻️ Events Recreated: ${totalSummary.eventRecreated}`
+            );
+
+            console.log(
+                `🔄 Events Updated: ${totalSummary.eventUpdated}`
+            );
+
+            console.log(
+                `✅ Events Synchronized: ${totalSummary.eventSynchronized}`
+            );
+
+            console.log(
+                `❌ Event Failures: ${totalSummary.eventFailed}`
+            );
+
+            console.log(
+                `🧹 Publication Reservations Removed: ${totalSummary.staleReservationsRemoved}`
+            );
+
+            console.log(
+                `🧹 Event Reservations Removed: ${totalSummary.staleEventReservationsRemoved}`
             );
 
             console.log(
@@ -550,20 +861,42 @@ async function checkRankTrialSchedule(
                 0,
 
             staleReservationsRemoved:
+                0,
+
+            staleEventReservationsRemoved:
+                0,
+
+            eventAttempted:
+                0,
+
+            eventCreated:
+                0,
+
+            eventRecreated:
+                0,
+
+            eventUpdated:
+                0,
+
+            eventSynchronized:
+                0,
+
+            eventFailed:
+                1,
+
+            eventSkipped:
                 0
         };
     } finally {
         schedulerCheckInProgress =
             false;
     }
-}
-
-/**
+}/**
  * Start the Automatic Rank Trials scheduler.
  *
- * An immediate check runs first so Umbra can
- * recover a recently missed announcement after
- * restarting or redeploying.
+ * Umbra performs one immediate check so
+ * recently missed announcements and Events
+ * may be recovered after restart or redeploy.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
@@ -602,7 +935,7 @@ async function startRankTrialScheduler(
     }
 
     /*
-     * Run immediately after Umbra becomes ready.
+     * Immediate startup recovery check.
      */
     await checkRankTrialSchedule(
         client
@@ -620,10 +953,6 @@ async function startRankTrialScheduler(
                 .schedulerIntervalMs
         );
 
-    /*
-     * Allow Node.js to shut down naturally
-     * if this interval is the only active task.
-     */
     schedulerInterval.unref?.();
 
     console.log(
@@ -643,11 +972,21 @@ async function startRankTrialScheduler(
     );
 
     console.log(
-        `⏱️ Check Interval: ${rankTrialConfig.schedulerIntervalMs / 60000} minutes`
+        `⏱️ Check Interval: ${rankTrialConfig.schedulerIntervalMs / 60_000} minutes`
     );
 
     console.log(
         '📅 Trial Day: Final Saturday of every month'
+    );
+
+    console.log(
+        `📆 Discord Events: ${
+            rankTrialConfig
+                .scheduledEvent
+                ?.enabled
+                ? 'Enabled'
+                : 'Disabled'
+        }`
     );
 
     console.log(
@@ -687,8 +1026,8 @@ function stopRankTrialScheduler() {
 }
 
 /**
- * Return whether the scheduler is currently
- * active inside this Umbra process.
+ * Return whether the scheduler is active
+ * inside the current Umbra process.
  *
  * @returns {boolean}
  */
@@ -714,6 +1053,10 @@ module.exports = {
     getSchedulesToCheck,
     isPublicationDue,
     isPublicationExpired,
+    getOpeningPublication,
+    getFinalPublication,
+    shouldSynchronizeRankTrialEvent,
+    processScheduledEventSynchronization,
     processMonthlySchedule,
     checkRankTrialSchedule,
     startRankTrialScheduler,
