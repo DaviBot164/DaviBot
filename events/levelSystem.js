@@ -12,21 +12,18 @@ const {
         levelDatabase
 } = require('../database');
 
-const channels =
-    require('../config/channels');
-
 const {
     sendLevelFeed
 } = require('../utils/kingdomFeed');
 
 /**
- * Official Las Noches Level Up channel.
+ * Official Las Noches Soul Progression channel.
  *
- * Level Up announcements are published
- * in the main Eclipse Chat channel.
+ * Compact Level Up notifications are published
+ * here instead of the main general chat.
  */
-const LEVEL_UP_CHANNEL_ID =
-    channels.eclipseChatChannelId;
+const SOUL_PROGRESSION_CHANNEL_ID =
+    '1534145341430038558';
 
 /**
  * Level System configuration.
@@ -175,7 +172,7 @@ function hasMeaningfulContent(
         return false;
     }
 
-    /**
+    /*
      * Text commands should not grant XP.
      */
     if (
@@ -192,14 +189,14 @@ function hasMeaningfulContent(
         return false;
     }
 
-    /**
+    /*
      * Require at least three letters or numbers.
      * Emoji-only and symbol-only messages give no XP.
      */
     const meaningfulCharacters =
         normalizedContent.match(
             /[\p{L}\p{N}]/gu
-        ) ||
+        ) ??
         [];
 
     if (
@@ -209,7 +206,7 @@ function hasMeaningfulContent(
         return false;
     }
 
-    /**
+    /*
      * Prevent messages such as:
      *
      * aaaaaaaaaa
@@ -286,55 +283,6 @@ function isRecentDuplicate(
 }
 
 /**
- * Create Umbra's visual XP progress bar.
- *
- * Example:
- * ▰▰▰▰▱▱▱▱▱▱
- *
- * @param {number} percentage
- * @param {number} length
- * @returns {string}
- */
-function createProgressBar(
-    percentage,
-    length = 10
-) {
-    const safePercentage =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                Number(
-                    percentage
-                ) ||
-                0
-            )
-        );
-
-    const filledBlocks =
-        Math.round(
-            (
-                safePercentage /
-                100
-            ) *
-            length
-        );
-
-    const emptyBlocks =
-        length -
-        filledBlocks;
-
-    return (
-        '▰'.repeat(
-            filledBlocks
-        ) +
-        '▱'.repeat(
-            emptyBlocks
-        )
-    );
-}
-
-/**
  * Format a number using separators.
  *
  * @param {number|string|null|undefined} value
@@ -388,7 +336,9 @@ function canManageRewardRole(
     }
 
     return true;
-}/**
+}
+
+/**
  * Synchronize a Soul's progression roles.
  *
  * Umbra keeps only the highest configured
@@ -460,10 +410,6 @@ async function synchronizeLevelRewards(
         };
     }
 
-    /*
-     * Only roles stored in level_rewards
-     * are considered progression roles.
-     */
     const configuredRewardRoleIds =
         new Set(
             allRewards.map(
@@ -472,10 +418,6 @@ async function synchronizeLevelRewards(
             )
         );
 
-    /*
-     * Find every reward currently earned
-     * by this Soul.
-     */
     const earnedRewards =
         allRewards.filter(
             reward =>
@@ -489,17 +431,13 @@ async function synchronizeLevelRewards(
     const removedRoles =
         [];
 
-    /*
-     * A Soul below the first reward Level
-     * should not have any progression role.
-     */
     if (
         earnedRewards.length ===
         0
     ) {
         for (
-            const roleId
-            of configuredRewardRoleIds
+            const roleId of
+            configuredRewardRoleIds
         ) {
             const role =
                 member.guild.roles.cache.get(
@@ -559,13 +497,7 @@ async function synchronizeLevelRewards(
             highestRewardLevel:
                 null
         };
-    }
-
-    /*
-     * Determine the highest configured reward
-     * Level earned by the member.
-     */
-    const highestRewardLevel =
+    }    const highestRewardLevel =
         Math.max(
             ...earnedRewards.map(
                 reward =>
@@ -573,10 +505,6 @@ async function synchronizeLevelRewards(
             )
         );
 
-    /*
-     * Multiple rewards at the same highest
-     * Level remain supported.
-     */
     const highestRewards =
         earnedRewards.filter(
             reward =>
@@ -593,13 +521,11 @@ async function synchronizeLevelRewards(
         );
 
     /*
-     * Remove all configured progression roles
-     * except those belonging to the highest
-     * currently earned reward Level.
+     * Remove lower progression roles.
      */
     for (
-        const roleId
-        of configuredRewardRoleIds
+        const roleId of
+        configuredRewardRoleIds
     ) {
         if (
             highestRewardRoleIds.has(
@@ -662,11 +588,11 @@ async function synchronizeLevelRewards(
 
     /*
      * Grant every role configured at the
-     * highest currently earned reward Level.
+     * highest currently earned Level.
      */
     for (
-        const reward
-        of highestRewards
+        const reward of
+        highestRewards
     ) {
         const role =
             member.guild.roles.cache.get(
@@ -731,14 +657,14 @@ async function synchronizeLevelRewards(
         removedRoles,
         highestRewardLevel
     };
-}/**
- * Resolve the channel that should receive
- * Level Up announcements.
+}
+
+/**
+ * Resolve the Soul Progression channel.
  *
- * The configured Eclipse Chat channel is preferred.
- * The original message channel is used as
- * a fallback when the configured channel
- * cannot be found or used.
+ * The configured channel is always preferred.
+ * The original message channel is not used as
+ * a fallback so general chat remains clean.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -749,54 +675,58 @@ async function getLevelUpChannel(
     const configuredChannel =
         await message.guild.channels
             .fetch(
-                LEVEL_UP_CHANNEL_ID
+                SOUL_PROGRESSION_CHANNEL_ID
             )
             .catch(
                 () => null
             );
 
     if (
-        configuredChannel &&
-        configuredChannel.isTextBased()
+        !configuredChannel ||
+        !configuredChannel.isTextBased() ||
+        configuredChannel.isThread()
     ) {
-        const botMember =
-            message.guild.members.me;
+        console.warn(
+            `⚠️ Soul Progression channel was not found: ${SOUL_PROGRESSION_CHANNEL_ID}`
+        );
 
-        const permissions =
-            botMember
-                ? configuredChannel
-                    .permissionsFor(
-                        botMember
-                    )
-                : null;
+        return null;
+    }
 
-        if (
-            permissions?.has([
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.EmbedLinks
-            ])
-        ) {
-            return configuredChannel;
-        }
+    const botMember =
+        message.guild.members.me;
 
+    const permissions =
+        botMember
+            ? configuredChannel
+                .permissionsFor(
+                    botMember
+                )
+            : null;
+
+    if (
+        !permissions?.has([
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks
+        ])
+    ) {
         console.warn(
             `⚠️ Umbra cannot send Level Up messages in #${configuredChannel.name}.`
         );
+
+        return null;
     }
 
-    if (
-        message.channel &&
-        message.channel.isTextBased()
-    ) {
-        return message.channel;
-    }
-
-    return null;
+    return configuredChannel;
 }
 
 /**
- * Send a polished Level Up announcement.
+ * Send a compact Las Noches Level Up
+ * announcement.
+ *
+ * Detailed XP progress remains available
+ * inside the interactive /profile command.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} levelResult
@@ -817,20 +747,8 @@ async function sendLevelUpMessage(
         );
 
     if (!targetChannel) {
-        console.warn(
-            '⚠️ No valid channel was found for the Level Up announcement.'
-        );
-
         return;
     }
-
-    const progress =
-        levelResult.data.progress;
-
-    const progressBar =
-        createProgressBar(
-            progress.progressPercent
-        );
 
     const serverRank =
         await levelDatabase
@@ -842,22 +760,10 @@ async function sendLevelUpMessage(
                 () => null
             );
 
-    const xpUntilNextLevel =
-        Math.max(
-            0,
-            progress.nextLevelXp -
-            levelResult.data.xp
-        );
-
     const descriptionLines = [
-        `Congratulations, ${message.author}!`,
+        `${message.author} has reached a new milestone within Las Noches.`,
         '',
-        'Your journey beneath the crimson moon continues.',
-        'A new milestone has been reached.',
-        '',
-        '━━━━━━━━━━━━━━━━━━━━',
-        '',
-        `🌑 **Level:** \`${levelResult.newLevel}\``,
+        `🌙 **Level:** \`${levelResult.newLevel}\``,
         `⭐ **Total XP:** \`${formatNumber(levelResult.data.xp)}\``,
         `🏆 **Server Rank:** ${
             serverRank
@@ -872,10 +778,7 @@ async function sendLevelUpMessage(
     ) {
         descriptionLines.push(
             '',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '',
-            '🎖️ **New Rank Unlocked**',
-            '',
+            '🎖️ **Reward Unlocked**',
             rewardResult.grantedRoles
                 .map(
                     role =>
@@ -891,7 +794,7 @@ async function sendLevelUpMessage(
     ) {
         descriptionLines.push(
             '',
-            '🌘 **Previous Rank Replaced**',
+            '🌘 **Previous Reward Replaced**',
             rewardResult.removedRoles
                 .map(
                     role =>
@@ -903,24 +806,13 @@ async function sendLevelUpMessage(
 
     descriptionLines.push(
         '',
-        '━━━━━━━━━━━━━━━━━━━━',
-        '',
-        `📈 **Journey to Level ${levelResult.newLevel + 1}**`,
-        '',
-        `\`${progressBar}\` **${progress.progressPercent}%**`,
-        '',
-        `⭐ \`${formatNumber(progress.progressXp)} / ${formatNumber(progress.requiredForNextLevel)} XP\``,
-        `🌙 **Remaining XP:** \`${formatNumber(xpUntilNextLevel)}\``,
-        '',
-        '━━━━━━━━━━━━━━━━━━━━',
-        '',
-        '*Continue your ascent and conquer the path beneath the crimson moon.*'
+        '*Continue strengthening your spirit within Las Noches.*'
     );
 
     const levelUpEmbed =
         createEmbed({
             title:
-                '🌑 A Soul Has Ascended',
+                '🌙 A Soul Has Ascended',
 
             description:
                 descriptionLines.join(
@@ -934,7 +826,7 @@ async function sendLevelUpMessage(
                             'png',
 
                         size:
-                            512,
+                            256,
 
                         forceStatic:
                             false
@@ -943,9 +835,6 @@ async function sendLevelUpMessage(
 
     try {
         await targetChannel.send({
-            content:
-                `${message.author}`,
-
             embeds: [
                 levelUpEmbed
             ],
@@ -1005,7 +894,8 @@ async function processLevelMessage(
     }
 
     const content =
-        message.content || '';
+        message.content ??
+        '';
 
     if (
         !hasMeaningfulContent(
@@ -1060,6 +950,10 @@ async function processLevelMessage(
             levelResult.newLevel
         );
 
+    /*
+     * Send one compact Level Up notification
+     * into the Soul Progression channel.
+     */
     await sendLevelUpMessage(
         message,
         levelResult,
@@ -1067,9 +961,11 @@ async function processLevelMessage(
     );
 
     /*
-     * NEW:
-     * Publish major Level milestones
-     * into the Kingdom Feed.
+     * Keep the existing Kingdom Feed logic.
+     *
+     * sendLevelFeed may publish only configured
+     * major milestones, depending on the
+     * Kingdom Feed configuration.
      */
     await sendLevelFeed({
         member:
@@ -1103,7 +999,7 @@ async function processLevelMessage(
     );
 
     console.log(
-        '🌑 Umbra Level Up'
+        '🌙 Umbra Level Up'
     );
 
     console.log(
@@ -1120,7 +1016,8 @@ async function processLevelMessage(
 
     console.log(
         `🏆 Server Rank: ${
-            serverRank || 'Unknown'
+            serverRank ??
+            'Unknown'
         }`
     );
 
@@ -1136,7 +1033,7 @@ async function processLevelMessage(
         rewardResult.highestRewardLevel
     ) {
         console.log(
-            `🌑 Highest Reward Level: ${rewardResult.highestRewardLevel}`
+            `🌙 Highest Reward Level: ${rewardResult.highestRewardLevel}`
         );
     }
 
@@ -1159,7 +1056,9 @@ module.exports = {
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
      */
-    async execute(message) {
+    async execute(
+        message
+    ) {
         try {
             await processLevelMessage(
                 message
@@ -1177,8 +1076,8 @@ module.exports = {
 };
 
 /**
- * Remove old duplicate-message
- * records from memory.
+ * Remove old duplicate-message records
+ * from memory.
  */
 const cleanupTimer =
     setInterval(
@@ -1190,8 +1089,7 @@ const cleanupTimer =
                 const [
                     key,
                     data
-                ]
-                of recentMessages.entries()
+                ] of recentMessages.entries()
             ) {
                 if (
                     now -
@@ -1205,12 +1103,8 @@ const cleanupTimer =
                 }
             }
         },
+
         10 * 60 * 1000
     );
 
-if (
-    typeof cleanupTimer.unref ===
-    'function'
-) {
-    cleanupTimer.unref();
-}
+cleanupTimer.unref?.();

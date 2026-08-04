@@ -1,53 +1,74 @@
 module.exports = {
     /**
-     * Main Kingdom Feed switch.
+     * Main Soul Progression Feed switch.
      *
-     * false = disable every Feed notification.
+     * false = disable every progression
+     * Feed notification.
      */
     enabled:
         true,
 
     /**
-     * Preferred Kingdom Feed channel ID.
+     * Official Soul Progression channel.
      *
-     * Leave this empty temporarily if the
-     * channel has not been created yet.
-     *
-     * Umbra will then search by channel name.
+     * Current channel:
+     * 📈・soul-progression
      */
     channelId:
-        '',
+        '1534145341430038558',
 
     /**
      * Fallback channel name.
+     *
+     * Used only if the configured channel ID
+     * cannot be found.
      */
     channelName:
-        '📜・kingdom-feed',
+        '📈・soul-progression',
 
     /**
-     * Individual Feed event switches.
+     * Individual progression event switches.
      */
     events: {
+        /**
+         * Achievement unlocks are published
+         * inside Soul Progression.
+         */
         achievements:
             true,
 
+        /**
+         * Chronicle Title unlocks are published
+         * inside Soul Progression.
+         */
         titles:
             true,
 
+        /**
+         * Rank assignments, promotions,
+         * demotions and removals are published
+         * inside Soul Progression.
+         */
         ranks:
             true,
 
+        /**
+         * Disabled to prevent duplicate Level
+         * notifications.
+         *
+         * The Level System already sends one
+         * compact Level Up Embed directly into
+         * Soul Progression.
+         */
         levels:
-            true
+            false
     },
 
     /**
-     * Level milestones that should appear
-     * in the public Kingdom Feed.
+     * Preserved for future use.
      *
-     * Normal Level increases will not create
-     * Feed messages unless they reach one
-     * of these milestones.
+     * These milestones will become active again
+     * only if events.levels is changed to true.
      */
     levelMilestones: [
         5,
@@ -61,7 +82,7 @@ module.exports = {
     ],
 
     /**
-     * Kingdom Feed visual colors.
+     * Soul Progression visual colors.
      */
     colors: {
         achievement:
@@ -85,6 +106,6 @@ module.exports = {
      */
     footer: {
         text:
-            '🌙 Umbra • Chronicles of Las Noches'
+            '🌙 Umbra • Soul Records of Las Noches'
     }
 };
