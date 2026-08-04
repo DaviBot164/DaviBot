@@ -13,13 +13,13 @@ const WELCOME_BANNER_NAME =
 
 /**
  * Cold silver tone matching the
- * current Las Noches welcome banner.
+ * Las Noches Welcome banner.
  */
 const WELCOME_EMBED_COLOR =
     '#C8CDD4';
 
 /**
- * Create the Umbra Welcome Embed.
+ * Create the compact Umbra Welcome Embed.
  *
  * The banner image is attached inside:
  * - events/guildMemberAdd.js
@@ -33,19 +33,6 @@ function createWelcomeEmbed(
 ) {
     const guild =
         member.guild;
-
-    const serverIcon =
-        guild.iconURL({
-            extension:
-                'png',
-
-            size:
-                512,
-
-            forceStatic:
-                false
-        }) ||
-        undefined;
 
     const memberAvatar =
         member.user
@@ -79,12 +66,6 @@ function createWelcomeEmbed(
             1_000
         );
 
-    const accountCreatedTimestamp =
-        Math.floor(
-            member.user.createdTimestamp /
-            1_000
-        );
-
     const verifyChannel =
         guild.channels.cache.get(
             channels.verifyChannelId
@@ -109,8 +90,7 @@ function createWelcomeEmbed(
                 'Umbra • Arrival Record',
 
             iconURL:
-                botAvatar ||
-                serverIcon
+                botAvatar
         })
 
         .setTitle(
@@ -121,11 +101,7 @@ function createWelcomeEmbed(
             [
                 `Welcome, ${member}.`,
                 '',
-                'Beyond these gates begins your journey.',
-                '',
-                `**${verificationText}**`,
-                '',
-                '*Every Soul leaves a mark.*'
+                `**${verificationText}**`
             ].join(
                 '\n'
             )
@@ -161,21 +137,6 @@ function createWelcomeEmbed(
 
                 inline:
                     true
-            },
-            {
-                name:
-                    '📅 Account Created',
-
-                value:
-                    [
-                        `<t:${accountCreatedTimestamp}:D>`,
-                        `<t:${accountCreatedTimestamp}:R>`
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    false
             }
         )
 
