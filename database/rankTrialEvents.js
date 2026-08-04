@@ -128,14 +128,6 @@ async function getRankTrialEvent(
  * and monthly trial cycle.
  *
  * @param {Object} eventData
- * @param {string} eventData.guildId
- * @param {string} eventData.trialKey
- * @param {string} eventData.eventName
- * @param {string} eventData.eventDescription
- * @param {string} eventData.eventLocation
- * @param {Date} eventData.startsAt
- * @param {Date} eventData.endsAt
- * @param {string} eventData.status
  * @returns {Promise<Object|null>}
  */
 async function reserveRankTrialEvent(
@@ -162,7 +154,7 @@ async function reserveRankTrialEvent(
                     $5,
                     $6,
                     $7,
-                    $8
+                    $8::VARCHAR(20)
                 )
                 ON CONFLICT (
                     guild_id,
@@ -243,15 +235,6 @@ async function completeRankTrialEventCreation(
  * synchronization with Discord.
  *
  * @param {Object} eventData
- * @param {string} eventData.guildId
- * @param {string} eventData.trialKey
- * @param {string|null} eventData.discordEventId
- * @param {string} eventData.eventName
- * @param {string} eventData.eventDescription
- * @param {string} eventData.eventLocation
- * @param {Date} eventData.startsAt
- * @param {Date} eventData.endsAt
- * @param {string} eventData.status
  * @returns {Promise<Object|null>}
  */
 async function updateRankTrialEvent(
@@ -268,12 +251,12 @@ async function updateRankTrialEvent(
                     event_location = $6,
                     starts_at = $7,
                     ends_at = $8,
-                    status = $9,
+                    status = $9::VARCHAR(20),
                     synced_at = NOW(),
                     updated_at = NOW(),
                     deleted_at =
                         CASE
-                            WHEN $9 = 'DELETED'
+                            WHEN $9::VARCHAR(20) = 'DELETED'
                                 THEN NOW()
                             ELSE NULL
                         END
@@ -343,12 +326,12 @@ async function updateRankTrialEventStatus(
             `
                 UPDATE rank_trial_events
                 SET
-                    status = $3,
+                    status = $3::VARCHAR(20),
                     synced_at = NOW(),
                     updated_at = NOW(),
                     deleted_at =
                         CASE
-                            WHEN $3 = 'DELETED'
+                            WHEN $3::VARCHAR(20) = 'DELETED'
                                 THEN NOW()
                             ELSE deleted_at
                         END
@@ -373,9 +356,7 @@ async function updateRankTrialEventStatus(
     return mapRankTrialEventRow(
         result.rows[0]
     );
-}
-
-/**
+}/**
  * Mark a Rank Trial Event as deleted and
  * remove its Discord Event ID.
  *
