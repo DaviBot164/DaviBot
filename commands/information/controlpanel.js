@@ -25,7 +25,7 @@ const CONTROL_PANEL_COLOR =
 
 /**
  * Custom ID used by the Umbra Terminal
- * selection menu.
+ * module selection menu.
  */
 const CONTROL_PANEL_CUSTOM_ID =
     'umbra:control:select';
@@ -36,6 +36,13 @@ const CONTROL_PANEL_CUSTOM_ID =
  */
 const CONTROL_PANEL_REFRESH_ID =
     'umbra:control:refresh-health';
+
+/**
+ * Custom ID used by the Incident Center
+ * Refresh button.
+ */
+const INCIDENT_CENTER_REFRESH_ID =
+    'umbra:control:refresh-incidents';
 
 /**
  * Maximum time allowed for a live
@@ -277,7 +284,7 @@ async function collectHealthSafely(
         }
     }
 }/**
- * Build the Umbra Terminal selection menu.
+ * Build the Umbra Terminal module menu.
  *
  * @returns {StringSelectMenuBuilder}
  */
@@ -312,6 +319,20 @@ function buildControlPanelMenu() {
                 )
                 .setValue(
                     'system-overview'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Incident Center'
+                )
+                .setDescription(
+                    'Review archived Umbra system incidents'
+                )
+                .setEmoji(
+                    '🚨'
+                )
+                .setValue(
+                    'incident-center'
                 ),
 
             new StringSelectMenuOptionBuilder()
@@ -421,6 +442,41 @@ function buildRefreshHealthButton(
 }
 
 /**
+ * Build the Incident Center
+ * Refresh button.
+ *
+ * @param {boolean} disabled
+ * @returns {ButtonBuilder}
+ */
+function buildRefreshIncidentsButton(
+    disabled =
+        false
+) {
+    return new ButtonBuilder()
+        .setCustomId(
+            INCIDENT_CENTER_REFRESH_ID
+        )
+
+        .setLabel(
+            disabled
+                ? 'Refreshing Incidents...'
+                : 'Refresh Incidents'
+        )
+
+        .setEmoji(
+            '🚨'
+        )
+
+        .setStyle(
+            ButtonStyle.Danger
+        )
+
+        .setDisabled(
+            disabled
+        );
+}
+
+/**
  * Build the shared Terminal menu row.
  *
  * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
@@ -433,7 +489,8 @@ function buildControlPanelMenuRow() {
 }
 
 /**
- * Build the shared Terminal action row.
+ * Build the standard Terminal
+ * Health action row.
  *
  * @param {boolean} refreshDisabled
  * @returns {ActionRowBuilder<ButtonBuilder>}
@@ -451,15 +508,30 @@ function buildControlPanelActionRow(
 }
 
 /**
- * Build both shared Terminal rows.
+ * Build the Incident Center
+ * action row.
  *
  * @param {boolean} refreshDisabled
- * @returns {Array<
- *     ActionRowBuilder<
- *         StringSelectMenuBuilder |
- *         ButtonBuilder
- *     >
- * >}
+ * @returns {ActionRowBuilder<ButtonBuilder>}
+ */
+function buildIncidentCenterActionRow(
+    refreshDisabled =
+        false
+) {
+    return new ActionRowBuilder()
+        .addComponents(
+            buildRefreshIncidentsButton(
+                refreshDisabled
+            )
+        );
+}
+
+/**
+ * Build the normal Umbra Terminal
+ * component rows.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {Array<ActionRowBuilder>}
  */
 function buildControlPanelComponents(
     refreshDisabled =
@@ -474,7 +546,27 @@ function buildControlPanelComponents(
 }
 
 /**
- * Build the live Umbra Terminal home Embed.
+ * Build the Incident Center
+ * component rows.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {Array<ActionRowBuilder>}
+ */
+function buildIncidentCenterComponents(
+    refreshDisabled =
+        false
+) {
+    return [
+        buildControlPanelMenuRow(),
+        buildIncidentCenterActionRow(
+            refreshDisabled
+        )
+    ];
+}
+
+/**
+ * Build the live Umbra Terminal
+ * home Embed.
  *
  * @param {import('discord.js').Interaction} interaction
  * @param {Object} snapshot
@@ -894,21 +986,44 @@ function buildControlPanelEmbed(
         }
     },
 
+    /**
+     * Shared Terminal constants.
+     */
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
     CONTROL_PANEL_REFRESH_ID,
+    INCIDENT_CENTER_REFRESH_ID,
     HEALTH_SNAPSHOT_TIMEOUT,
 
+    /**
+     * Shared formatting helpers.
+     */
     formatBooleanStatus,
     formatHealthState,
 
+    /**
+     * Health snapshot utilities.
+     */
     buildFallbackSnapshot,
     collectHealthSafely,
 
+    /**
+     * Terminal menu and button builders.
+     */
     buildControlPanelMenu,
+
     buildRefreshHealthButton,
+    buildRefreshIncidentsButton,
+
     buildControlPanelMenuRow,
     buildControlPanelActionRow,
+    buildIncidentCenterActionRow,
+
     buildControlPanelComponents,
+    buildIncidentCenterComponents,
+
+    /**
+     * Main Terminal Embed builder.
+     */
     buildControlPanelEmbed
 };

@@ -13,17 +13,163 @@ const Terminal =
     require('../utils/terminal');
 
 const {
+    terminalIncidents
+} = require('../database');
+
+const {
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
     CONTROL_PANEL_REFRESH_ID,
+    INCIDENT_CENTER_REFRESH_ID,
 
     formatBooleanStatus,
     formatHealthState,
 
     collectHealthSafely,
+
     buildControlPanelComponents,
+    buildIncidentCenterComponents,
     buildControlPanelEmbed
 } = require('../commands/information/controlpanel');
+
+/**
+ * Maximum number of recent Incidents
+ * displayed inside Incident Center.
+ */
+const INCIDENT_CENTER_LIMIT =
+    8;
+
+/**
+ * Convert one Incident severity into
+ * a readable emoji.
+ *
+ * @param {string} severity
+ * @returns {string}
+ */
+function getIncidentSeverityEmoji(
+    severity
+) {
+    switch (
+        severity
+    ) {
+        case 'critical':
+            return '🔴';
+
+        case 'warning':
+            return '🟡';
+
+        case 'success':
+            return '🟢';
+
+        case 'info':
+            return '🔵';
+
+        default:
+            return '⚪';
+    }
+}
+
+/**
+ * Convert one Incident severity into
+ * an uppercase label.
+ *
+ * @param {string} severity
+ * @returns {string}
+ */
+function formatIncidentSeverity(
+    severity
+) {
+    const normalizedSeverity =
+        typeof severity ===
+            'string'
+            ? severity.toUpperCase()
+            : 'UNKNOWN';
+
+    return `\`${normalizedSeverity}\``;
+}
+
+/**
+ * Convert one JavaScript date into
+ * Discord timestamp syntax.
+ *
+ * @param {Date|string|null} value
+ * @returns {string}
+ */
+function formatIncidentTimestamp(
+    value
+) {
+    if (!value) {
+        return '`Unavailable`';
+    }
+
+    const date =
+        value instanceof Date
+            ? value
+            : new Date(
+                value
+            );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return '`Unavailable`';
+    }
+
+    const unixTimestamp =
+        Math.floor(
+            date.getTime() /
+            1_000
+        );
+
+    return (
+        `<t:${unixTimestamp}:F>\n` +
+        `<t:${unixTimestamp}:R>`
+    );
+}
+
+/**
+ * Limit Incident text before displaying
+ * it inside the Control Panel.
+ *
+ * @param {unknown} value
+ * @param {number} maxLength
+ * @returns {string}
+ */
+function limitIncidentDisplayText(
+    value,
+    maxLength =
+        180
+) {
+    const text =
+        typeof value ===
+            'string'
+            ? value.trim()
+            : String(
+                value ??
+                'No information provided.'
+            ).trim();
+
+    if (
+        text.length <=
+        maxLength
+    ) {
+        return (
+            text ||
+            'No information provided.'
+        );
+    }
+
+    return (
+        text.slice(
+            0,
+            maxLength -
+                16
+        ) +
+        '... truncated'
+    );
+}
 
 /**
  * Build a common Umbra Terminal
@@ -41,7 +187,8 @@ function buildModuleEmbed({
     interaction,
     title,
     description,
-    fields = [],
+    fields =
+        [],
     color =
         CONTROL_PANEL_COLOR
 }) {
@@ -268,6 +415,232 @@ function buildSystemOverviewEmbed(
         ]
     });
 }/**
+ * Build one recent Incident field.
+ *
+ * @param {Object} incident
+ * @param {number} index
+ * @returns {{
+ *     name: string,
+ *     value: string,
+ *     inline: boolean
+ * }}
+ */
+function buildRecentIncidentField(
+    incident,
+    index
+) {
+    const severityEmoji =
+        getIncidentSeverityEmoji(
+            incident.severity
+        );
+
+    const incidentTitle =
+        limitIncidentDisplayText(
+            incident.title,
+            120
+        );
+
+    const incidentMessage =
+        limitIncidentDisplayText(
+            incident.message,
+            220
+        );
+
+    return {
+        name:
+            `${severityEmoji} #${incident.id ?? index + 1} • ${incidentTitle}`,
+
+        value:
+            [
+                `**Type:** \`${incident.incidentType ?? 'UNKNOWN'}\``,
+                `**Severity:** ${formatIncidentSeverity(
+                    incident.severity
+                )}`,
+                `**Time:** ${formatIncidentTimestamp(
+                    incident.createdAt
+                )}`,
+                '',
+                incidentMessage
+            ].join(
+                '\n'
+            ),
+
+        inline:
+            false
+    };
+}
+
+/**
+ * Build the PostgreSQL Incident Center.
+ *
+ * @param {import('discord.js').Interaction} interaction
+ * @param {Object[]} incidents
+ * @param {Object} statistics
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildIncidentCenterEmbed(
+    interaction,
+    incidents,
+    statistics
+) {
+    const recentIncidentFields =
+        incidents.map(
+            buildRecentIncidentField
+        );
+
+    const lastIncident =
+        statistics.lastIncidentAt
+            ? formatIncidentTimestamp(
+                statistics.lastIncidentAt
+            )
+            : '`No incidents recorded`';
+
+    const fields = [
+        {
+            name:
+                '📊 Archive Summary',
+
+            value:
+                [
+                    `**Total:** \`${statistics.total}\``,
+                    `**Critical:** \`${statistics.critical}\``,
+                    `**Warnings:** \`${statistics.warning}\``,
+                    `**Info:** \`${statistics.info}\``
+                ].join(
+                    '\n'
+                ),
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🕒 Latest Incident',
+
+            value:
+                lastIncident,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🗄️ Archive State',
+
+            value:
+                [
+                    '🟢 `CONNECTED`',
+                    `**Displayed:** \`${incidents.length}/${INCIDENT_CENTER_LIMIT}\``
+                ].join(
+                    '\n'
+                ),
+
+            inline:
+                true
+        }
+    ];
+
+    if (
+        recentIncidentFields.length >
+        0
+    ) {
+        fields.push(
+            {
+                name:
+                    '━━━━━━━━ RECENT INCIDENTS ━━━━━━━━',
+
+                value:
+                    'The newest Umbra system records are displayed below.',
+
+                inline:
+                    false
+            },
+
+            ...recentIncidentFields
+        );
+    } else {
+        fields.push({
+            name:
+                '✅ No Archived Incidents',
+
+            value:
+                [
+                    'Umbra has not recorded any system incidents yet.',
+                    '',
+                    'New warnings, failures and recoveries will appear here automatically.'
+                ].join(
+                    '\n'
+                ),
+
+            inline:
+                false
+        });
+    }
+
+    return buildModuleEmbed({
+        interaction,
+
+        title:
+            '🚨 Umbra Incident Center',
+
+        description:
+            [
+                'Review permanent system Incident records stored inside PostgreSQL.',
+                '',
+                'Incidents are archived before being published in the Umbra Terminal channel.'
+            ].join(
+                '\n'
+            ),
+
+        color:
+            statistics.critical >
+            0
+                ? '#ED4245'
+                : statistics.warning >
+                    0
+                    ? '#FEE75C'
+                    : '#57F287',
+
+        fields
+    });
+}
+
+/**
+ * Load all data required by the
+ * Incident Center.
+ *
+ * @param {import('discord.js').Interaction} interaction
+ * @returns {Promise<{
+ *     incidents: Object[],
+ *     statistics: Object
+ * }>}
+ */
+async function loadIncidentCenterData(
+    interaction
+) {
+    const [
+        incidents,
+        statistics
+    ] = await Promise.all([
+        terminalIncidents
+            .getRecentTerminalIncidents(
+                interaction.guild.id,
+                INCIDENT_CENTER_LIMIT
+            ),
+
+        terminalIncidents
+            .getTerminalIncidentStatistics(
+                interaction.guild.id
+            )
+    ]);
+
+    return {
+        incidents,
+        statistics
+    };
+}
+
+/**
  * Build the Rank Trials page.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -430,9 +803,7 @@ function buildTicketsEmbed(
             }
         ]
     });
-}
-
-/**
+}/**
  * Build the Arrancar Ranks page.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -547,7 +918,7 @@ function buildSetupCenterEmbed(
                     '📜 Sacred Laws',
 
                 value:
-                    'Publish official rules and standards.',
+                    'Publish official rules inside the dedicated Sacred Laws channel.',
 
                 inline:
                     true
@@ -557,14 +928,14 @@ function buildSetupCenterEmbed(
                     '⛩️ Verification Guide',
 
                 value:
-                    'Publish compact Bloxlink instructions.',
+                    'Publish compact Bloxlink verification instructions.',
 
                 inline:
                     true
             },
             {
                 name:
-                    '📖 Information Modules',
+                    '📖 Kingdom Archives',
 
                 value:
                     [
@@ -721,7 +1092,9 @@ function buildGuardianEmbed(
             }
         ]
     });
-}/**
+}
+
+/**
  * Safely send an Umbra Terminal error.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -781,7 +1154,7 @@ async function sendControlPanelError(
 }
 
 /**
- * Check whether the interaction belongs
+ * Check whether one interaction belongs
  * to the Umbra Terminal.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -804,7 +1177,9 @@ function isControlPanelInteraction(
     ) {
         return (
             interaction.customId ===
-            CONTROL_PANEL_REFRESH_ID
+                CONTROL_PANEL_REFRESH_ID ||
+            interaction.customId ===
+                INCIDENT_CENTER_REFRESH_ID
         );
     }
 
@@ -812,8 +1187,8 @@ function isControlPanelInteraction(
 }
 
 /**
- * Check whether the interacting member
- * may use the Umbra Terminal.
+ * Check whether the member may use
+ * the Umbra Terminal.
  *
  * @param {import('discord.js').Interaction} interaction
  * @returns {boolean}
@@ -827,9 +1202,7 @@ function hasTerminalAuthority(
                 PermissionFlagsBits.Administrator
             )
     );
-}
-
-/**
+}/**
  * Handle the Terminal module menu.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
@@ -844,6 +1217,7 @@ async function handleModuleSelection(
         interaction.values[0];
 
     let embed;
+    let components;
 
     switch (
         selectedModule
@@ -860,6 +1234,31 @@ async function handleModuleSelection(
                     snapshot
                 );
 
+            components =
+                buildControlPanelComponents();
+
+            break;
+        }
+
+        case 'incident-center': {
+            const {
+                incidents,
+                statistics
+            } =
+                await loadIncidentCenterData(
+                    interaction
+                );
+
+            embed =
+                buildIncidentCenterEmbed(
+                    interaction,
+                    incidents,
+                    statistics
+                );
+
+            components =
+                buildIncidentCenterComponents();
+
             break;
         }
 
@@ -868,6 +1267,10 @@ async function handleModuleSelection(
                 buildRankTrialsEmbed(
                     interaction
                 );
+
+            components =
+                buildControlPanelComponents();
+
             break;
 
         case 'tickets':
@@ -875,6 +1278,10 @@ async function handleModuleSelection(
                 buildTicketsEmbed(
                     interaction
                 );
+
+            components =
+                buildControlPanelComponents();
+
             break;
 
         case 'arrancar-ranks':
@@ -882,6 +1289,10 @@ async function handleModuleSelection(
                 buildArrancarRanksEmbed(
                     interaction
                 );
+
+            components =
+                buildControlPanelComponents();
+
             break;
 
         case 'setup-center':
@@ -889,6 +1300,10 @@ async function handleModuleSelection(
                 buildSetupCenterEmbed(
                     interaction
                 );
+
+            components =
+                buildControlPanelComponents();
+
             break;
 
         case 'guardian-status': {
@@ -903,6 +1318,9 @@ async function handleModuleSelection(
                     snapshot
                 );
 
+            components =
+                buildControlPanelComponents();
+
             break;
         }
 
@@ -912,6 +1330,9 @@ async function handleModuleSelection(
                     '❌ Unknown Terminal Module',
                     'Umbra could not load the selected Terminal module.'
                 );
+
+            components =
+                buildControlPanelComponents();
     }
 
     await interaction.editReply({
@@ -919,13 +1340,13 @@ async function handleModuleSelection(
             embed
         ],
 
-        components:
-            buildControlPanelComponents()
+        components
     });
 }
 
 /**
- * Refresh the live Umbra health snapshot.
+ * Refresh the live Umbra
+ * Health Snapshot.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
@@ -1001,6 +1422,84 @@ async function handleHealthRefresh(
     );
 }
 
+/**
+ * Refresh the PostgreSQL
+ * Incident Center records.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleIncidentRefresh(
+    interaction
+) {
+    await interaction.update({
+        components:
+            buildIncidentCenterComponents(
+                true
+            )
+    });
+
+    const {
+        incidents,
+        statistics
+    } =
+        await loadIncidentCenterData(
+            interaction
+        );
+
+    const incidentCenterEmbed =
+        buildIncidentCenterEmbed(
+            interaction,
+            incidents,
+            statistics
+        );
+
+    await interaction.editReply({
+        embeds: [
+            incidentCenterEmbed
+        ],
+
+        components:
+            buildIncidentCenterComponents()
+    });
+
+    console.log(
+        '======================================'
+    );
+
+    console.log(
+        '🚨 Umbra Incident Center Refreshed'
+    );
+
+    console.log(
+        `🛡️ Refreshed By: ${interaction.user.tag}`
+    );
+
+    console.log(
+        `🏰 Server: ${interaction.guild.name}`
+    );
+
+    console.log(
+        `📚 Incidents Displayed: ${incidents.length}`
+    );
+
+    console.log(
+        `🔴 Critical Records: ${statistics.critical}`
+    );
+
+    console.log(
+        `🟡 Warning Records: ${statistics.warning}`
+    );
+
+    console.log(
+        `📊 Total Records: ${statistics.total}`
+    );
+
+    console.log(
+        '======================================'
+    );
+}
+
 module.exports = {
     name:
         Events.InteractionCreate,
@@ -1009,8 +1508,8 @@ module.exports = {
         false,
 
     /**
-     * Handle Umbra Terminal menu and
-     * button interactions.
+     * Handle Umbra Terminal menus
+     * and action buttons.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
@@ -1071,6 +1570,18 @@ module.exports = {
                 await handleHealthRefresh(
                     interaction
                 );
+
+                return;
+            }
+
+            if (
+                interaction.isButton() &&
+                interaction.customId ===
+                    INCIDENT_CENTER_REFRESH_ID
+            ) {
+                await handleIncidentRefresh(
+                    interaction
+                );
             }
         } catch (error) {
             console.error(
@@ -1087,7 +1598,7 @@ module.exports = {
                 [
                     'Umbra could not complete the selected Terminal action.',
                     '',
-                    'Check the Discord Gateway, PostgreSQL connection and Terminal health modules.'
+                    'Check the Discord Gateway, PostgreSQL connection and Incident Archive modules.'
                 ].join(
                     '\n'
                 )

@@ -6,6 +6,10 @@ const {
     logAlert
 } = require('./alertLogger');
 
+const {
+    terminalIncidents
+} = require('../../database');
+
 /**
  * Official Umbra Incident types.
  */
@@ -322,9 +326,7 @@ function limitIncidentText(
         ) +
         '\n... truncated'
     );
-}
-
-/**
+}/**
  * Build one Incident field.
  *
  * @param {Object} field
@@ -370,8 +372,179 @@ function buildIncidentField({
 }
 
 /**
+ * Convert Incident fields into a safe
+ * PostgreSQL JSON structure.
+ *
+ * @param {Array<{
+ *     name: string,
+ *     value: unknown,
+ *     inline?: boolean,
+ *     codeBlock?: boolean
+ * }>} fields
+ * @returns {Array<{
+ *     name: string,
+ *     value: string,
+ *     inline: boolean,
+ *     codeBlock: boolean
+ * }>}
+ */
+function normalizeStoredIncidentFields(
+    fields
+) {
+    if (
+        !Array.isArray(
+            fields
+        )
+    ) {
+        return [];
+    }
+
+    return fields.map(
+        field => ({
+            name:
+                typeof field.name ===
+                    'string'
+                    ? field.name
+                    : 'Unnamed Field',
+
+            value:
+                limitIncidentText(
+                    normalizeIncidentValue(
+                        field.value
+                    )
+                ),
+
+            inline:
+                Boolean(
+                    field.inline
+                ),
+
+            codeBlock:
+                Boolean(
+                    field.codeBlock
+                )
+        })
+    );
+}
+
+/**
+ * Resolve the most relevant Guild ID
+ * connected to one Incident.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @returns {string|null}
+ */
+function resolveIncidentGuildId(
+    client
+) {
+    if (
+        !client ||
+        !client.guilds
+    ) {
+        return null;
+    }
+
+    const firstGuild =
+        client.guilds.cache.first();
+
+    return (
+        firstGuild?.id ??
+        null
+    );
+}
+
+/**
+ * Save an Incident inside PostgreSQL.
+ *
+ * A database failure must never prevent
+ * the Incident from being published in
+ * the Umbra Terminal channel.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Object} options
+ * @param {string} options.type
+ * @param {Object} options.incident
+ * @param {string} options.title
+ * @param {string} options.message
+ * @param {Array<Object>} options.fields
+ * @param {unknown} options.error
+ * @returns {Promise<boolean>}
+ */
+async function storeIncident(
+    client,
+    {
+        type,
+        incident,
+        title,
+        message,
+        fields,
+        error
+    }
+) {
+    try {
+        if (
+            !terminalIncidents ||
+            typeof terminalIncidents
+                .createTerminalIncident !==
+                'function'
+        ) {
+            console.warn(
+                '⚠️ Umbra Incident Archive is unavailable.'
+            );
+
+            return false;
+        }
+
+        await terminalIncidents
+            .createTerminalIncident({
+                guildId:
+                    resolveIncidentGuildId(
+                        client
+                    ),
+
+                incidentType:
+                    type,
+
+                severity:
+                    incident.level,
+
+                title,
+
+                message,
+
+                fields:
+                    normalizeStoredIncidentFields(
+                        fields
+                    ),
+
+                error
+            });
+
+        console.log(
+            `🗄️ Incident archived in PostgreSQL: ${type}`
+        );
+
+        return true;
+    } catch (databaseError) {
+        console.error(
+            `⚠️ Failed to archive Umbra Incident "${type}" in PostgreSQL:`
+        );
+
+        console.error(
+            databaseError
+        );
+
+        return false;
+    }
+}
+
+/**
  * Publish one standardized Umbra
- * system incident.
+ * system Incident.
+ *
+ * Every Incident is first archived in
+ * PostgreSQL and then published inside
+ * the Umbra Terminal channel.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} options
@@ -416,35 +589,54 @@ async function logIncident(
             1_000
         );
 
-    const incidentFields =
-        [
-            {
-                name:
-                    '🆔 Incident Type',
+    const title =
+        `${incident.emoji} ${incident.title}`;
 
-                value:
-                    `\`${type}\``,
+    const incidentMessage =
+        message ||
+        incident.message;
 
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🕒 Detected At',
+    await storeIncident(
+        client,
+        {
+            type,
+            incident,
+            title,
+            message:
+                incidentMessage,
+            fields,
+            error
+        }
+    );
 
-                value:
-                    `<t:${detectedAt}:F>\n<t:${detectedAt}:R>`,
+    const incidentFields = [
+        {
+            name:
+                '🆔 Incident Type',
 
-                inline:
-                    true
-            },
-            ...fields.map(
-                field =>
-                    buildIncidentField(
-                        field
-                    )
-            )
-        ];
+            value:
+                `\`${type}\``,
+
+            inline:
+                true
+        },
+        {
+            name:
+                '🕒 Detected At',
+
+            value:
+                `<t:${detectedAt}:F>\n<t:${detectedAt}:R>`,
+
+            inline:
+                true
+        },
+        ...fields.map(
+            field =>
+                buildIncidentField(
+                    field
+                )
+        )
+    ];
 
     if (error) {
         incidentFields.push(
@@ -464,13 +656,6 @@ async function logIncident(
         );
     }
 
-    const title =
-        `${incident.emoji} ${incident.title}`;
-
-    const incidentMessage =
-        message ||
-        incident.message;
-
     if (
         incident.level ===
         'critical'
@@ -479,6 +664,7 @@ async function logIncident(
             client,
             {
                 title,
+
                 message:
                     incidentMessage,
 
@@ -499,6 +685,7 @@ async function logIncident(
             client,
             {
                 title,
+
                 message:
                     incidentMessage,
 
@@ -530,8 +717,14 @@ async function logIncident(
 
 module.exports = {
     INCIDENT_TYPES,
+
     normalizeIncidentValue,
     limitIncidentText,
     buildIncidentField,
+
+    normalizeStoredIncidentFields,
+    resolveIncidentGuildId,
+    storeIncident,
+
     logIncident
 };

@@ -3,13 +3,16 @@ const {
 } = require('./connection');
 
 /**
- * Create all required database tables and indexes.
+ * Create all required database tables
+ * and indexes.
  *
  * @returns {Promise<void>}
  */
 async function initializeSchema() {
     /*
+     * ======================================================
      * Warning System
+     * ======================================================
      */
     await query(`
         CREATE TABLE IF NOT EXISTS warnings (
@@ -21,7 +24,8 @@ async function initializeSchema() {
 
             reason VARCHAR(500) NOT NULL,
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW()
         );
     `);
 
@@ -41,7 +45,9 @@ async function initializeSchema() {
     `);
 
     /*
+     * ======================================================
      * AutoMod Case System
+     * ======================================================
      */
     await query(`
         CREATE TABLE IF NOT EXISTS automod_cases (
@@ -56,11 +62,16 @@ async function initializeSchema() {
 
             message_content TEXT,
 
-            message_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-            timeout_applied BOOLEAN NOT NULL DEFAULT FALSE,
+            message_deleted BOOLEAN NOT NULL
+                DEFAULT FALSE,
+
+            timeout_applied BOOLEAN NOT NULL
+                DEFAULT FALSE,
+
             timeout_duration_ms BIGINT,
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW()
         );
     `);
 
@@ -88,7 +99,9 @@ async function initializeSchema() {
     `);
 
     /*
+     * ======================================================
      * Raid Shield Case System
+     * ======================================================
      */
     await query(`
         CREATE TABLE IF NOT EXISTS raid_cases (
@@ -102,12 +115,17 @@ async function initializeSchema() {
             detection_window_ms BIGINT NOT NULL,
             raid_mode_duration_ms BIGINT NOT NULL,
 
-            status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+            status VARCHAR(20) NOT NULL
+                DEFAULT 'ACTIVE',
 
-            member_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+            member_ids JSONB NOT NULL
+                DEFAULT '[]'::jsonb,
 
-            detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            detected_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
             ends_at TIMESTAMPTZ NOT NULL,
+
             closed_at TIMESTAMPTZ
         );
     `);
@@ -193,10 +211,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Quickly loads the complete announcement
-     * history of one monthly Rank Trial.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_publications_trial_index
         ON rank_trial_publications (
@@ -206,10 +220,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used when checking scheduled and
-     * unfinished Rank Trial publications.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_publications_schedule_index
         ON rank_trial_publications (
@@ -217,10 +227,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used when loading recently published
-     * Rank Trial announcements.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_publications_published_index
         ON rank_trial_publications (
@@ -230,10 +236,6 @@ async function initializeSchema() {
         WHERE published_at IS NOT NULL;
     `);
 
-    /*
-     * Used to find abandoned reservations
-     * after an interrupted deployment.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_publications_pending_index
         ON rank_trial_publications (
@@ -241,10 +243,10 @@ async function initializeSchema() {
         )
         WHERE message_id IS NULL
           AND published_at IS NULL;
-    `);
-
-    /*
+    `);    /*
+     * ======================================================
      * Las Noches Event System
+     * ======================================================
      */
     await query(`
         CREATE TABLE IF NOT EXISTS events (
@@ -263,12 +265,17 @@ async function initializeSchema() {
 
             max_players INTEGER NOT NULL,
 
-            status VARCHAR(20) NOT NULL DEFAULT 'Active',
+            status VARCHAR(20) NOT NULL
+                DEFAULT 'Active',
 
             winner_id VARCHAR(32),
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
             ended_at TIMESTAMPTZ,
             cancelled_at TIMESTAMPTZ
         );
@@ -315,7 +322,8 @@ async function initializeSchema() {
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
 
-            joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            joined_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 event_id,
@@ -354,8 +362,12 @@ async function initializeSchema() {
         ON event_participants (
             joined_at DESC
         );
-    `);    /*
+    `);
+
+    /*
+     * ======================================================
      * Las Noches Giveaway System
+     * ======================================================
      */
     await query(`
         CREATE TABLE IF NOT EXISTS giveaways (
@@ -372,11 +384,17 @@ async function initializeSchema() {
 
             winner_count INTEGER NOT NULL,
 
-            status VARCHAR(20) NOT NULL DEFAULT 'Active',
+            status VARCHAR(20) NOT NULL
+                DEFAULT 'Active',
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
             ends_at TIMESTAMPTZ NOT NULL,
+
             ended_at TIMESTAMPTZ,
             cancelled_at TIMESTAMPTZ
         );
@@ -431,7 +449,8 @@ async function initializeSchema() {
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
 
-            joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            joined_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 giveaway_id,
@@ -481,7 +500,8 @@ async function initializeSchema() {
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
 
-            selected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            selected_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 giveaway_id,
@@ -513,9 +533,7 @@ async function initializeSchema() {
             guild_id,
             user_id
         );
-    `);
-
-    /*
+    `);    /*
      * ======================================================
      * Umbra Level System
      * ======================================================
@@ -1029,6 +1047,104 @@ async function initializeSchema() {
             activated_at DESC
         )
         WHERE is_active = TRUE;
+    `);
+
+    /*
+     * ======================================================
+     * Umbra Terminal Incident Archive
+     * ======================================================
+     *
+     * Stores every system Incident generated
+     * by Umbra Core Terminal.
+     *
+     * These records are used by the
+     * Incident Center inside /controlpanel.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS terminal_incidents (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32),
+
+            incident_type VARCHAR(100) NOT NULL,
+
+            severity VARCHAR(20) NOT NULL,
+
+            title VARCHAR(200) NOT NULL,
+
+            message TEXT NOT NULL,
+
+            fields JSONB NOT NULL
+                DEFAULT '[]'::jsonb,
+
+            error_name VARCHAR(200),
+
+            error_message TEXT,
+
+            error_stack TEXT,
+
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            CONSTRAINT terminal_incidents_severity_valid
+                CHECK (
+                    severity IN (
+                        'info',
+                        'success',
+                        'warning',
+                        'critical'
+                    )
+                )
+        );
+    `);
+
+    /*
+     * Quickly loads the latest Incidents
+     * for one Discord server.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_incidents_guild_created_index
+        ON terminal_incidents (
+            guild_id,
+            created_at DESC
+        );
+    `);
+
+    /*
+     * Used by Incident Center severity
+     * statistics and filters.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_incidents_severity_index
+        ON terminal_incidents (
+            guild_id,
+            severity,
+            created_at DESC
+        );
+    `);
+
+    /*
+     * Used when searching Incidents by
+     * their official Umbra Incident type.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_incidents_type_index
+        ON terminal_incidents (
+            guild_id,
+            incident_type,
+            created_at DESC
+        );
+    `);
+
+    /*
+     * Used for retention cleanup of old
+     * Incident Archive records.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_incidents_created_at_index
+        ON terminal_incidents (
+            created_at DESC
+        );
     `);
 }
 
