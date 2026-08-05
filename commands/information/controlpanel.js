@@ -4,7 +4,9 @@ const {
     MessageFlags,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder
+    StringSelectMenuOptionBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require('discord.js');
 
 const {
@@ -29,11 +31,18 @@ const CONTROL_PANEL_CUSTOM_ID =
     'umbra:control:select';
 
 /**
+ * Custom ID used by the live
+ * Health Refresh button.
+ */
+const CONTROL_PANEL_REFRESH_ID =
+    'umbra:control:refresh-health';
+
+/**
  * Maximum time allowed for a live
  * health snapshot.
  *
- * The command will use a safe fallback
- * instead of waiting forever.
+ * The Terminal will use a safe fallback
+ * instead of waiting indefinitely.
  */
 const HEALTH_SNAPSHOT_TIMEOUT =
     12_000;
@@ -89,9 +98,8 @@ function formatHealthState(
 /**
  * Build a safe fallback snapshot.
  *
- * This is used only when the complete
- * Terminal health check takes too long
- * or unexpectedly fails.
+ * This is used if the complete diagnostic
+ * check fails or exceeds the timeout.
  *
  * @param {import('discord.js').Client} client
  * @returns {Object}
@@ -129,9 +137,11 @@ function buildFallbackSnapshot(
         gatewayPing,
 
         gatewayLatencyState:
-            gatewayPing >= 1_500
+            gatewayPing >=
+                1_500
                 ? 'critical'
-                : gatewayPing >= 500
+                : gatewayPing >=
+                    500
                     ? 'warning'
                     : 'normal',
 
@@ -200,8 +210,8 @@ function buildFallbackSnapshot(
 }
 
 /**
- * Collect a complete health snapshot with
- * a strict timeout.
+ * Collect a complete live health snapshot
+ * with a strict timeout.
  *
  * @param {import('discord.js').Client} client
  * @returns {Promise<Object>}
@@ -237,17 +247,14 @@ async function collectHealthSafely(
         );
 
     try {
-        const snapshot =
-            await Promise.race([
-                Terminal.dashboard
-                    .collectHealth(
-                        client
-                    ),
+        return await Promise.race([
+            Terminal.dashboard
+                .collectHealth(
+                    client
+                ),
 
-                timeoutPromise
-            ]);
-
-        return snapshot;
+            timeoutPromise
+        ]);
     } catch (error) {
         console.error(
             '❌ Umbra Terminal health collection failed:'
@@ -261,15 +268,15 @@ async function collectHealthSafely(
             client
         );
     } finally {
-        if (timeoutId) {
+        if (
+            timeoutId
+        ) {
             clearTimeout(
                 timeoutId
             );
         }
     }
-}
-
-/**
+}/**
  * Build the Umbra Terminal selection menu.
  *
  * @returns {StringSelectMenuBuilder}
@@ -380,9 +387,96 @@ function buildControlPanelMenu() {
 }
 
 /**
+ * Build the live Health Refresh button.
+ *
+ * @param {boolean} disabled
+ * @returns {ButtonBuilder}
+ */
+function buildRefreshHealthButton(
+    disabled =
+        false
+) {
+    return new ButtonBuilder()
+        .setCustomId(
+            CONTROL_PANEL_REFRESH_ID
+        )
+
+        .setLabel(
+            disabled
+                ? 'Refreshing Health...'
+                : 'Refresh Health'
+        )
+
+        .setEmoji(
+            '🔄'
+        )
+
+        .setStyle(
+            ButtonStyle.Secondary
+        )
+
+        .setDisabled(
+            disabled
+        );
+}
+
+/**
+ * Build the shared Terminal menu row.
+ *
+ * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
+ */
+function buildControlPanelMenuRow() {
+    return new ActionRowBuilder()
+        .addComponents(
+            buildControlPanelMenu()
+        );
+}
+
+/**
+ * Build the shared Terminal action row.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {ActionRowBuilder<ButtonBuilder>}
+ */
+function buildControlPanelActionRow(
+    refreshDisabled =
+        false
+) {
+    return new ActionRowBuilder()
+        .addComponents(
+            buildRefreshHealthButton(
+                refreshDisabled
+            )
+        );
+}
+
+/**
+ * Build both shared Terminal rows.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {Array<
+ *     ActionRowBuilder<
+ *         StringSelectMenuBuilder |
+ *         ButtonBuilder
+ *     >
+ * >}
+ */
+function buildControlPanelComponents(
+    refreshDisabled =
+        false
+) {
+    return [
+        buildControlPanelMenuRow(),
+        buildControlPanelActionRow(
+            refreshDisabled
+        )
+    ];
+}
+
+/**
  * Build the live Umbra Terminal home Embed.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @param {Object} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
@@ -622,18 +716,10 @@ function buildControlPanelEmbed(
     async execute(
         interaction
     ) {
-        console.log(
-            '🧪 /controlpanel execution started.'
-        );
-
         try {
             if (
                 !interaction.inGuild()
             ) {
-                console.log(
-                    '🧪 /controlpanel stopped: interaction is not in a Guild.'
-                );
-
                 await interaction.reply({
                     flags:
                         MessageFlags.Ephemeral,
@@ -655,10 +741,6 @@ function buildControlPanelEmbed(
                         PermissionFlagsBits.Administrator
                     )
             ) {
-                console.log(
-                    '🧪 /controlpanel stopped: Administrator permission missing.'
-                );
-
                 await interaction.reply({
                     flags:
                         MessageFlags.Ephemeral,
@@ -674,37 +756,15 @@ function buildControlPanelEmbed(
                 return;
             }
 
-            console.log(
-                '🧪 /controlpanel preparing to defer reply.'
-            );
-
             await interaction.deferReply({
                 flags:
                     MessageFlags.Ephemeral
             });
 
-            console.log(
-                '🧪 /controlpanel reply deferred successfully.'
-            );
-
-            console.log(
-                '🧪 /controlpanel collecting health snapshot.'
-            );
-
             const snapshot =
                 await collectHealthSafely(
                     interaction.client
                 );
-
-            console.log(
-                '🧪 /controlpanel health snapshot collected.'
-            );
-
-            console.log(
-                `🧪 Snapshot fallback: ${Boolean(
-                    snapshot.fallback
-                )}`
-            );
 
             const terminalEmbed =
                 buildControlPanelEmbed(
@@ -712,36 +772,14 @@ function buildControlPanelEmbed(
                     snapshot
                 );
 
-            console.log(
-                '🧪 /controlpanel Terminal Embed built.'
-            );
-
-            const terminalMenu =
-                buildControlPanelMenu();
-
-            const terminalRow =
-                new ActionRowBuilder()
-                    .addComponents(
-                        terminalMenu
-                    );
-
-            console.log(
-                '🧪 /controlpanel components built.'
-            );
-
             await interaction.editReply({
                 embeds: [
                     terminalEmbed
                 ],
 
-                components: [
-                    terminalRow
-                ]
+                components:
+                    buildControlPanelComponents()
             });
-
-            console.log(
-                '🧪 /controlpanel reply completed successfully.'
-            );
 
             console.log(
                 '======================================'
@@ -780,14 +818,6 @@ function buildControlPanelEmbed(
             );
 
             console.log(
-                `⚠️ Fallback Snapshot: ${
-                    snapshot.fallback
-                        ? 'YES'
-                        : 'NO'
-                }`
-            );
-
-            console.log(
                 '======================================'
             );
         } catch (error) {
@@ -805,7 +835,7 @@ function buildControlPanelEmbed(
                     [
                         'Umbra could not open the administrative Terminal.',
                         '',
-                        'Check the Discord Gateway, command dispatcher and Terminal modules.'
+                        'Check the Discord Gateway, PostgreSQL connection and Terminal modules.'
                     ].join(
                         '\n'
                     )
@@ -824,15 +854,7 @@ function buildControlPanelEmbed(
                             []
                     })
                     .catch(
-                        responseError => {
-                            console.error(
-                                '❌ Failed to edit the deferred Control Panel response:'
-                            );
-
-                            console.error(
-                                responseError
-                            );
-                        }
+                        () => null
                     );
 
                 return;
@@ -851,15 +873,7 @@ function buildControlPanelEmbed(
                         ]
                     })
                     .catch(
-                        responseError => {
-                            console.error(
-                                '❌ Failed to send the Control Panel follow-up error:'
-                            );
-
-                            console.error(
-                                responseError
-                            );
-                        }
+                        () => null
                     );
 
                 return;
@@ -875,21 +889,14 @@ function buildControlPanelEmbed(
                     ]
                 })
                 .catch(
-                    responseError => {
-                        console.error(
-                            '❌ Failed to send the Control Panel error response:'
-                        );
-
-                        console.error(
-                            responseError
-                        );
-                    }
+                    () => null
                 );
         }
     },
 
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
+    CONTROL_PANEL_REFRESH_ID,
     HEALTH_SNAPSHOT_TIMEOUT,
 
     formatBooleanStatus,
@@ -899,5 +906,9 @@ function buildControlPanelEmbed(
     collectHealthSafely,
 
     buildControlPanelMenu,
+    buildRefreshHealthButton,
+    buildControlPanelMenuRow,
+    buildControlPanelActionRow,
+    buildControlPanelComponents,
     buildControlPanelEmbed
 };

@@ -1,10 +1,7 @@
 const {
     Events,
     MessageFlags,
-    PermissionFlagsBits,
-    ActionRowBuilder,
-    StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder
+    PermissionFlagsBits
 } = require('discord.js');
 
 const {
@@ -18,134 +15,19 @@ const Terminal =
 const {
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
+    CONTROL_PANEL_REFRESH_ID,
+
     formatBooleanStatus,
-    formatHealthState
+    formatHealthState,
+
+    collectHealthSafely,
+    buildControlPanelComponents,
+    buildControlPanelEmbed
 } = require('../commands/information/controlpanel');
 
 /**
- * Build the shared Umbra Terminal menu.
- *
- * @returns {StringSelectMenuBuilder}
- */
-function buildControlPanelMenu() {
-    return new StringSelectMenuBuilder()
-        .setCustomId(
-            CONTROL_PANEL_CUSTOM_ID
-        )
-
-        .setPlaceholder(
-            'Select an Umbra Terminal module...'
-        )
-
-        .setMinValues(
-            1
-        )
-
-        .setMaxValues(
-            1
-        )
-
-        .addOptions(
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Terminal Overview'
-                )
-                .setDescription(
-                    'View live Umbra health and system information'
-                )
-                .setEmoji(
-                    '🖥️'
-                )
-                .setValue(
-                    'system-overview'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Rank Trials'
-                )
-                .setDescription(
-                    'View Monthly Rank Trials controls'
-                )
-                .setEmoji(
-                    '⚔️'
-                )
-                .setValue(
-                    'rank-trials'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Ticket Management'
-                )
-                .setDescription(
-                    'View ticket panel and support controls'
-                )
-                .setEmoji(
-                    '🎫'
-                )
-                .setValue(
-                    'tickets'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Arrancar Ranks'
-                )
-                .setDescription(
-                    'View hierarchy management controls'
-                )
-                .setEmoji(
-                    '👑'
-                )
-                .setValue(
-                    'arrancar-ranks'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Setup Center'
-                )
-                .setDescription(
-                    'View Las Noches setup controls'
-                )
-                .setEmoji(
-                    '📚'
-                )
-                .setValue(
-                    'setup-center'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Guardian Status'
-                )
-                .setDescription(
-                    'View Guardian and AutoMod information'
-                )
-                .setEmoji(
-                    '🛡️'
-                )
-                .setValue(
-                    'guardian-status'
-                )
-        );
-}
-
-/**
- * Build the shared Action Row.
- *
- * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
- */
-function buildControlPanelRow() {
-    return new ActionRowBuilder()
-        .addComponents(
-            buildControlPanelMenu()
-        );
-}
-
-/**
- * Build a common Umbra Terminal module Embed.
+ * Build a common Umbra Terminal
+ * module Embed.
  *
  * @param {Object} options
  * @param {import('discord.js').Interaction} options.interaction
@@ -221,10 +103,8 @@ function buildModuleEmbed({
 /**
  * Build the live Terminal Overview page.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @param {Awaited<ReturnType<
- *     typeof Terminal.dashboard.collectHealth
- * >>} snapshot
+ * @param {import('discord.js').Interaction} interaction
+ * @param {Object} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildSystemOverviewEmbed(
@@ -253,6 +133,23 @@ function buildSystemOverviewEmbed(
             ? `${snapshot.databaseLatency} ms`
             : 'Unavailable';
 
+    const descriptionLines = [
+        `**System State:** \`${snapshot.overallHealth.label}\``,
+        '',
+        snapshot.overallHealth.message,
+        '',
+        `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
+    ];
+
+    if (
+        snapshot.fallback
+    ) {
+        descriptionLines.push(
+            '',
+            '⚠️ Some PostgreSQL statistics are temporarily unavailable.'
+        );
+    }
+
     return buildModuleEmbed({
         interaction,
 
@@ -260,13 +157,7 @@ function buildSystemOverviewEmbed(
             `${snapshot.overallHealth.emoji} Umbra Terminal Overview`,
 
         description:
-            [
-                `**System State:** \`${snapshot.overallHealth.label}\``,
-                '',
-                snapshot.overallHealth.message,
-                '',
-                `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
-            ].join(
+            descriptionLines.join(
                 '\n'
             ),
 
@@ -306,7 +197,7 @@ function buildSystemOverviewEmbed(
                         formatBooleanStatus(
                             snapshot.databaseConnected,
                             'CONNECTED',
-                            'DISCONNECTED'
+                            'UNAVAILABLE'
                         ),
                         `**Latency:** \`${databaseLatency}\``
                     ].join(
@@ -318,7 +209,7 @@ function buildSystemOverviewEmbed(
             },
             {
                 name:
-                    '🧠 Memory',
+                    '🧠 Process Memory',
 
                 value:
                     [
@@ -341,7 +232,7 @@ function buildSystemOverviewEmbed(
                 value:
                     [
                         `**Uptime:** \`${processUptime}\``,
-                        `**PID:** \`${process.pid}\``
+                        `**Process ID:** \`${process.pid}\``
                     ].join(
                         '\n'
                     ),
@@ -379,7 +270,7 @@ function buildSystemOverviewEmbed(
 }/**
  * Build the Rank Trials page.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildRankTrialsEmbed(
@@ -468,7 +359,7 @@ function buildRankTrialsEmbed(
 /**
  * Build the Ticket Management page.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildTicketsEmbed(
@@ -544,7 +435,7 @@ function buildTicketsEmbed(
 /**
  * Build the Arrancar Ranks page.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildArrancarRanksEmbed(
@@ -619,7 +510,7 @@ function buildArrancarRanksEmbed(
 /**
  * Build the Setup Center page.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildSetupCenterEmbed(
@@ -690,17 +581,13 @@ function buildSetupCenterEmbed(
             }
         ]
     });
-}/**
+}
+
+/**
  * Build the live Guardian page.
  *
- * The Guardian state is inferred from the
- * currently running Umbra process and the
- * live health snapshot.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @param {Awaited<ReturnType<
- *     typeof Terminal.dashboard.collectHealth
- * >>} snapshot
+ * @param {import('discord.js').Interaction} interaction
+ * @param {Object} snapshot
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildGuardianEmbed(
@@ -775,7 +662,7 @@ function buildGuardianEmbed(
                     formatBooleanStatus(
                         snapshot.databaseConnected,
                         'CONNECTED',
-                        'DISCONNECTED'
+                        'UNAVAILABLE'
                     ),
 
                 inline:
@@ -834,12 +721,10 @@ function buildGuardianEmbed(
             }
         ]
     });
-}
-
-/**
- * Safely send a Control Panel error.
+}/**
+ * Safely send an Umbra Terminal error.
  *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @param {string} title
  * @param {string} description
  * @returns {Promise<void>}
@@ -895,6 +780,227 @@ async function sendControlPanelError(
     });
 }
 
+/**
+ * Check whether the interaction belongs
+ * to the Umbra Terminal.
+ *
+ * @param {import('discord.js').Interaction} interaction
+ * @returns {boolean}
+ */
+function isControlPanelInteraction(
+    interaction
+) {
+    if (
+        interaction.isStringSelectMenu()
+    ) {
+        return (
+            interaction.customId ===
+            CONTROL_PANEL_CUSTOM_ID
+        );
+    }
+
+    if (
+        interaction.isButton()
+    ) {
+        return (
+            interaction.customId ===
+            CONTROL_PANEL_REFRESH_ID
+        );
+    }
+
+    return false;
+}
+
+/**
+ * Check whether the interacting member
+ * may use the Umbra Terminal.
+ *
+ * @param {import('discord.js').Interaction} interaction
+ * @returns {boolean}
+ */
+function hasTerminalAuthority(
+    interaction
+) {
+    return Boolean(
+        interaction.memberPermissions
+            ?.has(
+                PermissionFlagsBits.Administrator
+            )
+    );
+}
+
+/**
+ * Handle the Terminal module menu.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleModuleSelection(
+    interaction
+) {
+    await interaction.deferUpdate();
+
+    const selectedModule =
+        interaction.values[0];
+
+    let embed;
+
+    switch (
+        selectedModule
+    ) {
+        case 'system-overview': {
+            const snapshot =
+                await collectHealthSafely(
+                    interaction.client
+                );
+
+            embed =
+                buildSystemOverviewEmbed(
+                    interaction,
+                    snapshot
+                );
+
+            break;
+        }
+
+        case 'rank-trials':
+            embed =
+                buildRankTrialsEmbed(
+                    interaction
+                );
+            break;
+
+        case 'tickets':
+            embed =
+                buildTicketsEmbed(
+                    interaction
+                );
+            break;
+
+        case 'arrancar-ranks':
+            embed =
+                buildArrancarRanksEmbed(
+                    interaction
+                );
+            break;
+
+        case 'setup-center':
+            embed =
+                buildSetupCenterEmbed(
+                    interaction
+                );
+            break;
+
+        case 'guardian-status': {
+            const snapshot =
+                await collectHealthSafely(
+                    interaction.client
+                );
+
+            embed =
+                buildGuardianEmbed(
+                    interaction,
+                    snapshot
+                );
+
+            break;
+        }
+
+        default:
+            embed =
+                createErrorEmbed(
+                    '❌ Unknown Terminal Module',
+                    'Umbra could not load the selected Terminal module.'
+                );
+    }
+
+    await interaction.editReply({
+        embeds: [
+            embed
+        ],
+
+        components:
+            buildControlPanelComponents()
+    });
+}
+
+/**
+ * Refresh the live Umbra health snapshot.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleHealthRefresh(
+    interaction
+) {
+    await interaction.update({
+        components:
+            buildControlPanelComponents(
+                true
+            )
+    });
+
+    const snapshot =
+        await collectHealthSafely(
+            interaction.client
+        );
+
+    const terminalEmbed =
+        buildControlPanelEmbed(
+            interaction,
+            snapshot
+        );
+
+    await interaction.editReply({
+        embeds: [
+            terminalEmbed
+        ],
+
+        components:
+            buildControlPanelComponents()
+    });
+
+    console.log(
+        '======================================'
+    );
+
+    console.log(
+        '🔄 Umbra Terminal Health Refreshed'
+    );
+
+    console.log(
+        `🛡️ Refreshed By: ${interaction.user.tag}`
+    );
+
+    console.log(
+        `🏰 Server: ${interaction.guild.name}`
+    );
+
+    console.log(
+        `📡 Gateway: ${
+            snapshot.gatewayConnected
+                ? 'CONNECTED'
+                : 'DISCONNECTED'
+        }`
+    );
+
+    console.log(
+        `🗄️ Database: ${
+            snapshot.databaseConnected
+                ? 'CONNECTED'
+                : 'UNAVAILABLE'
+        }`
+    );
+
+    console.log(
+        `🌙 Overall Health: ${snapshot.overallHealth.label}`
+    );
+
+    console.log(
+        '======================================'
+    );
+}
+
 module.exports = {
     name:
         Events.InteractionCreate,
@@ -903,7 +1009,8 @@ module.exports = {
         false,
 
     /**
-     * Handle Umbra Terminal menu interactions.
+     * Handle Umbra Terminal menu and
+     * button interactions.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
@@ -912,14 +1019,9 @@ module.exports = {
         interaction
     ) {
         if (
-            !interaction.isStringSelectMenu()
-        ) {
-            return;
-        }
-
-        if (
-            interaction.customId !==
-            CONTROL_PANEL_CUSTOM_ID
+            !isControlPanelInteraction(
+                interaction
+            )
         ) {
             return;
         }
@@ -938,10 +1040,9 @@ module.exports = {
             }
 
             if (
-                !interaction.memberPermissions
-                    ?.has(
-                        PermissionFlagsBits.Administrator
-                    )
+                !hasTerminalAuthority(
+                    interaction
+                )
             ) {
                 await sendControlPanelError(
                     interaction,
@@ -952,93 +1053,25 @@ module.exports = {
                 return;
             }
 
-            await interaction.deferUpdate();
-
-            const selectedModule =
-                interaction.values[0];
-
-            let embed;
-
-            switch (
-                selectedModule
+            if (
+                interaction.isStringSelectMenu()
             ) {
-                case 'system-overview': {
-                    const snapshot =
-                        await Terminal.dashboard
-                            .collectHealth(
-                                interaction.client
-                            );
+                await handleModuleSelection(
+                    interaction
+                );
 
-                    embed =
-                        buildSystemOverviewEmbed(
-                            interaction,
-                            snapshot
-                        );
-
-                    break;
-                }
-
-                case 'rank-trials':
-                    embed =
-                        buildRankTrialsEmbed(
-                            interaction
-                        );
-                    break;
-
-                case 'tickets':
-                    embed =
-                        buildTicketsEmbed(
-                            interaction
-                        );
-                    break;
-
-                case 'arrancar-ranks':
-                    embed =
-                        buildArrancarRanksEmbed(
-                            interaction
-                        );
-                    break;
-
-                case 'setup-center':
-                    embed =
-                        buildSetupCenterEmbed(
-                            interaction
-                        );
-                    break;
-
-                case 'guardian-status': {
-                    const snapshot =
-                        await Terminal.dashboard
-                            .collectHealth(
-                                interaction.client
-                            );
-
-                    embed =
-                        buildGuardianEmbed(
-                            interaction,
-                            snapshot
-                        );
-
-                    break;
-                }
-
-                default:
-                    embed =
-                        createErrorEmbed(
-                            '❌ Unknown Terminal Module',
-                            'Umbra could not load the selected Terminal module.'
-                        );
+                return;
             }
 
-            await interaction.editReply({
-                embeds: [
-                    embed
-                ],
-
-                components: [
-                    buildControlPanelRow()
-                ]
-            });
+            if (
+                interaction.isButton() &&
+                interaction.customId ===
+                    CONTROL_PANEL_REFRESH_ID
+            ) {
+                await handleHealthRefresh(
+                    interaction
+                );
+            }
         } catch (error) {
             console.error(
                 '❌ Umbra Terminal interaction failed:'
@@ -1050,9 +1083,9 @@ module.exports = {
 
             await sendControlPanelError(
                 interaction,
-                '❌ Terminal Module Failed',
+                '❌ Terminal Action Failed',
                 [
-                    'Umbra could not load the selected Terminal module.',
+                    'Umbra could not complete the selected Terminal action.',
                     '',
                     'Check the Discord Gateway, PostgreSQL connection and Terminal health modules.'
                 ].join(
@@ -1061,7 +1094,7 @@ module.exports = {
             ).catch(
                 responseError => {
                     console.error(
-                        '❌ Failed to send Terminal interaction error:'
+                        '❌ Failed to send the Terminal interaction error:'
                     );
 
                     console.error(
