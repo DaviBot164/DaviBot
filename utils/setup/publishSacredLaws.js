@@ -12,41 +12,40 @@ const setupChannels =
     require('../../config/setupChannels');
 
 /**
- * Get and validate the main
- * Las Noches Information channel.
+ * Get and validate the dedicated
+ * Las Noches Sacred Laws channel.
  *
- * Royal Laws, Server Guide,
- * Role Information and FAQ are
- * published inside this channel.
+ * Only the Royal Laws are published
+ * inside this channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
  */
-async function getInformationChannel(
+async function getSacredLawsChannel(
     interaction
 ) {
-    const informationChannel =
+    const sacredLawsChannel =
         await interaction.guild.channels
             .fetch(
                 setupChannels
-                    .informationChannelId
+                    .sacredLawsChannelId
             )
             .catch(
                 () => null
             );
 
     if (
-        !informationChannel ||
-        !informationChannel.isTextBased()
+        !sacredLawsChannel ||
+        !sacredLawsChannel.isTextBased()
     ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Kingdom Archive Missing',
+                    '❌ Sacred Laws Archive Missing',
                     [
-                        'Umbra could not find the configured Las Noches Information channel.',
+                        'Umbra could not find the configured Sacred Laws channel.',
                         '',
-                        `Configured Channel ID: \`${setupChannels.informationChannelId}\``
+                        `Configured Channel ID: \`${setupChannels.sacredLawsChannelId}\``
                     ].join('\n')
                 )
             ],
@@ -78,7 +77,7 @@ async function getInformationChannel(
     }
 
     const channelPermissions =
-        informationChannel.permissionsFor(
+        sacredLawsChannel.permissionsFor(
             botMember
         );
 
@@ -94,7 +93,7 @@ async function getInformationChannel(
                 createErrorEmbed(
                     '❌ Missing Umbra Permissions',
                     [
-                        `Umbra cannot publish the Royal Laws in ${informationChannel}.`,
+                        `Umbra cannot publish the Royal Laws in ${sacredLawsChannel}.`,
                         '',
                         'Required permissions:',
                         '• **View Channel**',
@@ -111,12 +110,12 @@ async function getInformationChannel(
         return null;
     }
 
-    return informationChannel;
+    return sacredLawsChannel;
 }
 
 /**
  * Publish the Royal Laws of Las Noches
- * inside the main Information channel.
+ * inside the dedicated Sacred Laws channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -124,12 +123,12 @@ async function getInformationChannel(
 async function publishSacredLaws(
     interaction
 ) {
-    const informationChannel =
-        await getInformationChannel(
+    const sacredLawsChannel =
+        await getSacredLawsChannel(
             interaction
         );
 
-    if (!informationChannel) {
+    if (!sacredLawsChannel) {
         return;
     }
 
@@ -251,96 +250,100 @@ async function publishSacredLaws(
                         false
                 }
             ]
-        });            rulesEmbed.addFields(
-                {
-                    name:
-                        '├・🎫 V — SEEK ASSISTANCE WISELY',
+        });    rulesEmbed.addFields(
+        {
+            name:
+                '├・🎫 V — SEEK ASSISTANCE WISELY',
 
-                    value:
-                        [
-                            'Umbra provides a private support system for every Soul.',
-                            '',
-                            '• Open tickets only when genuine help is needed.',
-                            '• Do not create false or joke tickets.',
-                            '• Clearly explain your issue.',
-                            '• Provide screenshots or evidence whenever possible.',
-                            '• Remain patient while awaiting a response.',
-                            '',
-                            '> Abuse of the ticket system may result in moderation.'
-                        ].join('\n'),
+            value:
+                [
+                    'Umbra provides a private support system for every Soul.',
+                    '',
+                    '• Open tickets only when genuine help is needed.',
+                    '• Do not create false or joke tickets.',
+                    '• Clearly explain your issue.',
+                    '• Provide screenshots or evidence whenever possible.',
+                    '• Remain patient while awaiting a response.',
+                    '',
+                    '> Abuse of the ticket system may result in moderation.'
+                ].join('\n'),
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🌙 VI — PROTECT THE KINGDOM',
+            inline:
+                false
+        },
+        {
+            name:
+                '├・🌙 VI — PROTECT THE KINGDOM',
 
-                    value:
-                        [
-                            'Every Soul shares responsibility for preserving Las Noches.',
-                            '',
-                            '• Welcome new members.',
-                            '• Report serious rule violations.',
-                            '• Never expose private information.',
-                            '• Do not spread false accusations.',
-                            '• Help maintain a respectful community.',
-                            '',
-                            '> A kingdom stands because its Souls stand together.'
-                        ].join('\n'),
+            value:
+                [
+                    'Every Soul shares responsibility for preserving Las Noches.',
+                    '',
+                    '• Welcome new members.',
+                    '• Report serious rule violations.',
+                    '• Never expose private information.',
+                    '• Do not spread false accusations.',
+                    '• Help maintain a respectful community.',
+                    '',
+                    '> A kingdom stands because its Souls stand together.'
+                ].join('\n'),
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・⚖️ JUDGEMENT OF UMBRA',
+            inline:
+                false
+        },
+        {
+            name:
+                '├・⚖️ JUDGEMENT OF UMBRA',
 
-                    value:
-                        [
-                            'Umbra and the Las Noches staff enforce these laws according to the severity of each violation.',
-                            '',
-                            '⚠️ Warning',
-                            '🔇 Timeout',
-                            '👢 Kick',
-                            '🔨 Temporary Ban',
-                            '⛔ Permanent Exile',
-                            '',
-                            'Severe violations may receive immediate punishment without previous warnings.'
-                        ].join('\n'),
+            value:
+                [
+                    'Umbra and the Las Noches staff enforce these laws according to the severity of each violation.',
+                    '',
+                    '⚠️ Warning',
+                    '🔇 Timeout',
+                    '👢 Kick',
+                    '🔨 Temporary Ban',
+                    '⛔ Permanent Exile',
+                    '',
+                    'Severe violations may receive immediate punishment without previous warnings.'
+                ].join('\n'),
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '╰・📜 FINAL ROYAL DECREE',
+            inline:
+                false
+        },
+        {
+            name:
+                '╰・📜 FINAL ROYAL DECREE',
 
-                    value:
-                        [
-                            'By remaining within **Las Noches**, every Soul accepts these Royal Laws.',
-                            '',
-                            'Honor the kingdom.',
-                            'Respect your fellow Souls.',
-                            'Grow stronger through discipline.',
-                            '',
-                            '> **Only those worthy shall stand beneath the eternal night.**'
-                        ].join('\n'),
+            value:
+                [
+                    'By remaining within **Las Noches**, every Soul accepts these Royal Laws.',
+                    '',
+                    'Honor the kingdom.',
+                    'Respect your fellow Souls.',
+                    'Grow stronger through discipline.',
+                    '',
+                    '> **Only those worthy shall stand beneath the eternal night.**'
+                ].join('\n'),
 
-                    inline:
-                        false
-                }
-            );
+            inline:
+                false
+        }
+    );
 
     rulesEmbed.setAuthor({
         name:
             'Umbra • Guardian of Las Noches',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     rulesEmbed.setFooter({
@@ -349,24 +352,32 @@ async function publishSacredLaws(
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     rulesEmbed.setTimestamp();
 
-    await informationChannel.send({
+    await sacredLawsChannel.send({
         embeds: [
             rulesEmbed
         ],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
@@ -374,11 +385,12 @@ async function publishSacredLaws(
         embeds: [
             createSuccessEmbed(
                 '✅ Royal Laws Published',
-                `Umbra successfully published the Royal Laws in ${informationChannel}.`
+                `Umbra successfully published the Royal Laws in ${sacredLawsChannel}.`
             )
         ],
 
-        components: []
+        components:
+            []
     });
 
     console.log(
@@ -390,7 +402,7 @@ async function publishSacredLaws(
     );
 
     console.log(
-        `📍 Channel: ${informationChannel.name}`
+        `📍 Channel: ${sacredLawsChannel.name}`
     );
 
     console.log(

@@ -1,11 +1,20 @@
 module.exports = {
     /**
-     * Main Information channel.
+     * Main Kingdom Archives channel.
      *
-     * Sacred Laws, Server Guide,
-     * Role Information and FAQ
+     * Server Guide, Role Information,
+     * FAQ and other general setup records
      * are published in this channel.
      */
     informationChannelId:
-        '1532053701718708296'
+        '1532053701718708296',
+
+    /**
+     * Dedicated Sacred Laws channel.
+     *
+     * Only the Royal Laws of Las Noches
+     * are published in this channel.
+     */
+    sacredLawsChannelId:
+        '1534648886566584341'
 };

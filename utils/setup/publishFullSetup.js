@@ -49,13 +49,15 @@ function wait(
  * Publish every available
  * Las Noches setup archive.
  *
- * Royal Laws, Kingdom Guide,
- * Kingdom Hierarchy and Knowledge Archive
- * are published in the configured
- * Information channel.
+ * Royal Laws are published inside
+ * the dedicated Sacred Laws channel.
+ *
+ * Kingdom Guide, Kingdom Hierarchy
+ * and Knowledge Archive are published
+ * inside the Kingdom Archives channel.
  *
  * Verification Guide and Support Codex
- * remain in their own configured channels.
+ * remain inside their dedicated channels.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -71,14 +73,17 @@ async function publishFullSetup(
                     [
                         'Umbra is preparing the official archives of **Las Noches**.',
                         '',
-                        'The following records will be published in the Information Archive:',
+                        'The following record will be published in the dedicated Sacred Laws channel:',
                         '',
                         '📜 **Royal Laws**',
+                        '',
+                        'The following records will be published in the Kingdom Archives:',
+                        '',
                         '📖 **Kingdom Guide**',
                         '👑 **Kingdom Hierarchy**',
                         '📚 **Knowledge Archive**',
                         '',
-                        'The following records will be published in their dedicated channels:',
+                        'The following records will remain in their dedicated channels:',
                         '',
                         '⛩️ **Verification Guide**',
                         '🎫 **Support Codex**',
@@ -154,16 +159,21 @@ async function publishFullSetup(
 
         await publishTicketGuide(
             interaction
-        );        await interaction.editReply({
+        );
+
+        await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
                     '✅ Las Noches Setup Complete',
                     [
                         'Umbra successfully published every available setup archive.',
                         '',
-                        'Published in the Information Archive:',
+                        'Published in the dedicated Sacred Laws channel:',
                         '',
                         '✅ **Royal Laws**',
+                        '',
+                        'Published in the Kingdom Archives:',
+                        '',
                         '✅ **Kingdom Guide**',
                         '✅ **Kingdom Hierarchy**',
                         '✅ **Knowledge Archive**',
