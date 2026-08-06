@@ -552,8 +552,11 @@ async function initializeSchema() {
 
             last_xp_at TIMESTAMPTZ,
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 guild_id,
@@ -623,7 +626,8 @@ async function initializeSchema() {
 
             created_by VARCHAR(32) NOT NULL,
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 guild_id,
@@ -671,12 +675,15 @@ async function initializeSchema() {
             achievement_id VARCHAR(100) PRIMARY KEY,
 
             name VARCHAR(100) NOT NULL,
+
             description TEXT NOT NULL,
 
             icon VARCHAR(20) NOT NULL,
+
             category VARCHAR(50) NOT NULL,
 
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW()
         );
     `);
 
@@ -700,7 +707,8 @@ async function initializeSchema() {
 
             achievement_id VARCHAR(100) NOT NULL,
 
-            unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            unlocked_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
 
             PRIMARY KEY (
                 guild_id,
@@ -750,6 +758,7 @@ async function initializeSchema() {
             user_id VARCHAR(32) NOT NULL,
 
             rank_name VARCHAR(100) NOT NULL,
+
             assigned_by VARCHAR(32) NOT NULL,
 
             reason VARCHAR(500) NOT NULL
@@ -1047,9 +1056,7 @@ async function initializeSchema() {
             activated_at DESC
         )
         WHERE is_active = TRUE;
-    `);
-
-    /*
+    `);    /*
      * ======================================================
      * Umbra Terminal Incident Archive
      * ======================================================
@@ -1098,10 +1105,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Quickly loads the latest Incidents
-     * for one Discord server.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS terminal_incidents_guild_created_index
         ON terminal_incidents (
@@ -1110,10 +1113,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used by Incident Center severity
-     * statistics and filters.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS terminal_incidents_severity_index
         ON terminal_incidents (
@@ -1123,10 +1122,6 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used when searching Incidents by
-     * their official Umbra Incident type.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS terminal_incidents_type_index
         ON terminal_incidents (
@@ -1136,14 +1131,126 @@ async function initializeSchema() {
         );
     `);
 
-    /*
-     * Used for retention cleanup of old
-     * Incident Archive records.
-     */
     await query(`
         CREATE INDEX IF NOT EXISTS terminal_incidents_created_at_index
         ON terminal_incidents (
             created_at DESC
+        );
+    `);
+
+    /*
+     * ======================================================
+     * Umbra Terminal Services
+     * ======================================================
+     *
+     * Stores the CURRENT state of every
+     * Umbra service.
+     *
+     * Unlike terminal_incidents, this table
+     * contains only live service status.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS terminal_services (
+            guild_id VARCHAR(32) NOT NULL,
+
+            service_key VARCHAR(100) NOT NULL,
+
+            display_name VARCHAR(150) NOT NULL,
+
+            status VARCHAR(20) NOT NULL
+                DEFAULT 'STARTING',
+
+            severity VARCHAR(20) NOT NULL
+                DEFAULT 'info',
+
+            status_message TEXT NOT NULL
+                DEFAULT 'Service initialization pending.',
+
+            incident_type VARCHAR(100),
+
+            metadata JSONB NOT NULL
+                DEFAULT '{}'::jsonb,
+
+            started_at TIMESTAMPTZ,
+
+            last_changed_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            last_checked_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            PRIMARY KEY (
+                guild_id,
+                service_key
+            ),
+
+            CONSTRAINT terminal_services_status_valid
+                CHECK (
+                    status IN (
+                        'ONLINE',
+                        'OFFLINE',
+                        'DEGRADED',
+                        'STARTING',
+                        'STOPPED'
+                    )
+                ),
+
+            CONSTRAINT terminal_services_severity_valid
+                CHECK (
+                    severity IN (
+                        'info',
+                        'success',
+                        'warning',
+                        'critical'
+                    )
+                )
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_services_status_index
+        ON terminal_services (
+            guild_id,
+            status,
+            display_name
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_services_severity_index
+        ON terminal_services (
+            guild_id,
+            severity,
+            updated_at DESC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_services_last_checked_index
+        ON terminal_services (
+            guild_id,
+            last_checked_at
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_services_last_changed_index
+        ON terminal_services (
+            guild_id,
+            last_changed_at DESC
+        );
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS terminal_services_updated_index
+        ON terminal_services (
+            updated_at DESC
         );
     `);
 }

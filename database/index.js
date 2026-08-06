@@ -53,6 +53,9 @@ const rankTrialEventDatabase =
 const terminalIncidentDatabase =
     require('./terminalIncidents');
 
+const terminalServiceDatabase =
+    require('./terminalServices');
+
 /**
  * Connect to PostgreSQL and initialize
  * all required database tables and systems.
@@ -174,6 +177,10 @@ async function initializeDatabase() {
             '✅ Terminal Incident Archive initialized.'
         );
 
+        console.log(
+            '✅ Terminal Services State initialized.'
+        );
+
         const achievementCount =
             await achievementDatabase
                 .initializeAchievements();
@@ -256,5 +263,8 @@ module.exports = {
         rankTrialEventDatabase,
 
     terminalIncidents:
-        terminalIncidentDatabase
+        terminalIncidentDatabase,
+
+    terminalServices:
+        terminalServiceDatabase
 };

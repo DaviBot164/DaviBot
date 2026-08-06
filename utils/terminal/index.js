@@ -17,6 +17,39 @@ const {
 } = require('./incidentLogger');
 
 const {
+    ACTIVE_INCIDENTS,
+
+    SERVICE_STATUS,
+    INCIDENT_SEVERITY,
+    UMBRA_SERVICES,
+
+    createIncidentKey,
+    isIncidentActive,
+    activateIncident,
+    clearIncident,
+
+    normalizeIncidentMetadata,
+    archiveIncident,
+
+    openIncident,
+    recoverIncident,
+
+    markServiceOnline,
+    markServiceStarting,
+    markServiceStopped,
+
+    restoreActiveIncidentCache,
+    getActiveIncidentKeys,
+    clearAllActiveIncidents,
+
+    getUmbraServices,
+    getUmbraService,
+
+    initializeTerminalServices,
+    stopTerminalServices
+} = require('./incidentEngine');
+
+const {
     DASHBOARD_REFRESH_INTERVAL,
     GATEWAY_WARNING_LATENCY,
     GATEWAY_CRITICAL_LATENCY,
@@ -59,6 +92,13 @@ module.exports = {
     MEMORY_CRITICAL_BYTES,
 
     INCIDENT_TYPES,
+
+    /**
+     * Black Box constants.
+     */
+    SERVICE_STATUS,
+    INCIDENT_SEVERITY,
+    UMBRA_SERVICES,
 
     /**
      * General Terminal logging.
@@ -127,13 +167,101 @@ module.exports = {
             ),
 
     /**
-     * Alert and Incident systems.
+     * Alert and historical Incident systems.
      */
     alert:
         logAlert,
 
     incident:
         logIncident,
+
+    /**
+     * Umbra Black Box Incident Engine.
+     */
+    blackBox: {
+        /**
+         * Current in-memory Incident cache.
+         */
+        activeIncidents:
+            ACTIVE_INCIDENTS,
+
+        /**
+         * Open or escalate an Incident.
+         */
+        open:
+            openIncident,
+
+        /**
+         * Recover an unhealthy service.
+         */
+        recover:
+            recoverIncident,
+
+        /**
+         * Archive a historical Incident
+         * without changing service state.
+         */
+        archive:
+            archiveIncident,
+
+        /**
+         * Service state controls.
+         */
+        services: {
+            initialize:
+                initializeTerminalServices,
+
+            stopAll:
+                stopTerminalServices,
+
+            online:
+                markServiceOnline,
+
+            starting:
+                markServiceStarting,
+
+            stopped:
+                markServiceStopped,
+
+            getDefinitions:
+                getUmbraServices,
+
+            getDefinition:
+                getUmbraService
+        },
+
+        /**
+         * Active Incident cache controls.
+         */
+        cache: {
+            createKey:
+                createIncidentKey,
+
+            isActive:
+                isIncidentActive,
+
+            activate:
+                activateIncident,
+
+            clear:
+                clearIncident,
+
+            restore:
+                restoreActiveIncidentCache,
+
+            getKeys:
+                getActiveIncidentKeys,
+
+            clearAll:
+                clearAllActiveIncidents
+        },
+
+        /**
+         * Shared Black Box helpers.
+         */
+        normalizeMetadata:
+            normalizeIncidentMetadata
+    },
 
     /**
      * Live Dashboard controls.
@@ -205,6 +333,17 @@ module.exports = {
     logTerminal,
     logAlert,
     logIncident,
+
+    openIncident,
+    recoverIncident,
+    archiveIncident,
+
+    markServiceOnline,
+    markServiceStarting,
+    markServiceStopped,
+
+    initializeTerminalServices,
+    stopTerminalServices,
 
     startTerminalDashboard,
     stopTerminalDashboard,
