@@ -24,10 +24,6 @@ const {
 } = require('../handlers/titleHandler');
 
 const {
-    sendTitleUnlockNotification
-} = require('../utils/titleNotifications');
-
-const {
     sendAchievementFeed,
     sendTitleFeed
 } = require('../utils/kingdomFeed');
@@ -353,9 +349,7 @@ function shouldBypassAutoMod(
                 );
         }
     );
-}
-
-/**
+}/**
  * Detect rapid-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -528,7 +522,7 @@ function getMentionCount(
 
 /**
  * Send newly unlocked Achievements
- * into the public Kingdom Feed.
+ * into the official Soul Progression Feed.
  *
  * @param {import('discord.js').Message} message
  * @param {Object[]} achievements
@@ -570,10 +564,12 @@ async function sendAchievementFeeds(
  *
  * Order:
  * 1. Achievement System
- * 2. Achievement Kingdom Feed
+ * 2. Achievement Soul Progression Feed
  * 3. Title System
- * 4. Existing Title notification
- * 5. Title Kingdom Feed
+ * 4. Title Soul Progression Feed
+ *
+ * Title notifications are no longer sent
+ * into the member's current channel.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<void>}
@@ -658,20 +654,11 @@ async function checkMessageProgression(
         `🏷️ ${newlyUnlockedTitles.length} new Title(s) unlocked for ${message.author.tag}.`
     );
 
-    await sendTitleUnlockNotification({
-        member:
-            message.member,
-
-        channel:
-            message.channel,
-
-        titles:
-            newlyUnlockedTitles,
-
-        source:
-            'Soul Level, Achievement or spiritual progression'
-    });
-
+    /*
+     * Chronicle Titles are now published
+     * only inside the configured
+     * Soul Progression Feed.
+     */
     await sendTitleFeed({
         member:
             message.member,
@@ -682,7 +669,9 @@ async function checkMessageProgression(
         source:
             'Soul Level, Achievement or spiritual progression'
     });
-}/**
+}
+
+/**
  * Find Umbra AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -721,9 +710,7 @@ function findLogChannel(
         channelByName ??
         null
     );
-}
-
-/**
+}/**
  * Send Umbra AutoMod log.
  *
  * @param {import('discord.js').Message} message
@@ -1429,6 +1416,7 @@ async function processViolation(
             await checkMessageProgression(
                 message
             );
+
         } catch (error) {
             console.error(
                 '❌ Umbra MessageCreate error:'

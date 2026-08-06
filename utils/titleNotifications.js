@@ -176,13 +176,11 @@ function getNotificationColor(
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
  * @param {Object[]} options.titles
- * @param {string} [options.source]
  * @returns {EmbedBuilder|null}
  */
 function createTitleUnlockEmbed({
     member,
-    titles,
-    source = 'Soul progression'
+    titles
 }) {
     if (
         !member ||
@@ -220,7 +218,7 @@ function createTitleUnlockEmbed({
 
     const description =
         firstTitle?.description ||
-        'A new Chronicle Title has been added to this Soul Record.';
+        'This Chronicle Title has been permanently added to the Soul Archives.';
 
     const unlockedAt =
         Math.floor(
@@ -234,6 +232,7 @@ function createTitleUnlockEmbed({
                 titles
             )
         )
+
         .setAuthor({
             name:
                 'Umbra • Chronicle Title Unlocked',
@@ -248,15 +247,17 @@ function createTitleUnlockEmbed({
                             false
                     })
         })
+
         .setTitle(
             titles.length ===
                 1
                 ? '🏷️ New Title Earned'
                 : `🏷️ ${titles.length} New Titles Earned`
         )
+
         .setDescription(
             [
-                `${member} received new recognition within Las Noches.`,
+                `${member} earned new recognition through activity within Las Noches.`,
                 '',
                 titleList,
                 '',
@@ -269,6 +270,7 @@ function createTitleUnlockEmbed({
                 )
                 .join('\n')
         )
+
         .addFields(
             {
                 name:
@@ -282,35 +284,16 @@ function createTitleUnlockEmbed({
             },
             {
                 name:
-                    '⚙️ Source',
-
-                value:
-                    `\`${source}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
                     '🕒 Unlocked',
 
                 value:
                     `<t:${unlockedAt}:R>`,
 
                 inline:
-                    true
-            },
-            {
-                name:
-                    '⚔️ Activation',
-
-                value:
-                    'Use `/settitle` to activate an unlocked Title.',
-
-                inline:
                     false
             }
         )
+
         .setThumbnail(
             member.user
                 .displayAvatarURL({
@@ -321,12 +304,16 @@ function createTitleUnlockEmbed({
                         false
                 })
         )
+
         .setFooter({
             text:
                 'Umbra • Soul Archives'
         })
+
         .setTimestamp();
-}/**
+}
+
+/**
  * Check whether Umbra may send messages
  * and embeds in a channel.
  *
@@ -379,14 +366,12 @@ function canSendTitleNotification(
  * @param {import('discord.js').GuildMember} options.member
  * @param {import('discord.js').GuildTextBasedChannel} options.channel
  * @param {Object[]} options.titles
- * @param {string} [options.source]
  * @returns {Promise<import('discord.js').Message|null>}
  */
 async function sendTitleUnlockNotification({
     member,
     channel,
-    titles,
-    source = 'Soul progression'
+    titles
 }) {
     if (
         !member ||
@@ -419,8 +404,7 @@ async function sendTitleUnlockNotification({
     const embed =
         createTitleUnlockEmbed({
             member,
-            titles,
-            source
+            titles
         });
 
     if (!embed) {
