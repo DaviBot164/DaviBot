@@ -45,6 +45,16 @@ const INCIDENT_CENTER_REFRESH_ID =
     'umbra:control:refresh-incidents';
 
 /**
+ * Custom ID used by the Services Center
+ * Refresh button.
+ *
+ * The interaction handler will use this
+ * during the next Services Center stage.
+ */
+const SERVICES_CENTER_REFRESH_ID =
+    'umbra:control:refresh-services';
+
+/**
  * Maximum time allowed for a live
  * health snapshot.
  *
@@ -173,6 +183,16 @@ function buildFallbackSnapshot(
                     ? 'warning'
                     : 'normal',
 
+        /*
+         * Keep Black Box properties present
+         * even when the fallback is used.
+         */
+        services:
+            [],
+
+        servicesHealthState:
+            'warning',
+
         guildCount:
             client.guilds.cache.size,
 
@@ -283,7 +303,9 @@ async function collectHealthSafely(
             );
         }
     }
-}/**
+}
+
+/**
  * Build the Umbra Terminal module menu.
  *
  * @returns {StringSelectMenuBuilder}
@@ -319,6 +341,20 @@ function buildControlPanelMenu() {
                 )
                 .setValue(
                     'system-overview'
+                ),
+
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Services Center'
+                )
+                .setDescription(
+                    'View every registered Black Box service'
+                )
+                .setEmoji(
+                    '⚙️'
+                )
+                .setValue(
+                    'services-center'
                 ),
 
             new StringSelectMenuOptionBuilder()
@@ -405,9 +441,7 @@ function buildControlPanelMenu() {
                     'guardian-status'
                 )
         );
-}
-
-/**
+}/**
  * Build the live Health Refresh button.
  *
  * @param {boolean} disabled
@@ -477,6 +511,41 @@ function buildRefreshIncidentsButton(
 }
 
 /**
+ * Build the Services Center
+ * Refresh button.
+ *
+ * @param {boolean} disabled
+ * @returns {ButtonBuilder}
+ */
+function buildRefreshServicesButton(
+    disabled =
+        false
+) {
+    return new ButtonBuilder()
+        .setCustomId(
+            SERVICES_CENTER_REFRESH_ID
+        )
+
+        .setLabel(
+            disabled
+                ? 'Refreshing Services...'
+                : 'Refresh Services'
+        )
+
+        .setEmoji(
+            '⚙️'
+        )
+
+        .setStyle(
+            ButtonStyle.Secondary
+        )
+
+        .setDisabled(
+            disabled
+        );
+}
+
+/**
  * Build the shared Terminal menu row.
  *
  * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
@@ -527,6 +596,25 @@ function buildIncidentCenterActionRow(
 }
 
 /**
+ * Build the Services Center
+ * action row.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {ActionRowBuilder<ButtonBuilder>}
+ */
+function buildServicesCenterActionRow(
+    refreshDisabled =
+        false
+) {
+    return new ActionRowBuilder()
+        .addComponents(
+            buildRefreshServicesButton(
+                refreshDisabled
+            )
+        );
+}
+
+/**
  * Build the normal Umbra Terminal
  * component rows.
  *
@@ -559,6 +647,25 @@ function buildIncidentCenterComponents(
     return [
         buildControlPanelMenuRow(),
         buildIncidentCenterActionRow(
+            refreshDisabled
+        )
+    ];
+}
+
+/**
+ * Build the Services Center
+ * component rows.
+ *
+ * @param {boolean} refreshDisabled
+ * @returns {Array<ActionRowBuilder>}
+ */
+function buildServicesCenterComponents(
+    refreshDisabled =
+        false
+) {
+    return [
+        buildControlPanelMenuRow(),
+        buildServicesCenterActionRow(
             refreshDisabled
         )
     ];
@@ -620,6 +727,26 @@ function buildControlPanelEmbed(
         Terminal.formatters.bytes(
             snapshot.memoryUsage.heapUsed
         );
+
+    const serviceCount =
+        Array.isArray(
+            snapshot.services
+        )
+            ? snapshot.services.length
+            : 0;
+
+    const unhealthyServiceCount =
+        Array.isArray(
+            snapshot.services
+        )
+            ? snapshot.services.filter(
+                service =>
+                    service.status ===
+                        'OFFLINE' ||
+                    service.status ===
+                        'DEGRADED'
+            ).length
+            : 0;
 
     const descriptionLines = [
         `**System State:** \`${overallHealth.label}\``,
@@ -751,6 +878,25 @@ function buildControlPanelEmbed(
 
                     value:
                         `<#${Terminal.TERMINAL_CHANNEL_ID}>`,
+
+                    inline:
+                        true
+                },
+                {
+                    name:
+                        '⚙️ Black Box Services',
+
+                    value:
+                        [
+                            `**Registered:** \`${serviceCount}\``,
+                            `**Unhealthy:** \`${unhealthyServiceCount}\``,
+                            `**State:** \`${(
+                                snapshot.servicesHealthState ??
+                                'unknown'
+                            ).toUpperCase()}\``
+                        ].join(
+                            '\n'
+                        ),
 
                     inline:
                         true
@@ -906,6 +1052,16 @@ function buildControlPanelEmbed(
             );
 
             console.log(
+                `⚙️ Black Box Services: ${
+                    Array.isArray(
+                        snapshot.services
+                    )
+                        ? snapshot.services.length
+                        : 0
+                }`
+            );
+
+            console.log(
                 `🌙 Overall Health: ${snapshot.overallHealth.label}`
             );
 
@@ -984,15 +1140,14 @@ function buildControlPanelEmbed(
                     () => null
                 );
         }
-    },
-
-    /**
+    },    /**
      * Shared Terminal constants.
      */
     CONTROL_PANEL_COLOR,
     CONTROL_PANEL_CUSTOM_ID,
     CONTROL_PANEL_REFRESH_ID,
     INCIDENT_CENTER_REFRESH_ID,
+    SERVICES_CENTER_REFRESH_ID,
     HEALTH_SNAPSHOT_TIMEOUT,
 
     /**
@@ -1014,13 +1169,17 @@ function buildControlPanelEmbed(
 
     buildRefreshHealthButton,
     buildRefreshIncidentsButton,
+    buildRefreshServicesButton,
 
     buildControlPanelMenuRow,
+
     buildControlPanelActionRow,
     buildIncidentCenterActionRow,
+    buildServicesCenterActionRow,
 
     buildControlPanelComponents,
     buildIncidentCenterComponents,
+    buildServicesCenterComponents,
 
     /**
      * Main Terminal Embed builder.
