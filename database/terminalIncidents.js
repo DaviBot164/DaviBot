@@ -23,6 +23,9 @@ function mapTerminalIncidentRow(
         guildId:
             row.guild_id,
 
+        serviceKey:
+            row.service_key,
+
         incidentType:
             row.incident_type,
 
@@ -159,12 +162,53 @@ function normalizeStoredError(
         stack:
             null
     };
-}/**
+}
+
+/**
+ * Normalize a Black Box service key
+ * before database storage.
+ *
+ * Old or global Incidents may not belong
+ * to one specific service.
+ *
+ * @param {unknown} serviceKey
+ * @returns {string|null}
+ */
+function normalizeServiceKey(
+    serviceKey
+) {
+    if (
+        typeof serviceKey !==
+            'string'
+    ) {
+        return null;
+    }
+
+    const normalized =
+        serviceKey
+            .trim()
+            .toLowerCase();
+
+    if (
+        normalized.length ===
+        0
+    ) {
+        return null;
+    }
+
+    return normalized.slice(
+        0,
+        100
+    );
+}
+
+/**
  * Save one Umbra Incident inside
  * the PostgreSQL Incident Archive.
  *
  * @param {Object} options
  * @param {string|null} options.guildId
+ * @param {string|null} [options.serviceKey]
  * @param {string} options.incidentType
  * @param {string} options.severity
  * @param {string} options.title
@@ -175,6 +219,9 @@ function normalizeStoredError(
  */
 async function createTerminalIncident({
     guildId =
+        null,
+
+    serviceKey =
         null,
 
     incidentType,
@@ -196,11 +243,17 @@ async function createTerminalIncident({
             error
         );
 
+    const normalizedServiceKey =
+        normalizeServiceKey(
+            serviceKey
+        );
+
     const result =
         await query(
             `
                 INSERT INTO terminal_incidents (
                     guild_id,
+                    service_key,
                     incident_type,
                     severity,
                     title,
@@ -216,15 +269,18 @@ async function createTerminalIncident({
                     $3,
                     $4,
                     $5,
-                    $6::jsonb,
-                    $7,
+                    $6,
+                    $7::jsonb,
                     $8,
-                    $9
+                    $9,
+                    $10
                 )
                 RETURNING *;
             `,
             [
                 guildId,
+
+                normalizedServiceKey,
 
                 incidentType,
 
@@ -253,9 +309,7 @@ async function createTerminalIncident({
     return mapTerminalIncidentRow(
         result.rows[0]
     );
-}
-
-/**
+}/**
  * Load the most recent Incidents
  * for one Discord server.
  *
@@ -285,9 +339,12 @@ async function getRecentTerminalIncidents(
             `
                 SELECT *
                 FROM terminal_incidents
+
                 WHERE guild_id = $1
                    OR guild_id IS NULL
+
                 ORDER BY created_at DESC
+
                 LIMIT $2;
             `,
             [
@@ -298,6 +355,118 @@ async function getRecentTerminalIncidents(
 
     return result.rows.map(
         mapTerminalIncidentRow
+    );
+}
+
+/**
+ * Load recent Incident history for
+ * one specific Black Box service.
+ *
+ * @param {string} guildId
+ * @param {string} serviceKey
+ * @param {number} limit
+ * @returns {Promise<Object[]>}
+ */
+async function getServiceTerminalIncidents(
+    guildId,
+    serviceKey,
+    limit =
+        10
+) {
+    const normalizedServiceKey =
+        normalizeServiceKey(
+            serviceKey
+        );
+
+    if (
+        !guildId ||
+        !normalizedServiceKey
+    ) {
+        return [];
+    }
+
+    const safeLimit =
+        Math.min(
+            Math.max(
+                Number(
+                    limit
+                ) ||
+                10,
+                1
+            ),
+            50
+        );
+
+    const result =
+        await query(
+            `
+                SELECT *
+                FROM terminal_incidents
+
+                WHERE guild_id = $1
+                  AND service_key = $2
+
+                ORDER BY created_at DESC
+
+                LIMIT $3;
+            `,
+            [
+                guildId,
+                normalizedServiceKey,
+                safeLimit
+            ]
+        );
+
+    return result.rows.map(
+        mapTerminalIncidentRow
+    );
+}
+
+/**
+ * Load the newest Incident recorded
+ * for one specific Black Box service.
+ *
+ * @param {string} guildId
+ * @param {string} serviceKey
+ * @returns {Promise<Object|null>}
+ */
+async function getLatestServiceTerminalIncident(
+    guildId,
+    serviceKey
+) {
+    const normalizedServiceKey =
+        normalizeServiceKey(
+            serviceKey
+        );
+
+    if (
+        !guildId ||
+        !normalizedServiceKey
+    ) {
+        return null;
+    }
+
+    const result =
+        await query(
+            `
+                SELECT *
+                FROM terminal_incidents
+
+                WHERE guild_id = $1
+                  AND service_key = $2
+
+                ORDER BY created_at DESC
+
+                LIMIT 1;
+            `,
+            [
+                guildId,
+                normalizedServiceKey
+            ]
+        );
+
+    return mapTerminalIncidentRow(
+        result.rows[0]
     );
 }
 
@@ -315,7 +484,9 @@ async function getTerminalIncidentById(
             `
                 SELECT *
                 FROM terminal_incidents
+
                 WHERE id = $1
+
                 LIMIT 1;
             `,
             [
@@ -326,6 +497,124 @@ async function getTerminalIncidentById(
     return mapTerminalIncidentRow(
         result.rows[0]
     );
+}
+
+/**
+ * Return Incident statistics for one
+ * Black Box service.
+ *
+ * @param {string} guildId
+ * @param {string} serviceKey
+ * @returns {Promise<{
+ *     total: number,
+ *     critical: number,
+ *     warning: number,
+ *     success: number,
+ *     info: number,
+ *     lastIncidentAt: Date|null
+ * }>}
+ */
+async function getServiceTerminalIncidentStatistics(
+    guildId,
+    serviceKey
+) {
+    const normalizedServiceKey =
+        normalizeServiceKey(
+            serviceKey
+        );
+
+    if (
+        !guildId ||
+        !normalizedServiceKey
+    ) {
+        return {
+            total:
+                0,
+
+            critical:
+                0,
+
+            warning:
+                0,
+
+            success:
+                0,
+
+            info:
+                0,
+
+            lastIncidentAt:
+                null
+        };
+    }
+
+    const result =
+        await query(
+            `
+                SELECT
+                    COUNT(*)::INTEGER AS total,
+
+                    COUNT(*) FILTER (
+                        WHERE severity = 'critical'
+                    )::INTEGER AS critical,
+
+                    COUNT(*) FILTER (
+                        WHERE severity = 'warning'
+                    )::INTEGER AS warning,
+
+                    COUNT(*) FILTER (
+                        WHERE severity = 'success'
+                    )::INTEGER AS success,
+
+                    COUNT(*) FILTER (
+                        WHERE severity = 'info'
+                    )::INTEGER AS info,
+
+                    MAX(created_at) AS last_incident_at
+
+                FROM terminal_incidents
+
+                WHERE guild_id = $1
+                  AND service_key = $2;
+            `,
+            [
+                guildId,
+                normalizedServiceKey
+            ]
+        );
+
+    const row =
+        result.rows[0];
+
+    return {
+        total:
+            Number(
+                row.total
+            ) || 0,
+
+        critical:
+            Number(
+                row.critical
+            ) || 0,
+
+        warning:
+            Number(
+                row.warning
+            ) || 0,
+
+        success:
+            Number(
+                row.success
+            ) || 0,
+
+        info:
+            Number(
+                row.info
+            ) || 0,
+
+        lastIncidentAt:
+            row.last_incident_at
+    };
 }/**
  * Return simple Incident statistics
  * for one Discord server.
@@ -349,6 +638,10 @@ async function getTerminalIncidentStatistics(
                     COUNT(*) FILTER (
                         WHERE severity = 'warning'
                     )::INTEGER AS warning,
+
+                    COUNT(*) FILTER (
+                        WHERE severity = 'success'
+                    )::INTEGER AS success,
 
                     COUNT(*) FILTER (
                         WHERE severity = 'info'
@@ -385,6 +678,11 @@ async function getTerminalIncidentStatistics(
                 row.warning
             ) || 0,
 
+        success:
+            Number(
+                row.success
+            ) || 0,
+
         info:
             Number(
                 row.info
@@ -402,8 +700,18 @@ async function getTerminalIncidentStatistics(
  * @returns {Promise<number>}
  */
 async function purgeTerminalIncidents(
-    days = 30
+    days =
+        30
 ) {
+    const safeDays =
+        Math.max(
+            Number(
+                days
+            ) ||
+            30,
+            1
+        );
+
     const result =
         await query(
             `
@@ -415,7 +723,7 @@ async function purgeTerminalIncidents(
                     ($1 * INTERVAL '1 day');
             `,
             [
-                days
+                safeDays
             ]
         );
 
@@ -423,12 +731,21 @@ async function purgeTerminalIncidents(
 }
 
 module.exports = {
+    mapTerminalIncidentRow,
+
+    normalizeDatabaseText,
+    normalizeStoredError,
+    normalizeServiceKey,
+
     createTerminalIncident,
 
     getRecentTerminalIncidents,
 
-    getTerminalIncidentById,
+    getServiceTerminalIncidents,
+    getLatestServiceTerminalIncident,
+    getServiceTerminalIncidentStatistics,
 
+    getTerminalIncidentById,
     getTerminalIncidentStatistics,
 
     purgeTerminalIncidents

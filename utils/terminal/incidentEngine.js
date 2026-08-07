@@ -126,7 +126,9 @@ function clearIncident(
             serviceKey
         )
     );
-}/**
+}
+
+/**
  * Safely convert Incident metadata
  * into a PostgreSQL-friendly object.
  *
@@ -151,6 +153,41 @@ function normalizeIncidentMetadata(
 }
 
 /**
+ * Normalize one service key before
+ * it is written into Incident History.
+ *
+ * @param {unknown} serviceKey
+ * @returns {string|null}
+ */
+function normalizeIncidentServiceKey(
+    serviceKey
+) {
+    if (
+        typeof serviceKey !==
+            'string'
+    ) {
+        return null;
+    }
+
+    const normalized =
+        serviceKey
+            .trim()
+            .toLowerCase();
+
+    if (
+        normalized.length ===
+        0
+    ) {
+        return null;
+    }
+
+    return normalized.slice(
+        0,
+        100
+    );
+}
+
+/**
  * Create a historical Incident record.
  *
  * Archive failures must never stop the
@@ -158,6 +195,7 @@ function normalizeIncidentMetadata(
  *
  * @param {Object} options
  * @param {string|null} options.guildId
+ * @param {string|null} [options.serviceKey]
  * @param {string} options.incidentType
  * @param {string} options.severity
  * @param {string} options.title
@@ -168,6 +206,9 @@ function normalizeIncidentMetadata(
  */
 async function archiveIncident({
     guildId =
+        null,
+
+    serviceKey =
         null,
 
     incidentType,
@@ -187,16 +228,27 @@ async function archiveIncident({
     try {
         return await createTerminalIncident({
             guildId,
+
+            serviceKey:
+                normalizeIncidentServiceKey(
+                    serviceKey
+                ),
+
             incidentType,
+
             severity,
+
             title,
+
             message,
+
             fields:
                 Array.isArray(
                     fields
                 )
                     ? fields
                     : [],
+
             error
         });
     } catch (archiveError) {
@@ -326,13 +378,17 @@ async function openIncident({
                     displayName,
                     status,
                     severity,
+
                     statusMessage:
                         message,
+
                     incidentType,
+
                     metadata:
                         normalizeIncidentMetadata(
                             metadata
                         ),
+
                     startedAt:
                         previousService
                             ?.startedAt ??
@@ -379,15 +435,21 @@ async function openIncident({
     const incident =
         await archiveIncident({
             guildId,
-            incidentType,
-            severity,
-            title,
-            message,
-            fields,
-            error
-        });
 
-    let service =
+            serviceKey,
+
+            incidentType,
+
+            severity,
+
+            title,
+
+            message,
+
+            fields,
+
+            error
+        });    let service =
         null;
 
     try {
@@ -398,13 +460,17 @@ async function openIncident({
                 displayName,
                 status,
                 severity,
+
                 statusMessage:
                     message,
+
                 incidentType,
+
                 metadata:
                     normalizeIncidentMetadata(
                         metadata
                     ),
+
                 startedAt:
                     previousService
                         ?.startedAt ??
@@ -533,18 +599,24 @@ async function recoverIncident({
                     guildId,
                     serviceKey,
                     displayName,
+
                     status:
                         SERVICE_STATUS.ONLINE,
+
                     severity:
                         INCIDENT_SEVERITY.SUCCESS,
+
                     statusMessage:
                         message,
+
                     incidentType:
                         null,
+
                     metadata:
                         normalizeIncidentMetadata(
                             metadata
                         ),
+
                     startedAt:
                         previousService
                             ?.startedAt ??
@@ -591,11 +663,18 @@ async function recoverIncident({
     const incident =
         await archiveIncident({
             guildId,
+
+            serviceKey,
+
             incidentType,
+
             severity:
                 INCIDENT_SEVERITY.SUCCESS,
+
             title,
+
             message,
+
             fields
         });
 
@@ -608,18 +687,24 @@ async function recoverIncident({
                 guildId,
                 serviceKey,
                 displayName,
+
                 status:
                     SERVICE_STATUS.ONLINE,
+
                 severity:
                     INCIDENT_SEVERITY.SUCCESS,
+
                 statusMessage:
                     message,
+
                 incidentType:
                     null,
+
                 metadata:
                     normalizeIncidentMetadata(
                         metadata
                     ),
+
                 startedAt:
                     previousService
                         ?.startedAt ??
@@ -653,7 +738,9 @@ async function recoverIncident({
 
         incident
     };
-}/**
+}
+
+/**
  * Register or refresh one healthy service.
  *
  * This does not create a recovery Incident.
@@ -749,9 +836,7 @@ async function markServiceOnline({
 
         return null;
     }
-}
-
-/**
+}/**
  * Mark one service as STARTING.
  *
  * @param {Object} options
@@ -1011,11 +1096,10 @@ function clearAllActiveIncidents() {
     ACTIVE_INCIDENTS.clear();
 
     return activeCount;
-}/**
+}
+
+/**
  * Official Umbra service definitions.
- *
- * These services will appear inside the
- * future Terminal Services dashboard.
  */
 const UMBRA_SERVICES = {
     POSTGRESQL: {
@@ -1164,13 +1248,6 @@ function getUmbraServices() {
 /**
  * Find one official service definition.
  *
- * A service may be found by its object key
- * or by its internal service key.
- *
- * Examples:
- * - POSTGRESQL
- * - postgresql
- *
  * @param {string} serviceIdentifier
  * @returns {{
  *     key: string,
@@ -1211,162 +1288,88 @@ function getUmbraService(
         ) ||
         null
     );
-}
-
-/**
- * Register every official Umbra service
- * as STARTING.
- *
- * Existing service start times are
- * preserved by markServiceStarting().
+}/**
+ * Register every official Umbra service.
  *
  * @param {string} guildId
- * @returns {Promise<{
- *     registered: number,
- *     failed: number
- * }>}
+ * @returns {Promise<void>}
  */
 async function initializeTerminalServices(
     guildId
 ) {
     if (!guildId) {
-        throw new TypeError(
-            'Umbra Black Box initializeTerminalServices requires a Guild ID.'
-        );
+        return;
     }
-
-    let registered =
-        0;
-
-    let failed =
-        0;
 
     for (
         const service
         of getUmbraServices()
     ) {
-        const result =
-            await markServiceStarting({
-                guildId,
+        await markServiceOnline({
+            guildId,
 
-                serviceKey:
-                    service.key,
+            serviceKey:
+                service.key,
 
-                displayName:
-                    service.name,
+            displayName:
+                service.name,
 
-                message:
-                    'Umbra is initializing this service.',
-
-                metadata: {
-                    initializedBy:
-                        'Umbra Black Box',
-
-                    registeredAt:
-                        new Date()
-                            .toISOString()
-                }
-            });
-
-        if (result) {
-            registered +=
-                1;
-        } else {
-            failed +=
-                1;
-        }
+            message:
+                'Service initialized successfully.'
+        });
     }
-
-    return {
-        registered,
-        failed
-    };
 }
 
 /**
- * Mark every official Umbra service
- * as STOPPED.
- *
- * Intended for graceful shutdown.
+ * Gracefully stop every registered
+ * Umbra service.
  *
  * @param {string} guildId
- * @param {string} [message]
- * @returns {Promise<{
- *     stopped: number,
- *     failed: number
- * }>}
+ * @returns {Promise<void>}
  */
 async function stopTerminalServices(
-    guildId,
-    message =
-        'Umbra is shutting down this service.'
+    guildId
 ) {
     if (!guildId) {
-        throw new TypeError(
-            'Umbra Black Box stopTerminalServices requires a Guild ID.'
-        );
+        return;
     }
-
-    let stopped =
-        0;
-
-    let failed =
-        0;
 
     for (
         const service
         of getUmbraServices()
     ) {
-        const result =
-            await markServiceStopped({
-                guildId,
+        await markServiceStopped({
+            guildId,
 
-                serviceKey:
-                    service.key,
+            serviceKey:
+                service.key,
 
-                displayName:
-                    service.name,
+            displayName:
+                service.name,
 
-                message,
-
-                metadata: {
-                    stoppedBy:
-                        'Umbra Black Box',
-
-                    stoppedAt:
-                        new Date()
-                            .toISOString()
-                }
-            });
-
-        if (result) {
-            stopped +=
-                1;
-        } else {
-            failed +=
-                1;
-        }
+            message:
+                'Umbra is shutting down.'
+        });
     }
 
-    return {
-        stopped,
-        failed
-    };
+    clearAllActiveIncidents();
 }
 
 module.exports = {
-    ACTIVE_INCIDENTS,
-
     SERVICE_STATUS,
     INCIDENT_SEVERITY,
+
     UMBRA_SERVICES,
 
     createIncidentKey,
+
     isIncidentActive,
     activateIncident,
     clearIncident,
 
     normalizeIncidentMetadata,
+    normalizeIncidentServiceKey,
+
     archiveIncident,
 
     openIncident,
@@ -1377,6 +1380,7 @@ module.exports = {
     markServiceStopped,
 
     restoreActiveIncidentCache,
+
     getActiveIncidentKeys,
     clearAllActiveIncidents,
 
