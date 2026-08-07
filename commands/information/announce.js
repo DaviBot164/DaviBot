@@ -23,54 +23,80 @@ const DECREES_CHANNEL_ID =
  *     authorityText: string
  * }}
  */
-function getAnnouncementType(type) {
+function getAnnouncementType(
+    type
+) {
     switch (type) {
         case 'server-update':
             return {
-                emoji: '📢',
-                label: 'Server Update',
+                emoji:
+                    '📢',
+
+                label:
+                    'Server Update',
+
                 authorityText:
-                    'An official update from the Crimson Eclipse Order.'
+                    'An official update from Las Noches.'
             };
 
         case 'event':
             return {
-                emoji: '🎉',
-                label: 'Community Event',
+                emoji:
+                    '🎉',
+
+                label:
+                    'Community Event',
+
                 authorityText:
-                    'An official Crimson Eclipse community event.'
+                    'An official Las Noches community event.'
             };
 
         case 'giveaway':
             return {
-                emoji: '🎁',
-                label: 'Giveaway',
+                emoji:
+                    '🎁',
+
+                label:
+                    'Giveaway',
+
                 authorityText:
-                    'An official giveaway hosted within Crimson Eclipse.'
+                    'An official giveaway hosted within Las Noches.'
             };
 
         case 'maintenance':
             return {
-                emoji: '🛠️',
-                label: 'Maintenance Notice',
+                emoji:
+                    '🛠️',
+
+                label:
+                    'Maintenance Notice',
+
                 authorityText:
-                    'An official maintenance notice from the Crimson Eclipse Order.'
+                    'An official maintenance notice from Las Noches.'
             };
 
         case 'important':
             return {
-                emoji: '⚠️',
-                label: 'Important Notice',
+                emoji:
+                    '⚠️',
+
+                label:
+                    'Important Notice',
+
                 authorityText:
                     'An important notice requiring the attention of every Soul.'
             };
 
         default:
             return {
-                emoji: '🌑',
-                label: 'Official Decree',
+                emoji:
+                    '🌙',
+
+                label:
+                    'Official Decree',
+
                 authorityText:
-                    'An official decree issued under the authority of Crimson Eclipse.'
+                    'An official decree issued under the authority of Las Noches.'
             };
     }
 }
@@ -81,18 +107,24 @@ function getAnnouncementType(type) {
  * @param {string|null} imageURL
  * @returns {boolean}
  */
-function isValidImageURL(imageURL) {
+function isValidImageURL(
+    imageURL
+) {
     if (!imageURL) {
         return true;
     }
 
     try {
         const parsedURL =
-            new URL(imageURL);
+            new URL(
+                imageURL
+            );
 
         return (
-            parsedURL.protocol === 'http:' ||
-            parsedURL.protocol === 'https:'
+            parsedURL.protocol ===
+                'http:' ||
+            parsedURL.protocol ===
+                'https:'
         );
     } catch {
         return false;
@@ -100,85 +132,141 @@ function isValidImageURL(imageURL) {
 }
 
 module.exports = {
-    category: 'information',
+    category:
+        'information',
 
-    data: new SlashCommandBuilder()
-        .setName('announce')
-        .setDescription(
-            'Publish an official Crimson Eclipse decree.'
-        )
-        .addStringOption(option =>
-            option
-                .setName('type')
-                .setDescription(
-                    'Select the announcement type'
-                )
-                .setRequired(true)
-                .addChoices(
-                    {
-                        name: '📢 Server Update',
-                        value: 'server-update'
-                    },
-                    {
-                        name: '🎉 Event',
-                        value: 'event'
-                    },
-                    {
-                        name: '🎁 Giveaway',
-                        value: 'giveaway'
-                    },
-                    {
-                        name: '🛠️ Maintenance',
-                        value: 'maintenance'
-                    },
-                    {
-                        name: '⚠️ Important Notice',
-                        value: 'important'
-                    },
-                    {
-                        name: '🌑 General Decree',
-                        value: 'general'
-                    }
-                )
-        )
-        .addStringOption(option =>
-            option
-                .setName('title')
-                .setDescription(
-                    'The title of the announcement'
-                )
-                .setRequired(true)
-                .setMaxLength(200)
-        )
-        .addStringOption(option =>
-            option
-                .setName('message')
-                .setDescription(
-                    'The announcement message'
-                )
-                .setRequired(true)
-                .setMaxLength(3500)
-        )
-        .addStringOption(option =>
-            option
-                .setName('image')
-                .setDescription(
-                    'Optional image URL'
-                )
-                .setRequired(false)
-        )
-        .addBooleanOption(option =>
-            option
-                .setName('mention_everyone')
-                .setDescription(
-                    'Mention everyone when publishing'
-                )
-                .setRequired(false)
-        )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator
-        )
-        .setDMPermission(false),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'announce'
+            )
+
+            .setDescription(
+                'Publish an official Las Noches decree.'
+            )
+
+            .addStringOption(option =>
+                option
+                    .setName(
+                        'type'
+                    )
+                    .setDescription(
+                        'Select the announcement type'
+                    )
+                    .setRequired(
+                        true
+                    )
+                    .addChoices(
+                        {
+                            name:
+                                '📢 Server Update',
+
+                            value:
+                                'server-update'
+                        },
+                        {
+                            name:
+                                '🎉 Event',
+
+                            value:
+                                'event'
+                        },
+                        {
+                            name:
+                                '🎁 Giveaway',
+
+                            value:
+                                'giveaway'
+                        },
+                        {
+                            name:
+                                '🛠️ Maintenance',
+
+                            value:
+                                'maintenance'
+                        },
+                        {
+                            name:
+                                '⚠️ Important Notice',
+
+                            value:
+                                'important'
+                        },
+                        {
+                            name:
+                                '🌙 General Decree',
+
+                            value:
+                                'general'
+                        }
+                    )
+            )
+
+            .addStringOption(option =>
+                option
+                    .setName(
+                        'title'
+                    )
+                    .setDescription(
+                        'The title of the announcement'
+                    )
+                    .setRequired(
+                        true
+                    )
+                    .setMaxLength(
+                        200
+                    )
+            )
+
+            .addStringOption(option =>
+                option
+                    .setName(
+                        'message'
+                    )
+                    .setDescription(
+                        'The announcement message'
+                    )
+                    .setRequired(
+                        true
+                    )
+                    .setMaxLength(
+                        3500
+                    )
+            )
+
+            .addStringOption(option =>
+                option
+                    .setName(
+                        'image'
+                    )
+                    .setDescription(
+                        'Optional image URL'
+                    )
+                    .setRequired(
+                        false
+                    )
+            )
+
+            .addBooleanOption(option =>
+                option
+                    .setName(
+                        'mention_everyone'
+                    )
+                    .setDescription(
+                        'Mention everyone when publishing'
+                    )
+                    .setRequired(
+                        false
+                    )
+            )
+
+            .setDefaultMemberPermissions(
+                PermissionFlagsBits.Administrator
+            )
+
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /announce command.
@@ -186,19 +274,23 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
             await interaction.deferReply({
                 flags:
                     MessageFlags.Ephemeral
             });
 
-            if (!interaction.inGuild()) {
+            if (
+                !interaction.inGuild()
+            ) {
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Server Only Command',
-                            'This command can only be used inside the Crimson Eclipse server.'
+                            '❌ Las Noches Only Command',
+                            'This command can only be used inside Las Noches.'
                         )
                     ]
                 });
@@ -207,15 +299,17 @@ module.exports = {
             }
 
             if (
-                !interaction.memberPermissions.has(
-                    PermissionFlagsBits.Administrator
-                )
+                !interaction.memberPermissions
+                    .has(
+                        PermissionFlagsBits
+                            .Administrator
+                    )
             ) {
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only an Administrator may publish official decrees.'
+                            'Only a Las Noches Administrator may publish official decrees.'
                         )
                     ]
                 });
@@ -224,32 +318,37 @@ module.exports = {
             }
 
             const announcementType =
-                interaction.options.getString(
-                    'type',
-                    true
-                );
+                interaction.options
+                    .getString(
+                        'type',
+                        true
+                    );
 
             const title =
-                interaction.options.getString(
-                    'title',
-                    true
-                );
+                interaction.options
+                    .getString(
+                        'title',
+                        true
+                    );
 
             const message =
-                interaction.options.getString(
-                    'message',
-                    true
-                );
+                interaction.options
+                    .getString(
+                        'message',
+                        true
+                    );
 
             const imageURL =
-                interaction.options.getString(
-                    'image'
-                );
+                interaction.options
+                    .getString(
+                        'image'
+                    );
 
             const mentionEveryone =
-                interaction.options.getBoolean(
-                    'mention_everyone'
-                ) ??
+                interaction.options
+                    .getBoolean(
+                        'mention_everyone'
+                    ) ??
                 false;
 
             if (
@@ -275,13 +374,15 @@ module.exports = {
                 );
 
             const decreesChannel =
-                await interaction.guild.channels.fetch(
-                    DECREES_CHANNEL_ID
-                );
+                await interaction.guild
+                    .channels.fetch(
+                        DECREES_CHANNEL_ID
+                    );
 
             if (
                 !decreesChannel ||
-                !decreesChannel.isTextBased()
+                !decreesChannel
+                    .isTextBased()
             ) {
                 await interaction.editReply({
                     embeds: [
@@ -296,7 +397,8 @@ module.exports = {
             }
 
             const botMember =
-                interaction.guild.members.me;
+                interaction.guild
+                    .members.me;
 
             if (!botMember) {
                 await interaction.editReply({
@@ -312,19 +414,26 @@ module.exports = {
             }
 
             const channelPermissions =
-                decreesChannel.permissionsFor(
-                    botMember
-                );
+                decreesChannel
+                    .permissionsFor(
+                        botMember
+                    );
 
             const requiredPermissions = [
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.EmbedLinks
+                PermissionFlagsBits
+                    .ViewChannel,
+
+                PermissionFlagsBits
+                    .SendMessages,
+
+                PermissionFlagsBits
+                    .EmbedLinks
             ];
 
             if (mentionEveryone) {
                 requiredPermissions.push(
-                    PermissionFlagsBits.MentionEveryone
+                    PermissionFlagsBits
+                        .MentionEveryone
                 );
             }
 
@@ -349,7 +458,8 @@ module.exports = {
 
             const issuedTimestamp =
                 Math.floor(
-                    Date.now() / 1000
+                    Date.now() /
+                    1000
                 );
 
             const announcementEmbed =
@@ -368,25 +478,36 @@ module.exports = {
                             `**Issued by:** ${interaction.user}`,
                             `**Issued at:** <t:${issuedTimestamp}:F>`,
                             `-# <t:${issuedTimestamp}:R>`
-                        ].join('\n'),
+                        ].join(
+                            '\n'
+                        ),
 
                     thumbnail:
-                        interaction.guild.iconURL({
-                            size: 512,
-                            forceStatic: false
-                        }) ??
-                        interaction.client.user.displayAvatarURL({
-                            size: 512,
-                            forceStatic: false
-                        }),
+                        interaction.guild
+                            .iconURL({
+                                size:
+                                    512,
+
+                                forceStatic:
+                                    false
+                            }) ??
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    512,
+
+                                forceStatic:
+                                    false
+                            }),
 
                     fields: [
                         {
                             name:
-                                '🌑 Crimson Eclipse Authority',
+                                '🌙 Las Noches Authority',
 
                             value:
-                                typeData.authorityText,
+                                typeData
+                                    .authorityText,
 
                             inline:
                                 false
@@ -394,38 +515,54 @@ module.exports = {
                     ]
                 });
 
-            announcementEmbed.setAuthor({
-                name:
-                    'Umbra • Guardian of Crimson Eclipse',
+            announcementEmbed
+                .setAuthor({
+                    name:
+                        'Umbra • Guardian of Las Noches',
 
-                iconURL:
-                    interaction.client.user.displayAvatarURL({
-                        size: 256,
-                        forceStatic: false
-                    })
-            });
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    256,
 
-            announcementEmbed.setFooter({
-                text:
-                    `${typeData.emoji} Crimson Eclipse • ${typeData.label}`,
+                                forceStatic:
+                                    false
+                            })
+                });
 
-                iconURL:
-                    interaction.guild.iconURL({
-                        size: 128,
-                        forceStatic: false
-                    }) ??
-                    interaction.client.user.displayAvatarURL({
-                        size: 128,
-                        forceStatic: false
-                    })
-            });
+            announcementEmbed
+                .setFooter({
+                    text:
+                        `${typeData.emoji} Las Noches • ${typeData.label}`,
 
-            announcementEmbed.setTimestamp();
+                    iconURL:
+                        interaction.guild
+                            .iconURL({
+                                size:
+                                    128,
+
+                                forceStatic:
+                                    false
+                            }) ??
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    128,
+
+                                forceStatic:
+                                    false
+                            })
+                });
+
+            announcementEmbed
+                .setTimestamp();
 
             if (imageURL) {
-                announcementEmbed.setImage(
-                    imageURL
-                );
+                announcementEmbed
+                    .setImage(
+                        imageURL
+                    );
             }
 
             await decreesChannel.send({
@@ -434,13 +571,16 @@ module.exports = {
                         ? '@everyone'
                         : undefined,
 
-                embeds:
-                    [announcementEmbed],
+                embeds: [
+                    announcementEmbed
+                ],
 
                 allowedMentions: {
                     parse:
                         mentionEveryone
-                            ? ['everyone']
+                            ? [
+                                'everyone'
+                            ]
                             : []
                 }
             });
@@ -490,7 +630,9 @@ module.exports = {
                 '❌ Umbra announce command error:'
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             const errorEmbed =
                 createErrorEmbed(
@@ -498,13 +640,17 @@ module.exports = {
                     'Umbra could not publish the announcement. Please verify the channel ID and bot permissions.'
                 );
 
-            if (interaction.deferred) {
+            if (
+                interaction.deferred
+            ) {
                 await interaction
                     .editReply({
-                        embeds:
-                            [errorEmbed],
+                        embeds: [
+                            errorEmbed
+                        ],
 
-                        components: []
+                        components:
+                            []
                     })
                     .catch(
                         () => null
@@ -513,14 +659,18 @@ module.exports = {
                 return;
             }
 
-            if (interaction.replied) {
+            if (
+                interaction.replied
+            ) {
                 await interaction
                     .followUp({
-                        embeds:
-                            [errorEmbed],
+                        embeds: [
+                            errorEmbed
+                        ],
 
                         flags:
-                            MessageFlags.Ephemeral
+                            MessageFlags
+                                .Ephemeral
                     })
                     .catch(
                         () => null
@@ -531,11 +681,13 @@ module.exports = {
 
             await interaction
                 .reply({
-                    embeds:
-                        [errorEmbed],
+                    embeds: [
+                        errorEmbed
+                    ],
 
                     flags:
-                        MessageFlags.Ephemeral
+                        MessageFlags
+                            .Ephemeral
                 })
                 .catch(
                     () => null
