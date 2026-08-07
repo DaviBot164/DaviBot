@@ -14,7 +14,6 @@ const {
  * logging the same Incident.
  *
  * Key format:
- *
  * guildId:serviceKey
  */
 const ACTIVE_INCIDENTS =
@@ -154,7 +153,7 @@ function normalizeIncidentMetadata(
 
 /**
  * Normalize one service key before
- * it is written into Incident History.
+ * storing it inside Incident History.
  *
  * @param {unknown} serviceKey
  * @returns {string|null}
@@ -268,26 +267,15 @@ async function archiveIncident({
  * Open or escalate one service Incident.
  *
  * Duplicate protection:
- * - If the same service already has the same
- *   status and severity, no new archive entry
- *   is created.
+ * - If the same service already has the
+ *   same state, no duplicate Incident is
+ *   archived.
  *
  * Escalation:
- * - DEGRADED warning -> OFFLINE critical
- *   creates a new Incident archive entry.
+ * - DEGRADED -> OFFLINE creates another
+ *   Incident archive record.
  *
  * @param {Object} options
- * @param {string} options.guildId
- * @param {string} options.serviceKey
- * @param {string} options.displayName
- * @param {'OFFLINE'|'DEGRADED'|'STARTING'|'STOPPED'} options.status
- * @param {'info'|'warning'|'critical'} options.severity
- * @param {string} options.incidentType
- * @param {string} options.title
- * @param {string} options.message
- * @param {Array<Object>} [options.fields]
- * @param {Object} [options.metadata]
- * @param {unknown} [options.error]
  * @returns {Promise<{
  *     changed: boolean,
  *     archived: boolean,
@@ -449,7 +437,9 @@ async function openIncident({
             fields,
 
             error
-        });    let service =
+        });
+
+    let service =
         null;
 
     try {
@@ -504,9 +494,7 @@ async function openIncident({
 
         incident
     };
-}
-
-/**
+}/**
  * Recover one service and return it
  * to ONLINE status.
  *
@@ -514,14 +502,6 @@ async function openIncident({
  * previous state was not already ONLINE.
  *
  * @param {Object} options
- * @param {string} options.guildId
- * @param {string} options.serviceKey
- * @param {string} options.displayName
- * @param {string} options.incidentType
- * @param {string} options.title
- * @param {string} options.message
- * @param {Array<Object>} [options.fields]
- * @param {Object} [options.metadata]
  * @returns {Promise<{
  *     changed: boolean,
  *     archived: boolean,
@@ -836,7 +816,9 @@ async function markServiceOnline({
 
         return null;
     }
-}/**
+}
+
+/**
  * Mark one service as STARTING.
  *
  * @param {Object} options
@@ -1007,9 +989,7 @@ async function markServiceStopped({
 
         return null;
     }
-}
-
-/**
+}/**
  * Restore the active Incident cache
  * from PostgreSQL service states.
  *
@@ -1248,6 +1228,11 @@ function getUmbraServices() {
 /**
  * Find one official service definition.
  *
+ * Accepts either:
+ *
+ * POSTGRESQL
+ * postgresql
+ *
  * @param {string} serviceIdentifier
  * @returns {{
  *     key: string,
@@ -1289,87 +1274,160 @@ function getUmbraService(
         null
     );
 }/**
- * Register every official Umbra service.
+ * Register every official Umbra service
+ * as STARTING.
+ *
+ * Existing service start times are
+ * preserved by markServiceStarting().
  *
  * @param {string} guildId
- * @returns {Promise<void>}
+ * @returns {Promise<{
+ *     registered: number,
+ *     failed: number
+ * }>}
  */
 async function initializeTerminalServices(
     guildId
 ) {
     if (!guildId) {
-        return;
+        throw new TypeError(
+            'Umbra Black Box initializeTerminalServices requires a Guild ID.'
+        );
     }
+
+    let registered =
+        0;
+
+    let failed =
+        0;
 
     for (
         const service
         of getUmbraServices()
     ) {
-        await markServiceOnline({
-            guildId,
+        const result =
+            await markServiceStarting({
+                guildId,
 
-            serviceKey:
-                service.key,
+                serviceKey:
+                    service.key,
 
-            displayName:
-                service.name,
+                displayName:
+                    service.name,
 
-            message:
-                'Service initialized successfully.'
-        });
+                message:
+                    'Umbra is initializing this service.',
+
+                metadata: {
+                    initializedBy:
+                        'Umbra Black Box',
+
+                    registeredAt:
+                        new Date()
+                            .toISOString()
+                }
+            });
+
+        if (result) {
+            registered +=
+                1;
+        } else {
+            failed +=
+                1;
+        }
     }
+
+    return {
+        registered,
+        failed
+    };
 }
 
 /**
- * Gracefully stop every registered
- * Umbra service.
+ * Mark every official Umbra service
+ * as STOPPED.
+ *
+ * Intended for graceful shutdown.
  *
  * @param {string} guildId
- * @returns {Promise<void>}
+ * @param {string} [message]
+ * @returns {Promise<{
+ *     stopped: number,
+ *     failed: number
+ * }>}
  */
 async function stopTerminalServices(
-    guildId
+    guildId,
+    message =
+        'Umbra is shutting down this service.'
 ) {
     if (!guildId) {
-        return;
+        throw new TypeError(
+            'Umbra Black Box stopTerminalServices requires a Guild ID.'
+        );
     }
+
+    let stopped =
+        0;
+
+    let failed =
+        0;
 
     for (
         const service
         of getUmbraServices()
     ) {
-        await markServiceStopped({
-            guildId,
+        const result =
+            await markServiceStopped({
+                guildId,
 
-            serviceKey:
-                service.key,
+                serviceKey:
+                    service.key,
 
-            displayName:
-                service.name,
+                displayName:
+                    service.name,
 
-            message:
-                'Umbra is shutting down.'
-        });
+                message,
+
+                metadata: {
+                    stoppedBy:
+                        'Umbra Black Box',
+
+                    stoppedAt:
+                        new Date()
+                            .toISOString()
+                }
+            });
+
+        if (result) {
+            stopped +=
+                1;
+        } else {
+            failed +=
+                1;
+        }
     }
 
-    clearAllActiveIncidents();
+    return {
+        stopped,
+        failed
+    };
 }
 
 module.exports = {
+    ACTIVE_INCIDENTS,
+
     SERVICE_STATUS,
     INCIDENT_SEVERITY,
-
     UMBRA_SERVICES,
 
     createIncidentKey,
-
     isIncidentActive,
     activateIncident,
     clearIncident,
 
     normalizeIncidentMetadata,
     normalizeIncidentServiceKey,
-
     archiveIncident,
 
     openIncident,
@@ -1380,7 +1438,6 @@ module.exports = {
     markServiceStopped,
 
     restoreActiveIncidentCache,
-
     getActiveIncidentKeys,
     clearAllActiveIncidents,
 
