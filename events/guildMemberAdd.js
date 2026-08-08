@@ -29,13 +29,6 @@ const WELCOME_CHANNEL_ID =
     '1528401903438925906';
 
 /**
- * Role assigned automatically when
- * a new member joins Las Noches.
- */
-const UNVERIFIED_ROLE_ID =
-    '1530938389086601236';
-
-/**
  * Recent member joins for each guild.
  *
  * Key:
@@ -67,144 +60,6 @@ const recentJoins =
  */
 const activeRaids =
     new Map();
-
-/**
- * Check whether Umbra can assign
- * one specific Discord role.
- *
- * @param {import('discord.js').GuildMember} botMember
- * @param {import('discord.js').Role} role
- * @returns {boolean}
- */
-function canAssignRole(
-    botMember,
-    role
-) {
-    if (
-        !botMember ||
-        !role
-    ) {
-        return false;
-    }
-
-    if (
-        !botMember.permissions.has(
-            PermissionFlagsBits.ManageRoles
-        )
-    ) {
-        return false;
-    }
-
-    if (
-        role.managed ||
-        !role.editable
-    ) {
-        return false;
-    }
-
-    return (
-        role.position <
-        botMember.roles.highest.position
-    );
-}
-
-/**
- * Assign the Unverified role to one
- * newly joined human member.
- *
- * @param {import('discord.js').GuildMember} member
- * @returns {Promise<boolean>}
- */
-async function assignUnverifiedRole(
-    member
-) {
-    if (
-        member.user.bot
-    ) {
-        return false;
-    }
-
-    try {
-        const unverifiedRole =
-            member.guild.roles.cache.get(
-                UNVERIFIED_ROLE_ID
-            ) ??
-            null;
-
-        if (!unverifiedRole) {
-            console.error(
-                `❌ Unverified role ID "${UNVERIFIED_ROLE_ID}" was not found in ${member.guild.name}.`
-            );
-
-            return false;
-        }
-
-        const botMember =
-            member.guild.members.me;
-
-        if (!botMember) {
-            console.error(
-                '❌ Umbra could not access its GuildMember record.'
-            );
-
-            return false;
-        }
-
-        if (
-            !botMember.permissions.has(
-                PermissionFlagsBits.ManageRoles
-            )
-        ) {
-            console.error(
-                '❌ Umbra is missing the Manage Roles permission.'
-            );
-
-            return false;
-        }
-
-        if (
-            !canAssignRole(
-                botMember,
-                unverifiedRole
-            )
-        ) {
-            console.error(
-                `❌ Umbra cannot assign ${unverifiedRole.name}. Move the Umbra role above it.`
-            );
-
-            return false;
-        }
-
-        if (
-            member.roles.cache.has(
-                unverifiedRole.id
-            )
-        ) {
-            return true;
-        }
-
-        await member.roles.add(
-            unverifiedRole,
-            'Umbra Verification System • New member joined'
-        );
-
-        console.log(
-            `🌙 Assigned ${unverifiedRole.name} to ${member.user.tag}.`
-        );
-
-        return true;
-    } catch (error) {
-        console.error(
-            `❌ Failed to assign the Unverified role to ${member.user.tag}:`
-        );
-
-        console.error(
-            error
-        );
-
-        return false;
-    }
-}
 
 /**
  * Find the moderation log channel.
@@ -318,7 +173,9 @@ function formatDiscordTimestamp(
         `<t:${unixTimestamp}:F>\n` +
         `(<t:${unixTimestamp}:R>)`
     );
-}/**
+}
+
+/**
  * Send Raid detected log.
  *
  * @param {import('discord.js').Guild} guild
@@ -515,9 +372,7 @@ async function sendRaidDetectedLog(
             error
         );
     }
-}
-
-/**
+}/**
  * Send Raid Mode ended log.
  *
  * @param {import('discord.js').Guild} guild
@@ -624,7 +479,9 @@ async function sendRaidEndedLog(
             error
         );
     }
-}/**
+}
+
+/**
  * End Raid Mode for one guild.
  *
  * @param {import('discord.js').Guild} guild
@@ -951,9 +808,7 @@ async function processRaidDetection(
             memberIds
         );
     }
-}
-
-/**
+}/**
  * Find the official Welcome channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -1025,7 +880,9 @@ function canSendWelcomeMessage(
             PermissionFlagsBits.AttachFiles
         )
     );
-}/**
+}
+
+/**
  * Send the Umbra Welcome message.
  *
  * @param {import('discord.js').GuildMember} member
@@ -1164,12 +1021,13 @@ module.exports = {
      * Handle newly joined server members.
      *
      * Order:
-     * 1. Assign Unverified role
-     * 2. Process Raid Shield
-     * 3. Send Welcome message
+     * 1. Process Raid Shield
+     * 2. Send Welcome message
+     *
+     * Verification is handled by Bloxlink.
      *
      * Each system runs independently so
-     * one failure does not stop the others.
+     * one failure does not stop the other.
      *
      * @param {import('discord.js').GuildMember} member
      * @returns {Promise<void>}
@@ -1197,26 +1055,8 @@ module.exports = {
             '======================================'
         );
 
-        let roleAssigned =
-            false;
-
         let welcomeSent =
             false;
-
-        try {
-            roleAssigned =
-                await assignUnverifiedRole(
-                    member
-                );
-        } catch (error) {
-            console.error(
-                `❌ Unverified role assignment failed for ${member.user.tag}:`
-            );
-
-            console.error(
-                error
-            );
-        }
 
         try {
             await processRaidDetection(
@@ -1252,11 +1092,7 @@ module.exports = {
         );
 
         console.log(
-            `🌙 Unverified Role: ${
-                roleAssigned
-                    ? 'Assigned'
-                    : 'Not Assigned'
-            }`
+            '🔗 Verification: Handled by Bloxlink'
         );
 
         console.log(
