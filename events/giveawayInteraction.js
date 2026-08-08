@@ -24,10 +24,13 @@ const {
 } = require('../database');
 
 /**
- * Official Las Noches Giveaways channel.
+ * Official Las Noches Community Events channel.
+ *
+ * Events and Giveaways are published
+ * inside the same shared activity channel.
  */
 const GIVEAWAY_CHANNEL_ID =
-    '1528401988272914463';
+    '1535755486505476147';
 
 /**
  * Maximum supported Giveaway duration.
@@ -186,7 +189,7 @@ function parseWinnerCount(
 }
 
 /**
- * Fetch the official Giveaway channel.
+ * Fetch the official Community Events channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -366,9 +369,7 @@ function buildGiveawayEmbed(
                     false
             })
     });
-}
-
-/**
+}/**
  * Build Giveaway buttons.
  *
  * @param {Object} giveawayData
@@ -545,7 +546,9 @@ function selectWinners(
             shuffledParticipants.length
         )
     );
-}/**
+}
+
+/**
  * Fetch the original Giveaway message.
  *
  * @param {import('discord.js').Client} client
@@ -772,9 +775,7 @@ async function endGiveaway(
     console.log(
         '======================================'
     );
-}
-
-/**
+}/**
  * Schedule a Giveaway ending.
  *
  * @param {import('discord.js').Client} client
@@ -987,7 +988,7 @@ async function handleCreateModal(
                 createErrorEmbed(
                     '❌ Giveaway Channel Not Found',
                     [
-                        'Umbra could not find the official Giveaways channel.',
+                        'Umbra could not find the official Community Events channel.',
                         '',
                         `Configured Channel ID: \`${GIVEAWAY_CHANNEL_ID}\``
                     ].join('\n')
@@ -1388,9 +1389,7 @@ async function handleGiveawayButton(
         });
 
         return;
-    }
-
-    /*
+    }    /*
      * LEAVE GIVEAWAY
      */
     if (action === 'leave') {
@@ -1483,9 +1482,7 @@ async function handleGiveawayButton(
         flags:
             MessageFlags.Ephemeral
     });
-}
-
-module.exports = {
+}module.exports = {
     name:
         Events.InteractionCreate,
 
