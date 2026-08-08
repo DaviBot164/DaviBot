@@ -358,7 +358,7 @@ async function handleCreateTicket(
             embeds: [
                 createSuccessEmbed(
                     '✅ Ticket Created',
-                    `Your private Crimson Eclipse support ticket has been created: ${ticketChannel}`
+                    `Your private Las Noches support ticket has been created: ${ticketChannel}`
                 )
             ]
         });

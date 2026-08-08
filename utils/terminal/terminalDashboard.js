@@ -82,6 +82,8 @@ const SERVICE_STATUS = {
  */
 const SERVICE_DISPLAY_ORDER = [
     'postgresql',
+    'gateway',
+    'memory',
     'guardian',
     'kingdom_feed',
     'rank_trials',
@@ -363,9 +365,7 @@ async function getDashboardServices(
 
         return [];
     }
-}
-
-/**
+}/**
  * Format one service for a compact
  * Dashboard Services field.
  *
@@ -438,7 +438,7 @@ function createServiceFields(
         const groupNumber =
             Math.floor(
                 index /
-                SERVICES_PER_FIELD
+                    SERVICES_PER_FIELD
             ) +
             1;
 
@@ -459,7 +459,9 @@ function createServiceFields(
     }
 
     return fields;
-}/**
+}
+
+/**
  * Measure PostgreSQL connection latency.
  *
  * @returns {Promise<{
@@ -826,9 +828,7 @@ function getOverallHealth({
         message:
             'All monitored systems are operating normally.'
     };
-}
-
-/**
+}/**
  * Collect one complete Umbra
  * system-health snapshot.
  *
@@ -979,7 +979,9 @@ async function collectHealthSnapshot(
 
         overallHealth
     };
-}/**
+}
+
+/**
  * Build the live Umbra Health Dashboard.
  *
  * @param {import('discord.js').Client<true>} client
@@ -1199,7 +1201,6 @@ function buildDashboardEmbed(
         .setColor(
             overallHealth.color
         )
-
         .setAuthor({
             name:
                 'Umbra Core Health Monitor',
@@ -1217,11 +1218,9 @@ function buildDashboardEmbed(
                             false
                     })
         })
-
         .setTitle(
             `${overallHealth.emoji} System Status: ${overallHealth.label}`
         )
-
         .setDescription(
             [
                 '```ansi',
@@ -1231,20 +1230,15 @@ function buildDashboardEmbed(
                 '```'
             ].join('\n')
         )
-
         .addFields(
             dashboardFields
         )
-
         .setFooter({
             text:
                 'Umbra • Black Box Services & Live Diagnostics'
         })
-
         .setTimestamp();
-}
-
-/**
+}/**
  * Convert one snapshot into compact
  * Incident diagnostic fields.
  *
@@ -1357,7 +1351,9 @@ function createHealthAlertFields(
                 true
         }
     ];
-}const {
+}
+
+const {
     openIncident,
     recoverIncident,
     UMBRA_SERVICES
@@ -1423,7 +1419,10 @@ async function processOverallHealthTransition(
         client,
         {
             type:
-                'SYSTEM_WARNING',
+                currentLabel ===
+                    'CRITICAL'
+                    ? 'SYSTEM_CRITICAL'
+                    : 'SYSTEM_WARNING',
 
             message:
                 currentLabel ===
@@ -1776,9 +1775,7 @@ async function processComponentTransitions(
                 }
             }
         );
-    }
-
-    /*
+    }    /*
      * Discord Gateway connection lost.
      */
     if (
@@ -2268,7 +2265,9 @@ async function processComponentTransitions(
             }
         );
     }
-}/**
+}
+
+/**
  * Compare the latest snapshot with the
  * previous snapshot and publish Incidents.
  *
@@ -2304,9 +2303,7 @@ async function processHealthTransitions(
 
     previousHealthSnapshot =
         snapshot;
-}
-
-/**
+}/**
  * Find the existing Dashboard message.
  *
  * @param {import('discord.js').GuildTextBasedChannel} channel
@@ -2714,7 +2711,9 @@ async function updateTerminalDashboard(
 
         return false;
     }
-}/**
+}
+
+/**
  * Start Dashboard updates.
  *
  * @param {import('discord.js').Client<true>} client

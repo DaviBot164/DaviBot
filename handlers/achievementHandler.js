@@ -11,6 +11,9 @@ const {
         levelDatabase
 } = require('../database');
 
+const kingdomFeedConfig =
+    require('../config/kingdomFeed');
+
 /**
  * Achievements checked whenever a valid
  * server message is created.
@@ -139,6 +142,12 @@ const ACHIEVEMENT_CATEGORY_COLORS = {
 };
 
 /**
+ * Default Achievement color.
+ */
+const DEFAULT_ACHIEVEMENT_COLOR =
+    '#8B0000';
+
+/**
  * Return a valid Achievement color.
  *
  * @param {string|null|undefined} category
@@ -151,7 +160,7 @@ function getAchievementColor(
         ACHIEVEMENT_CATEGORY_COLORS[
             category
         ] ||
-        '#8B0000'
+        DEFAULT_ACHIEVEMENT_COLOR
     );
 }
 
@@ -188,9 +197,7 @@ function getAchievementMessage(
         ] ||
         'Umbra has recorded a new chapter in this Soul’s journey.'
     );
-}
-
-/**
+}/**
  * Create a compact Achievement
  * unlock Embed.
  *
@@ -298,6 +305,77 @@ function createAchievementEmbed(
 }
 
 /**
+ * Find the configured Soul Progression
+ * channel for Achievement notifications.
+ *
+ * Search priority:
+ * 1. Configured channel ID
+ * 2. Configured channel name
+ *
+ * @param {import('discord.js').Guild} guild
+ * @returns {import('discord.js').GuildTextBasedChannel|null}
+ */
+function findAchievementNotificationChannel(
+    guild
+) {
+    if (
+        !guild ||
+        !kingdomFeedConfig.enabled ||
+        !kingdomFeedConfig
+            .events
+            ?.achievements
+    ) {
+        return null;
+    }
+
+    const configuredChannelId =
+        String(
+            kingdomFeedConfig.channelId ||
+            ''
+        ).trim();
+
+    if (
+        configuredChannelId
+    ) {
+        const channelById =
+            guild.channels.cache.get(
+                configuredChannelId
+            );
+
+        if (
+            channelById &&
+            channelById.isTextBased() &&
+            !channelById.isThread()
+        ) {
+            return channelById;
+        }
+    }
+
+    const configuredChannelName =
+        String(
+            kingdomFeedConfig.channelName ||
+            ''
+        ).trim();
+
+    if (
+        !configuredChannelName
+    ) {
+        return null;
+    }
+
+    return (
+        guild.channels.cache.find(
+            channel =>
+                channel.isTextBased() &&
+                !channel.isThread() &&
+                channel.name ===
+                    configuredChannelName
+        ) ||
+        null
+    );
+}
+
+/**
  * Check whether Umbra may send an
  * Achievement notification.
  *
@@ -341,7 +419,7 @@ function canSendAchievementNotification(
 
 /**
  * Safely send an Achievement notification
- * into the channel where it was unlocked.
+ * into the configured Soul Progression channel.
  *
  * Failure to send the notification does not
  * remove the Achievement from the database.
@@ -354,10 +432,16 @@ async function sendAchievementNotification(
     message,
     achievement
 ) {
-    if (
-        !message.channel
-            ?.isTextBased()
-    ) {
+    const notificationChannel =
+        findAchievementNotificationChannel(
+            message.guild
+        );
+
+    if (!notificationChannel) {
+        console.warn(
+            `⚠️ Soul Progression channel was not found for Achievement notification in ${message.guild.name}.`
+        );
+
         return null;
     }
 
@@ -366,12 +450,12 @@ async function sendAchievementNotification(
 
     if (
         !canSendAchievementNotification(
-            message.channel,
+            notificationChannel,
             botMember
         )
     ) {
         console.warn(
-            `⚠️ Umbra cannot send an Achievement notification in #${message.channel.name}.`
+            `⚠️ Umbra cannot send an Achievement notification in #${notificationChannel.name}.`
         );
 
         return null;
@@ -384,7 +468,7 @@ async function sendAchievementNotification(
         );
 
     try {
-        return await message.channel.send({
+        return await notificationChannel.send({
             embeds: [
                 achievementEmbed
             ],
@@ -507,7 +591,7 @@ async function checkMessageAchievements(
                     );
 
             if (
-                !result.unlocked ||
+                !result?.unlocked ||
                 !result.achievement
             ) {
                 continue;
@@ -543,6 +627,11 @@ async function checkMessageAchievements(
  * Check Level-based Achievements using
  * existing Level data.
  *
+ * This helper only unlocks the Achievement.
+ * Notification routing is handled elsewhere
+ * because this function does not receive
+ * a Discord Message object.
+ *
  * @param {Object} options
  * @param {string} options.guildId
  * @param {string} options.userId
@@ -570,7 +659,9 @@ async function checkLevelAchievements({
         Math.max(
             0,
             Math.floor(
-                Number(level) || 0
+                Number(
+                    level
+                ) || 0
             )
         );
 
@@ -588,16 +679,31 @@ async function checkLevelAchievements({
             continue;
         }
 
-        const requirementMet =
-            Boolean(
-                rule.check({
-                    level:
-                        safeLevel,
+        let requirementMet =
+            false;
 
-                    messageCount:
-                        0
-                })
+        try {
+            requirementMet =
+                Boolean(
+                    rule.check({
+                        level:
+                            safeLevel,
+
+                        messageCount:
+                            0
+                    })
+                );
+        } catch (error) {
+            console.error(
+                `❌ Level Achievement rule ${rule.achievementId} failed for ${userId}:`
             );
+
+            console.error(
+                error
+            );
+
+            continue;
+        }
 
         if (!requirementMet) {
             continue;
@@ -613,7 +719,7 @@ async function checkLevelAchievements({
                     );
 
             if (
-                result.unlocked &&
+                result?.unlocked &&
                 result.achievement
             ) {
                 unlockedAchievements.push(
@@ -637,12 +743,18 @@ async function checkLevelAchievements({
 module.exports = {
     MESSAGE_ACHIEVEMENT_RULES,
 
+    ACHIEVEMENT_CATEGORY_COLORS,
+    DEFAULT_ACHIEVEMENT_COLOR,
+
     getAchievementColor,
     getAchievementMessage,
     createAchievementEmbed,
 
+    findAchievementNotificationChannel,
     canSendAchievementNotification,
     sendAchievementNotification,
+
+    getMessageLevelRecord,
 
     checkMessageAchievements,
     checkLevelAchievements

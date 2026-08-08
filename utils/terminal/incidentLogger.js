@@ -190,10 +190,24 @@ const INCIDENT_TYPES = {
             'Umbra System Warning',
 
         message:
-            'Umbra detected a system condition that requires investigation.',
+            'Umbra detected a degraded system condition that requires investigation.',
 
         emoji:
             '⚠️'
+    },
+
+    SYSTEM_CRITICAL: {
+        level:
+            'critical',
+
+        title:
+            'Umbra Critical System Failure',
+
+        message:
+            'Umbra detected a critical system condition requiring immediate investigation.',
+
+        emoji:
+            '🚨'
     },
 
     SYSTEM_RECOVERED: {
@@ -326,7 +340,9 @@ function limitIncidentText(
         ) +
         '\n... truncated'
     );
-}/**
+}
+
+/**
  * Build one Incident field.
  *
  * @param {Object} field
@@ -451,9 +467,7 @@ function resolveIncidentGuildId(
         firstGuild?.id ??
         null
     );
-}
-
-/**
+}/**
  * Save an Incident inside PostgreSQL.
  *
  * A database failure must never prevent
@@ -602,8 +616,10 @@ async function logIncident(
             type,
             incident,
             title,
+
             message:
                 incidentMessage,
+
             fields,
             error
         }

@@ -25,7 +25,7 @@ module.exports = {
 
     ticket: {
         title:
-            '🎫 Order Support Ticket',
+            '🎫 Las Noches Support Ticket',
 
         description:
             [
@@ -35,7 +35,7 @@ module.exports = {
                 '',
                 'A Shadow Warden will assist you as soon as possible.',
                 '',
-                '*Remain patient while the Order reviews your request.*'
+                '*Remain patient while the Shadow Wardens review your request.*'
             ].join('\n'),
 
         closeButtonLabel:

@@ -578,7 +578,9 @@ function buildModuleEmbed({
     embed.setTimestamp();
 
     return embed;
-}/**
+}
+
+/**
  * Build the live Terminal Overview page.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -745,9 +747,7 @@ function buildSystemOverviewEmbed(
             }
         ]
     });
-}
-
-/**
+}/**
  * Load every Black Box service stored
  * for the current Discord server.
  *
@@ -868,7 +868,7 @@ function getServicesCenterColor(
 ) {
     if (
         summary.offline >
-            0
+        0
     ) {
         return '#ED4245';
     }
@@ -1095,7 +1095,9 @@ function buildRecentIncidentField(
         inline:
             false
     };
-}/**
+}
+
+/**
  * Build the PostgreSQL Incident Center.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -1373,7 +1375,7 @@ function buildTicketsEmbed(
             [
                 'Review and manage the Umbra support system.',
                 '',
-                'Ticket actions remain protected by staff roles and Discord channel permissions.'
+                'Ticket creation and management are handled through Umbra’s secure interaction buttons.'
             ].join(
                 '\n'
             ),
@@ -1381,37 +1383,54 @@ function buildTicketsEmbed(
         fields: [
             {
                 name:
-                    '🧩 Create Panel',
+                    '🧩 Create Support Panel',
 
                 value:
-                    '`/ticketpanel`\nCreate the public support panel.',
+                    [
+                        '`/ticketpanel`',
+                        'Publish the public Umbra support panel.'
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '🎫 Ticket Controls',
+                    '🎫 Member Controls',
 
                 value:
-                    '`/ticket`\nUse the available ticket actions.',
+                    [
+                        'Members open tickets using the **Open Ticket** button.',
+                        '',
+                        'Ticket owners may request closure directly from their private ticket.'
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '📚 Ticket Records',
+                    '🛡️ Staff Controls',
 
                 value:
-                    '`/tickets`\nReview stored ticket information.',
+                    [
+                        'Shadow Wardens may manage tickets through the buttons inside each ticket channel.',
+                        '',
+                        'Supported actions include closing, reopening and deleting tickets.'
+                    ].join(
+                        '\n'
+                    ),
 
                 inline:
                     true
             },
             {
                 name:
-                    '🛡️ Required Permissions',
+                    '🔐 Umbra Requirements',
 
                 value:
                     [
@@ -1579,9 +1598,7 @@ function buildSetupCenterEmbed(
             }
         ]
     });
-}
-
-/**
+}/**
  * Build the live Guardian page.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -1991,7 +2008,9 @@ async function handleModuleSelection(
 
         components
     });
-}/**
+}
+
+/**
  * Refresh the live Umbra
  * Health Snapshot.
  *
@@ -2232,9 +2251,7 @@ async function handleServicesRefresh(
     console.log(
         '======================================'
     );
-}
-
-module.exports = {
+}module.exports = {
     name:
         Events.InteractionCreate,
 
@@ -2328,6 +2345,8 @@ module.exports = {
                 await handleServicesRefresh(
                     interaction
                 );
+
+                return;
             }
         } catch (error) {
             console.error(

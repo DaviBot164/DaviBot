@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 
 /**
- * Build the Crimson Eclipse Event creation modal.
+ * Build the Las Noches Event creation modal.
  *
  * @param {string} userId
  * @returns {ModalBuilder}
@@ -20,7 +20,7 @@ function buildEventModal(
                 `umbra:event:create:${userId}`
             )
             .setTitle(
-                '🌑 Create Event'
+                '🌙 Create Event'
             );
 
     const titleInput =
@@ -32,14 +32,20 @@ function buildEventModal(
                 'Event Title'
             )
             .setPlaceholder(
-                'Example: Crimson PvP Tournament'
+                'Example: Las Noches PvP Tournament'
             )
             .setStyle(
                 TextInputStyle.Short
             )
-            .setMinLength(3)
-            .setMaxLength(100)
-            .setRequired(true);
+            .setMinLength(
+                3
+            )
+            .setMaxLength(
+                100
+            )
+            .setRequired(
+                true
+            );
 
     const timeInput =
         new TextInputBuilder()
@@ -55,9 +61,15 @@ function buildEventModal(
             .setStyle(
                 TextInputStyle.Short
             )
-            .setMinLength(2)
-            .setMaxLength(100)
-            .setRequired(true);
+            .setMinLength(
+                2
+            )
+            .setMaxLength(
+                100
+            )
+            .setRequired(
+                true
+            );
 
     const maxPlayersInput =
         new TextInputBuilder()
@@ -73,9 +85,15 @@ function buildEventModal(
             .setStyle(
                 TextInputStyle.Short
             )
-            .setMinLength(1)
-            .setMaxLength(4)
-            .setRequired(true);
+            .setMinLength(
+                1
+            )
+            .setMaxLength(
+                4
+            )
+            .setRequired(
+                true
+            );
 
     const rewardInput =
         new TextInputBuilder()
@@ -86,14 +104,20 @@ function buildEventModal(
                 'Event Reward'
             )
             .setPlaceholder(
-                'Example: Eclipse Champion role'
+                'Example: Las Noches Champion role'
             )
             .setStyle(
                 TextInputStyle.Short
             )
-            .setMinLength(2)
-            .setMaxLength(200)
-            .setRequired(true);
+            .setMinLength(
+                2
+            )
+            .setMaxLength(
+                200
+            )
+            .setRequired(
+                true
+            );
 
     const descriptionInput =
         new TextInputBuilder()
@@ -109,9 +133,15 @@ function buildEventModal(
             .setStyle(
                 TextInputStyle.Paragraph
             )
-            .setMinLength(5)
-            .setMaxLength(1000)
-            .setRequired(true);
+            .setMinLength(
+                5
+            )
+            .setMaxLength(
+                1000
+            )
+            .setRequired(
+                true
+            );
 
     modal.addComponents(
         new ActionRowBuilder()

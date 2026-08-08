@@ -38,18 +38,27 @@ function buildEventEmbed(
 
     const statusConfig = {
         Active: {
-            icon: '🟢',
-            label: 'Open'
+            icon:
+                '🟢',
+
+            label:
+                'Open'
         },
 
         Ended: {
-            icon: '🏁',
-            label: 'Finished'
+            icon:
+                '🏁',
+
+            label:
+                'Finished'
         },
 
         Cancelled: {
-            icon: '🔴',
-            label: 'Cancelled'
+            icon:
+                '🔴',
+
+            label:
+                'Cancelled'
         }
     };
 
@@ -69,13 +78,13 @@ function buildEventEmbed(
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                `🕒 **Event Time**`,
+                '🕒 **Event Time**',
                 `${eventData.time}`,
                 '',
-                `👥 **Players**`,
+                '👥 **Players**',
                 `\`${participantDisplay}\``,
                 '',
-                `🎁 **Reward**`,
+                '🎁 **Reward**',
                 `${eventData.reward}`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
@@ -87,20 +96,25 @@ function buildEventEmbed(
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Stand together beneath the crimson moon.*'
+                '*Every battle becomes part of the chronicles of Las Noches.*'
             ].join('\n'),
 
         thumbnail:
             host.displayAvatarURL({
-                extension: 'png',
-                size: 512,
-                forceStatic: false
+                extension:
+                    'png',
+
+                size:
+                    512,
+
+                forceStatic:
+                    false
             })
     });
 }
 
 /**
- * Build the buttons shown beneath an event.
+ * Build the buttons shown beneath an Event.
  *
  * @param {Object} eventData
  * @returns {ActionRowBuilder}
@@ -121,11 +135,13 @@ function buildEventButtons(
             : 0;
 
     const eventClosed =
-        eventData.status !== 'Active';
+        eventData.status !==
+        'Active';
 
     const eventFull =
         maxPlayers > 0 &&
-        participantCount >= maxPlayers;
+        participantCount >=
+            maxPlayers;
 
     return new ActionRowBuilder()
         .addComponents(
@@ -138,7 +154,9 @@ function buildEventButtons(
                         ? 'Event Full'
                         : 'Join Event'
                 )
-                .setEmoji('✅')
+                .setEmoji(
+                    '✅'
+                )
                 .setStyle(
                     ButtonStyle.Success
                 )
@@ -154,7 +172,9 @@ function buildEventButtons(
                 .setLabel(
                     'Leave Event'
                 )
-                .setEmoji('❌')
+                .setEmoji(
+                    '❌'
+                )
                 .setStyle(
                     ButtonStyle.Secondary
                 )
@@ -169,7 +189,9 @@ function buildEventButtons(
                 .setLabel(
                     'Participants'
                 )
-                .setEmoji('👥')
+                .setEmoji(
+                    '👥'
+                )
                 .setStyle(
                     ButtonStyle.Primary
                 )
@@ -177,7 +199,8 @@ function buildEventButtons(
 }
 
 /**
- * Build an embed containing the participant list.
+ * Build an Embed containing the
+ * Event participant list.
  *
  * @param {Object} eventData
  * @param {string|null} thumbnail
@@ -185,7 +208,8 @@ function buildEventButtons(
  */
 function buildParticipantsEmbed(
     eventData,
-    thumbnail = null
+    thumbnail =
+        null
 ) {
     const participantIds =
         eventData.participants instanceof Set
@@ -206,14 +230,27 @@ function buildParticipantsEmbed(
                 userId,
                 index
             ) => {
-                let medal = '▫️';
+                let medal =
+                    '▫️';
 
-                if (index === 0) {
-                    medal = '🥇';
-                } else if (index === 1) {
-                    medal = '🥈';
-                } else if (index === 2) {
-                    medal = '🥉';
+                if (
+                    index ===
+                    0
+                ) {
+                    medal =
+                        '🥇';
+                } else if (
+                    index ===
+                    1
+                ) {
+                    medal =
+                        '🥈';
+                } else if (
+                    index ===
+                    2
+                ) {
+                    medal =
+                        '🥉';
                 }
 
                 return (
@@ -223,7 +260,8 @@ function buildParticipantsEmbed(
         );
 
     if (
-        participantIds.length > 50
+        participantIds.length >
+        50
     ) {
         participantLines.push(
             '',
@@ -232,9 +270,12 @@ function buildParticipantsEmbed(
     }
 
     const participantList =
-        participantLines.length > 0
-            ? participantLines.join('\n')
-            : 'No Souls have joined this event yet.';
+        participantLines.length >
+        0
+            ? participantLines.join(
+                '\n'
+            )
+            : 'No Souls have joined this Event yet.';
 
     const maxPlayers =
         Number.isInteger(
@@ -249,14 +290,22 @@ function buildParticipantsEmbed(
             : `${participantIds.length}`;
 
     const statusConfig = {
-        Active: '🟢 Open',
-        Ended: '🏁 Finished',
-        Cancelled: '🔴 Cancelled'
+        Active:
+            '🟢 Open',
+
+        Ended:
+            '🏁 Finished',
+
+        Cancelled:
+            '🔴 Cancelled'
     };
 
     const status =
-        statusConfig[eventData.status] ||
-        eventData.status;
+        statusConfig[
+            eventData.status
+        ] ||
+        eventData.status ||
+        'Unknown';
 
     return createEmbed({
         title:

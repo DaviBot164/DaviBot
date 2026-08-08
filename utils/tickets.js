@@ -10,15 +10,15 @@ const ticketConfig =
     require('../config/tickets');
 
 /**
- * Recognize both the new Umbra ticket topic
- * and the old Umbra ticket topic.
+ * Recognize both the current Umbra ticket
+ * topic and the legacy Seraphiel ticket topic.
  *
  * Keeping legacy support prevents existing
  * open or closed tickets from becoming invalid
  * after the bot rebrand.
  */
 const TICKET_OWNER_PATTERN =
-    /(?:Umbra|Umbra) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
+    /(?:Umbra|Seraphiel) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
 
 /**
  * Convert configured permission names into
@@ -30,7 +30,11 @@ const TICKET_OWNER_PATTERN =
 function resolvePermissions(
     permissionNames
 ) {
-    if (!Array.isArray(permissionNames)) {
+    if (
+        !Array.isArray(
+            permissionNames
+        )
+    ) {
         return [];
     }
 
@@ -43,7 +47,8 @@ function resolvePermissions(
         )
         .filter(
             permission =>
-                permission !== undefined
+                permission !==
+                undefined
         );
 }
 
@@ -53,7 +58,9 @@ function resolvePermissions(
  * @param {import('discord.js').User} user
  * @returns {string}
  */
-function createTicketChannelName(user) {
+function createTicketChannelName(
+    user
+) {
     const safeUsername =
         user.username
             .toLowerCase()
@@ -130,7 +137,7 @@ function createReopenedTicketChannelName(
 /**
  * Create the topic stored inside a ticket channel.
  *
- * New tickets use the Umbra identity.
+ * New tickets always use the Umbra identity.
  *
  * @param {string} ownerId
  * @param {'open'|'closed'} status
@@ -138,7 +145,8 @@ function createReopenedTicketChannelName(
  */
 function createTicketTopic(
     ownerId,
-    status = 'open'
+    status =
+        'open'
 ) {
     return (
         `Umbra Ticket | Owner: ${ownerId} | ` +
@@ -149,16 +157,18 @@ function createTicketTopic(
 /**
  * Read ticket information from a channel topic.
  *
- * Both new Umbra topics and legacy Umbra
- * topics are supported.
+ * Both current Umbra topics and legacy
+ * Seraphiel topics are supported.
  *
  * @param {string|null} topic
  * @returns {{
- *   ownerId: string,
- *   status: 'open'|'closed'
+ *     ownerId: string,
+ *     status: 'open'|'closed'
  * }|null}
  */
-function parseTicketTopic(topic) {
+function parseTicketTopic(
+    topic
+) {
     if (!topic) {
         return null;
     }
@@ -173,8 +183,11 @@ function parseTicketTopic(topic) {
     }
 
     return {
-        ownerId: match[1],
-        status: match[2]
+        ownerId:
+            match[1],
+
+        status:
+            match[2]
     };
 }
 
@@ -212,7 +225,8 @@ function findOpenTicket(
                         'open'
                 );
             }
-        ) || null
+        ) ||
+        null
     );
 }
 
@@ -304,7 +318,9 @@ function createCloseConfirmationButtons(
             .setLabel(
                 'Confirm Close'
             )
-            .setEmoji('✅')
+            .setEmoji(
+                '✅'
+            )
             .setStyle(
                 ButtonStyle.Danger
             );
@@ -317,7 +333,9 @@ function createCloseConfirmationButtons(
             .setLabel(
                 'Cancel'
             )
-            .setEmoji('❌')
+            .setEmoji(
+                '❌'
+            )
             .setStyle(
                 ButtonStyle.Secondary
             );
@@ -349,7 +367,9 @@ function createClosedTicketButtons(
             .setLabel(
                 'Reopen Ticket'
             )
-            .setEmoji('🔓')
+            .setEmoji(
+                '🔓'
+            )
             .setStyle(
                 ButtonStyle.Success
             );
@@ -362,7 +382,9 @@ function createClosedTicketButtons(
             .setLabel(
                 'Delete Ticket'
             )
-            .setEmoji('🗑️')
+            .setEmoji(
+                '🗑️'
+            )
             .setStyle(
                 ButtonStyle.Danger
             );
@@ -393,7 +415,9 @@ function createDeleteConfirmationButtons(
             .setLabel(
                 'Confirm Delete'
             )
-            .setEmoji('✅')
+            .setEmoji(
+                '✅'
+            )
             .setStyle(
                 ButtonStyle.Danger
             );
@@ -406,7 +430,9 @@ function createDeleteConfirmationButtons(
             .setLabel(
                 'Cancel'
             )
-            .setEmoji('❌')
+            .setEmoji(
+                '❌'
+            )
             .setStyle(
                 ButtonStyle.Secondary
             );
@@ -482,7 +508,7 @@ function createTicketPermissionOverwrites(
 
 /**
  * Check whether a member belongs to
- * the configured Shadow Warden role.
+ * the configured ticket staff role.
  *
  * Administrators are also accepted.
  *
@@ -510,17 +536,25 @@ function isTicketStaff(
 }
 
 module.exports = {
+    TICKET_OWNER_PATTERN,
+
+    resolvePermissions,
+
     createTicketChannelName,
     createClosedTicketChannelName,
     createReopenedTicketChannelName,
+
     createTicketTopic,
     parseTicketTopic,
     findOpenTicket,
+
     createTicketPanelButtons,
     createOpenTicketButtons,
     createCloseConfirmationButtons,
     createClosedTicketButtons,
     createDeleteConfirmationButtons,
+
     createTicketPermissionOverwrites,
+
     isTicketStaff
 };

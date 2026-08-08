@@ -8,8 +8,8 @@
 const URL_PATTERN =
     /https?:\/\/[^\s<>()]+/gi;
 
-const IP_ADDRESS_URL_PATTERN =
-    /^https?:\/\/(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?(?:\/|$)/i;
+const IP_ADDRESS_HOST_PATTERN =
+    /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
 /**
  * Known legitimate domains.
@@ -26,16 +26,12 @@ const TRUSTED_DOMAINS = [
     'steampowered.com',
 
     'roblox.com',
-    'www.roblox.com',
 
     'epicgames.com',
-    'store.epicgames.com',
 
     'microsoft.com',
-    'account.microsoft.com',
 
-    'google.com',
-    'accounts.google.com'
+    'google.com'
 ];
 
 /**
@@ -57,7 +53,8 @@ const SHORTENER_DOMAINS = [
 ];
 
 /**
- * Domains commonly impersonated by scam links.
+ * Domains commonly impersonated
+ * by scam links.
  */
 const IMPERSONATED_BRANDS = [
     'discord',
@@ -112,34 +109,70 @@ const SCAM_PHRASES = [
 ];
 
 /**
- * Remove punctuation from the end of URLs.
+ * Remove punctuation from the end
+ * of a detected URL.
  *
  * @param {string} url
  * @returns {string}
  */
-function cleanUrl(url) {
-    return url.replace(
-        /[.,!?;:'")\]}]+$/g,
-        ''
-    );
+function cleanUrl(
+    url
+) {
+    if (
+        typeof url !==
+        'string'
+    ) {
+        return '';
+    }
+
+    return url
+        .trim()
+        .replace(
+            /[.,!?;:'")\]}]+$/g,
+            ''
+        );
 }
 
 /**
  * Normalize a hostname.
  *
+ * Examples:
+ *
+ * WWW.ROBLOX.COM
+ * -> roblox.com
+ *
+ * discord.com.
+ * -> discord.com
+ *
  * @param {string} hostname
  * @returns {string}
  */
-function normalizeHostname(hostname) {
+function normalizeHostname(
+    hostname
+) {
+    if (
+        typeof hostname !==
+        'string'
+    ) {
+        return '';
+    }
+
     return hostname
+        .trim()
         .toLowerCase()
-        .replace(/\.$/, '')
-        .replace(/^www\./, '');
+        .replace(
+            /\.$/,
+            ''
+        )
+        .replace(
+            /^www\./,
+            ''
+        );
 }
 
 /**
- * Check whether a hostname matches a domain
- * or one of its subdomains.
+ * Check whether a hostname matches a
+ * domain or one of its subdomains.
  *
  * @param {string} hostname
  * @param {string} domain
@@ -150,10 +183,21 @@ function hostnameMatchesDomain(
     domain
 ) {
     const normalizedHostname =
-        normalizeHostname(hostname);
+        normalizeHostname(
+            hostname
+        );
 
     const normalizedDomain =
-        normalizeHostname(domain);
+        normalizeHostname(
+            domain
+        );
+
+    if (
+        !normalizedHostname ||
+        !normalizedDomain
+    ) {
+        return false;
+    }
 
     return (
         normalizedHostname ===
@@ -165,12 +209,15 @@ function hostnameMatchesDomain(
 }
 
 /**
- * Check whether a URL belongs to a trusted domain.
+ * Check whether a hostname belongs
+ * to a trusted domain.
  *
  * @param {string} hostname
  * @returns {boolean}
  */
-function isTrustedDomain(hostname) {
+function isTrustedDomain(
+    hostname
+) {
     return TRUSTED_DOMAINS.some(
         domain =>
             hostnameMatchesDomain(
@@ -181,12 +228,15 @@ function isTrustedDomain(hostname) {
 }
 
 /**
- * Check whether a URL uses a shortening service.
+ * Check whether a hostname uses a
+ * URL shortening service.
  *
  * @param {string} hostname
  * @returns {boolean}
  */
-function isShortenedUrl(hostname) {
+function isShortenedUrl(
+    hostname
+) {
     return SHORTENER_DOMAINS.some(
         domain =>
             hostnameMatchesDomain(
@@ -197,19 +247,71 @@ function isShortenedUrl(hostname) {
 }
 
 /**
+ * Check whether a hostname is an
+ * IPv4 address.
+ *
+ * Values above 255 are rejected.
+ *
+ * @param {string} hostname
+ * @returns {boolean}
+ */
+function isIpAddressHostname(
+    hostname
+) {
+    const normalizedHostname =
+        normalizeHostname(
+            hostname
+        );
+
+    if (
+        !IP_ADDRESS_HOST_PATTERN.test(
+            normalizedHostname
+        )
+    ) {
+        return false;
+    }
+
+    const octets =
+        normalizedHostname
+            .split('.')
+            .map(
+                Number
+            );
+
+    return octets.every(
+        octet =>
+            Number.isInteger(
+                octet
+            ) &&
+            octet >= 0 &&
+            octet <= 255
+    );
+}
+
+/**
  * Detect suspicious brand impersonation.
  *
  * Example:
+ *
  * discord-free-nitro.example.com
  *
  * @param {string} hostname
  * @returns {string|null}
  */
-function findImpersonatedBrand(hostname) {
+function findImpersonatedBrand(
+    hostname
+) {
     const normalizedHostname =
-        normalizeHostname(hostname);
+        normalizeHostname(
+            hostname
+        );
 
-    if (isTrustedDomain(normalizedHostname)) {
+    if (
+        !normalizedHostname ||
+        isTrustedDomain(
+            normalizedHostname
+        )
+    ) {
         return null;
     }
 
@@ -234,24 +336,23 @@ function findImpersonatedBrand(hostname) {
  *
  * @param {string} rawUrl
  * @returns {{
- *   detected: boolean,
- *   type?: string,
- *   detail?: string
+ *     detected: boolean,
+ *     type?: string,
+ *     detail?: string
  * }}
  */
-function inspectUrl(rawUrl) {
+function inspectUrl(
+    rawUrl
+) {
     const cleanedUrl =
-        cleanUrl(rawUrl);
+        cleanUrl(
+            rawUrl
+        );
 
-    if (
-        IP_ADDRESS_URL_PATTERN.test(
-            cleanedUrl
-        )
-    ) {
+    if (!cleanedUrl) {
         return {
-            detected: true,
-            type: 'IP address link',
-            detail: cleanedUrl
+            detected:
+                false
         };
     }
 
@@ -259,10 +360,13 @@ function inspectUrl(rawUrl) {
 
     try {
         parsedUrl =
-            new URL(cleanedUrl);
+            new URL(
+                cleanedUrl
+            );
     } catch {
         return {
-            detected: false
+            detected:
+                false
         };
     }
 
@@ -273,24 +377,69 @@ function inspectUrl(rawUrl) {
 
     if (!hostname) {
         return {
-            detected: false
+            detected:
+                false
         };
     }
 
-    if (isShortenedUrl(hostname)) {
+    /*
+     * Raw IP-address links are considered
+     * suspicious because phishing pages
+     * commonly avoid recognizable domains.
+     */
+    if (
+        isIpAddressHostname(
+            hostname
+        )
+    ) {
         return {
-            detected: true,
-            type: 'Shortened URL',
-            detail: hostname
+            detected:
+                true,
+
+            type:
+                'IP address link',
+
+            detail:
+                cleanedUrl
         };
     }
 
+    /*
+     * URL shorteners hide the final
+     * destination from Discord members.
+     */
+    if (
+        isShortenedUrl(
+            hostname
+        )
+    ) {
+        return {
+            detected:
+                true,
+
+            type:
+                'Shortened URL',
+
+            detail:
+                hostname
+        };
+    }
+
+    /*
+     * Detect domains attempting to resemble
+     * high-value services such as Discord,
+     * Roblox or Steam.
+     */
     const impersonatedBrand =
-        findImpersonatedBrand(hostname);
+        findImpersonatedBrand(
+            hostname
+        );
 
     if (impersonatedBrand) {
         return {
-            detected: true,
+            detected:
+                true,
+
             type:
                 'Possible brand impersonation',
 
@@ -300,7 +449,8 @@ function inspectUrl(rawUrl) {
     }
 
     return {
-        detected: false
+        detected:
+            false
     };
 }
 
@@ -310,11 +460,23 @@ function inspectUrl(rawUrl) {
  * @param {string} content
  * @returns {string|null}
  */
-function findScamPhrase(content) {
+function findScamPhrase(
+    content
+) {
+    if (
+        typeof content !==
+        'string'
+    ) {
+        return null;
+    }
+
     const normalizedContent =
         content
             .toLowerCase()
-            .replace(/\s+/g, ' ')
+            .replace(
+                /\s+/g,
+                ' '
+            )
             .trim();
 
     for (
@@ -334,19 +496,69 @@ function findScamPhrase(content) {
 }
 
 /**
+ * Determine whether suspicious scam wording
+ * appears with sufficiently strong context.
+ *
+ * This reduces false positives from normal
+ * conversations discussing scams.
+ *
+ * @param {string} content
+ * @param {number} urlCount
+ * @returns {boolean}
+ */
+function hasStrongScamContext(
+    content,
+    urlCount
+) {
+    const normalizedContent =
+        content
+            .toLowerCase()
+            .replace(
+                /\s+/g,
+                ' '
+            );
+
+    if (
+        urlCount >
+        0
+    ) {
+        return true;
+    }
+
+    const contextWords = [
+        'click',
+        'claim',
+        'login',
+        'log in',
+        'sign in',
+        'verify',
+        'scan',
+        'open link',
+        'visit'
+    ];
+
+    return contextWords.some(
+        contextWord =>
+            normalizedContent.includes(
+                contextWord
+            )
+    );
+}
+
+/**
  * Detect scam or phishing content.
  *
  * @param {string} content
  * @param {{
- *   timeoutMilliseconds?: number
+ *     timeoutMilliseconds?: number
  * }} options
  * @returns {{
- *   detected: boolean,
- *   reason?: string,
- *   warning?: string,
- *   timeoutDuration?: number,
- *   scamType?: string,
- *   evidence?: string
+ *     detected: boolean,
+ *     reason?: string,
+ *     warning?: string,
+ *     timeoutDuration?: number,
+ *     scamType?: string,
+ *     evidence?: string
  * }}
  */
 function detectScam(
@@ -354,34 +566,60 @@ function detectScam(
     options = {}
 ) {
     if (
-        typeof content !== 'string' ||
+        typeof content !==
+            'string' ||
         !content.trim()
     ) {
         return {
-            detected: false
+            detected:
+                false
         };
     }
 
     const timeoutMilliseconds =
-        options.timeoutMilliseconds ??
-        30 * 60 * 1_000;
+        Number.isFinite(
+            options.timeoutMilliseconds
+        )
+            ? Math.max(
+                0,
+                options.timeoutMilliseconds
+            )
+            : 30 *
+                60 *
+                1_000;
 
     const urls =
-        content.match(URL_PATTERN) ?? [];
+        content.match(
+            URL_PATTERN
+        ) ??
+        [];
 
-    for (const url of urls) {
+    /*
+     * URL inspection takes priority because
+     * a malicious destination is stronger
+     * evidence than suspicious wording alone.
+     */
+    for (
+        const url
+        of urls
+    ) {
         const urlResult =
-            inspectUrl(url);
+            inspectUrl(
+                url
+            );
 
-        if (urlResult.detected) {
+        if (
+            urlResult.detected
+        ) {
             return {
-                detected: true,
+                detected:
+                    true,
 
                 reason:
                     `Scam or phishing link detected: ${urlResult.type}`,
 
                 warning:
-                    'suspicious or potentially dangerous links are not allowed.',
+                    'Suspicious or potentially dangerous links are not allowed.',
 
                 timeoutDuration:
                     timeoutMilliseconds,
@@ -396,65 +634,73 @@ function detectScam(
     }
 
     const scamPhrase =
-        findScamPhrase(content);
+        findScamPhrase(
+            content
+        );
 
     /*
-     * Scam wording without a URL is logged as
-     * suspicious only when the message includes
-     * strong urgency or reward language.
+     * Scam wording without a suspicious URL
+     * is blocked only when accompanied by
+     * strong action-oriented context.
+     *
+     * Example:
+     * "claim free nitro here"
      */
-    if (scamPhrase) {
-        const normalizedContent =
-            content.toLowerCase();
+    if (
+        scamPhrase &&
+        hasStrongScamContext(
+            content,
+            urls.length
+        )
+    ) {
+        return {
+            detected:
+                true,
 
-        const strongContext =
-            urls.length > 0 ||
-            normalizedContent.includes(
-                'click'
-            ) ||
-            normalizedContent.includes(
-                'claim'
-            ) ||
-            normalizedContent.includes(
-                'login'
-            ) ||
-            normalizedContent.includes(
-                'sign in'
-            ) ||
-            normalizedContent.includes(
-                'verify'
-            ) ||
-            normalizedContent.includes(
-                'scan'
-            );
+            reason:
+                `Scam or phishing message detected: "${scamPhrase}"`,
 
-        if (strongContext) {
-            return {
-                detected: true,
+            warning:
+                'Scam and phishing messages are not allowed.',
 
-                reason:
-                    `Scam or phishing message detected: "${scamPhrase}"`,
+            timeoutDuration:
+                timeoutMilliseconds,
 
-                warning:
-                    'scam and phishing messages are not allowed.',
+            scamType:
+                'Suspicious scam wording',
 
-                timeoutDuration:
-                    timeoutMilliseconds,
-
-                scamType:
-                    'Suspicious scam wording',
-
-                evidence:
-                    scamPhrase
-            };
-        }
+            evidence:
+                scamPhrase
+        };
     }
 
     return {
-        detected: false
+        detected:
+            false
     };
 }
 
 module.exports = {
+    URL_PATTERN,
+    IP_ADDRESS_HOST_PATTERN,
+
+    TRUSTED_DOMAINS,
+    SHORTENER_DOMAINS,
+    IMPERSONATED_BRANDS,
+    SCAM_PHRASES,
+
+    cleanUrl,
+    normalizeHostname,
+    hostnameMatchesDomain,
+
+    isTrustedDomain,
+    isShortenedUrl,
+    isIpAddressHostname,
+    findImpersonatedBrand,
+
+    inspectUrl,
+    findScamPhrase,
+    hasStrongScamContext,
+
     detectScam
 };

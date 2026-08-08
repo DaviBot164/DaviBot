@@ -349,7 +349,9 @@ function shouldBypassAutoMod(
                 );
         }
     );
-}/**
+}
+
+/**
  * Detect rapid-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -408,9 +410,7 @@ function isMessageSpam(
             .spam
             .messageLimit
     );
-}
-
-/**
+}/**
  * Detect repeated-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -710,7 +710,9 @@ function findLogChannel(
         channelByName ??
         null
     );
-}/**
+}
+
+/**
  * Send Umbra AutoMod log.
  *
  * @param {import('discord.js').Message} message
@@ -761,7 +763,6 @@ async function sendAutoModLog(
             .setColor(
                 '#8B0000'
             )
-
             .setAuthor({
                 name:
                     'Umbra AutoMod',
@@ -776,15 +777,12 @@ async function sendAutoModLog(
                                 256
                         })
             })
-
             .setTitle(
                 `🛡️ AutoMod Case ${caseNumber}`
             )
-
             .setDescription(
                 'Umbra detected and recorded a violation within Las Noches.'
             )
-
             .addFields(
                 {
                     name:
@@ -851,7 +849,6 @@ async function sendAutoModLog(
                         false
                 }
             )
-
             .setThumbnail(
                 message.author
                     .displayAvatarURL({
@@ -865,9 +862,7 @@ async function sendAutoModLog(
                             false
                     })
             )
-
             .setTimestamp()
-
             .setFooter({
                 text:
                     `🌙 Umbra • Guardian of Las Noches • Soul ID: ${message.author.id}`
@@ -888,9 +883,7 @@ async function sendAutoModLog(
             error
         );
     }
-}
-
-/**
+}/**
  * Delete a violating message.
  *
  * @param {import('discord.js').Message} message
@@ -984,7 +977,19 @@ async function sendTemporaryWarning(
         const warningMessage =
             await message.channel.send({
                 content:
-                    `${message.author}, 🌙 **Umbra Guardian:** ${warningText}`
+                    `${message.author}, 🌙 **Umbra Guardian:** ${warningText}`,
+
+                allowedMentions: {
+                    users: [
+                        message.author.id
+                    ],
+
+                    roles:
+                        [],
+
+                    repliedUser:
+                        false
+                }
             });
 
         const warningTimer =
@@ -1107,7 +1112,7 @@ async function saveAutoModCase(
  * @param {{
  *     reason: string,
  *     warning: string,
- *     timeoutDuration?: number
+ *     timeoutDuration?: number|null
  * }} violation
  * @returns {Promise<void>}
  */
@@ -1181,7 +1186,9 @@ async function processViolation(
             savedCase
         )
     ]);
-}module.exports = {
+}
+
+module.exports = {
     name:
         Events.MessageCreate,
 
@@ -1194,7 +1201,9 @@ async function processViolation(
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
      */
-    async execute(message) {
+    async execute(
+        message
+    ) {
         try {
             if (
                 !message.inGuild() ||
@@ -1204,6 +1213,10 @@ async function processViolation(
                 return;
             }
 
+            /*
+             * Progression remains active when
+             * AutoMod itself is disabled.
+             */
             if (
                 !automodConfig.enabled
             ) {
@@ -1214,6 +1227,11 @@ async function processViolation(
                 return;
             }
 
+            /*
+             * Staff and other configured bypass
+             * members skip moderation checks,
+             * but still receive progression.
+             */
             if (
                 shouldBypassAutoMod(
                     message.member
@@ -1227,7 +1245,7 @@ async function processViolation(
             }
 
             /*
-             * Scam detection
+             * Scam / phishing detection.
              */
             const scamResult =
                 detectScam(
@@ -1237,16 +1255,22 @@ async function processViolation(
             if (
                 scamResult.detected
             ) {
+                const scamType =
+                    scamResult.scamType ||
+                    'Suspicious scam activity';
+
                 await processViolation(
                     message,
                     {
                         reason:
-                            `Scam Link Detected (${scamResult.type})`,
+                            `Scam or Phishing Detected (${scamType})`,
 
                         warning:
-                            'Your message contained a suspicious scam link and has been removed.',
+                            scamResult.warning ||
+                            'Your message contained suspicious scam or phishing content and has been removed.',
 
                         timeoutDuration:
+                            scamResult.timeoutDuration ??
                             automodConfig
                                 .scamProtection
                                 ?.timeoutMilliseconds
@@ -1257,7 +1281,7 @@ async function processViolation(
             }
 
             /*
-             * Discord invite protection
+             * Discord invite protection.
              */
             if (
                 automodConfig
@@ -1287,16 +1311,14 @@ async function processViolation(
             }
 
             /*
-             * Bad word detection
+             * Bad word detection.
              */
             const badWord =
                 findBadWord(
                     message.content
                 );
 
-            if (
-                badWord
-            ) {
+            if (badWord) {
                 await processViolation(
                     message,
                     {
@@ -1310,8 +1332,8 @@ async function processViolation(
                             badWord.severity ===
                             'timeout'
                                 ? automodConfig
-                                      .badWords
-                                      ?.timeoutMilliseconds
+                                    .badWords
+                                    ?.timeoutMilliseconds
                                 : null
                     }
                 );
@@ -1320,7 +1342,7 @@ async function processViolation(
             }
 
             /*
-             * Rapid message spam
+             * Rapid-message spam.
              */
             if (
                 isMessageSpam(
@@ -1347,7 +1369,7 @@ async function processViolation(
             }
 
             /*
-             * Duplicate spam
+             * Duplicate-message spam.
              */
             if (
                 isDuplicateSpam(
@@ -1374,7 +1396,7 @@ async function processViolation(
             }
 
             /*
-             * Mention spam
+             * Mention spam.
              */
             const mentionCount =
                 getMentionCount(
@@ -1416,7 +1438,6 @@ async function processViolation(
             await checkMessageProgression(
                 message
             );
-
         } catch (error) {
             console.error(
                 '❌ Umbra MessageCreate error:'
@@ -1427,10 +1448,11 @@ async function processViolation(
             );
         }
     }
-};
-
-/*
+};/*
  * Periodically clean cached spam history.
+ *
+ * This prevents old member activity from
+ * remaining in memory indefinitely.
  */
 const cleanupTimer =
     setInterval(
@@ -1498,9 +1520,15 @@ const cleanupTimer =
                 }
             }
         },
-        5 * 60 * 1_000
+        5 *
+            60 *
+            1_000
     );
 
+/*
+ * The cleanup interval must not keep
+ * the Node.js process alive by itself.
+ */
 if (
     typeof cleanupTimer.unref ===
     'function'
