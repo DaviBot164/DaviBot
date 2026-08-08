@@ -25,7 +25,7 @@ const {
 } = require('../database');
 
 /**
- * Official Crimson Eclipse Events channel.
+ * Official Las Noches Events channel.
  */
 const EVENT_CHANNEL_ID =
     '1531706846531031060';
@@ -298,7 +298,7 @@ async function handleCreateModal(
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'Crimson Eclipse Events can only be created inside a server.'
+                    'Las Noches Events can only be created inside a server.'
                 )
             ],
 
@@ -547,7 +547,7 @@ async function handleCreateModal(
     );
 
     console.log(
-        '🎉 Crimson Eclipse Event Created'
+        '🎉 Las Noches Event Created'
     );
 
     console.log(
@@ -577,9 +577,7 @@ async function handleCreateModal(
     console.log(
         '======================================'
     );
-}
-
-/**
+}/**
  * Handle Event buttons.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
@@ -625,7 +623,7 @@ async function handleEventButton(
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'Crimson Eclipse Event buttons can only be used inside a server.'
+                    'Las Noches Event buttons can only be used inside a server.'
                 )
             ],
 

@@ -24,7 +24,7 @@ const {
 } = require('../database');
 
 /**
- * Official Crimson Eclipse Giveaways channel.
+ * Official Las Noches Giveaways channel.
  */
 const GIVEAWAY_CHANNEL_ID =
     '1528401988272914463';
@@ -545,9 +545,7 @@ function selectWinners(
             shuffledParticipants.length
         )
     );
-}
-
-/**
+}/**
  * Fetch the original Giveaway message.
  *
  * @param {import('discord.js').Client} client
@@ -748,7 +746,7 @@ async function endGiveaway(
     );
 
     console.log(
-        '🏁 Crimson Eclipse Giveaway Ended'
+        '🏁 Las Noches Giveaway Ended'
     );
 
     console.log(
@@ -1144,7 +1142,7 @@ async function handleCreateModal(
     );
 
     console.log(
-        '🎁 Crimson Eclipse Giveaway Created'
+        '🎁 Las Noches Giveaway Created'
     );
 
     console.log(
@@ -1174,9 +1172,7 @@ async function handleCreateModal(
     console.log(
         '======================================'
     );
-}
-
-/**
+}/**
  * Handle Giveaway buttons.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
