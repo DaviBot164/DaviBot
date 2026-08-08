@@ -411,7 +411,7 @@ async function initializeBlackBoxServices(
                     .name,
 
             message:
-                'Verification System is available.'
+                'Member verification is handled externally by Bloxlink.'
         },
         {
             serviceKey:
@@ -472,9 +472,7 @@ async function initializeBlackBoxServices(
                 terminal
                     .UMBRA_SERVICES
                     .TITLES
-                    .name,
-
-            message:
+                    .name,            message:
                 'Chronicle Title system is available.'
         },
         {
@@ -580,7 +578,9 @@ async function initializeBlackBoxServices(
 
         online
     };
-}/**
+}
+
+/**
  * Leave the selected Discord server.
  *
  * This function affects only
@@ -1016,9 +1016,7 @@ async function publishBootSequence(
             ]
         }
     );
-}
-
-/**
+}/**
  * Send an error message for a failed
  * Slash Command.
  *
@@ -1124,7 +1122,9 @@ async function sendCommandError(
             error
         );
     }
-}/**
+}
+
+/**
  * Discord Client Ready event.
  */
 client.once(
@@ -1888,7 +1888,9 @@ async function shutdown(
 
     console.log(
         `🧠 Cleared ${clearedIncidentCount} active Black Box Incident(s).`
-    );    try {
+    );
+
+    try {
         client.destroy();
 
         await closeConnection();
