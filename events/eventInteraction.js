@@ -25,10 +25,13 @@ const {
 } = require('../database');
 
 /**
- * Official Las Noches Events channel.
+ * Official Las Noches Community Events channel.
+ *
+ * Events and Giveaways are published
+ * inside the same shared activity channel.
  */
 const EVENT_CHANNEL_ID =
-    '1531706846531031060';
+    '1535755486505476147';
 
 /**
  * Interactions currently being processed.
@@ -92,7 +95,7 @@ function parseMaxPlayers(
 }
 
 /**
- * Fetch the configured Events channel.
+ * Fetch the configured Community Events channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -255,9 +258,7 @@ async function updateEventMessage(
         components:
             [updatedButtons]
     });
-}
-
-/**
+}/**
  * Handle the Event creation Modal.
  *
  * @param {import('discord.js').ModalSubmitInteraction} interaction
@@ -388,7 +389,7 @@ async function handleCreateModal(
                 createErrorEmbed(
                     '❌ Event Channel Not Found',
                     [
-                        'Umbra could not find the official Events channel.',
+                        'Umbra could not find the official Community Events channel.',
                         '',
                         `Configured Channel ID: \`${EVENT_CHANNEL_ID}\``
                     ].join('\n')
@@ -879,9 +880,7 @@ async function handleEventButton(
         );
 
         return;
-    }
-
-    /*
+    }    /*
      * LEAVE EVENT
      */
     if (action === 'leave') {
@@ -986,9 +985,7 @@ async function handleEventButton(
         flags:
             MessageFlags.Ephemeral
     });
-}
-
-module.exports = {
+}module.exports = {
     name:
         Events.InteractionCreate,
 

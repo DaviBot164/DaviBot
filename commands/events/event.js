@@ -24,10 +24,13 @@ const {
 } = require('../../database');
 
 /**
- * Official Crimson Eclipse Events channel.
+ * Official Las Noches Community Events channel.
+ *
+ * Events and Giveaways are published
+ * inside the same shared activity channel.
  */
 const EVENT_CHANNEL_ID =
-    '1531706846531031060';
+    '1535755486505476147';
 
 /**
  * Discord error code returned when an interaction
@@ -227,9 +230,7 @@ async function sendEventCommandError(
 
         console.error(error);
     }
-}
-
-module.exports = {
+}module.exports = {
     category:
         'events',
 
@@ -237,7 +238,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('event')
             .setDescription(
-                'Create and manage Crimson Eclipse events.'
+                'Create and manage Las Noches events.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -248,7 +249,7 @@ module.exports = {
                 subcommand
                     .setName('create')
                     .setDescription(
-                        'Open the Crimson Eclipse Event creation form.'
+                        'Open the Las Noches Event creation form.'
                     )
             )
 
@@ -256,7 +257,7 @@ module.exports = {
                 subcommand
                     .setName('end')
                     .setDescription(
-                        'End an active Crimson Eclipse Event.'
+                        'End an active Las Noches Event.'
                     )
 
                     .addStringOption(option =>
@@ -274,7 +275,7 @@ module.exports = {
                 subcommand
                     .setName('cancel')
                     .setDescription(
-                        'Cancel an active Crimson Eclipse Event.'
+                        'Cancel an active Las Noches Event.'
                     )
 
                     .addStringOption(option =>
@@ -370,7 +371,7 @@ module.exports = {
                             createErrorEmbed(
                                 '❌ Event Channel Not Found',
                                 [
-                                    'Umbra could not find the official Events channel.',
+                                    'Umbra could not find the official Community Events channel.',
                                     '',
                                     `Configured Channel ID: \`${EVENT_CHANNEL_ID}\``
                                 ].join('\n')
@@ -460,7 +461,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Event Not Found',
                             [
-                                `No Crimson Eclipse Event was found with ID \`${eventId}\`.`,
+                                `No Las Noches Event was found with ID \`${eventId}\`.`,
                                 '',
                                 'The Event may have been deleted from PostgreSQL.'
                             ].join('\n')
@@ -541,9 +542,7 @@ module.exports = {
                 });
 
                 return;
-            }
-
-            /*
+            }            /*
              * Acknowledge before database and Discord requests.
              */
             await interaction.deferReply({
@@ -663,8 +662,8 @@ module.exports = {
 
             console.log(
                 newStatus === 'Ended'
-                    ? '🏁 Crimson Eclipse Event Ended'
-                    : '🚫 Crimson Eclipse Event Cancelled'
+                    ? '🏁 Las Noches Event Ended'
+                    : '🚫 Las Noches Event Cancelled'
             );
 
             console.log(
@@ -689,8 +688,7 @@ module.exports = {
 
             console.log(
                 '======================================'
-            );
-        } catch (error) {
+            );        } catch (error) {
             if (
                 error.code ===
                 INTERACTION_ALREADY_ACKNOWLEDGED

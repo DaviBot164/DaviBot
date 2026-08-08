@@ -13,10 +13,13 @@ const {
 } = require('../../utils/embeds');
 
 /**
- * Official Crimson Eclipse Giveaways channel.
+ * Official Las Noches Community Events channel.
+ *
+ * Events and Giveaways are published
+ * inside the same shared activity channel.
  */
 const GIVEAWAY_CHANNEL_ID =
-    '1531737543156961431';
+    '1535755486505476147';
 
 /**
  * Build the Giveaway creation Modal.
@@ -164,7 +167,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('giveaway')
             .setDescription(
-                'Create and manage Crimson Eclipse giveaways.'
+                'Create and manage Las Noches giveaways.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -175,7 +178,7 @@ module.exports = {
                 subcommand
                     .setName('create')
                     .setDescription(
-                        'Open the Crimson Eclipse Giveaway creation form.'
+                        'Open the Las Noches Giveaway creation form.'
                     )
             ),
 
@@ -241,7 +244,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Giveaway Channel Not Found',
                             [
-                                'Umbra could not find the official Giveaways channel.',
+                                'Umbra could not find the official Community Events channel.',
                                 '',
                                 `Configured Channel ID: \`${GIVEAWAY_CHANNEL_ID}\``
                             ].join('\n')
@@ -324,7 +327,9 @@ module.exports = {
                 '❌ Umbra Giveaway command error:'
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             if (
                 interaction.replied ||
