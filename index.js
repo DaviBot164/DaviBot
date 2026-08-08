@@ -472,7 +472,9 @@ async function initializeBlackBoxServices(
                 terminal
                     .UMBRA_SERVICES
                     .TITLES
-                    .name,            message:
+                    .name,
+
+            message:
                 'Chronicle Title system is available.'
         },
         {
@@ -538,6 +540,27 @@ async function initializeBlackBoxServices(
 
             message:
                 'Soul Records database systems are available.'
+        },
+        {
+            serviceKey:
+                'node_process',
+
+            displayName:
+                'Node.js Process',
+
+            message:
+                'Umbra Node.js process is running normally after a successful boot.',
+
+            metadata: {
+                processId:
+                    process.pid,
+
+                nodeVersion:
+                    process.version,
+
+                processUptimeSeconds:
+                    process.uptime()
+            }
         }
     ];
 
@@ -676,9 +699,7 @@ async function registerGuildCommands(
             );
 
     const guildIds =
-        getConfiguredGuildIds();
-
-    if (
+        getConfiguredGuildIds();    if (
         guildIds.length ===
         0
     ) {
@@ -1016,7 +1037,9 @@ async function publishBootSequence(
             ]
         }
     );
-}/**
+}
+
+/**
  * Send an error message for a failed
  * Slash Command.
  *
@@ -1351,8 +1374,7 @@ client.once(
 client.on(
     Events.InteractionCreate,
 
-    async interaction => {
-        if (
+    async interaction => {        if (
             !interaction.isChatInputCommand()
         ) {
             return;
@@ -1529,7 +1551,9 @@ client.on(
             );
         }
     }
-);/**
+);
+
+/**
  * Start Umbra.
  *
  * PostgreSQL initializes before Discord
@@ -2283,9 +2307,7 @@ async function publishProcessIncident({
             );
         }
     );
-}
-
-/**
+}/**
  * Handle a fatal Node.js process error.
  *
  * Continuing after an uncaught exception
@@ -2397,7 +2419,9 @@ async function handleFatalProcessError(
     process.exit(
         1
     );
-}/**
+}
+
+/**
  * Capture unexpected synchronous errors.
  */
 process.on(
@@ -2737,8 +2761,7 @@ client.on(
 client.on(
     Events.ShardReady,
 
-    async shardId => {
-        console.log(
+    async shardId => {        console.log(
             `✅ Discord Gateway shard ${shardId} is ready.`
         );
 
