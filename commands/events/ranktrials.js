@@ -1,7 +1,10 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    MessageFlags
+    MessageFlags,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require('discord.js');
 
 const {
@@ -15,7 +18,10 @@ const rankTrialConfig =
 
 const {
     rankTrials:
-        rankTrialDatabase
+        rankTrialDatabase,
+
+    rankTrialParticipants:
+        participantDatabase
 } = require('../../database');
 
 const {
@@ -54,9 +60,6 @@ const {
 
 /**
  * Available Rank Trial publication keys.
- *
- * These values must match the scheduler
- * and publisher modules.
  */
 const PUBLICATION_KEYS =
     new Set([
@@ -66,6 +69,22 @@ const PUBLICATION_KEYS =
         'battleStart',
         'closing'
     ]);
+
+/**
+ * Staff Review interaction prefix.
+ *
+ * Review buttons contain:
+ *
+ * action
+ * trial key
+ * target user ID
+ *
+ * Example:
+ *
+ * umbra:ranktrial:review:approve:2026-08:123456789
+ */
+const REVIEW_COMPONENT_PREFIX =
+    'umbra:ranktrial:review';
 
 /**
  * Convert a publication key into a
@@ -294,8 +313,8 @@ function buildScheduledEventLink(
 }
 
 /**
- * Convert Rank Trials 2.0 registration
- * state into a readable label.
+ * Convert Rank Trials registration state
+ * into a readable label.
  *
  * @param {string} state
  * @returns {string}
@@ -321,8 +340,41 @@ function formatRegistrationState(
 }
 
 /**
- * Build the normal production registration
- * controls shown in the Administrator panel.
+ * Convert one participant state into a
+ * Staff-facing readable label.
+ *
+ * @param {string|null|undefined} status
+ * @returns {string}
+ */
+function formatParticipantStatus(
+    status
+) {
+    switch (
+        status
+    ) {
+        case 'REGISTERED':
+            return '⚔️ `REGISTERED`';
+
+        case 'WITHDRAWN':
+            return '🚪 `WITHDRAWN`';
+
+        case 'UNDER_REVIEW':
+            return '🔎 `UNDER_REVIEW`';
+
+        case 'APPROVED':
+            return '✅ `APPROVED`';
+
+        case 'REJECTED':
+            return '❌ `REJECTED`';
+
+        default:
+            return '⚪ `UNKNOWN`';
+    }
+}
+
+/**
+ * Build the normal production
+ * registration controls.
  *
  * @param {string} registrationState
  * @returns {import('discord.js').ActionRowBuilder[]}
@@ -342,6 +394,121 @@ function buildRegistrationControlRows(
     return [
         buildClosedRegistrationComponents()
     ];
+}
+
+/**
+ * Build one Staff Review button Custom ID.
+ *
+ * @param {'approve'|'reject'|'reopen'} action
+ * @param {string} trialKey
+ * @param {string} userId
+ * @returns {string}
+ */
+function buildReviewCustomId(
+    action,
+    trialKey,
+    userId
+) {
+    return [
+        REVIEW_COMPONENT_PREFIX,
+        action,
+        trialKey,
+        userId
+    ].join(':');
+}
+
+/**
+ * Build Staff Review controls for one
+ * participant.
+ *
+ * Pending:
+ * Approve + Reject
+ *
+ * Reviewed:
+ * Reopen Review
+ *
+ * @param {Object} participant
+ * @returns {ActionRowBuilder[]}
+ */
+function buildReviewComponents(
+    participant
+) {
+    if (
+        participant.status ===
+            'REGISTERED' ||
+        participant.status ===
+            'UNDER_REVIEW'
+    ) {
+        return [
+            new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(
+                            buildReviewCustomId(
+                                'approve',
+                                participant.trialKey,
+                                participant.userId
+                            )
+                        )
+                        .setLabel(
+                            'Approve'
+                        )
+                        .setEmoji('✅')
+                        .setStyle(
+                            ButtonStyle.Success
+                        ),
+
+                    new ButtonBuilder()
+                        .setCustomId(
+                            buildReviewCustomId(
+                                'reject',
+                                participant.trialKey,
+                                participant.userId
+                            )
+                        )
+                        .setLabel(
+                            'Reject'
+                        )
+                        .setEmoji('❌')
+                        .setStyle(
+                            ButtonStyle.Danger
+                        )
+                )
+        ];
+    }
+
+    if (
+        (
+            participant.status ===
+                'APPROVED' ||
+            participant.status ===
+                'REJECTED'
+        ) &&
+        !participant.promotedAt
+    ) {
+        return [
+            new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(
+                            buildReviewCustomId(
+                                'reopen',
+                                participant.trialKey,
+                                participant.userId
+                            )
+                        )
+                        .setLabel(
+                            'Reopen Review'
+                        )
+                        .setEmoji('🔄')
+                        .setStyle(
+                            ButtonStyle.Secondary
+                        )
+                )
+        ];
+    }
+
+    return [];
 }
 
 /**
@@ -447,9 +614,6 @@ async function sendRankTrialError(
 
             /*
              * /ranktrials testregistration
-             *
-             * Administrator-only runtime test
-             * panel for Rank Trials 2.0.
              */
             .addSubcommand(
                 subcommand =>
@@ -459,6 +623,36 @@ async function sendRankTrialError(
                         )
                         .setDescription(
                             'Open the Rank Trials 2.0 registration test panel.'
+                        )
+            )
+
+            /*
+             * /ranktrials review member:@Soul
+             *
+             * Opens the Staff Review panel for
+             * one selected Rank Trial participant.
+             */
+            .addSubcommand(
+                subcommand =>
+                    subcommand
+                        .setName(
+                            'review'
+                        )
+                        .setDescription(
+                            'Open the Staff Review panel for one Rank Trial participant.'
+                        )
+                        .addUserOption(
+                            option =>
+                                option
+                                    .setName(
+                                        'member'
+                                    )
+                                    .setDescription(
+                                        'Select the Soul to review'
+                                    )
+                                    .setRequired(
+                                        true
+                                    )
                         )
             )
 
@@ -993,49 +1187,8 @@ async function sendRankTrialError(
                                 inline:
                                     false
                             }
-                        ],
-
-                        thumbnail:
-                            interaction.guild.iconURL({
-                                size:
-                                    512,
-
-                                forceStatic:
-                                    false
-                            }) ??
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                })
+                        ]
                     });
-
-                registrationEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
-
-                                forceStatic:
-                                    false
-                            })
-                });
-
-                registrationEmbed.setFooter({
-                    text:
-                        'Umbra • Rank Trials 2.0'
-                });
-
-                registrationEmbed.setTimestamp();
 
                 const registrationComponents =
                     buildRegistrationControlRows(
@@ -1055,12 +1208,6 @@ async function sendRankTrialError(
 
             /*
              * TESTREGISTRATION
-             *
-             * Administrator-only runtime panel.
-             *
-             * This panel deliberately bypasses
-             * the production registration window
-             * through dedicated test buttons.
              */
             if (
                 subcommand ===
@@ -1093,8 +1240,6 @@ async function sendRankTrialError(
                                 '',
                                 `**Trial Cycle:** \`${schedule.trialKey}\``,
                                 '',
-                                'These controls bypass the normal Opening/Final Reminder window only for testing.',
-                                '',
                                 '**Recommended Test Order**',
                                 '1. Test Register',
                                 '2. Test Withdraw',
@@ -1121,66 +1266,9 @@ async function sendRankTrialError(
 
                                 inline:
                                     false
-                            },
-                            {
-                                name:
-                                    '⚠️ Test Notice',
-
-                                value:
-                                    [
-                                        '• Only Administrators can use these buttons.',
-                                        '• Production schedule rules remain unchanged.',
-                                        '• Test actions write to the real Rank Trial participant table.',
-                                        '• Test Withdraw preserves the row as `WITHDRAWN`.',
-                                        '• Test Register can restore that row to `REGISTERED`.'
-                                    ].join('\n'),
-
-                                inline:
-                                    false
                             }
-                        ],
-
-                        thumbnail:
-                            interaction.guild.iconURL({
-                                size:
-                                    512,
-
-                                forceStatic:
-                                    false
-                            }) ??
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                })
+                        ]
                     });
-
-                testEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
-
-                                forceStatic:
-                                    false
-                            })
-                });
-
-                testEmbed.setFooter({
-                    text:
-                        'Umbra • Rank Trials 2.0 Test Mode'
-                });
-
-                testEmbed.setTimestamp();
 
                 await interaction.editReply({
                     embeds:
@@ -1189,6 +1277,146 @@ async function sendRankTrialError(
                     components: [
                         buildTestRegistrationComponents()
                     ]
+                });
+
+                return;
+            }
+
+            /*
+             * REVIEW
+             */
+            if (
+                subcommand ===
+                'review'
+            ) {
+                await interaction.deferReply({
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                const schedule =
+                    getRelevantRankTrialSchedule();
+
+                const targetUser =
+                    interaction.options
+                        .getUser(
+                            'member',
+                            true
+                        );
+
+                const participant =
+                    await participantDatabase
+                        .getParticipant(
+                            interaction.guild.id,
+                            schedule.trialKey,
+                            targetUser.id
+                        );
+
+                if (!participant) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Participant Not Found',
+                                [
+                                    `${targetUser} does not have a participant record for this Rank Trial.`,
+                                    '',
+                                    `**Trial Cycle:** \`${schedule.trialKey}\``
+                                ].join('\n')
+                            )
+                        ],
+
+                        components:
+                            []
+                    });
+
+                    return;
+                }
+
+                const reviewFields = [
+                    {
+                        name:
+                            '👤 Participant',
+
+                        value:
+                            [
+                                `**Soul:** ${targetUser}`,
+                                `**User ID:** \`${targetUser.id}\``,
+                                `**Status:** ${formatParticipantStatus(
+                                    participant.status
+                                )}`,
+                                `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
+                                `**Proposed/New Rank:** \`${participant.newRank ?? 'Not selected'}\``
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    },
+                    {
+                        name:
+                            '📖 Review Record',
+
+                        value:
+                            [
+                                `**Reviewed By:** ${
+                                    participant.reviewedBy
+                                        ? `<@${participant.reviewedBy}>`
+                                        : '`Not reviewed`'
+                                }`,
+                                `**Review Reason:** ${
+                                    participant.reviewReason
+                                        ? participant.reviewReason
+                                        : '`No reason recorded`'
+                                }`,
+                                `**Reviewed At:** ${
+                                    participant.reviewedAt
+                                        ? toDiscordTimestamp(
+                                            participant.reviewedAt,
+                                            'F'
+                                        )
+                                        : '`Not reviewed`'
+                                }`,
+                                `**Promoted At:** ${
+                                    participant.promotedAt
+                                        ? toDiscordTimestamp(
+                                            participant.promotedAt,
+                                            'F'
+                                        )
+                                        : '`Not promoted`'
+                                }`
+                            ].join('\n'),
+
+                        inline:
+                            false
+                    }
+                ];
+
+                const reviewEmbed =
+                    createEmbed({
+                        title:
+                            '🔎 Rank Trials 2.0 Staff Review',
+
+                        description:
+                            [
+                                `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                '',
+                                'Use the Staff Review controls below to manage this participant.'
+                            ].join('\n'),
+
+                        fields:
+                            reviewFields
+                    });
+
+                const reviewComponents =
+                    buildReviewComponents(
+                        participant
+                    );
+
+                await interaction.editReply({
+                    embeds:
+                        [reviewEmbed],
+
+                    components:
+                        reviewComponents
                 });
 
                 return;
@@ -1755,9 +1983,7 @@ async function sendRankTrialError(
                 });
 
                 return;
-            }
-
-            /*
+            }            /*
              * EVENT
              */
             if (
@@ -2164,7 +2390,9 @@ async function sendRankTrialError(
                 });
 
                 return;
-            }            /*
+            }
+
+            /*
              * SYNC
              */
             if (
@@ -2370,9 +2598,7 @@ async function sendRankTrialError(
                 });
 
                 return;
-            }
-
-            await sendRankTrialError(
+            }            await sendRankTrialError(
                 interaction,
                 '❌ Unknown Rank Trial Action',
                 'Umbra could not recognize the selected Rank Trials action.'
