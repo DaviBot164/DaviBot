@@ -247,6 +247,184 @@ async function initializeSchema() {
 
     /*
      * ======================================================
+     * Rank Trials 2.0 Participant Registry
+     * ======================================================
+     *
+     * Stores every Soul who registers for
+     * one monthly Las Noches Rank Trial.
+     *
+     * Registration, withdrawal, Staff Review
+     * and final promotion decisions remain
+     * permanently preserved in PostgreSQL.
+     */
+    await query(`
+        CREATE TABLE IF NOT EXISTS rank_trial_participants (
+            id BIGSERIAL PRIMARY KEY,
+
+            guild_id VARCHAR(32) NOT NULL,
+            trial_key VARCHAR(7) NOT NULL,
+            user_id VARCHAR(32) NOT NULL,
+
+            status VARCHAR(30) NOT NULL
+                DEFAULT 'REGISTERED',
+
+            previous_rank VARCHAR(100),
+            new_rank VARCHAR(100),
+
+            reviewed_by VARCHAR(32),
+            review_reason VARCHAR(500),
+
+            registered_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            withdrawn_at TIMESTAMPTZ,
+
+            reviewed_at TIMESTAMPTZ,
+
+            promoted_at TIMESTAMPTZ,
+
+            created_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            updated_at TIMESTAMPTZ NOT NULL
+                DEFAULT NOW(),
+
+            CONSTRAINT rank_trial_participants_status_valid
+                CHECK (
+                    status IN (
+                        'REGISTERED',
+                        'WITHDRAWN',
+                        'UNDER_REVIEW',
+                        'APPROVED',
+                        'REJECTED'
+                    )
+                ),
+
+            CONSTRAINT rank_trial_participants_trial_key_valid
+                CHECK (
+                    trial_key ~
+                    '^[0-9]{4}-(0[1-9]|1[0-2])$'
+                ),
+
+            CONSTRAINT rank_trial_participants_unique
+                UNIQUE (
+                    guild_id,
+                    trial_key,
+                    user_id
+                ),
+
+            CONSTRAINT rank_trial_participants_review_valid
+                CHECK (
+                    (
+                        status IN (
+                            'REGISTERED',
+                            'WITHDRAWN',
+                            'UNDER_REVIEW'
+                        )
+                    )
+                    OR
+                    (
+                        status IN (
+                            'APPROVED',
+                            'REJECTED'
+                        )
+                        AND reviewed_by IS NOT NULL
+                        AND reviewed_at IS NOT NULL
+                    )
+                ),
+
+            CONSTRAINT rank_trial_participants_withdrawal_valid
+                CHECK (
+                    (
+                        status = 'WITHDRAWN'
+                        AND withdrawn_at IS NOT NULL
+                    )
+                    OR
+                    (
+                        status <> 'WITHDRAWN'
+                    )
+                ),
+
+            CONSTRAINT rank_trial_participants_promotion_valid
+                CHECK (
+                    promoted_at IS NULL
+                    OR status = 'APPROVED'
+                )
+        );
+    `);
+
+    /*
+     * Quickly load the full participant roster
+     * for one monthly Rank Trial.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_participants_trial_index
+        ON rank_trial_participants (
+            guild_id,
+            trial_key,
+            registered_at ASC
+        );
+    `);
+
+    /*
+     * Quickly load participants by their
+     * current registration/review status.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_participants_status_index
+        ON rank_trial_participants (
+            guild_id,
+            trial_key,
+            status,
+            registered_at ASC
+        );
+    `);
+
+    /*
+     * Load the permanent Rank Trial history
+     * belonging to one Soul.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_participants_user_history_index
+        ON rank_trial_participants (
+            guild_id,
+            user_id,
+            trial_key DESC
+        );
+    `);
+
+    /*
+     * Used by the Staff Review Panel.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_participants_review_index
+        ON rank_trial_participants (
+            guild_id,
+            trial_key,
+            reviewed_at DESC
+        )
+        WHERE status IN (
+            'UNDER_REVIEW',
+            'APPROVED',
+            'REJECTED'
+        );
+    `);
+
+    /*
+     * Used for successful promotion
+     * auditing and historical records.
+     */
+    await query(`
+        CREATE INDEX IF NOT EXISTS rank_trial_participants_promoted_index
+        ON rank_trial_participants (
+            guild_id,
+            promoted_at DESC
+        )
+        WHERE promoted_at IS NOT NULL;
+    `);
+
+    /*
+     * ======================================================
      * Las Noches Event System
      * ======================================================
      */
@@ -658,9 +836,7 @@ async function initializeSchema() {
             guild_id,
             role_id
         );
-    `);
-
-    /*
+    `);/*
      * ======================================================
      * Umbra Achievement System
      * ======================================================
@@ -742,7 +918,9 @@ async function initializeSchema() {
         ON soul_achievements (
             unlocked_at DESC
         );
-    `);    /*
+    `);
+
+    /*
      * ======================================================
      * Las Noches Arrancar Rank System
      * ======================================================
@@ -927,9 +1105,7 @@ async function initializeSchema() {
         ON title_definitions (
             updated_at DESC
         );
-    `);
-
-    /*
+    `);    /*
      * Soul Titles
      *
      * Stores every Title unlocked by each
@@ -1058,7 +1234,9 @@ async function initializeSchema() {
             activated_at DESC
         )
         WHERE is_active = TRUE;
-    `);    /*
+    `);
+
+    /*
      * ======================================================
      * Umbra Terminal Incident Archive
      * ======================================================

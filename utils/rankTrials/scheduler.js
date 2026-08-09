@@ -23,6 +23,11 @@ const {
     synchronizeRankTrialEventsForGuilds
 } = require('./eventManager');
 
+const {
+    getRegistrationState,
+    closeRegistrationForSchedule
+} = require('./registration');
+
 /**
  * Active Rank Trials scheduler interval.
  *
@@ -266,9 +271,7 @@ function shouldSynchronizeRankTrialEvent(
                 .scheduledFor
                 .getTime()
     );
-}
-
-/**
+}/**
  * Create, restore or update the Discord
  * Scheduled Event for one monthly cycle.
  *
@@ -382,7 +385,169 @@ async function processScheduledEventSynchronization(
     }
 
     return summary;
-}/**
+}
+
+/**
+ * Close Rank Trials 2.0 registration
+ * for one monthly cycle when its configured
+ * registration window has ended.
+ *
+ * Registration close is based on time,
+ * not on whether the Final Reminder was
+ * successfully published.
+ *
+ * This keeps registration reliable even if
+ * Discord temporarily fails to send an
+ * announcement.
+ *
+ * The underlying database transition is
+ * idempotent:
+ *
+ * REGISTERED -> UNDER_REVIEW
+ *
+ * Running this function again will not
+ * modify WITHDRAWN, APPROVED, REJECTED or
+ * already UNDER_REVIEW participants.
+ *
+ * @param {Object} schedule
+ * @param {Date} now
+ * @param {string[]} guildIds
+ * @returns {Promise<{
+ *     attempted: number,
+ *     closed: number,
+ *     moved: number,
+ *     failed: number,
+ *     skipped: number
+ * }>}
+ */
+async function processRegistrationClose(
+    schedule,
+    now,
+    guildIds
+) {
+    const summary = {
+        attempted:
+            0,
+
+        closed:
+            0,
+
+        moved:
+            0,
+
+        failed:
+            0,
+
+        skipped:
+            0
+    };
+
+    const registrationState =
+        getRegistrationState(
+            schedule,
+            now
+        );
+
+    if (
+        registrationState.state !==
+        'CLOSED'
+    ) {
+        summary.skipped +=
+            1;
+
+        return summary;
+    }
+
+    for (
+        const guildId of
+        guildIds
+    ) {
+        summary.attempted +=
+            1;
+
+        try {
+            const result =
+                await closeRegistrationForSchedule({
+                    guildId,
+                    schedule
+                });
+
+            summary.closed +=
+                1;
+
+            summary.moved +=
+                result
+                    .movedParticipants
+                    .length;
+
+            if (
+                result
+                    .movedParticipants
+                    .length >
+                0
+            ) {
+                console.log(
+                    '======================================'
+                );
+
+                console.log(
+                    '🔒 Rank Trials 2.0 Registration Closed'
+                );
+
+                console.log(
+                    `🗓️ Trial Cycle: ${schedule.trialKey}`
+                );
+
+                console.log(
+                    `🏰 Guild ID: ${guildId}`
+                );
+
+                console.log(
+                    `👥 Participants Moved To Review: ${result.movedParticipants.length}`
+                );
+
+                console.log(
+                    `📋 Under Review: ${result.statistics.underReview}`
+                );
+
+                console.log(
+                    '======================================'
+                );
+            }
+        } catch (error) {
+            summary.failed +=
+                1;
+
+            console.error(
+                '======================================'
+            );
+
+            console.error(
+                '❌ Rank Trials 2.0 registration close failed.'
+            );
+
+            console.error(
+                `🗓️ Trial Cycle: ${schedule.trialKey}`
+            );
+
+            console.error(
+                `🏰 Guild ID: ${guildId}`
+            );
+
+            console.error(
+                error
+            );
+
+            console.error(
+                '======================================'
+            );
+        }
+    }
+
+    return summary;
+}
+
+/**
  * Publish all currently due announcements
  * from one monthly Rank Trial schedule.
  *
@@ -484,14 +649,13 @@ async function processMonthlySchedule(
     }
 
     return summary;
-}
-
-/**
+}/**
  * Run one complete Rank Trials scheduler check.
  *
  * PostgreSQL remains the final source of truth,
  * so repeated checks cannot publish duplicate
- * announcements or create duplicate Events.
+ * announcements, create duplicate Events or
+ * re-close already reviewed registrations.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Date} now
@@ -503,6 +667,11 @@ async function processMonthlySchedule(
  *     expired: number,
  *     staleReservationsRemoved: number,
  *     staleEventReservationsRemoved: number,
+ *     registrationCloseAttempted: number,
+ *     registrationClosed: number,
+ *     registrationMovedToReview: number,
+ *     registrationCloseFailed: number,
+ *     registrationCloseSkipped: number,
  *     eventAttempted: number,
  *     eventCreated: number,
  *     eventRecreated: number,
@@ -537,6 +706,21 @@ async function checkRankTrialSchedule(
             0,
 
         staleEventReservationsRemoved:
+            0,
+
+        registrationCloseAttempted:
+            0,
+
+        registrationClosed:
+            0,
+
+        registrationMovedToReview:
+            0,
+
+        registrationCloseFailed:
+            0,
+
+        registrationCloseSkipped:
             0,
 
         eventAttempted:
@@ -664,6 +848,21 @@ async function checkRankTrialSchedule(
 
             staleEventReservationsRemoved,
 
+            registrationCloseAttempted:
+                0,
+
+            registrationClosed:
+                0,
+
+            registrationMovedToReview:
+                0,
+
+            registrationCloseFailed:
+                0,
+
+            registrationCloseSkipped:
+                0,
+
             eventAttempted:
                 0,
 
@@ -714,6 +913,33 @@ async function checkRankTrialSchedule(
                 publicationSummary.expired;
 
             /*
+             * Rank Trials 2.0:
+             * close registration independently
+             * from Discord announcement success.
+             */
+            const registrationSummary =
+                await processRegistrationClose(
+                    schedule,
+                    now,
+                    guildIds
+                );
+
+            totalSummary.registrationCloseAttempted +=
+                registrationSummary.attempted;
+
+            totalSummary.registrationClosed +=
+                registrationSummary.closed;
+
+            totalSummary.registrationMovedToReview +=
+                registrationSummary.moved;
+
+            totalSummary.registrationCloseFailed +=
+                registrationSummary.failed;
+
+            totalSummary.registrationCloseSkipped +=
+                registrationSummary.skipped;
+
+            /*
              * Then independently create,
              * restore or synchronize the
              * Discord Scheduled Event.
@@ -746,12 +972,14 @@ async function checkRankTrialSchedule(
 
             totalSummary.eventSkipped +=
                 eventSummary.skipped;
-        }
-
-        const shouldLogSummary =
+        }        const shouldLogSummary =
             totalSummary.published >
                 0 ||
             totalSummary.failed >
+                0 ||
+            totalSummary.registrationMovedToReview >
+                0 ||
+            totalSummary.registrationCloseFailed >
                 0 ||
             totalSummary.eventCreated >
                 0 ||
@@ -791,6 +1019,22 @@ async function checkRankTrialSchedule(
 
             console.log(
                 `⌛ Expired Announcements: ${totalSummary.expired}`
+            );
+
+            console.log(
+                `🔒 Registration Close Attempts: ${totalSummary.registrationCloseAttempted}`
+            );
+
+            console.log(
+                `✅ Registration Cycles Closed: ${totalSummary.registrationClosed}`
+            );
+
+            console.log(
+                `👥 Participants Moved To Review: ${totalSummary.registrationMovedToReview}`
+            );
+
+            console.log(
+                `❌ Registration Close Failures: ${totalSummary.registrationCloseFailed}`
             );
 
             console.log(
@@ -866,6 +1110,21 @@ async function checkRankTrialSchedule(
             staleEventReservationsRemoved:
                 0,
 
+            registrationCloseAttempted:
+                0,
+
+            registrationClosed:
+                0,
+
+            registrationMovedToReview:
+                0,
+
+            registrationCloseFailed:
+                1,
+
+            registrationCloseSkipped:
+                0,
+
             eventAttempted:
                 0,
 
@@ -895,8 +1154,9 @@ async function checkRankTrialSchedule(
  * Start the Automatic Rank Trials scheduler.
  *
  * Umbra performs one immediate check so
- * recently missed announcements and Events
- * may be recovered after restart or redeploy.
+ * recently missed announcements, registration
+ * closes and Discord Events may be recovered
+ * after restart or redeploy.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {Promise<boolean>}
@@ -980,6 +1240,10 @@ async function startRankTrialScheduler(
     );
 
     console.log(
+        '🔒 Rank Trials 2.0 Registration Close: Final Reminder'
+    );
+
+    console.log(
         `📆 Discord Events: ${
             rankTrialConfig
                 .scheduledEvent
@@ -1055,9 +1319,13 @@ module.exports = {
     isPublicationExpired,
     getOpeningPublication,
     getFinalPublication,
+
     shouldSynchronizeRankTrialEvent,
     processScheduledEventSynchronization,
+
+    processRegistrationClose,
     processMonthlySchedule,
+
     checkRankTrialSchedule,
     startRankTrialScheduler,
     stopRankTrialScheduler,

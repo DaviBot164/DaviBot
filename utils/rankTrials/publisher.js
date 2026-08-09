@@ -19,6 +19,10 @@ const {
 } = require('./embeds');
 
 const {
+    buildRankTrialPublicationComponents
+} = require('./components');
+
+const {
     synchronizeRankTrialScheduledEvent
 } = require('./eventManager');
 
@@ -206,9 +210,7 @@ function shouldSynchronizeScheduledEvent(
             ?.createWithOpeningAnnouncement ===
             true
     );
-}
-
-/**
+}/**
  * Create or synchronize the Discord Scheduled
  * Event after the Opening Announcement.
  *
@@ -532,9 +534,7 @@ async function publishRankTrialAnnouncement(
             reason:
                 'Publication already exists in PostgreSQL.'
         };
-    }
-
-    try {
+    }    try {
         const embed =
             buildPublicationEmbed(
                 publication.key,
@@ -583,6 +583,11 @@ async function publishRankTrialAnnouncement(
                 })
         });
 
+        const components =
+            buildRankTrialPublicationComponents(
+                publication.key
+            );
+
         const sentMessage =
             await channel.send({
                 content:
@@ -592,6 +597,8 @@ async function publishRankTrialAnnouncement(
 
                 embeds:
                     [embed],
+
+                components,
 
                 allowedMentions: {
                     parse:
@@ -614,7 +621,9 @@ async function publishRankTrialAnnouncement(
             throw new Error(
                 'Rank Trial publication was sent, but PostgreSQL completion failed.'
             );
-        }        const scheduledEventResult =
+        }
+
+        const scheduledEventResult =
             await synchronizeScheduledEventAfterPublication(
                 guild,
                 schedule,
@@ -651,6 +660,10 @@ async function publishRankTrialAnnouncement(
 
         console.log(
             `📣 Mention Everyone: ${publication.mentionEveryone}`
+        );
+
+        console.log(
+            `🧩 Components: ${components.length}`
         );
 
         if (
@@ -754,9 +767,7 @@ async function publishRankTrialAnnouncement(
                     )
         };
     }
-}
-
-/**
+}/**
  * Publish one announcement in every active
  * configured Las Noches guild.
  *

@@ -47,6 +47,9 @@ const titleDatabase =
 const rankTrialDatabase =
     require('./rankTrials');
 
+const rankTrialParticipantDatabase =
+    require('./rankTrialParticipants');
+
 const rankTrialEventDatabase =
     require('./rankTrialEvents');
 
@@ -170,6 +173,10 @@ async function initializeDatabase() {
         );
 
         console.log(
+            '✅ Rank Trials 2.0 Participant Registry initialized.'
+        );
+
+        console.log(
             '✅ Rank Trials Scheduled Event Manager initialized.'
         );
 
@@ -258,6 +265,9 @@ module.exports = {
 
     rankTrials:
         rankTrialDatabase,
+
+    rankTrialParticipants:
+        rankTrialParticipantDatabase,
 
     rankTrialEvents:
         rankTrialEventDatabase,
