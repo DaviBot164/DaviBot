@@ -19,7 +19,13 @@ const RANK_TRIAL_COMPONENT_IDS =
             'umbra:ranktrial:withdraw',
 
         closed:
-            'umbra:ranktrial:closed'
+            'umbra:ranktrial:closed',
+
+        testRegister:
+            'umbra:ranktrial:test:register',
+
+        testWithdraw:
+            'umbra:ranktrial:test:withdraw'
     });
 
 /**
@@ -89,6 +95,47 @@ function buildClosedRegistrationComponents() {
 }
 
 /**
+ * Build the Administrator-only Rank Trials
+ * 2.0 runtime test controls.
+ *
+ * These buttons deliberately use separate
+ * Custom IDs so production registration
+ * schedule rules remain untouched.
+ *
+ * @returns {ActionRowBuilder}
+ */
+function buildTestRegistrationComponents() {
+    return new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(
+                    RANK_TRIAL_COMPONENT_IDS
+                        .testRegister
+                )
+                .setLabel(
+                    'Test Register'
+                )
+                .setEmoji('🧪')
+                .setStyle(
+                    ButtonStyle.Success
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    RANK_TRIAL_COMPONENT_IDS
+                        .testWithdraw
+                )
+                .setLabel(
+                    'Test Withdraw'
+                )
+                .setEmoji('🚪')
+                .setStyle(
+                    ButtonStyle.Secondary
+                )
+        );
+}
+
+/**
  * Build the correct component row for one
  * Rank Trial publication.
  *
@@ -136,5 +183,6 @@ module.exports = {
 
     buildOpenRegistrationComponents,
     buildClosedRegistrationComponents,
+    buildTestRegistrationComponents,
     buildRankTrialPublicationComponents
 };

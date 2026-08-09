@@ -43,7 +43,8 @@ const {
 
 const {
     buildOpenRegistrationComponents,
-    buildClosedRegistrationComponents
+    buildClosedRegistrationComponents,
+    buildTestRegistrationComponents
 } = require('../../utils/rankTrials/components');
 
 const {
@@ -320,18 +321,8 @@ function formatRegistrationState(
 }
 
 /**
- * Build the registration controls shown
- * inside the Administrator control panel.
- *
- * OPEN:
- * Register + Withdraw
- *
- * UPCOMING / CLOSED:
- * Disabled Registration Closed control.
- *
- * The interaction handler remains the final
- * authority and validates the real schedule
- * again whenever a button is pressed.
+ * Build the normal production registration
+ * controls shown in the Administrator panel.
  *
  * @param {string} registrationState
  * @returns {import('discord.js').ActionRowBuilder[]}
@@ -442,9 +433,6 @@ async function sendRankTrialError(
 
             /*
              * /ranktrials registration
-             *
-             * Rank Trials 2.0 Administrator
-             * registration control panel.
              */
             .addSubcommand(
                 subcommand =>
@@ -454,6 +442,23 @@ async function sendRankTrialError(
                         )
                         .setDescription(
                             'Open the Rank Trials 2.0 registration control panel.'
+                        )
+            )
+
+            /*
+             * /ranktrials testregistration
+             *
+             * Administrator-only runtime test
+             * panel for Rank Trials 2.0.
+             */
+            .addSubcommand(
+                subcommand =>
+                    subcommand
+                        .setName(
+                            'testregistration'
+                        )
+                        .setDescription(
+                            'Open the Rank Trials 2.0 registration test panel.'
                         )
             )
 
@@ -892,9 +897,6 @@ async function sendRankTrialError(
 
             /*
              * REGISTRATION
-             *
-             * Rank Trials 2.0 Administrator
-             * Registration Control Panel.
              */
             if (
                 subcommand ===
@@ -1046,6 +1048,147 @@ async function sendRankTrialError(
 
                     components:
                         registrationComponents
+                });
+
+                return;
+            }
+
+            /*
+             * TESTREGISTRATION
+             *
+             * Administrator-only runtime panel.
+             *
+             * This panel deliberately bypasses
+             * the production registration window
+             * through dedicated test buttons.
+             */
+            if (
+                subcommand ===
+                'testregistration'
+            ) {
+                await interaction.deferReply({
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                const schedule =
+                    getRelevantRankTrialSchedule();
+
+                const {
+                    statistics
+                } =
+                    await getCurrentRegistrationStatistics({
+                        guildId:
+                            interaction.guild.id
+                    });
+
+                const testEmbed =
+                    createEmbed({
+                        title:
+                            '🧪 Rank Trials 2.0 Runtime Test',
+
+                        description:
+                            [
+                                'Administrator-only registration test panel.',
+                                '',
+                                `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                '',
+                                'These controls bypass the normal Opening/Final Reminder window only for testing.',
+                                '',
+                                '**Recommended Test Order**',
+                                '1. Test Register',
+                                '2. Test Withdraw',
+                                '3. Test Register again',
+                                '',
+                                'The test uses the real PostgreSQL participant registry.'
+                            ].join('\n'),
+
+                        fields: [
+                            {
+                                name:
+                                    '👥 Current Registry State',
+
+                                value:
+                                    [
+                                        `**Total Records:** \`${statistics.total}\``,
+                                        `**Registered:** \`${statistics.registered}\``,
+                                        `**Withdrawn:** \`${statistics.withdrawn}\``,
+                                        `**Under Review:** \`${statistics.underReview}\``,
+                                        `**Approved:** \`${statistics.approved}\``,
+                                        `**Rejected:** \`${statistics.rejected}\``,
+                                        `**Promoted:** \`${statistics.promoted}\``
+                                    ].join('\n'),
+
+                                inline:
+                                    false
+                            },
+                            {
+                                name:
+                                    '⚠️ Test Notice',
+
+                                value:
+                                    [
+                                        '• Only Administrators can use these buttons.',
+                                        '• Production schedule rules remain unchanged.',
+                                        '• Test actions write to the real Rank Trial participant table.',
+                                        '• Test Withdraw preserves the row as `WITHDRAWN`.',
+                                        '• Test Register can restore that row to `REGISTERED`.'
+                                    ].join('\n'),
+
+                                inline:
+                                    false
+                            }
+                        ],
+
+                        thumbnail:
+                            interaction.guild.iconURL({
+                                size:
+                                    512,
+
+                                forceStatic:
+                                    false
+                            }) ??
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    size:
+                                        512,
+
+                                    forceStatic:
+                                        false
+                                })
+                    });
+
+                testEmbed.setAuthor({
+                    name:
+                        rankTrialConfig
+                            .branding
+                            .authorName,
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    256,
+
+                                forceStatic:
+                                    false
+                            })
+                });
+
+                testEmbed.setFooter({
+                    text:
+                        'Umbra • Rank Trials 2.0 Test Mode'
+                });
+
+                testEmbed.setTimestamp();
+
+                await interaction.editReply({
+                    embeds:
+                        [testEmbed],
+
+                    components: [
+                        buildTestRegistrationComponents()
+                    ]
                 });
 
                 return;

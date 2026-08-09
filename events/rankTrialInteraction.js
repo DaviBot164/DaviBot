@@ -1,6 +1,7 @@
 const {
     Events,
-    MessageFlags
+    MessageFlags,
+    PermissionFlagsBits
 } = require('discord.js');
 
 const {
@@ -19,8 +20,15 @@ const {
 } = require('../utils/rankTrials/registration');
 
 const {
+    getRelevantRankTrialSchedule
+} = require('../utils/rankTrials/calendar');
+
+const {
     ranks:
-        rankDatabase
+        rankDatabase,
+
+    rankTrialParticipants:
+        participantDatabase
 } = require('../database');
 
 /**
@@ -62,7 +70,35 @@ async function getCurrentArrancarRank(
 }
 
 /**
- * Handle Rank Trial registration.
+ * Check whether the member using a
+ * Rank Trials test control is allowed
+ * to bypass the production registration
+ * schedule.
+ *
+ * Test controls are Administrator-only.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {boolean}
+ */
+function canUseRegistrationTest(
+    interaction
+) {
+    return (
+        interaction.memberPermissions
+            ?.has(
+                PermissionFlagsBits.Administrator
+            ) ===
+        true
+    );
+}
+
+/**
+ * Handle normal production Rank Trial
+ * registration.
+ *
+ * Production registration always obeys
+ * the configured Opening and Final
+ * Reminder schedule.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
@@ -174,8 +210,122 @@ async function handleRegister(
         flags:
             MessageFlags.Ephemeral
     });
+}
+
+/**
+ * Handle Administrator-only test
+ * registration.
+ *
+ * This intentionally bypasses the normal
+ * registration window so Rank Trials 2.0
+ * may be tested before Opening Day.
+ *
+ * The record is still written to the real
+ * PostgreSQL participant registry.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleTestRegister(
+    interaction
+) {
+    if (
+        !canUseRegistrationTest(
+            interaction
+        )
+    ) {
+        await interaction.reply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Test Access Denied',
+                    'Only an Administrator may use Rank Trials registration test controls.'
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    const schedule =
+        getRelevantRankTrialSchedule();
+
+    const previousRank =
+        await getCurrentArrancarRank(
+            interaction.guildId,
+            interaction.user.id
+        );
+
+    const result =
+        await participantDatabase
+            .registerParticipant({
+                guildId:
+                    interaction.guildId,
+
+                trialKey:
+                    schedule.trialKey,
+
+                userId:
+                    interaction.user.id,
+
+                previousRank
+            });
+
+    if (
+        result.status ===
+        'existing'
+    ) {
+        await interaction.reply({
+            embeds: [
+                createWarningEmbed(
+                    '🧪 Test Registration Exists',
+                    [
+                        'Your participant record already exists for this Rank Trial.',
+                        '',
+                        `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
+                        `📋 Status: \`${result.participant?.status ?? 'UNKNOWN'}\``
+                    ].join('\n')
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        embeds: [
+            createSuccessEmbed(
+                result.status ===
+                    'restored'
+                    ? '🧪 Test Registration Restored'
+                    : '🧪 Test Registration Created',
+                [
+                    'Rank Trials 2.0 bypass test completed successfully.',
+                    '',
+                    `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
+                    `📖 Current Rank: \`${previousRank ?? 'Unranked'}\``,
+                    `📋 Database Status: \`${result.participant?.status ?? 'REGISTERED'}\``,
+                    '',
+                    '💾 This is a real PostgreSQL participant record.',
+                    'Use **Test Withdraw** next to continue the runtime test.'
+                ].join('\n')
+            )
+        ],
+
+        flags:
+            MessageFlags.Ephemeral
+    });
 }/**
- * Handle Rank Trial withdrawal.
+ * Handle normal production Rank Trial
+ * withdrawal.
+ *
+ * Production withdrawal always obeys
+ * the configured registration window.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
@@ -275,6 +425,102 @@ async function handleWithdraw(
 }
 
 /**
+ * Handle Administrator-only test
+ * withdrawal.
+ *
+ * This bypasses the normal registration
+ * window only for runtime testing.
+ *
+ * @param {import('discord.js').ButtonInteraction} interaction
+ * @returns {Promise<void>}
+ */
+async function handleTestWithdraw(
+    interaction
+) {
+    if (
+        !canUseRegistrationTest(
+            interaction
+        )
+    ) {
+        await interaction.reply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Test Access Denied',
+                    'Only an Administrator may use Rank Trials registration test controls.'
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    const schedule =
+        getRelevantRankTrialSchedule();
+
+    const participant =
+        await participantDatabase
+            .withdrawParticipant(
+                interaction.guildId,
+                schedule.trialKey,
+                interaction.user.id
+            );
+
+    if (!participant) {
+        const existingParticipant =
+            await participantDatabase
+                .getParticipant(
+                    interaction.guildId,
+                    schedule.trialKey,
+                    interaction.user.id
+                );
+
+        await interaction.reply({
+            embeds: [
+                createWarningEmbed(
+                    '🧪 Test Withdrawal Unavailable',
+                    [
+                        existingParticipant
+                            ? 'Your participant record cannot currently be withdrawn.'
+                            : 'No participant record exists for this Rank Trial.',
+                        '',
+                        `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
+                        `📋 Current Status: \`${existingParticipant?.status ?? 'NONE'}\``
+                    ].join('\n')
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        embeds: [
+            createSuccessEmbed(
+                '🧪 Test Withdrawal Completed',
+                [
+                    'Rank Trials 2.0 withdrawal test completed successfully.',
+                    '',
+                    `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
+                    `📋 Database Status: \`${participant.status}\``,
+                    '',
+                    '💾 The PostgreSQL participant record was updated successfully.',
+                    'Use **Test Register** again to verify registration restoration.'
+                ].join('\n')
+            )
+        ],
+
+        flags:
+            MessageFlags.Ephemeral
+    });
+}
+
+/**
  * Route one Rank Trials 2.0 button
  * interaction to the correct handler.
  *
@@ -300,6 +546,28 @@ async function handleRankTrialButton(
         RANK_TRIAL_COMPONENT_IDS.withdraw
     ) {
         await handleWithdraw(
+            interaction
+        );
+
+        return;
+    }
+
+    if (
+        interaction.customId ===
+        RANK_TRIAL_COMPONENT_IDS.testRegister
+    ) {
+        await handleTestRegister(
+            interaction
+        );
+
+        return;
+    }
+
+    if (
+        interaction.customId ===
+        RANK_TRIAL_COMPONENT_IDS.testWithdraw
+    ) {
+        await handleTestWithdraw(
             interaction
         );
 
