@@ -1,7 +1,11 @@
 const {
     Events,
     MessageFlags,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ActionRowBuilder
 } = require('discord.js');
 
 const {
@@ -32,16 +36,13 @@ const {
 } = require('../database');
 
 /**
- * Official Staff Review component prefix.
- *
- * Expected format:
- *
- * umbra:ranktrial:review:approve:2026-08:USER_ID
- * umbra:ranktrial:review:reject:2026-08:USER_ID
- * umbra:ranktrial:review:reopen:2026-08:USER_ID
+ * Staff Review component prefixes.
  */
 const REVIEW_COMPONENT_PREFIX =
     'umbra:ranktrial:review';
+
+const REVIEW_MODAL_PREFIX =
+    'umbra:ranktrial:reviewmodal';
 
 /**
  * Prevent duplicate Rank Trial interaction
@@ -52,10 +53,6 @@ const processingInteractions =
 
 /**
  * Load one Soul's current Arrancar Rank.
- *
- * Rank Trials stores the previous rank
- * at registration time for future review
- * and promotion auditing.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -82,10 +79,9 @@ async function getCurrentArrancarRank(
 }
 
 /**
- * Check whether an Administrator may use
- * Rank Trials protected controls.
+ * Check Administrator permission.
  *
- * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {boolean}
  */
 function hasAdministratorPermission(
@@ -101,12 +97,10 @@ function hasAdministratorPermission(
 }
 
 /**
- * Check whether the member using a
- * Rank Trials test control is allowed
- * to bypass the production registration
- * schedule.
+ * Registration test controls remain
+ * Administrator-only.
  *
- * @param {import('discord.js').ButtonInteraction} interaction
+ * @param {import('discord.js').Interaction} interaction
  * @returns {boolean}
  */
 function canUseRegistrationTest(
@@ -118,12 +112,11 @@ function canUseRegistrationTest(
 }
 
 /**
- * Parse one Staff Review Custom ID.
+ * Parse one Staff Review button Custom ID.
  *
- * Expected:
+ * Example:
  *
- * umbra:ranktrial:review:
- * approve:2026-08:USER_ID
+ * umbra:ranktrial:review:approve:2026-08:USER_ID
  *
  * @param {string} customId
  * @returns {{
@@ -210,12 +203,97 @@ function parseReviewCustomId(
 }
 
 /**
- * Verify that one Staff Review action
- * belongs to the currently relevant
- * Rank Trial cycle.
+ * Parse one Staff Review Modal Custom ID.
  *
- * This prevents stale Review panels from
- * changing another monthly cycle later.
+ * Example:
+ *
+ * umbra:ranktrial:reviewmodal:approve:2026-08:USER_ID
+ *
+ * @param {string} customId
+ * @returns {{
+ *     action: 'approve'|'reject',
+ *     trialKey: string,
+ *     userId: string
+ * }|null}
+ */
+function parseReviewModalCustomId(
+    customId
+) {
+    if (
+        typeof customId !==
+        'string'
+    ) {
+        return null;
+    }
+
+    const parts =
+        customId.split(':');
+
+    if (
+        parts.length !==
+        6
+    ) {
+        return null;
+    }
+
+    const [
+        namespace,
+        system,
+        area,
+        action,
+        trialKey,
+        userId
+    ] =
+        parts;
+
+    if (
+        namespace !==
+            'umbra' ||
+        system !==
+            'ranktrial' ||
+        area !==
+            'reviewmodal'
+    ) {
+        return null;
+    }
+
+    if (
+        action !==
+            'approve' &&
+        action !==
+            'reject'
+    ) {
+        return null;
+    }
+
+    if (
+        !/^[0-9]{4}-(0[1-9]|1[0-2])$/
+            .test(
+                trialKey
+            )
+    ) {
+        return null;
+    }
+
+    if (
+        !/^[0-9]{16,22}$/
+            .test(
+                userId
+            )
+    ) {
+        return null;
+    }
+
+    return {
+        action,
+        trialKey,
+        userId
+    };
+}
+
+/**
+ * Verify that one review control belongs
+ * to the currently relevant Rank Trial.
  *
  * @param {string} trialKey
  * @returns {boolean}
@@ -233,6 +311,71 @@ function isCurrentReviewCycle(
 }
 
 /**
+ * Build the Staff Review reason Modal.
+ *
+ * @param {'approve'|'reject'} action
+ * @param {string} trialKey
+ * @param {string} userId
+ * @returns {ModalBuilder}
+ */
+function buildReviewReasonModal(
+    action,
+    trialKey,
+    userId
+) {
+    const modal =
+        new ModalBuilder()
+            .setCustomId(
+                [
+                    REVIEW_MODAL_PREFIX,
+                    action,
+                    trialKey,
+                    userId
+                ].join(':')
+            )
+            .setTitle(
+                action ===
+                    'approve'
+                    ? 'Approve Rank Trial Participant'
+                    : 'Reject Rank Trial Participant'
+            );
+
+    const reasonInput =
+        new TextInputBuilder()
+            .setCustomId(
+                'reviewReason'
+            )
+            .setLabel(
+                'Review Reason'
+            )
+            .setPlaceholder(
+                action ===
+                    'approve'
+                    ? 'Why was this participant approved?'
+                    : 'Why was this participant rejected?'
+            )
+            .setStyle(
+                TextInputStyle.Paragraph
+            )
+            .setRequired(
+                true
+            )
+            .setMinLength(
+                3
+            )
+            .setMaxLength(
+                500
+            );
+
+    modal.addComponents(
+        new ActionRowBuilder()
+            .addComponents(
+                reasonInput
+            )
+    );
+
+    return modal;
+}/**
  * Handle normal production Rank Trial
  * registration.
  *
@@ -350,16 +493,15 @@ async function handleRegister(
         flags:
             MessageFlags.Ephemeral
     });
-}/**
+}
+
+/**
  * Handle Administrator-only test
  * registration.
  *
  * This intentionally bypasses the normal
  * registration window so Rank Trials 2.0
  * may be tested before Opening Day.
- *
- * The record is still written to the real
- * PostgreSQL participant registry.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
@@ -464,9 +606,6 @@ async function handleTestRegister(
  * Handle normal production Rank Trial
  * withdrawal.
  *
- * Production withdrawal always obeys
- * the configured registration window.
- *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
  */
@@ -568,9 +707,6 @@ async function handleWithdraw(
  * Handle Administrator-only test
  * withdrawal.
  *
- * This bypasses the normal registration
- * window only for runtime testing.
- *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @returns {Promise<void>}
  */
@@ -659,13 +795,11 @@ async function handleTestWithdraw(
             MessageFlags.Ephemeral
     });
 }/**
- * Handle one Staff Review approval.
+ * Handle Staff Review Approve button.
  *
- * This only updates the Rank Trials
- * participant review state.
- *
- * It does NOT directly change the real
- * Arrancar Rank yet.
+ * This does not approve immediately.
+ * It opens a Modal so Staff can provide
+ * a real review reason first.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {{
@@ -674,7 +808,7 @@ async function handleTestWithdraw(
  * }} reviewData
  * @returns {Promise<void>}
  */
-async function handleReviewApprove(
+async function handleReviewApproveButton(
     interaction,
     reviewData
 ) {
@@ -726,42 +860,31 @@ async function handleReviewApprove(
 
     const participant =
         await participantDatabase
-            .approveParticipant({
-                guildId:
-                    interaction.guildId,
+            .getParticipant(
+                interaction.guildId,
+                reviewData.trialKey,
+                reviewData.userId
+            );
 
-                trialKey:
-                    reviewData.trialKey,
-
-                userId:
-                    reviewData.userId,
-
-                reviewedBy:
-                    interaction.user.id,
-
-                reviewReason:
-                    'Approved through Umbra Staff Review Panel.'
-            });
-
-    if (!participant) {
-        const currentParticipant =
-            await participantDatabase
-                .getParticipant(
-                    interaction.guildId,
-                    reviewData.trialKey,
-                    reviewData.userId
-                );
-
+    if (
+        !participant ||
+        (
+            participant.status !==
+                'REGISTERED' &&
+            participant.status !==
+                'UNDER_REVIEW'
+        )
+    ) {
         await interaction.reply({
             embeds: [
                 createWarningEmbed(
                     '⚠️ Approval Unavailable',
                     [
-                        'Umbra could not approve this participant from the current state.',
+                        'This participant cannot currently be approved.',
                         '',
                         `**Trial Cycle:** \`${reviewData.trialKey}\``,
                         `**Soul:** <@${reviewData.userId}>`,
-                        `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
+                        `**Current Status:** \`${participant?.status ?? 'NOT_FOUND'}\``
                     ].join('\n')
                 )
             ],
@@ -773,31 +896,23 @@ async function handleReviewApprove(
         return;
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                '✅ Rank Trial Participant Approved',
-                [
-                    `<@${reviewData.userId}> has passed Staff Review.`,
-                    '',
-                    `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                    `**Status:** \`${participant.status}\``,
-                    `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
-                    `**New Rank:** \`${participant.newRank ?? 'Not selected yet'}\``,
-                    `**Reviewed By:** <@${interaction.user.id}>`,
-                    '',
-                    'The participant is now ready for the promotion decision stage.'
-                ].join('\n')
-            )
-        ],
+    const modal =
+        buildReviewReasonModal(
+            'approve',
+            reviewData.trialKey,
+            reviewData.userId
+        );
 
-        flags:
-            MessageFlags.Ephemeral
-    });
+    await interaction.showModal(
+        modal
+    );
 }
 
 /**
- * Handle one Staff Review rejection.
+ * Handle Staff Review Reject button.
+ *
+ * This opens a reason Modal before the
+ * participant is rejected.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {{
@@ -806,7 +921,7 @@ async function handleReviewApprove(
  * }} reviewData
  * @returns {Promise<void>}
  */
-async function handleReviewReject(
+async function handleReviewRejectButton(
     interaction,
     reviewData
 ) {
@@ -858,42 +973,31 @@ async function handleReviewReject(
 
     const participant =
         await participantDatabase
-            .rejectParticipant({
-                guildId:
-                    interaction.guildId,
+            .getParticipant(
+                interaction.guildId,
+                reviewData.trialKey,
+                reviewData.userId
+            );
 
-                trialKey:
-                    reviewData.trialKey,
-
-                userId:
-                    reviewData.userId,
-
-                reviewedBy:
-                    interaction.user.id,
-
-                reviewReason:
-                    'Rejected through Umbra Staff Review Panel.'
-            });
-
-    if (!participant) {
-        const currentParticipant =
-            await participantDatabase
-                .getParticipant(
-                    interaction.guildId,
-                    reviewData.trialKey,
-                    reviewData.userId
-                );
-
+    if (
+        !participant ||
+        (
+            participant.status !==
+                'REGISTERED' &&
+            participant.status !==
+                'UNDER_REVIEW'
+        )
+    ) {
         await interaction.reply({
             embeds: [
                 createWarningEmbed(
                     '⚠️ Rejection Unavailable',
                     [
-                        'Umbra could not reject this participant from the current state.',
+                        'This participant cannot currently be rejected.',
                         '',
                         `**Trial Cycle:** \`${reviewData.trialKey}\``,
                         `**Soul:** <@${reviewData.userId}>`,
-                        `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
+                        `**Current Status:** \`${participant?.status ?? 'NOT_FOUND'}\``
                     ].join('\n')
                 )
             ],
@@ -905,25 +1009,16 @@ async function handleReviewReject(
         return;
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                '❌ Rank Trial Participant Rejected',
-                [
-                    `<@${reviewData.userId}> did not pass Staff Review.`,
-                    '',
-                    `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                    `**Status:** \`${participant.status}\``,
-                    `**Reviewed By:** <@${interaction.user.id}>`,
-                    '',
-                    'The decision was saved permanently in PostgreSQL.'
-                ].join('\n')
-            )
-        ],
+    const modal =
+        buildReviewReasonModal(
+            'reject',
+            reviewData.trialKey,
+            reviewData.userId
+        );
 
-        flags:
-            MessageFlags.Ephemeral
-    });
+    await interaction.showModal(
+        modal
+    );
 }
 
 /**
@@ -932,10 +1027,6 @@ async function handleReviewReject(
  * APPROVED / REJECTED
  *          ↓
  * UNDER_REVIEW
- *
- * A participant that has already completed
- * a real promotion cannot be reopened by the
- * database layer.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {{
@@ -1050,7 +1141,272 @@ async function handleReviewReopen(
             MessageFlags.Ephemeral
     });
 }/**
+ * Handle one submitted Staff Review Modal.
+ *
+ * The submitted reason is stored permanently
+ * in PostgreSQL together with reviewer identity
+ * and review timestamp.
+ *
+ * @param {import('discord.js').ModalSubmitInteraction} interaction
+ * @param {{
+ *     action: 'approve'|'reject',
+ *     trialKey: string,
+ *     userId: string
+ * }} reviewData
+ * @returns {Promise<void>}
+ */
+async function handleReviewModalSubmit(
+    interaction,
+    reviewData
+) {
+    if (
+        !hasAdministratorPermission(
+            interaction
+        )
+    ) {
+        await interaction.reply({
+            embeds: [
+                createErrorEmbed(
+                    '❌ Review Access Denied',
+                    'Only an Administrator may complete a Rank Trial Staff Review.'
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    if (
+        !isCurrentReviewCycle(
+            reviewData.trialKey
+        )
+    ) {
+        await interaction.reply({
+            embeds: [
+                createWarningEmbed(
+                    '⚠️ Stale Review Modal',
+                    [
+                        'This Staff Review form belongs to an older or different Rank Trial cycle.',
+                        '',
+                        `**Panel Cycle:** \`${reviewData.trialKey}\``,
+                        '',
+                        'Open a fresh `/ranktrials review` panel before continuing.'
+                    ].join('\n')
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    const reviewReason =
+        interaction.fields
+            .getTextInputValue(
+                'reviewReason'
+            )
+            .trim();
+
+    if (
+        reviewReason.length <
+        3
+    ) {
+        await interaction.reply({
+            embeds: [
+                createWarningEmbed(
+                    '⚠️ Review Reason Required',
+                    'Please provide a valid Staff Review reason.'
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    if (
+        reviewData.action ===
+        'approve'
+    ) {
+        const participant =
+            await participantDatabase
+                .approveParticipant({
+                    guildId:
+                        interaction.guildId,
+
+                    trialKey:
+                        reviewData.trialKey,
+
+                    userId:
+                        reviewData.userId,
+
+                    reviewedBy:
+                        interaction.user.id,
+
+                    reviewReason
+                });
+
+        if (!participant) {
+            const currentParticipant =
+                await participantDatabase
+                    .getParticipant(
+                        interaction.guildId,
+                        reviewData.trialKey,
+                        reviewData.userId
+                    );
+
+            await interaction.reply({
+                embeds: [
+                    createWarningEmbed(
+                        '⚠️ Approval Unavailable',
+                        [
+                            'Umbra could not approve this participant from the current state.',
+                            '',
+                            `**Trial Cycle:** \`${reviewData.trialKey}\``,
+                            `**Soul:** <@${reviewData.userId}>`,
+                            `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
+                        ].join('\n')
+                    )
+                ],
+
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            return;
+        }
+
+        await interaction.reply({
+            embeds: [
+                createSuccessEmbed(
+                    '✅ Rank Trial Participant Approved',
+                    [
+                        `<@${reviewData.userId}> has passed Staff Review.`,
+                        '',
+                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
+                        `**Status:** \`${participant.status}\``,
+                        `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
+                        `**New Rank:** \`${participant.newRank ?? 'Not selected yet'}\``,
+                        `**Reviewed By:** <@${interaction.user.id}>`,
+                        '',
+                        '**Review Reason**',
+                        reviewReason,
+                        '',
+                        'The participant is now ready for the promotion decision stage.'
+                    ].join('\n')
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    if (
+        reviewData.action ===
+        'reject'
+    ) {
+        const participant =
+            await participantDatabase
+                .rejectParticipant({
+                    guildId:
+                        interaction.guildId,
+
+                    trialKey:
+                        reviewData.trialKey,
+
+                    userId:
+                        reviewData.userId,
+
+                    reviewedBy:
+                        interaction.user.id,
+
+                    reviewReason
+                });
+
+        if (!participant) {
+            const currentParticipant =
+                await participantDatabase
+                    .getParticipant(
+                        interaction.guildId,
+                        reviewData.trialKey,
+                        reviewData.userId
+                    );
+
+            await interaction.reply({
+                embeds: [
+                    createWarningEmbed(
+                        '⚠️ Rejection Unavailable',
+                        [
+                            'Umbra could not reject this participant from the current state.',
+                            '',
+                            `**Trial Cycle:** \`${reviewData.trialKey}\``,
+                            `**Soul:** <@${reviewData.userId}>`,
+                            `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
+                        ].join('\n')
+                    )
+                ],
+
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            return;
+        }
+
+        await interaction.reply({
+            embeds: [
+                createSuccessEmbed(
+                    '❌ Rank Trial Participant Rejected',
+                    [
+                        `<@${reviewData.userId}> did not pass Staff Review.`,
+                        '',
+                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
+                        `**Status:** \`${participant.status}\``,
+                        `**Reviewed By:** <@${interaction.user.id}>`,
+                        '',
+                        '**Review Reason**',
+                        reviewReason,
+                        '',
+                        'The decision was saved permanently in PostgreSQL.'
+                    ].join('\n')
+                )
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        embeds: [
+            createErrorEmbed(
+                '❌ Unknown Review Decision',
+                'Umbra could not identify this Staff Review decision.'
+            )
+        ],
+
+        flags:
+            MessageFlags.Ephemeral
+    });
+}
+
+/**
  * Route one Staff Review button.
+ *
+ * Approve / Reject open a Modal.
+ * Reopen executes immediately.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
  * @param {{
@@ -1068,7 +1424,7 @@ async function handleStaffReviewButton(
         reviewData.action
     ) {
         case 'approve':
-            await handleReviewApprove(
+            await handleReviewApproveButton(
                 interaction,
                 reviewData
             );
@@ -1076,7 +1432,7 @@ async function handleStaffReviewButton(
             return;
 
         case 'reject':
-            await handleReviewReject(
+            await handleReviewRejectButton(
                 interaction,
                 reviewData
             );
@@ -1107,7 +1463,7 @@ async function handleStaffReviewButton(
 }
 
 /**
- * Route one Rank Trials 2.0 button
+ * Route one Rank Trials button
  * interaction to the correct handler.
  *
  * @param {import('discord.js').ButtonInteraction} interaction
@@ -1232,12 +1588,14 @@ async function handleRankTrialButton(
         false,
 
     /**
-     * Handle Rank Trials 2.0 button
-     * interactions.
+     * Handle Rank Trials 2.1 interactions.
      *
-     * Registration, test registration
-     * and Staff Review controls are all
-     * routed through this event.
+     * Supported interaction types:
+     *
+     * - Registration buttons
+     * - Test registration buttons
+     * - Staff Review buttons
+     * - Staff Review Modal submissions
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
@@ -1251,8 +1609,15 @@ async function handleRankTrialButton(
                 'umbra:ranktrial:'
             );
 
+        const isRankTrialModal =
+            interaction.isModalSubmit() &&
+            interaction.customId.startsWith(
+                `${REVIEW_MODAL_PREFIX}:`
+            );
+
         if (
-            !isRankTrialButton
+            !isRankTrialButton &&
+            !isRankTrialModal
         ) {
             return;
         }
@@ -1280,6 +1645,44 @@ async function handleRankTrialButton(
         );
 
         try {
+            /*
+             * Staff Review Modal submission.
+             */
+            if (
+                isRankTrialModal
+            ) {
+                const reviewData =
+                    parseReviewModalCustomId(
+                        interaction.customId
+                    );
+
+                if (!reviewData) {
+                    await interaction.reply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Invalid Review Form',
+                                'Umbra could not validate this Staff Review form.'
+                            )
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    });
+
+                    return;
+                }
+
+                await handleReviewModalSubmit(
+                    interaction,
+                    reviewData
+                );
+
+                return;
+            }
+
+            /*
+             * Rank Trial button interaction.
+             */
             await handleRankTrialButton(
                 interaction
             );
@@ -1359,10 +1762,9 @@ async function handleRankTrialButton(
                 );
         } finally {
             /*
-             * Keep the interaction ID locked
-             * briefly so accidental duplicate
-             * delivery cannot execute the same
-             * database action twice.
+             * Keep interaction IDs locked briefly
+             * so accidental duplicate delivery
+             * cannot repeat the same database action.
              */
             setTimeout(
                 () => {
