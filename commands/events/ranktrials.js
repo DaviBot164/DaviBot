@@ -41,6 +41,16 @@ const {
     synchronizeRankTrialScheduledEvent
 } = require('../../utils/rankTrials/eventManager');
 
+const {
+    buildOpenRegistrationComponents,
+    buildClosedRegistrationComponents
+} = require('../../utils/rankTrials/components');
+
+const {
+    getRegistrationState,
+    getCurrentRegistrationStatistics
+} = require('../../utils/rankTrials/registration');
+
 /**
  * Available Rank Trial publication keys.
  *
@@ -283,6 +293,67 @@ function buildScheduledEventLink(
 }
 
 /**
+ * Convert Rank Trials 2.0 registration
+ * state into a readable label.
+ *
+ * @param {string} state
+ * @returns {string}
+ */
+function formatRegistrationState(
+    state
+) {
+    switch (
+        state
+    ) {
+        case 'UPCOMING':
+            return '🕒 `UPCOMING`';
+
+        case 'OPEN':
+            return '🟢 `OPEN`';
+
+        case 'CLOSED':
+            return '🔒 `CLOSED`';
+
+        default:
+            return '⚪ `UNKNOWN`';
+    }
+}
+
+/**
+ * Build the registration controls shown
+ * inside the Administrator control panel.
+ *
+ * OPEN:
+ * Register + Withdraw
+ *
+ * UPCOMING / CLOSED:
+ * Disabled Registration Closed control.
+ *
+ * The interaction handler remains the final
+ * authority and validates the real schedule
+ * again whenever a button is pressed.
+ *
+ * @param {string} registrationState
+ * @returns {import('discord.js').ActionRowBuilder[]}
+ */
+function buildRegistrationControlRows(
+    registrationState
+) {
+    if (
+        registrationState ===
+        'OPEN'
+    ) {
+        return [
+            buildOpenRegistrationComponents()
+        ];
+    }
+
+    return [
+        buildClosedRegistrationComponents()
+    ];
+}
+
+/**
  * Safely respond with an error Embed.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
@@ -336,9 +407,7 @@ async function sendRankTrialError(
         flags:
             MessageFlags.Ephemeral
     });
-}
-
-module.exports = {
+}module.exports = {
     category:
         'events',
 
@@ -368,6 +437,23 @@ module.exports = {
                         )
                         .setDescription(
                             'View the next Rank Trial schedule and scheduler status.'
+                        )
+            )
+
+            /*
+             * /ranktrials registration
+             *
+             * Rank Trials 2.0 Administrator
+             * registration control panel.
+             */
+            .addSubcommand(
+                subcommand =>
+                    subcommand
+                        .setName(
+                            'registration'
+                        )
+                        .setDescription(
+                            'Open the Rank Trials 2.0 registration control panel.'
                         )
             )
 
@@ -633,9 +719,7 @@ module.exports = {
 
             const subcommand =
                 interaction.options
-                    .getSubcommand();
-
-            /*
+                    .getSubcommand();            /*
              * STATUS
              */
             if (
@@ -693,6 +777,11 @@ module.exports = {
                     getRankTrialSchedulerInterval() /
                     60_000;
 
+                const registration =
+                    getRegistrationState(
+                        schedule
+                    );
+
                 const statusEmbed =
                     createEmbed({
                         title:
@@ -719,9 +808,21 @@ module.exports = {
                                         ? '`ENABLED`'
                                         : '`DISABLED`'
                                 }`,
+                                `**Registration:** ${formatRegistrationState(
+                                    registration.state
+                                )}`,
                                 `**Check Interval:** \`${schedulerIntervalMinutes} minutes\``,
                                 `**Timezone:** \`${rankTrialConfig.timezone}\``,
                                 `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                '',
+                                `**Registration Opens:** ${toDiscordTimestamp(
+                                    registration.opensAt,
+                                    'F'
+                                )}`,
+                                `**Registration Closes:** ${toDiscordTimestamp(
+                                    registration.closesAt,
+                                    'F'
+                                )}`,
                                 '',
                                 `**Battle Start:** ${toDiscordTimestamp(
                                     schedule.battleStart,
@@ -784,6 +885,167 @@ module.exports = {
 
                     components:
                         []
+                });
+
+                return;
+            }
+
+            /*
+             * REGISTRATION
+             *
+             * Rank Trials 2.0 Administrator
+             * Registration Control Panel.
+             */
+            if (
+                subcommand ===
+                'registration'
+            ) {
+                await interaction.deferReply({
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                const schedule =
+                    getRelevantRankTrialSchedule();
+
+                const registration =
+                    getRegistrationState(
+                        schedule
+                    );
+
+                const {
+                    statistics
+                } =
+                    await getCurrentRegistrationStatistics({
+                        guildId:
+                            interaction.guild.id
+                    });
+
+                const registrationEmbed =
+                    createEmbed({
+                        title:
+                            '⚔️ Rank Trials 2.0 Registration',
+
+                        description:
+                            [
+                                'Administrator control panel for the current Monthly Rank Trial.',
+                                '',
+                                `**Trial Cycle:** \`${schedule.trialKey}\``,
+                                `**Registration:** ${formatRegistrationState(
+                                    registration.state
+                                )}`,
+                                '',
+                                `**Opens:** ${toDiscordTimestamp(
+                                    registration.opensAt,
+                                    'F'
+                                )}`,
+                                `**Closes:** ${toDiscordTimestamp(
+                                    registration.closesAt,
+                                    'F'
+                                )}`,
+                                `**Battle Start:** ${toDiscordTimestamp(
+                                    schedule.battleStart,
+                                    'F'
+                                )}`,
+                                '',
+                                registration.state ===
+                                    'OPEN'
+                                    ? 'Use the controls below to register or withdraw from the current Trial.'
+                                    : registration.state ===
+                                        'UPCOMING'
+                                        ? 'Registration has not opened yet. The controls will become available when the Opening Announcement is due.'
+                                        : 'Registration is closed. Registered Souls have entered the Staff Review phase.'
+                            ].join('\n'),
+
+                        fields: [
+                            {
+                                name:
+                                    '👥 Participant Registry',
+
+                                value:
+                                    [
+                                        `**Total Records:** \`${statistics.total}\``,
+                                        `**Registered:** \`${statistics.registered}\``,
+                                        `**Withdrawn:** \`${statistics.withdrawn}\``,
+                                        `**Under Review:** \`${statistics.underReview}\``,
+                                        `**Approved:** \`${statistics.approved}\``,
+                                        `**Rejected:** \`${statistics.rejected}\``,
+                                        `**Promoted:** \`${statistics.promoted}\``
+                                    ].join('\n'),
+
+                                inline:
+                                    false
+                            },
+                            {
+                                name:
+                                    '🔒 Registration Rules',
+
+                                value:
+                                    [
+                                        '• Registration opens with the Opening Announcement.',
+                                        '• Registration closes with the Final Reminder.',
+                                        '• A withdrawn Soul may register again while registration remains open.',
+                                        '• After closing, active registrations automatically move to Staff Review.'
+                                    ].join('\n'),
+
+                                inline:
+                                    false
+                            }
+                        ],
+
+                        thumbnail:
+                            interaction.guild.iconURL({
+                                size:
+                                    512,
+
+                                forceStatic:
+                                    false
+                            }) ??
+                            interaction.client.user
+                                .displayAvatarURL({
+                                    size:
+                                        512,
+
+                                    forceStatic:
+                                        false
+                                })
+                    });
+
+                registrationEmbed.setAuthor({
+                    name:
+                        rankTrialConfig
+                            .branding
+                            .authorName,
+
+                    iconURL:
+                        interaction.client.user
+                            .displayAvatarURL({
+                                size:
+                                    256,
+
+                                forceStatic:
+                                    false
+                            })
+                });
+
+                registrationEmbed.setFooter({
+                    text:
+                        'Umbra • Rank Trials 2.0'
+                });
+
+                registrationEmbed.setTimestamp();
+
+                const registrationComponents =
+                    buildRegistrationControlRows(
+                        registration.state
+                    );
+
+                await interaction.editReply({
+                    embeds:
+                        [registrationEmbed],
+
+                    components:
+                        registrationComponents
                 });
 
                 return;
@@ -1093,9 +1355,7 @@ module.exports = {
                 });
 
                 return;
-            }
-
-            /*
+            }            /*
              * CHECK
              */
             if (
@@ -1112,34 +1372,53 @@ module.exports = {
                         interaction.client
                     );
 
+                const checkLines = [
+                    result.failed > 0
+                        ? 'Umbra completed an immediate scheduler check with one or more failures.'
+                        : 'Umbra completed an immediate scheduler check.',
+                    '',
+                    '**Announcements**',
+                    `**Published:** \`${result.published}\``,
+                    `**Already Existing:** \`${result.duplicates}\``,
+                    `**Failed:** \`${result.failed}\``,
+                    `**Expired:** \`${result.expired}\``,
+                    '',
+                    '**Rank Trials 2.0 Registration**',
+                    `**Close Attempts:** \`${result.registrationCloseAttempted ?? 0}\``,
+                    `**Cycles Closed:** \`${result.registrationClosed ?? 0}\``,
+                    `**Moved To Review:** \`${result.registrationMovedToReview ?? 0}\``,
+                    `**Close Failures:** \`${result.registrationCloseFailed ?? 0}\``,
+                    '',
+                    '**Scheduled Events**',
+                    `**Created:** \`${result.eventCreated ?? 0}\``,
+                    `**Recreated:** \`${result.eventRecreated ?? 0}\``,
+                    `**Updated:** \`${result.eventUpdated ?? 0}\``,
+                    `**Synchronized:** \`${result.eventSynchronized ?? 0}\``,
+                    `**Failures:** \`${result.eventFailed ?? 0}\``,
+                    '',
+                    '**Recovery**',
+                    `**Publication Reservations Removed:** \`${result.staleReservationsRemoved}\``,
+                    `**Event Reservations Removed:** \`${result.staleEventReservationsRemoved ?? 0}\``,
+                    `**Scheduler Skipped:** \`${result.skipped}\``
+                ];
+
                 const checkEmbed =
-                    result.failed >
-                    0
+                    result.failed > 0 ||
+                    (
+                        result.registrationCloseFailed ??
+                        0
+                    ) > 0 ||
+                    (
+                        result.eventFailed ??
+                        0
+                    ) > 0
                         ? createErrorEmbed(
                             '⚠️ Rank Trial Check Completed',
-                            [
-                                'Umbra completed an immediate scheduler check with one or more failures.',
-                                '',
-                                `**Published:** \`${result.published}\``,
-                                `**Already Existing:** \`${result.duplicates}\``,
-                                `**Failed:** \`${result.failed}\``,
-                                `**Expired:** \`${result.expired}\``,
-                                `**Stale Reservations Removed:** \`${result.staleReservationsRemoved}\``,
-                                `**Skipped:** \`${result.skipped}\``
-                            ].join('\n')
+                            checkLines.join('\n')
                         )
                         : createSuccessEmbed(
                             '✅ Rank Trial Check Completed',
-                            [
-                                'Umbra completed an immediate scheduler check.',
-                                '',
-                                `**Published:** \`${result.published}\``,
-                                `**Already Existing:** \`${result.duplicates}\``,
-                                `**Failed:** \`${result.failed}\``,
-                                `**Expired:** \`${result.expired}\``,
-                                `**Stale Reservations Removed:** \`${result.staleReservationsRemoved}\``,
-                                `**Skipped:** \`${result.skipped}\``
-                            ].join('\n')
+                            checkLines.join('\n')
                         );
 
                 await interaction.editReply({
@@ -1333,7 +1612,9 @@ module.exports = {
                 });
 
                 return;
-            }            /*
+            }
+
+            /*
              * EVENT
              */
             if (
@@ -1740,9 +2021,7 @@ module.exports = {
                 });
 
                 return;
-            }
-
-            /*
+            }            /*
              * SYNC
              */
             if (
