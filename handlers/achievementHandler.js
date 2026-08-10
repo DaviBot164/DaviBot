@@ -168,6 +168,10 @@ function getAchievementColor(
  * Return a thematic message for an
  * unlocked Achievement.
  *
+ * Preserved for compatibility with other
+ * Umbra systems even though the compact
+ * notification no longer displays it.
+ *
  * @param {string} achievementId
  * @returns {string}
  */
@@ -197,9 +201,21 @@ function getAchievementMessage(
         ] ||
         'Umbra has recorded a new chapter in this Soul’s journey.'
     );
-}/**
- * Create a compact Achievement
- * unlock Embed.
+}
+
+/**
+ * Create a minimal Achievement unlock Embed.
+ *
+ * The Soul Progression channel should show
+ * only the information a member needs:
+ *
+ * - Achievement name
+ * - Soul
+ * - Requirement / description
+ *
+ * Detailed Chronicle information remains
+ * available through Umbra's profile and
+ * archive systems.
  *
  * @param {import('discord.js').Message} message
  * @param {Object} achievement
@@ -219,17 +235,11 @@ function createAchievementEmbed(
 
     const description =
         achievement?.description ||
-        'No Achievement description is available.';
+        'Achievement unlocked.';
 
     const category =
         achievement?.category ||
         'General';
-
-    const unlockedAt =
-        Math.floor(
-            Date.now() /
-            1_000
-        );
 
     return new EmbedBuilder()
         .setColor(
@@ -237,71 +247,25 @@ function createAchievementEmbed(
                 category
             )
         )
-        .setAuthor({
-            name:
-                'Umbra • Achievement Unlocked',
-
-            iconURL:
-                message.client.user
-                    .displayAvatarURL({
-                        size:
-                            128,
-
-                        forceStatic:
-                            false
-                    })
-        })
         .setTitle(
-            `${icon} ${name}`
+            '🏆 ACHIEVEMENT UNLOCKED'
         )
         .setDescription(
             [
-                `${message.author} completed a new Soul Chronicle.`,
-                '',
-                description,
-                '',
-                `*${getAchievementMessage(
-                    achievement?.id
-                )}*`
+                `${icon} **${name}**`,
+                `${message.author} • ${description}`
             ].join('\n')
-        )
-        .addFields(
-            {
-                name:
-                    '📚 Category',
-
-                value:
-                    `\`${category}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🕒 Unlocked',
-
-                value:
-                    `<t:${unlockedAt}:R>`,
-
-                inline:
-                    true
-            }
         )
         .setThumbnail(
             message.author
                 .displayAvatarURL({
                     size:
-                        256,
+                        128,
 
                     forceStatic:
                         false
                 })
-        )
-        .setFooter({
-            text:
-                'Umbra • Soul Archives'
-        })
-        .setTimestamp();
+        );
 }
 
 /**
@@ -373,9 +337,7 @@ function findAchievementNotificationChannel(
         ) ||
         null
     );
-}
-
-/**
+}/**
  * Check whether Umbra may send an
  * Achievement notification.
  *
@@ -474,8 +436,9 @@ async function sendAchievementNotification(
             ],
 
             allowedMentions: {
-                parse:
-                    []
+                users: [
+                    message.author.id
+                ]
             }
         });
     } catch (error) {
@@ -521,7 +484,9 @@ async function getMessageLevelRecord(
 
         return null;
     }
-}/**
+}
+
+/**
  * Check every Achievement that may be
  * unlocked through message activity.
  *
@@ -621,9 +586,7 @@ async function checkMessageAchievements(
     }
 
     return unlockedAchievements;
-}
-
-/**
+}/**
  * Check Level-based Achievements using
  * existing Level data.
  *

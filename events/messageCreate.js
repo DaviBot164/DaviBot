@@ -24,7 +24,6 @@ const {
 } = require('../handlers/titleHandler');
 
 const {
-    sendAchievementFeed,
     sendTitleFeed
 } = require('../utils/kingdomFeed');
 
@@ -410,7 +409,9 @@ function isMessageSpam(
             .spam
             .messageLimit
     );
-}/**
+}
+
+/**
  * Detect repeated-message spam.
  *
  * @param {import('discord.js').Message} message
@@ -518,58 +519,20 @@ function getMentionCount(
         roleMentions +
         everyoneMention
     );
-}
-
-/**
- * Send newly unlocked Achievements
- * into the official Soul Progression Feed.
- *
- * @param {import('discord.js').Message} message
- * @param {Object[]} achievements
- * @returns {Promise<void>}
- */
-async function sendAchievementFeeds(
-    message,
-    achievements
-) {
-    if (
-        !Array.isArray(
-            achievements
-        ) ||
-        achievements.length ===
-            0
-    ) {
-        return;
-    }
-
-    for (
-        const achievement
-        of achievements
-    ) {
-        await sendAchievementFeed({
-            member:
-                message.member,
-
-            achievement,
-
-            source:
-                'Message activity or Soul progression'
-        });
-    }
-}
-
-/**
+}/**
  * Run progression systems after a valid
  * message passes every Guardian check.
  *
  * Order:
  * 1. Achievement System
- * 2. Achievement Soul Progression Feed
- * 3. Title System
- * 4. Title Soul Progression Feed
+ * 2. Title System
+ * 3. Title Soul Progression Feed
  *
- * Title notifications are no longer sent
- * into the member's current channel.
+ * Achievement notifications are handled
+ * directly by achievementHandler.js.
+ *
+ * Title notifications remain published
+ * through the Soul Progression Feed.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<void>}
@@ -608,11 +571,6 @@ async function checkMessageProgression(
     ) {
         console.log(
             `🏆 ${unlockedAchievements.length} new Achievement(s) unlocked for ${message.author.tag}.`
-        );
-
-        await sendAchievementFeeds(
-            message,
-            unlockedAchievements
         );
     }
 
@@ -655,7 +613,7 @@ async function checkMessageProgression(
     );
 
     /*
-     * Chronicle Titles are now published
+     * Chronicle Titles are published
      * only inside the configured
      * Soul Progression Feed.
      */
@@ -1186,9 +1144,7 @@ async function processViolation(
             savedCase
         )
     ]);
-}
-
-module.exports = {
+}module.exports = {
     name:
         Events.MessageCreate,
 
@@ -1448,7 +1404,9 @@ module.exports = {
             );
         }
     }
-};/*
+};
+
+/*
  * Periodically clean cached spam history.
  *
  * This prevents old member activity from
