@@ -1,7 +1,14 @@
 const {
     Events,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    AttachmentBuilder
 } = require('discord.js');
+
+const fs =
+    require('fs');
+
+const path =
+    require('path');
 
 const {
     createEmbed
@@ -26,6 +33,129 @@ const SOUL_PROGRESSION_CHANNEL_ID =
     '1534145341430038558';
 
 /**
+ * Level Up banner tiers.
+ *
+ * Common:
+ * Level 1–24
+ *
+ * Gold:
+ * Level 25–74
+ *
+ * Elite:
+ * Level 75+
+ */
+const LEVEL_BANNERS =
+    Object.freeze({
+        common: {
+            minimumLevel:
+                1,
+
+            maximumLevel:
+                24,
+
+            fileName:
+                'level-common.png',
+
+            color:
+                '#4A90E2'
+        },
+
+        gold: {
+            minimumLevel:
+                25,
+
+            maximumLevel:
+                74,
+
+            fileName:
+                'level-gold.png',
+
+            color:
+                '#D4AF37'
+        },
+
+        elite: {
+            minimumLevel:
+                75,
+
+            maximumLevel:
+                Infinity,
+
+            fileName:
+                'level-elite.png',
+
+            color:
+                '#8A2BE2'
+        }
+    });
+
+/**
+ * Resolve the correct Level Up banner
+ * for one Soul's new Level.
+ *
+ * @param {number} level
+ * @returns {{
+ *     tier: string,
+ *     fileName: string,
+ *     filePath: string,
+ *     color: string
+ * }}
+ */
+function getLevelBanner(
+    level
+) {
+    const numericLevel =
+        Math.max(
+            1,
+            Number(level) || 1
+        );
+
+    let tier =
+        'common';
+
+    if (
+        numericLevel >=
+        LEVEL_BANNERS
+            .elite
+            .minimumLevel
+    ) {
+        tier =
+            'elite';
+    } else if (
+        numericLevel >=
+        LEVEL_BANNERS
+            .gold
+            .minimumLevel
+    ) {
+        tier =
+            'gold';
+    }
+
+    const banner =
+        LEVEL_BANNERS[tier];
+
+    return {
+        tier,
+
+        fileName:
+            banner.fileName,
+
+        filePath:
+            path.join(
+                __dirname,
+                '..',
+                'assets',
+                'images',
+                'level-banners',
+                banner.fileName
+            ),
+
+        color:
+            banner.color
+    };
+}
+
+/**
  * Level System configuration.
  */
 const LEVEL_CONFIG = {
@@ -34,18 +164,21 @@ const LEVEL_CONFIG = {
 
     /**
      * XP received for one eligible message.
+     *
+     * Progression was increased from the
+     * previous 10–20 XP range.
      */
     minimumXp:
-        10,
-
-    maximumXp:
         20,
 
+    maximumXp:
+        30,
+
     /**
-     * One XP reward every 60 seconds.
+     * One XP reward every 30 seconds.
      */
     cooldownMilliseconds:
-        60_000,
+        30_000,
 
     /**
      * Very short messages will not earn XP.
@@ -280,9 +413,7 @@ function isRecentDuplicate(
     );
 
     return false;
-}
-
-/**
+}/**
  * Format a number using separators.
  *
  * @param {number|string|null|undefined} value
@@ -497,7 +628,9 @@ async function synchronizeLevelRewards(
             highestRewardLevel:
                 null
         };
-    }    const highestRewardLevel =
+    }
+
+    const highestRewardLevel =
         Math.max(
             ...earnedRewards.map(
                 reward =>
@@ -657,9 +790,7 @@ async function synchronizeLevelRewards(
         removedRoles,
         highestRewardLevel
     };
-}
-
-/**
+}/**
  * Resolve the Soul Progression channel.
  *
  * The configured channel is always preferred.
@@ -708,7 +839,8 @@ async function getLevelUpChannel(
         !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles
         ])
     ) {
         console.warn(
@@ -722,10 +854,21 @@ async function getLevelUpChannel(
 }
 
 /**
- * Send a compact Las Noches Level Up
+ * Send a minimal Las Noches Level Up
  * announcement.
  *
- * Detailed XP progress remains available
+ * Banner tiers:
+ *
+ * Level 1–24:
+ * Common
+ *
+ * Level 25–74:
+ * Gold
+ *
+ * Level 75+:
+ * Elite
+ *
+ * Detailed XP information remains available
  * inside the interactive /profile command.
  *
  * @param {import('discord.js').Message} message
@@ -750,88 +893,79 @@ async function sendLevelUpMessage(
         return;
     }
 
-    const serverRank =
-        await levelDatabase
-            .getUserRank(
-                message.guild.id,
-                message.author.id
-            )
-            .catch(
-                () => null
-            );
+    const banner =
+        getLevelBanner(
+            levelResult.newLevel
+        );
 
     const descriptionLines = [
-        `${message.author} has reached a new milestone within Las Noches.`,
-        '',
-        `🌙 **Level:** \`${levelResult.newLevel}\``,
-        `⭐ **Total XP:** \`${formatNumber(levelResult.data.xp)}\``,
-        `🏆 **Server Rank:** ${
-            serverRank
-                ? `\`#${serverRank}\``
-                : '`Unranked`'
-        }`
+        `${message.author} reached **Level ${levelResult.newLevel}**`
     ];
 
+    /*
+     * Only show a reward when a new
+     * progression role was actually unlocked.
+     */
     if (
         rewardResult.grantedRoles.length >
         0
     ) {
         descriptionLines.push(
             '',
-            '🎖️ **Reward Unlocked**',
-            rewardResult.grantedRoles
-                .map(
-                    role =>
-                        `${role}`
-                )
-                .join('\n')
+            `🎖️ ${
+                rewardResult.grantedRoles
+                    .map(
+                        role =>
+                            `${role}`
+                    )
+                    .join(' ')
+            }`
         );
     }
-
-    if (
-        rewardResult.removedRoles.length >
-        0
-    ) {
-        descriptionLines.push(
-            '',
-            '🌘 **Previous Reward Replaced**',
-            rewardResult.removedRoles
-                .map(
-                    role =>
-                        `~~${role.name}~~`
-                )
-                .join('\n')
-        );
-    }
-
-    descriptionLines.push(
-        '',
-        '*Continue strengthening your spirit within Las Noches.*'
-    );
 
     const levelUpEmbed =
         createEmbed({
             title:
-                '🌙 A Soul Has Ascended',
+                '🌙 LEVEL UP',
 
             description:
                 descriptionLines.join(
                     '\n'
                 ),
 
-            thumbnail:
-                message.author
-                    .displayAvatarURL({
-                        extension:
-                            'png',
-
-                        size:
-                            256,
-
-                        forceStatic:
-                            false
-                    })
+            color:
+                banner.color
         });
+
+    let bannerAttachment =
+        null;
+
+    /*
+     * Keep the Level System functional even
+     * if one local banner file is missing.
+     */
+    if (
+        fs.existsSync(
+            banner.filePath
+        )
+    ) {
+        bannerAttachment =
+            new AttachmentBuilder(
+                banner.filePath,
+                {
+                    name:
+                        banner.fileName
+                }
+            );
+
+        levelUpEmbed.setImage(
+            `attachment://${banner.fileName}`
+        );
+    } else {
+        console.warn(
+            `⚠️ Level Up banner was not found: ${banner.filePath}`
+        );
+    }
 
     try {
         await targetChannel.send({
@@ -839,10 +973,25 @@ async function sendLevelUpMessage(
                 levelUpEmbed
             ],
 
+            files:
+                bannerAttachment
+                    ? [
+                        bannerAttachment
+                    ]
+                    : [],
+
             allowedMentions: {
                 users: [
                     message.author.id
-                ]
+                ],
+
+                roles:
+                    rewardResult
+                        .grantedRoles
+                        .map(
+                            role =>
+                                role.id
+                        )
             }
         });
     } catch (error) {
