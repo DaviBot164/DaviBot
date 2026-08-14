@@ -10,7 +10,7 @@ const {
 } = require('../../utils/embeds');
 
 /**
- * Count channels of a specific Discord type.
+ * Count channels of a specific type.
  *
  * @param {import('discord.js').Guild} guild
  * @param {number} channelType
@@ -27,7 +27,8 @@ function countChannelsByType(
 }
 
 /**
- * Format the guild verification level.
+ * Format the server
+ * verification level.
  *
  * @param {number} verificationLevel
  * @returns {string}
@@ -36,11 +37,20 @@ function formatVerificationLevel(
     verificationLevel
 ) {
     const levels = {
-        0: 'None',
-        1: 'Low',
-        2: 'Medium',
-        3: 'High',
-        4: 'Very High'
+        0:
+            'None',
+
+        1:
+            'Low',
+
+        2:
+            'Medium',
+
+        3:
+            'High',
+
+        4:
+            'Very High'
     };
 
     return (
@@ -59,7 +69,7 @@ module.exports = {
                 'serverinfo'
             )
             .setDescription(
-                'View the official records of Las Noches.'
+                'View information about THE Ⅹ SINS.'
             )
             .setDMPermission(
                 false
@@ -82,8 +92,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Unavailable',
-                            'This command can only be used inside Las Noches.'
+                            '❌ Server Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -115,11 +125,10 @@ module.exports = {
                     ChannelType.GuildForum
                 );
 
-            const categories =
-                countChannelsByType(
-                    guild,
-                    ChannelType.GuildCategory
-                );
+            const totalChannels =
+                textChannels +
+                voiceChannels +
+                forumChannels;
 
             const serverIcon =
                 guild.iconURL({
@@ -138,6 +147,16 @@ module.exports = {
                     forceStatic:
                         false
                 });
+
+            const botAvatar =
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            256,
+
+                        forceStatic:
+                            false
+                    });
 
             const createdTimestamp =
                 Math.floor(
@@ -161,138 +180,93 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🏰 Las Noches Records',
+                        'Ⅹ・SERVER INFORMATION',
 
                     description:
                         `Official information for **${guild.name}**.`,
 
                     color:
-                        '#6F42C1',
+                        '#5B3A78',
 
                     thumbnail:
-                        serverIcon,
+                        serverIcon ||
+                        botAvatar,
 
                     fields: [
                         {
                             name:
-                                '👑 Kingdom',
+                                '♛・SERVER',
 
                             value:
                                 [
-                                    `**Ruler:** ${owner}`,
-                                    `**Souls:** \`${guild.memberCount}\``,
-                                    `**Residents:** \`${humanCount}\``,
+                                    `**Sovereign:** ${owner}`,
+                                    `**Members:** \`${humanCount}\``,
                                     `**Bots:** \`${botCount}\``
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 true
                         },
+
                         {
                             name:
-                                '📊 Structure',
+                                '◆・STRUCTURE',
 
                             value:
                                 [
-                                    `**Text:** \`${textChannels}\``,
-                                    `**Voice:** \`${voiceChannels}\``,
-                                    `**Forums:** \`${forumChannels}\``,
-                                    `**Districts:** \`${categories}\``
-                                ].join(
-                                    '\n'
-                                ),
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '🎖️ Resources',
-
-                            value:
-                                [
+                                    `**Channels:** \`${totalChannels}\``,
                                     `**Roles:** \`${guild.roles.cache.size}\``,
-                                    `**Emojis:** \`${guild.emojis.cache.size}\``,
-                                    `**Stickers:** \`${guild.stickers.cache.size}\``,
                                     `**Boosts:** \`${guild.premiumSubscriptionCount ?? 0}\``
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 true
                         },
+
                         {
                             name:
-                                '📅 Founded',
+                                '🛡️・SECURITY',
+
+                            value:
+                                [
+                                    `**Verification:** \`${formatVerificationLevel(
+                                        guild.verificationLevel
+                                    )}\``,
+                                    `**Boost Level:** \`${guild.premiumTier}\``
+                                ].join('\n'),
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                '📅・CREATED',
 
                             value:
                                 [
                                     `<t:${createdTimestamp}:F>`,
-                                    `<t:${createdTimestamp}:R>`
-                                ].join(
-                                    '\n'
-                                ),
-
-                            inline:
-                                false
-                        },
-                        {
-                            name:
-                                '⚙️ Settings',
-
-                            value:
-                                [
-                                    `**Locale:** \`${guild.preferredLocale}\``,
-                                    `**Verification:** \`${formatVerificationLevel(
-                                        guild.verificationLevel
-                                    )}\``,
-                                    `**Boost Level:** \`${guild.premiumTier}\``,
-                                    `**AFK Timeout:** \`${Math.floor(
-                                        guild.afkTimeout /
-                                        60
-                                    )} minutes\``
-                                ].join(
-                                    '\n'
-                                ),
+                                    `-# <t:${createdTimestamp}:R>`
+                                ].join('\n'),
 
                             inline:
                                 false
                         }
                     ]
-                });
-
-            embed.setAuthor({
+                });            embed.setAuthor({
                 name:
-                    `${guild.name} • Kingdom Archive`,
+                    'Evelynn • THE Ⅹ SINS',
 
                 iconURL:
-                    serverIcon ||
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
-
-                            forceStatic:
-                                false
-                        })
+                    botAvatar
             });
 
             embed.setFooter({
                 text:
-                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+                    `TTS • Requested by ${interaction.user.username}`,
 
                 iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
-
-                            forceStatic:
-                                false
-                        })
+                    botAvatar
             });
 
             if (bannerURL) {
@@ -308,14 +282,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Umbra /serverinfo:',
+                '❌ Evelynn /serverinfo command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Kingdom Records Unavailable',
-                    'Umbra could not retrieve the official records of Las Noches.'
+                    '❌ Server Information Unavailable',
+                    'Evelynn could not retrieve the server information.'
                 );
 
             if (

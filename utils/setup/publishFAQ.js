@@ -13,7 +13,7 @@ const setupChannels =
 
 /**
  * Get and validate the
- * Las Noches Information channel.
+ * THE Ⅹ SINS information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -38,12 +38,13 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Kingdom Archive Missing',
-                    'Umbra could not find the configured Las Noches Information channel.'
+                    '❌ Information Channel Missing',
+                    'The configured information channel could not be found.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -56,12 +57,13 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Umbra Unavailable',
-                    'Umbra could not access its Las Noches member record.'
+                    '❌ Evelynn Unavailable',
+                    'Evelynn could not access her server member record.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -82,10 +84,11 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Umbra Permissions',
+                    '❌ Missing Permissions',
                     [
-                        'Umbra requires:',
+                        `Evelynn cannot publish the FAQ in ${informationChannel}.`,
                         '',
+                        'Required:',
                         '• View Channel',
                         '• Send Messages',
                         '• Embed Links'
@@ -93,7 +96,8 @@ async function getFAQChannel(
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -104,7 +108,10 @@ async function getFAQChannel(
 
 /**
  * Publish the official
- * Knowledge Archive of Las Noches.
+ * THE Ⅹ SINS FAQ.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @returns {Promise<void>}
  */
 async function publishFAQ(
     interaction
@@ -121,322 +128,220 @@ async function publishFAQ(
     const faqEmbed =
         createEmbed({
             title:
-                '📚 Knowledge Archive of Las Noches',
+                'Ⅹ・FAQ',
 
             description:
                 [
-                    '## Answers preserved by Umbra.',
+                    '**Quick answers to common questions.**',
                     '',
-                    'Before opening a support ticket, consult this archive.',
-                    '',
-                    'Most questions asked by new Souls have already been answered here.'
+                    'Check here before opening a support ticket.'
                 ].join('\n'),
 
             color:
-                '#6F42C1',
+                '#5B3A78',
 
             thumbnail:
                 interaction.guild.iconURL({
-                    size: 512,
-                    forceStatic: false
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
                 }) ??
-                interaction.client.user.displayAvatarURL({
-                    size: 512,
-                    forceStatic: false
-                }),
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            512,
+
+                        forceStatic:
+                            false
+                    }),
 
             fields: [
                 {
                     name:
-                        '╭・⛩️ HOW DO I ENTER LAS NOCHES?',
+                        '✦・HOW DO I GET ACCESS?',
 
                     value:
                         [
-                            'Complete the verification process through **Bloxlink**.',
+                            'Verify your Roblox account through **Bloxlink**.',
                             '',
-                            'After verification Umbra will automatically grant the correct access roles.',
+                            '**◇・UNSWORN** → **✦・SWORN**',
                             '',
-                            'If verification fails, use the Ticket System.'
+                            'If verification fails, open a support ticket.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・🔒 WHY ARE CHANNELS LOCKED?',
+                        '📜・WHERE ARE THE RULES?',
 
                     value:
                         [
-                            'The most common reason is incomplete verification.',
+                            'Read the **Code of Sins** in the information section.',
                             '',
-                            'Confirm that:',
-                            '',
-                            '• Your Roblox account is connected.',
-                            '• Verification completed successfully.',
-                            '• The Verified role has been assigned.',
-                            '',
-                            'If everything appears correct, contact the staff through a ticket.'
+                            'The Code applies to every member and Staff role.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・📜 WHERE ARE THE ROYAL LAWS?',
+                        '🎫・HOW DO I CONTACT STAFF?',
 
                     value:
                         [
-                            'The Royal Laws are available inside the Information Archive.',
+                            'Open a private support ticket.',
                             '',
-                            'Every Soul is expected to read them before participating in the kingdom.',
-                            '',
-                            'Remaining in Las Noches means accepting those laws.'
+                            'Use tickets for reports, appeals, verification issues, private evidence or server problems.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・📢 WHERE ARE KINGDOM DECREES POSTED?',
+                        '⚖️・CAN I APPEAL A PUNISHMENT?',
 
                     value:
                         [
-                            'Official announcements are published inside the Kingdom Decrees channel.',
+                            '**Yes.** Submit an appeal through the Ticket System.',
                             '',
-                            'There you will find:',
+                            'Explain what happened and include relevant evidence.',
                             '',
-                            '• Updates',
-                            '• Events',
-                            '• Rule changes',
-                            '• Community news',
-                            '• Important notices'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },                {
-                    name:
-                        '├・🎫 HOW DO I CONTACT STAFF?',
-
-                    value:
-                        [
-                            'Use Umbra’s private Ticket System whenever assistance is needed.',
-                            '',
-                            'Tickets may be opened for:',
-                            '',
-                            '• Member reports',
-                            '• Moderation appeals',
-                            '• Verification problems',
-                            '• Server issues',
-                            '• Private questions',
-                            '• Evidence that should not be shared publicly',
-                            '',
-                            '-# Avoid repeatedly mentioning staff members in public channels.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・⏳ HOW LONG DOES SUPPORT TAKE?',
-
-                    value:
-                        [
-                            'Response time depends on staff availability.',
-                            '',
-                            'After creating a ticket:',
-                            '',
-                            '• Explain the situation clearly.',
-                            '• Include all important details.',
-                            '• Attach screenshots or evidence when needed.',
-                            '• Wait patiently for a response.',
-                            '',
-                            'Repeated mentions or unnecessary messages may slow the process.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🛡️ CAN I APPEAL A PUNISHMENT?',
-
-                    value:
-                        [
-                            'Warnings, timeouts, kicks, and bans may be appealed through the Ticket System.',
-                            '',
-                            'Your appeal should include:',
-                            '',
-                            '• Your Discord username',
-                            '• The punishment received',
-                            '• The reason provided',
-                            '• A clear explanation',
-                            '• Relevant evidence',
-                            '',
-                            '-# Submitting an appeal does not guarantee removal of the punishment.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🤖 WHAT IS UMBRA?',
-
-                    value:
-                        [
-                            'Umbra is the **Guardian of Las Noches**.',
-                            '',
-                            'Umbra manages:',
-                            '',
-                            '• Guardian AutoMod',
-                            '• Warning and Raid Systems',
-                            '• Tickets and verification guidance',
-                            '• Welcome messages',
-                            '• Levels and Spiritual Power',
-                            '• Soul Records',
-                            '• Arrancar Ranks',
-                            '• Chronicle Titles',
-                            '• Achievements',
-                            '• Events and Giveaways',
-                            '• Interactive Leaderboards',
-                            '',
-                            'Umbra responds through commands and interactions rather than normal conversation.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・⚠️ WHY DID UMBRA DELETE MY MESSAGE?',
-
-                    value:
-                        [
-                            'Umbra’s Guardian system may remove messages that violate kingdom protections.',
-                            '',
-                            'This may include:',
-                            '',
-                            '• Prohibited language',
-                            '• Spam',
-                            '• Unauthorized Discord invites',
-                            '• Repeated disruptive messages',
-                            '• Attempts to bypass filters',
-                            '',
-                            'Repeated violations may result in warnings or temporary timeouts.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・⚔️ ARE SCRIPTS OR EXPLOITS ALLOWED?',
-
-                    value:
-                        [
-                            '**No.**',
-                            '',
-                            'Scripts, exploits, cheats, unfair tools, and prohibited advantages are forbidden.',
-                            '',
-                            'Using or distributing them may result in immediate moderation or permanent exile from Las Noches.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🏆 HOW DO I GROW STRONGER?',
-
-                    value:
-                        [
-                            'Progression is earned through activity and participation.',
-                            '',
-                            'Your Soul may gain:',
-                            '',
-                            '• Levels',
-                            '• Spiritual Power',
-                            '• Chronicle Titles',
-                            '• Achievements',
-                            '• Progression Roles',
-                            '• Arrancar Ranks',
-                            '',
-                            'Staff roles are not granted simply because someone requests them.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・👤 IS ADVERTISING ALLOWED?',
-
-                    value:
-                        [
-                            'Advertising requires permission from Las Noches leadership.',
-                            '',
-                            'This includes:',
-                            '',
-                            '• Discord server invites',
-                            '• Recruitment advertisements',
-                            '• Unapproved communities',
-                            '• Repeated promotional links',
-                            '• Advertising through direct messages',
-                            '',
-                            'Unauthorized advertising may result in moderation.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '╰・🌙 WHAT IF MY QUESTION IS NOT HERE?',
-
-                    value:
-                        [
-                            'Use the appropriate community channel for general questions.',
-                            '',
-                            'For private, serious, technical, or moderation-related matters, open a support ticket.',
-                            '',
-                            '> **Knowledge strengthens every Soul and preserves the eternal kingdom.**'
+                            '-# An appeal does not guarantee the punishment will be removed.'
                         ].join('\n'),
 
                     inline:
                         false
                 }
             ]
-        });
+        });    faqEmbed.addFields(
+        {
+            name:
+                '🤖・WHO IS EVELYNN?',
+
+            value:
+                [
+                    '**Evelynn** is the public guardian and companion of **THE Ⅹ SINS**.',
+                    '',
+                    'She manages server systems through the internal **Umbra Core**.'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                '🛡️・WHY WAS MY MESSAGE REMOVED?',
+
+            value:
+                [
+                    'Automated protection may remove messages containing:',
+                    '',
+                    '• Prohibited language',
+                    '• Spam',
+                    '• Unauthorized invites',
+                    '• Malicious links',
+                    '• Filter bypass attempts'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                '⚔️・ARE EXPLOITS ALLOWED?',
+
+            value:
+                [
+                    '**No.**',
+                    '',
+                    'Scripts, exploits, cheats and unfair tools are forbidden.',
+                    '',
+                    '-# Serious violations may result in immediate moderation.'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                '◆・HOW DO I PROGRESS?',
+
+            value:
+                [
+                    'Stay active and participate in the community.',
+                    '',
+                    'You may earn levels, achievements, titles and progression roles.',
+                    '',
+                    'Sin ranks are earned separately through competition.'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                'Ⅹ・STILL NEED HELP?',
+
+            value:
+                [
+                    'Ask in the appropriate community channel for general questions.',
+                    '',
+                    'For private or moderation-related matters, open a support ticket.'
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
 
     faqEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'Evelynn • THE Ⅹ SINS',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     faqEmbed.setFooter({
         text:
-            'Las Noches • Knowledge Archive',
+            'TTS • FAQ',
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     faqEmbed.setTimestamp();
@@ -447,19 +352,21 @@ async function publishFAQ(
         ],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Knowledge Archive Published',
-                `Umbra successfully published the Las Noches Knowledge Archive in ${informationChannel}.`
+                '✅ FAQ Published',
+                `The FAQ was published in ${informationChannel}.`
             )
         ],
 
-        components: []
+        components:
+            []
     });
 
     console.log(
@@ -467,7 +374,7 @@ async function publishFAQ(
     );
 
     console.log(
-        '📚 Las Noches Knowledge Archive Published'
+        'Ⅹ FAQ Published'
     );
 
     console.log(
@@ -479,7 +386,7 @@ async function publishFAQ(
     );
 
     console.log(
-        `🏰 Kingdom: ${interaction.guild.name}`
+        `🏰 Server: ${interaction.guild.name}`
     );
 
     console.log(

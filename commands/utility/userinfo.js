@@ -1,7 +1,6 @@
 /**
- * Umbra
+ * Evelynn
  * Command: /userinfo
- * Version: 3.0.0
  */
 
 const {
@@ -18,24 +17,32 @@ const {
 } = require('../../utils/embeds');
 
 module.exports = {
-    category: 'information',
+    category:
+        'information',
 
-    data: new SlashCommandBuilder()
-        .setName('userinfo')
-        .setDescription(
-            'View the Las Noches record of a member.'
-        )
-
-        .addUserOption(option =>
-            option
-                .setName('user')
-                .setDescription(
-                    'Select the member whose record you want to view'
-                )
-                .setRequired(false)
-        )
-
-        .setDMPermission(false),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'userinfo'
+            )
+            .setDescription(
+                'View information about a server member.'
+            )
+            .addUserOption(option =>
+                option
+                    .setName(
+                        'user'
+                    )
+                    .setDescription(
+                        'Select a member'
+                    )
+                    .setRequired(
+                        false
+                    )
+            )
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /userinfo command.
@@ -43,14 +50,18 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
-            if (!interaction.inGuild()) {
+            if (
+                !interaction.inGuild()
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ Server Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -91,7 +102,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of Las Noches.'
+                            'This user is not currently a member of THE Ⅹ SINS.'
                         )
                     ]
                 });
@@ -116,6 +127,16 @@ module.exports = {
                     forceStatic:
                         false
                 });
+
+            const botAvatar =
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            256,
+
+                        forceStatic:
+                            false
+                    });
 
             const accountCreatedTimestamp =
                 Math.floor(
@@ -149,26 +170,26 @@ module.exports = {
                     ? '🤖 Bot'
                     : user.system
                         ? '⚙️ System'
-                        : '🌙 Member';
+                        : '✦ Member';
 
             const joinedText =
                 joinedServerTimestamp
-                    ? (
-                        `<t:${joinedServerTimestamp}:F>\n` +
-                        `<t:${joinedServerTimestamp}:R>`
-                    )
+                    ? [
+                        `<t:${joinedServerTimestamp}:F>`,
+                        `-# <t:${joinedServerTimestamp}:R>`
+                    ].join('\n')
                     : 'Unknown';
 
             const embed =
                 createEmbed({
                     title:
-                        '🌙 Las Noches Member Record',
+                        'Ⅹ・MEMBER INFORMATION',
 
                     description:
-                        `Official information for ${user}.`,
+                        `Information for ${user}.`,
 
                     color:
-                        '#6F42C1',
+                        '#5B3A78',
 
                     thumbnail:
                         avatarURL,
@@ -176,7 +197,7 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '👤 Identity',
+                                '✦・IDENTITY',
 
                             value:
                                 [
@@ -184,31 +205,29 @@ module.exports = {
                                     `**Display Name:** ${member.displayName}`,
                                     `**Type:** ${accountType}`,
                                     `**User ID:** \`${user.id}\``
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 false
                         },
+
                         {
                             name:
-                                '📅 Account Created',
+                                '📅・ACCOUNT CREATED',
 
                             value:
                                 [
                                     `<t:${accountCreatedTimestamp}:F>`,
-                                    `<t:${accountCreatedTimestamp}:R>`
-                                ].join(
-                                    '\n'
-                                ),
+                                    `-# <t:${accountCreatedTimestamp}:R>`
+                                ].join('\n'),
 
                             inline:
                                 true
                         },
+
                         {
                             name:
-                                '🏰 Entered Las Noches',
+                                'Ⅹ・JOINED SERVER',
 
                             value:
                                 joinedText,
@@ -216,46 +235,36 @@ module.exports = {
                             inline:
                                 true
                         },
+
                         {
                             name:
-                                '🎭 Standing',
+                                '◆・STANDING',
 
                             value:
                                 [
                                     `**Highest Role:** ${highestRole}`,
-                                    `**Total Roles:** \`${roleCount}\``,
+                                    `**Roles:** \`${roleCount}\``,
                                     `**Nickname:** ${member.nickname ?? 'None'}`
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 false
                         }
                     ]
-                });
-
-            embed.setAuthor({
+                });            embed.setAuthor({
                 name:
-                    `${user.username} • Member Archive`,
+                    'Evelynn • THE Ⅹ SINS',
 
                 iconURL:
-                    avatarURL
+                    botAvatar
             });
 
             embed.setFooter({
                 text:
-                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+                    `TTS • Requested by ${interaction.user.username}`,
 
                 iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
-
-                            forceStatic:
-                                false
-                        })
+                    botAvatar
             });
 
             if (bannerURL) {
@@ -311,24 +320,27 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Umbra /userinfo:',
+                '❌ Evelynn /userinfo command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Member Record Unavailable',
-                    'Umbra could not retrieve this Las Noches member record.'
+                    '❌ Member Information Unavailable',
+                    'Evelynn could not retrieve this member information.'
                 );
 
-            if (interaction.deferred) {
+            if (
+                interaction.deferred
+            ) {
                 await interaction
                     .editReply({
                         embeds: [
                             errorEmbed
                         ],
 
-                        components: []
+                        components:
+                            []
                     })
                     .catch(
                         () => null
@@ -337,7 +349,9 @@ module.exports = {
                 return;
             }
 
-            if (interaction.replied) {
+            if (
+                interaction.replied
+            ) {
                 await interaction
                     .followUp({
                         embeds: [

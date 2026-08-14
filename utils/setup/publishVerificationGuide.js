@@ -9,20 +9,21 @@ const {
 } = require('../embeds');
 
 /**
- * Official Las Noches verification channel.
+ * Official THE Ⅹ SINS
+ * verification channel.
  */
 const VERIFY_CHANNEL_ID =
     '1528402259699044352';
 
 /**
- * Cold silver tone matching the current
- * Las Noches visual identity.
+ * THE Ⅹ SINS signature color.
  */
 const VERIFICATION_EMBED_COLOR =
-    '#C8CDD4';
+    '#5B3A78';
 
 /**
- * Get and validate the verification channel.
+ * Get and validate the
+ * verification channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -47,8 +48,8 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Verification Gate Missing',
-                    'Umbra could not find the configured Las Noches verification channel.'
+                    '❌ Verification Channel Missing',
+                    'The configured verification channel could not be found.'
                 )
             ],
 
@@ -66,8 +67,8 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Umbra Unavailable',
-                    'Umbra could not access its Las Noches member record.'
+                    '❌ Evelynn Unavailable',
+                    'Evelynn could not access her server member record.'
                 )
             ],
 
@@ -97,10 +98,11 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Umbra Permissions',
+                    '❌ Missing Permissions',
                     [
-                        'Umbra requires these permissions in the verification channel:',
+                        `Evelynn cannot publish the verification guide in ${verifyChannel}.`,
                         '',
+                        'Required:',
                         '• View Channel',
                         '• Send Messages',
                         '• Embed Links'
@@ -119,8 +121,8 @@ async function getVerificationChannel(
 }
 
 /**
- * Build the compact Las Noches
- * verification guide Embed.
+ * Build the compact
+ * THE Ⅹ SINS verification guide.
  *
  * Bloxlink handles the real Roblox
  * account verification process.
@@ -154,16 +156,14 @@ function buildVerificationGuideEmbed(
     const guideEmbed =
         createEmbed({
             title:
-                '⛩️ Verification Gate',
+                'Ⅹ・TAKE THE OATH',
 
             description:
                 [
-                    'Verify your Roblox account through **Bloxlink** to enter Las Noches.',
+                    'Verify your Roblox account through **Bloxlink** to enter **THE Ⅹ SINS**.',
                     '',
-                    'Use the instructions below and make sure the correct Roblox account is connected.'
-                ].join(
-                    '\n'
-                ),
+                    '**◇・UNSWORN** → **✦・SWORN**'
+                ].join('\n'),
 
             color:
                 VERIFICATION_EMBED_COLOR,
@@ -181,7 +181,7 @@ function buildVerificationGuideEmbed(
             fields: [
                 {
                     name:
-                        '🔗 How to Verify',
+                        '✦・VERIFY',
 
                     value:
                         [
@@ -189,48 +189,52 @@ function buildVerificationGuideEmbed(
                             '2. Select the Bloxlink command.',
                             '3. Open the verification link.',
                             '4. Connect the correct Roblox account.',
-                            '5. Return to Discord and finish verification.'
+                            '5. Return to Discord and complete verification.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '✅ After Verification',
+                        '◆・AFTER VERIFICATION',
 
                     value:
                         [
-                            '• The Verified role will be granted.',
-                            '• The Unverified role will be removed.',
-                            '• Las Noches community channels will unlock.'
+                            '**✦・SWORN** access will be granted.',
+                            '',
+                            'Community channels will become available.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '🛡️ Safety',
+                        '🛡️・STAY SAFE',
 
                     value:
                         [
                             '• Never share your Discord or Roblox password.',
-                            '• Confirm the connected Roblox username.',
-                            '• Umbra and Las Noches staff will never request login codes.'
+                            '• Confirm the correct Roblox account is connected.',
+                            '• Evelynn and Staff will never ask for login codes.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '🎫 Need Help?',
+                        '🎫・NEED HELP?',
 
                     value:
                         [
                             'Try `/verify` again after a short wait.',
-                            'If the problem continues, open a private support ticket.'
+                            '',
+                            'If the issue continues, open a support ticket.'
                         ].join('\n'),
 
                     inline:
@@ -241,7 +245,7 @@ function buildVerificationGuideEmbed(
 
     guideEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'Evelynn • THE Ⅹ SINS',
 
         iconURL:
             botAvatar
@@ -249,7 +253,7 @@ function buildVerificationGuideEmbed(
 
     guideEmbed.setFooter({
         text:
-            'Las Noches • Verification Gate',
+            'TTS • Verification',
 
         iconURL:
             guildIcon
@@ -258,9 +262,11 @@ function buildVerificationGuideEmbed(
     guideEmbed.setTimestamp();
 
     return guideEmbed;
-}/**
- * Publish the compact Las Noches
- * verification guide.
+}
+
+/**
+ * Publish the compact
+ * THE Ⅹ SINS verification guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -297,7 +303,7 @@ async function publishVerificationGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Verification Guide Published',
-                `Umbra published the Las Noches verification guide in ${verifyChannel}.`
+                `The verification guide was published in ${verifyChannel}.`
             )
         ],
 
@@ -310,7 +316,7 @@ async function publishVerificationGuide(
     );
 
     console.log(
-        '⛩️ Las Noches Verification Guide Published'
+        'Ⅹ Verification Guide Published'
     );
 
     console.log(

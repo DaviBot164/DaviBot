@@ -6,24 +6,20 @@ const channels =
     require('../config/channels');
 
 /**
- * Name used for the Welcome banner attachment.
+ * Welcome banner attachment name.
  */
 const WELCOME_BANNER_NAME =
     'welcome-banner.png';
 
 /**
- * Cold silver tone matching the
- * Las Noches Welcome banner.
+ * THE Ⅹ SINS signature color.
  */
 const WELCOME_EMBED_COLOR =
-    '#C8CDD4';
+    '#5B3A78';
 
 /**
- * Create the compact Umbra Welcome Embed.
- *
- * The banner image is attached inside:
- * - events/guildMemberAdd.js
- * - commands/information/testwelcome.js
+ * Create the THE Ⅹ SINS
+ * Welcome Embed.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {EmbedBuilder}
@@ -60,12 +56,6 @@ function createWelcomeEmbed(
                     false
             });
 
-    const joinedTimestamp =
-        Math.floor(
-            Date.now() /
-            1_000
-        );
-
     const verifyChannel =
         guild.channels.cache.get(
             channels.verifyChannelId
@@ -74,11 +64,8 @@ function createWelcomeEmbed(
     const verificationText =
         verifyChannel &&
         verifyChannel.isTextBased()
-            ? `Complete verification in ${verifyChannel} to enter Las Noches.`
-            : 'Complete verification to enter Las Noches.';
-
-    const arrivalNumber =
-        guild.memberCount;
+            ? `Begin your oath in ${verifyChannel}.`
+            : 'Begin your oath through verification.';
 
     return new EmbedBuilder()
         .setColor(
@@ -87,57 +74,24 @@ function createWelcomeEmbed(
 
         .setAuthor({
             name:
-                'Umbra • Arrival Record',
+                'THE Ⅹ SINS',
 
             iconURL:
                 botAvatar
         })
 
         .setTitle(
-            '🌙 A New Soul Has Arrived'
+            'Ⅹ・NEW ARRIVAL'
         )
 
         .setDescription(
             [
                 `Welcome, ${member}.`,
                 '',
-                `**${verificationText}**`
+                verificationText
             ].join(
                 '\n'
             )
-        )
-
-        .addFields(
-            {
-                name:
-                    '👤 Soul',
-
-                value:
-                    `${member}`,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '📜 Arrival',
-
-                value:
-                    `\`#${arrivalNumber}\``,
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🕒 Joined',
-
-                value:
-                    `<t:${joinedTimestamp}:R>`,
-
-                inline:
-                    true
-            }
         )
 
         .setThumbnail(
@@ -150,7 +104,7 @@ function createWelcomeEmbed(
 
         .setFooter({
             text:
-                'Umbra • Guardian of Las Noches',
+                'The Ten are ranked. Dominion is not.',
 
             iconURL:
                 botAvatar

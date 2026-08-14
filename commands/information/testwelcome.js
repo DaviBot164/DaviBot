@@ -22,7 +22,7 @@ module.exports = {
                 'testwelcome'
             )
             .setDescription(
-                'Preview the Las Noches welcome message.'
+                'Preview the THE Ⅹ SINS welcome message.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -46,7 +46,7 @@ module.exports = {
             ) {
                 await interaction.reply({
                     content:
-                        '❌ This command can only be used inside Las Noches.',
+                        '❌ This command can only be used inside THE Ⅹ SINS.',
 
                     flags:
                         MessageFlags.Ephemeral
@@ -87,13 +87,13 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Umbra /testwelcome:',
+                '❌ Error executing /testwelcome:',
                 error
             );
 
             const errorMessage = {
                 content:
-                    '❌ Umbra could not generate the Las Noches welcome preview.',
+                    '❌ Could not generate the welcome preview.',
 
                 flags:
                     MessageFlags.Ephemeral

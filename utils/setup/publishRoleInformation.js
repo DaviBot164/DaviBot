@@ -13,7 +13,7 @@ const setupChannels =
 
 /**
  * Get and validate the
- * Las Noches Information channel.
+ * THE Ⅹ SINS information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -38,8 +38,8 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Kingdom Archive Missing',
-                    'Umbra could not find the configured Las Noches Information channel.'
+                    '❌ Information Channel Missing',
+                    'The configured information channel could not be found.'
                 )
             ],
 
@@ -57,8 +57,8 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Umbra Unavailable',
-                    'Umbra could not access its Las Noches member record.'
+                    '❌ Bot Unavailable',
+                    'The bot could not access its server member record.'
                 )
             ],
 
@@ -84,14 +84,14 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Umbra Permissions',
+                    '❌ Missing Permissions',
                     [
-                        `Umbra cannot publish the Kingdom Hierarchy in ${informationChannel}.`,
+                        `Cannot publish role information in ${informationChannel}.`,
                         '',
-                        'Required permissions:',
-                        '• **View Channel**',
-                        '• **Send Messages**',
-                        '• **Embed Links**'
+                        'Required:',
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
                     ].join('\n')
                 )
             ],
@@ -108,7 +108,7 @@ async function getRoleInformationChannel(
 
 /**
  * Publish the official
- * Las Noches Kingdom Hierarchy.
+ * THE Ⅹ SINS role hierarchy.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -128,19 +128,17 @@ async function publishRoleInformation(
     const roleEmbed =
         createEmbed({
             title:
-                '👑 Hierarchy of Las Noches',
+                'Ⅹ・ROLE HIERARCHY',
 
             description:
                 [
-                    '## Every Soul has a place within the kingdom.',
+                    '**Every role has a purpose.**',
                     '',
-                    'The hierarchy of **Las Noches** represents leadership, authority, progression, recognition, and responsibility.',
-                    '',
-                    'Read the records below to understand how each rank serves the eternal kingdom.'
+                    'Authority, rank and progression are separate systems inside **THE Ⅹ SINS**.'
                 ].join('\n'),
 
             color:
-                '#6F42C1',
+                '#5B3A78',
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -162,256 +160,143 @@ async function publishRoleInformation(
             fields: [
                 {
                     name:
-                        '╭・👑 ROYAL AUTHORITY',
+                        '♛・STAFF',
 
                     value:
                         [
-                            '**Ruler of Las Noches**',
+                            '**♛・SOVEREIGN**',
+                            'Highest server authority.',
                             '',
-                            'The highest authority within the kingdom.',
+                            '**⚜️・HEAD CAPTAIN**',
+                            'Senior leadership.',
                             '',
-                            'The Ruler is responsible for:',
+                            '**🛡️・CAPTAIN**',
+                            'Administration and server management.',
                             '',
-                            '• Directing the future of Las Noches',
-                            '• Approving major kingdom changes',
-                            '• Managing senior leadership',
-                            '• Resolving final disputes',
-                            '• Protecting the stability of the community',
+                            '**⚔️・LIEUTENANT**',
+                            'Moderation and member support.',
                             '',
-                            '> The throne carries both absolute authority and absolute responsibility.'
+                            '-# Only Staff roles grant moderation authority.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・⚜️ MILITARY COMMAND',
+                        'Ⅹ・THE TEN SINS',
 
                     value:
                         [
-                            '**Head Captain**',
-                            'The highest senior administrator beneath the Ruler.',
+                            '**♛ Pride**　**🩸 Wrath**',
+                            '**🐍 Envy**　**💰 Greed**',
+                            '**🖤 Lust**　**🍷 Gluttony**',
+                            '**💤 Sloth**　**☠️ Ruin**',
+                            '**⛧ Heresy**　**⚔️ Vengeance**',
                             '',
-                            '**Captains**',
-                            'Trusted leaders responsible for management, protection, and major decisions.',
-                            '',
-                            '**Lieutenants**',
-                            'Moderators and support officers who enforce the Royal Laws and assist members.',
-                            '',
-                            'Command roles may be responsible for:',
-                            '',
-                            '• Moderation and investigations',
-                            '• Ticket support',
-                            '• Staff supervision',
-                            '• Event organization',
-                            '• Server maintenance',
-                            '• Community protection'
+                            'The Ten are earned through rank competition.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・⚔️ ARRANCAR HIERARCHY',
+                        'Ø・SIN OF DOMINION',
 
                     value:
                         [
-                            '**👑 Espada**',
-                            'The elite Arrancar who hold the highest combat ranks within Las Noches.',
+                            '**Beyond the Ten.**',
                             '',
-                            '**🌘 Privaron Espada**',
-                            'Former Espada who retain distinguished status and power.',
+                            'Dominion stands outside the standard Sin ranking.',
                             '',
-                            '**⚔️ Fracción**',
-                            'Trusted Arrancar who serve and support higher-ranked warriors.',
-                            '',
-                            '**🦴 Numeros**',
-                            'Ranked Arrancar who form the broader military body of Las Noches.',
-                            '',
-                            '**⚪ Unranked Arrancar**',
-                            'Members who have not yet earned an official Arrancar rank.',
-                            '',
-                            '-# Arrancar rank does not automatically grant staff or moderation authority.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🌙 KINGDOM SOULS',
-
-                    value:
-                        [
-                            'Verified members of Las Noches are recognized as **Souls**.',
-                            '',
-                            'Souls may:',
-                            '',
-                            '• Access community channels',
-                            '• Participate in conversations',
-                            '• Join events and giveaways',
-                            '• Build Spiritual Power',
-                            '• Earn Chronicle Titles',
-                            '• Unlock Achievements',
-                            '• Rise through the Arrancar hierarchy',
-                            '',
-                            'Every Soul is expected to respect the Royal Laws and the other members of the kingdom.'
+                            '-# The Ten are ranked. Dominion is not.'
                         ].join('\n'),
 
                     inline:
                         false
                 }
             ]
-        });            roleEmbed.addFields(
-                {
-                    name:
-                        '├・🏆 PROGRESSION SYSTEM',
+        });    roleEmbed.addFields(
+        {
+            name:
+                '◆・PROGRESSION',
 
-                    value:
-                        [
-                            'Las Noches rewards active Souls through Umbra\'s progression systems.',
-                            '',
-                            '⭐ **Levels**',
-                            'Earn experience through activity.',
-                            '',
-                            '✨ **Spiritual Power**',
-                            'Increase your strength as you level up.',
-                            '',
-                            '📜 **Chronicle Titles**',
-                            'Unlock unique titles that represent your journey.',
-                            '',
-                            '🏆 **Achievements**',
-                            'Complete milestones and collect permanent records.',
-                            '',
-                            '👤 **Soul Record**',
-                            'Umbra permanently records your progression.',
-                            '',
-                            '> Your activity shapes your legacy.'
-                        ].join('\n'),
+            value:
+                [
+                    '**🕯️・SIN HEIR**',
+                    '**⚔️・SINBOUND**',
+                    '**🗡️・ASCENDANT**',
+                    '**◇・UNRANKED**',
+                    '**⛓️・OATHBOUND**',
+                    '**♜・WARLORD**',
+                    '**🐺・REAVER**',
+                    '**⚔️・VANGUARD**',
+                    '**🛡️・LEGIONARY**',
+                    '**◆・INITIATE**',
+                    '',
+                    '-# Progression reflects activity and advancement, not Staff authority.'
+                ].join('\n'),
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・📖 CHRONICLE RECORDS',
+            inline:
+                false
+        },
 
-                    value:
-                        [
-                            'Umbra maintains an official archive for every Soul.',
-                            '',
-                            'Your records include:',
-                            '',
-                            '• Level',
-                            '• Spiritual Power',
-                            '• Messages',
-                            '• Achievements',
-                            '• Chronicle Titles',
-                            '• Arrancar Rank',
-                            '• Soul Profile',
-                            '',
-                            'These records continue to grow as you remain active inside Las Noches.'
-                        ].join('\n'),
+        {
+            name:
+                '✦・VERIFICATION',
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🤖 UMBRA SYSTEMS',
+            value:
+                [
+                    '**✦・SWORN**',
+                    'Verified member.',
+                    '',
+                    '**◇・UNSWORN**',
+                    'Awaiting verification.'
+                ].join('\n'),
 
-                    value:
-                        [
-                            'Umbra protects and manages the kingdom through multiple systems.',
-                            '',
-                            '• Guardian AutoMod',
-                            '• Warning System',
-                            '• Raid Protection',
-                            '• Ticket System',
-                            '• Welcome System',
-                            '• Verification Guide',
-                            '• Level System',
-                            '• Soul Records',
-                            '• Arrancar Rank System',
-                            '• Chronicle Titles',
-                            '• Achievement System',
-                            '• Interactive Leaderboards',
-                            '• Events',
-                            '• Giveaways',
-                            '',
-                            '> Every major system inside Las Noches is maintained by Umbra.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・⚖️ AUTHORITY & RESPONSIBILITY',
-
-                    value:
-                        [
-                            'A decorative or progression role does **not** grant moderation authority.',
-                            '',
-                            'Only authorized leadership may:',
-                            '',
-                            '• Moderate members',
-                            '• Review private reports',
-                            '• Manage staff systems',
-                            '• Make official decisions',
-                            '',
-                            'Impersonating staff or falsely claiming authority may result in moderation.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '╰・🌙 FINAL RECORD',
-
-                    value:
-                        [
-                            'Every rank exists to strengthen the kingdom.',
-                            '',
-                            'Leadership exists to serve.',
-                            'Members exist to grow.',
-                            'Umbra exists to protect.',
-                            '',
-                            '> **Power is earned. Respect is remembered. Legacy is eternal.**'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                }
-            );
+            inline:
+                false
+        }
+    );
 
     roleEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'THE Ⅹ SINS',
 
         iconURL:
-            interaction.client.user.displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
     });
 
     roleEmbed.setFooter({
         text:
-            'Las Noches • Kingdom Hierarchy',
+            'TTS • Role Hierarchy',
 
         iconURL:
             interaction.guild.iconURL({
-                size: 128,
-                forceStatic: false
+                size:
+                    128,
+
+                forceStatic:
+                    false
             }) ??
-            interaction.client.user.displayAvatarURL({
-                size: 128,
-                forceStatic: false
-            })
+            interaction.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
     });
 
     roleEmbed.setTimestamp();
@@ -422,19 +307,21 @@ async function publishRoleInformation(
         ],
 
         allowedMentions: {
-            parse: []
+            parse:
+                []
         }
     });
 
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Kingdom Hierarchy Published',
-                `Umbra successfully published the Kingdom Hierarchy in ${informationChannel}.`
+                '✅ Role Information Published',
+                `Role information was published in ${informationChannel}.`
             )
         ],
 
-        components: []
+        components:
+            []
     });
 
     console.log(
@@ -442,7 +329,7 @@ async function publishRoleInformation(
     );
 
     console.log(
-        '👑 Kingdom Hierarchy Published'
+        'Ⅹ Role Information Published'
     );
 
     console.log(
@@ -454,7 +341,7 @@ async function publishRoleInformation(
     );
 
     console.log(
-        `🏰 Kingdom: ${interaction.guild.name}`
+        `🏰 Server: ${interaction.guild.name}`
     );
 
     console.log(

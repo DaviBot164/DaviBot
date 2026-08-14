@@ -12,7 +12,7 @@ const embedConfig =
     require('../config/embed');
 
 /**
- * Umbra Help Menu categories.
+ * Evelynn Help Menu categories.
  *
  * Commands that are not currently loaded
  * are automatically hidden.
@@ -23,13 +23,13 @@ const HELP_CATEGORIES = [
             'core',
 
         label:
-            'Core Navigation',
+            'Core',
 
         emoji:
-            '🌙',
+            'Ⅹ',
 
         description:
-            'Main Umbra systems and navigation.',
+            'Main navigation and essential commands.',
 
         commands: [
             'guide',
@@ -38,6 +38,7 @@ const HELP_CATEGORIES = [
             'soul'
         ]
     },
+
     {
         id:
             'information',
@@ -46,10 +47,10 @@ const HELP_CATEGORIES = [
             'Information',
 
         emoji:
-            '📚',
+            '📖',
 
         description:
-            'Member and server information commands.',
+            'Member and server information.',
 
         commands: [
             'avatar',
@@ -59,18 +60,19 @@ const HELP_CATEGORIES = [
             'userinfo'
         ]
     },
+
     {
         id:
             'progression',
 
         label:
-            'Soul Progression',
+            'Progression',
 
         emoji:
-            '⭐',
+            '◆',
 
         description:
-            'Levels, Soul Records and progression.',
+            'Levels, ranks and member progression.',
 
         commands: [
             'level',
@@ -79,15 +81,16 @@ const HELP_CATEGORIES = [
             'soul'
         ]
     },
+
     {
         id:
             'titles',
 
         label:
-            'Chronicle Titles',
+            'Titles',
 
         emoji:
-            '🏷️',
+            '♜',
 
         description:
             'Title collection and management.',
@@ -100,18 +103,19 @@ const HELP_CATEGORIES = [
             'revoketitle'
         ]
     },
+
     {
         id:
             'ranks',
 
         label:
-            'Arrancar Hierarchy',
+            'Sin Ranks',
 
         emoji:
             '⚔️',
 
         description:
-            'Espada and Arrancar Rank systems.',
+            'The Ten Sins ranking system.',
 
         commands: [
             'espada',
@@ -120,6 +124,7 @@ const HELP_CATEGORIES = [
             'removerank'
         ]
     },
+
     {
         id:
             'moderation',
@@ -150,6 +155,7 @@ const HELP_CATEGORIES = [
             'warnings'
         ]
     },
+
     {
         id:
             'support',
@@ -161,21 +167,22 @@ const HELP_CATEGORIES = [
             '🎫',
 
         description:
-            'Ticket and support systems.',
+            'Tickets and member support.',
 
         commands: [
             'ticketpanel'
         ]
     },
+
     {
         id:
             'community',
 
         label:
-            'Events & Community',
+            'Community',
 
         emoji:
-            '🎉',
+            '♠️',
 
         description:
             'Announcements, events and giveaways.',
@@ -186,6 +193,7 @@ const HELP_CATEGORIES = [
             'giveaway'
         ]
     },
+
     {
         id:
             'administration',
@@ -194,10 +202,10 @@ const HELP_CATEGORIES = [
             'Administration',
 
         emoji:
-            '⚙️',
+            '♛',
 
         description:
-            'Las Noches setup and configuration.',
+            'THE Ⅹ SINS setup and configuration.',
 
         commands: [
             'setup',
@@ -205,9 +213,7 @@ const HELP_CATEGORIES = [
             'testwelcome'
         ]
     }
-];
-
-/**
+];/**
  * Get one loaded command.
  *
  * @param {import('discord.js').Client} client
@@ -227,8 +233,8 @@ function getLoadedCommand(
 }
 
 /**
- * Return every loaded command belonging
- * to one Help category.
+ * Return every loaded command
+ * from one Help category.
  *
  * @param {import('discord.js').Client} client
  * @param {Object} category
@@ -285,7 +291,7 @@ function formatCommand(
 
     const description =
         command.data.description ||
-        'No description is available.';
+        'No description available.';
 
     return (
         `\`/${name}\`\n` +
@@ -294,7 +300,8 @@ function formatCommand(
 }
 
 /**
- * Create the main Help Menu Embed.
+ * Create the main
+ * Evelynn Help Menu Embed.
  *
  * @param {import('discord.js').ChatInputCommandInteraction|import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {import('discord.js').EmbedBuilder}
@@ -328,13 +335,13 @@ function createHelpHomeEmbed(
 
     return createEmbed({
         title:
-            '🌙 Umbra Command Codex',
+            'Ⅹ・COMMAND MENU',
 
         description:
             [
                 `Welcome, ${interaction.user}.`,
                 '',
-                'Select a category below to view its available commands.',
+                'Choose a category below.',
                 '',
                 categoryLines.join(
                     '\n'
@@ -344,7 +351,7 @@ function createHelpHomeEmbed(
                     .branding
                     .divider,
                 '',
-                `📚 **Loaded Commands:** \`${getLoadedCommandCount(
+                `**Loaded Commands:** \`${getLoadedCommandCount(
                     interaction.client
                 )}\``
             ].join(
@@ -352,7 +359,7 @@ function createHelpHomeEmbed(
             ),
 
         color:
-            '#6F42C1',
+            '#5B3A78',
 
         thumbnail:
             guildIcon ||
@@ -360,7 +367,7 @@ function createHelpHomeEmbed(
 
         author: {
             name:
-                'Umbra • Las Noches Command Archive',
+                'Evelynn • THE Ⅹ SINS',
 
             iconURL:
                 botAvatar
@@ -368,16 +375,14 @@ function createHelpHomeEmbed(
 
         footer: {
             text:
-                `Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+                `TTS • Opened by ${interaction.user.username}`,
 
             iconURL:
                 botAvatar
         }
     });
-}
-
-/**
- * Create one category Embed.
+}/**
+ * Create one Help category Embed.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @param {string} categoryId
@@ -427,7 +432,7 @@ function createHelpCategoryEmbed(
 
     return createEmbed({
         title:
-            `${category.emoji} ${category.label}`,
+            `${category.emoji}・${category.label.toUpperCase()}`,
 
         description:
             [
@@ -443,11 +448,11 @@ function createHelpCategoryEmbed(
             ),
 
         color:
-            '#6F42C1',
+            '#5B3A78',
 
         author: {
             name:
-                'Umbra • Command Codex',
+                'Evelynn • Command Menu',
 
             iconURL:
                 botAvatar
@@ -455,7 +460,7 @@ function createHelpCategoryEmbed(
 
         footer: {
             text:
-                `Select another category below • Requested by ${interaction.user.username}`,
+                `TTS • Requested by ${interaction.user.username}`,
 
             iconURL:
                 botAvatar
@@ -465,6 +470,9 @@ function createHelpCategoryEmbed(
 
 /**
  * Create the Help category Select Menu.
+ *
+ * Keep the existing custom ID because
+ * interaction routing may depend on it.
  *
  * @param {string|null} selectedCategoryId
  * @returns {ActionRowBuilder}

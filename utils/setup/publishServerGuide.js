@@ -13,7 +13,7 @@ const setupChannels =
 
 /**
  * Get and validate the
- * Las Noches Information channel.
+ * THE Ⅹ SINS information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -38,12 +38,13 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Kingdom Archive Missing',
-                    'Umbra could not find the configured Las Noches Information channel.'
+                    '❌ Information Channel Missing',
+                    'The configured information channel could not be found.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -56,12 +57,13 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Umbra Unavailable',
-                    'Umbra could not access its Las Noches member record.'
+                    '❌ Evelynn Unavailable',
+                    'Evelynn could not access her server member record.'
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -82,10 +84,11 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Umbra Permissions',
+                    '❌ Missing Permissions',
                     [
-                        'Umbra requires:',
+                        `Evelynn cannot publish the guide in ${guideChannel}.`,
                         '',
+                        'Required:',
                         '• View Channel',
                         '• Send Messages',
                         '• Embed Links'
@@ -93,7 +96,8 @@ async function getServerGuideChannel(
                 )
             ],
 
-            components: []
+            components:
+                []
         });
 
         return null;
@@ -104,7 +108,10 @@ async function getServerGuideChannel(
 
 /**
  * Publish the official
- * Las Noches Kingdom Guide.
+ * THE Ⅹ SINS server guide.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @returns {Promise<void>}
  */
 async function publishServerGuide(
     interaction
@@ -121,200 +128,138 @@ async function publishServerGuide(
     const guideEmbed =
         createEmbed({
             title:
-                '📖 Welcome to Las Noches',
+                'Ⅹ・SIN CODEX',
 
             description:
                 [
-                    '## Every Soul begins somewhere.',
+                    '**Your path begins here.**',
                     '',
-                    'This guide explains everything you need before beginning your journey inside **Las Noches**.',
-                    '',
-                    'Follow each step to unlock the kingdom and begin building your Soul Record.'
+                    'Everything you need to enter, progress and take part in **THE Ⅹ SINS**.'
                 ].join('\n'),
 
             color:
-                '#6F42C1',
+                '#5B3A78',
 
             thumbnail:
                 interaction.guild.iconURL({
-                    size: 512,
-                    forceStatic: false
+                    size:
+                        512,
+
+                    forceStatic:
+                        false
                 }) ??
-                interaction.client.user.displayAvatarURL({
-                    size: 512,
-                    forceStatic: false
-                }),
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            512,
+
+                        forceStatic:
+                            false
+                    }),
 
             fields: [
                 {
                     name:
-                        '╭・📜 STEP I — LEARN THE ROYAL LAWS',
+                        'Ⅰ・READ THE CODE',
 
                     value:
                         [
-                            'Before doing anything else, read the **Royal Laws of Las Noches**.',
+                            'Read the **Code of Sins** before participating.',
                             '',
-                            'They explain:',
-                            '',
-                            '• Kingdom rules',
-                            '• Fair gameplay',
-                            '• Communication standards',
-                            '• Authority structure',
-                            '• Guardian punishments',
-                            '',
-                            '> Remaining inside Las Noches means accepting these laws.'
+                            'Respect others, play fairly and follow Staff decisions.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・⛩️ STEP II — VERIFY YOUR IDENTITY',
+                        'Ⅱ・TAKE THE OATH',
 
                     value:
                         [
-                            'Use **Bloxlink** to verify your Roblox account.',
+                            'Verify your Roblox account through **Bloxlink**.',
                             '',
-                            'Verification protects every Soul and allows Umbra to assign your correct roles automatically.'
+                            '**◇・UNSWORN** → **✦・SWORN**'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・🌙 STEP III — ENTER THE KINGDOM',
+                        'Ⅲ・EXPLORE',
 
                     value:
                         [
-                            'After verification you may freely enter the kingdom.',
+                            'Once verified, the server opens to you.',
                             '',
-                            'Introduce yourself.',
-                            'Meet other Souls.',
-                            'Begin your adventure.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },                {
-                    name:
-                        '├・🎮 STEP IV — EXPLORE LAS NOCHES',
-
-                    value:
-                        [
-                            'Las Noches contains different spaces for every kind of activity.',
-                            '',
-                            '🎮 **Gaming** — Find teammates and discuss games',
-                            '🎵 **Music** — Share songs and playlists',
-                            '🖼️ **Gallery** — Share artwork, screenshots, and clips',
-                            '📢 **Kingdom Decrees** — Read official announcements',
-                            '📜 **Information Archive** — Review guides and important records',
-                            '',
-                            '-# New areas may be added as the kingdom expands.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・✨ STEP V — BUILD SPIRITUAL POWER',
-
-                    value:
-                        [
-                            'Activity inside Las Noches contributes to your progression.',
-                            '',
-                            'Through messages, events, achievements, ranks, and other systems, your Soul may unlock:',
-                            '',
-                            '• Higher Levels',
-                            '• More Spiritual Power',
-                            '• Chronicle Titles',
-                            '• Achievement Records',
-                            '• Arrancar Ranks',
-                            '• Progression Roles',
-                            '',
-                            '> Your Soul Record grows alongside your activity.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・🎫 STEP VI — REQUEST SUPPORT',
-
-                    value:
-                        [
-                            'Use Umbra’s private Ticket System when assistance is needed.',
-                            '',
-                            'Tickets may be used for:',
-                            '',
-                            '• Reporting members',
-                            '• Appealing moderation decisions',
-                            '• Reporting server problems',
-                            '• Sharing private evidence',
-                            '• Requesting help from Las Noches staff',
-                            '',
-                            'Explain the issue clearly and remain patient while waiting for a response.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '├・👑 STEP VII — UNDERSTAND THE HIERARCHY',
-
-                    value:
-                        [
-                            'Las Noches is protected through a clear structure of authority and progression.',
-                            '',
-                            '👑 **Ruler of Las Noches** — Kingdom leadership',
-                            '⚜️ **Head Captain** — Senior administration',
-                            '🛡️ **Captains** — Management and protection',
-                            '⚔️ **Lieutenants** — Moderation and support',
-                            '👑 **Espada** — Elite Arrancar ranks',
-                            '🌘 **Privaron Espada** — Former elite ranks',
-                            '⚔️ **Fracción** — Arrancar serving higher ranks',
-                            '🦴 **Numeros** — Ranked Arrancar',
-                            '🌙 **Souls** — Members of Las Noches',
-                            '🤖 **Umbra** — Guardian of Las Noches',
-                            '',
-                            '-# Always report misuse of authority through the proper support channels.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '╰・🌑 STEP VIII — BEGIN YOUR JOURNEY',
-
-                    value:
-                        [
-                            'You are now ready to become part of Las Noches.',
-                            '',
-                            '• Respect every Soul',
-                            '• Follow the Royal Laws',
-                            '• Compete fairly',
-                            '• Support new members',
-                            '• Participate in events',
-                            '• Build your Soul Record',
-                            '• Rise through the Arrancar hierarchy',
-                            '',
-                            '> **Enter the eternal night and carve your name into the Kingdom Records.**'
+                            'Chat, find players, share content and join community activities.'
                         ].join('\n'),
 
                     inline:
                         false
                 }
             ]
-        });
+        });    guideEmbed.addFields(
+        {
+            name:
+                'Ⅳ・PROGRESS',
+
+            value:
+                [
+                    'Stay active and build your standing within **THE Ⅹ SINS**.',
+                    '',
+                    'Earn levels, achievements, titles and progression roles.',
+                    '',
+                    '-# Rank and Staff authority are separate systems.'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                'Ⅴ・SEEK SUPPORT',
+
+            value:
+                [
+                    'Use the Ticket System when private help is needed.',
+                    '',
+                    'Tickets may be used for:',
+                    '• Reports',
+                    '• Appeals',
+                    '• Server issues',
+                    '• Private evidence',
+                    '• Staff assistance'
+                ].join('\n'),
+
+            inline:
+                false
+        },
+
+        {
+            name:
+                'Ⅹ・REMEMBER',
+
+            value:
+                [
+                    'Respect the Code.',
+                    'Earn your place.',
+                    'Make your name known.'
+                ].join('\n'),
+
+            inline:
+                false
+        }
+    );
 
     guideEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'Evelynn • THE Ⅹ SINS',
 
         iconURL:
             interaction.client.user
@@ -329,7 +274,7 @@ async function publishServerGuide(
 
     guideEmbed.setFooter({
         text:
-            'Las Noches • Kingdom Guide',
+            'TTS • Sin Codex',
 
         iconURL:
             interaction.guild.iconURL({
@@ -365,8 +310,8 @@ async function publishServerGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Kingdom Guide Published',
-                `Umbra successfully published the Las Noches Kingdom Guide in ${guideChannel}.`
+                '✅ Sin Codex Published',
+                `The Sin Codex was published in ${guideChannel}.`
             )
         ],
 
@@ -379,7 +324,7 @@ async function publishServerGuide(
     );
 
     console.log(
-        '📖 Las Noches Kingdom Guide Published'
+        'Ⅹ Sin Codex Published'
     );
 
     console.log(
@@ -391,7 +336,7 @@ async function publishServerGuide(
     );
 
     console.log(
-        `🏰 Kingdom: ${interaction.guild.name}`
+        `🏰 Server: ${interaction.guild.name}`
     );
 
     console.log(

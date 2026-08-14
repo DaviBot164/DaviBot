@@ -12,11 +12,8 @@ const setupChannels =
     require('../../config/setupChannels');
 
 /**
- * Get and validate the dedicated
- * Las Noches Sacred Laws channel.
- *
- * Only the Royal Laws are published
- * inside this channel.
+ * Get and validate the
+ * THE Ⅹ SINS rules channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -41,12 +38,8 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Sacred Laws Archive Missing',
-                    [
-                        'Umbra could not find the configured Sacred Laws channel.',
-                        '',
-                        `Configured Channel ID: \`${setupChannels.sacredLawsChannelId}\``
-                    ].join('\n')
+                    '❌ Rules Channel Missing',
+                    'The configured rules channel could not be found.'
                 )
             ],
 
@@ -64,8 +57,8 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Umbra Unavailable',
-                    'Umbra could not access its Las Noches member record.'
+                    '❌ Bot Unavailable',
+                    'The bot could not access its server member record.'
                 )
             ],
 
@@ -91,14 +84,14 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Umbra Permissions',
+                    '❌ Missing Permissions',
                     [
-                        `Umbra cannot publish the Royal Laws in ${sacredLawsChannel}.`,
+                        `Cannot publish the Code of Sins in ${sacredLawsChannel}.`,
                         '',
-                        'Required permissions:',
-                        '• **View Channel**',
-                        '• **Send Messages**',
-                        '• **Embed Links**'
+                        'Required:',
+                        '• View Channel',
+                        '• Send Messages',
+                        '• Embed Links'
                     ].join('\n')
                 )
             ],
@@ -114,8 +107,8 @@ async function getSacredLawsChannel(
 }
 
 /**
- * Publish the Royal Laws of Las Noches
- * inside the dedicated Sacred Laws channel.
+ * Publish the official
+ * THE Ⅹ SINS rules.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -135,19 +128,17 @@ async function publishSacredLaws(
     const rulesEmbed =
         createEmbed({
             title:
-                '📜 Royal Laws of Las Noches',
+                'Ⅹ・CODE OF SINS',
 
             description:
                 [
-                    '## Welcome to the kingdom of eternal night.',
+                    '**Respect the server. Respect its members. Play fair.**',
                     '',
-                    'Every **Soul** who enters **Las Noches** is expected to respect its laws, its people, and its authority.',
-                    '',
-                    'These decrees preserve order, fairness, safety, and unity throughout the kingdom.'
+                    'These rules apply to everyone within **THE Ⅹ SINS**.'
                 ].join('\n'),
 
             color:
-                '#6F42C1',
+                '#5B3A78',
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -169,81 +160,65 @@ async function publishSacredLaws(
             fields: [
                 {
                     name:
-                        '╭・⚖️ I — HONOR EVERY SOUL',
+                        'Ⅰ・RESPECT',
 
                     value:
                         [
-                            'Every member of Las Noches must be treated with dignity.',
-                            '',
-                            '• No harassment or targeted bullying',
-                            '• No hate speech or discrimination',
-                            '• No personal attacks or humiliation',
-                            '• No excessive toxicity',
-                            '• No deliberate attempts to provoke conflict',
-                            '',
-                            '> Strength without respect has no place in Las Noches.'
+                            '• No harassment or targeted bullying.',
+                            '• No hate speech or discrimination.',
+                            '• No personal attacks or humiliation.',
+                            '• Keep toxicity and provocation under control.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・⚔️ II — FORBIDDEN ARTS',
+                        'Ⅱ・FAIR PLAY',
 
                     value:
                         [
-                            'All Souls must compete and play fairly.',
-                            '',
-                            '• No scripting',
-                            '• No exploiting',
-                            '• No cheating',
-                            '• No unauthorized third-party tools',
-                            '• No abusing glitches against other players',
-                            '• No assisting others in unfair gameplay',
-                            '',
-                            '**The use of forbidden techniques may result in immediate and permanent exile from Las Noches.**'
+                            '• No exploiting, scripting or cheating.',
+                            '• No unauthorized tools that provide an unfair advantage.',
+                            '• Do not intentionally abuse glitches against other players.',
+                            '• Do not assist others in cheating.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・💬 III — DISCIPLINE OF SPEECH',
+                        'Ⅲ・CHAT & CONTENT',
 
                     value:
                         [
-                            'Communication within the kingdom must remain safe, readable, and appropriate.',
-                            '',
-                            '• No spam or message flooding',
-                            '• No NSFW or disturbing content',
-                            '• No scam, phishing, or malicious links',
-                            '• No unauthorized advertising',
-                            '• No excessive mentions',
-                            '• Use every channel for its intended purpose',
-                            '',
-                            '-# Umbra may automatically remove messages that violate these protections.'
+                            '• No spam or message flooding.',
+                            '• No NSFW or disturbing content.',
+                            '• No scams, phishing or malicious links.',
+                            '• No unauthorized advertising.',
+                            '• Use channels for their intended purpose.'
                         ].join('\n'),
 
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '├・🛡️ IV — AUTHORITY OF LAS NOCHES',
+                        'Ⅳ・STAFF & MODERATION',
 
                     value:
                         [
-                            'The judgement of Las Noches authorities must be respected.',
+                            '• Respect Staff decisions.',
+                            '• Do not evade moderation actions.',
+                            '• Do not start public arguments over punishments.',
+                            '• Use tickets for appeals or disputes.',
                             '',
-                            '• Do not insult or harass staff members',
-                            '• Do not evade warnings, timeouts, kicks, or bans',
-                            '• Do not create public arguments about punishments',
-                            '• Use the ticket system for appeals or questions',
-                            '• Provide evidence when disputing a moderation decision',
-                            '',
-                            'Administrators, Captains, Lieutenants, Espada, and moderators are also required to follow these laws.'
+                            '-# The Code of Sins applies to Staff as well.'
                         ].join('\n'),
 
                     inline:
@@ -253,77 +228,67 @@ async function publishSacredLaws(
         });    rulesEmbed.addFields(
         {
             name:
-                '├・🎫 V — SEEK ASSISTANCE WISELY',
+                'Ⅴ・TICKETS & SUPPORT',
 
             value:
                 [
-                    'Umbra provides a private support system for every Soul.',
-                    '',
-                    '• Open tickets only when genuine help is needed.',
+                    '• Open tickets only when help is genuinely needed.',
+                    '• Explain the issue clearly.',
+                    '• Provide evidence when possible.',
                     '• Do not create false or joke tickets.',
-                    '• Clearly explain your issue.',
-                    '• Provide screenshots or evidence whenever possible.',
-                    '• Remain patient while awaiting a response.',
-                    '',
-                    '> Abuse of the ticket system may result in moderation.'
+                    '• Be patient while waiting for a response.'
                 ].join('\n'),
 
             inline:
                 false
         },
+
         {
             name:
-                '├・🌙 VI — PROTECT THE KINGDOM',
+                'Ⅵ・PRIVACY & SAFETY',
 
             value:
                 [
-                    'Every Soul shares responsibility for preserving Las Noches.',
-                    '',
-                    '• Welcome new members.',
-                    '• Report serious rule violations.',
-                    '• Never expose private information.',
+                    '• Do not expose private information.',
                     '• Do not spread false accusations.',
-                    '• Help maintain a respectful community.',
-                    '',
-                    '> A kingdom stands because its Souls stand together.'
+                    '• Report serious violations when necessary.',
+                    '• Help keep the community safe and respectful.'
                 ].join('\n'),
 
             inline:
                 false
         },
+
         {
             name:
-                '├・⚖️ JUDGEMENT OF UMBRA',
+                '⚖️・ENFORCEMENT',
 
             value:
                 [
-                    'Umbra and the Las Noches staff enforce these laws according to the severity of each violation.',
+                    'Violations may result in:',
                     '',
                     '⚠️ Warning',
                     '🔇 Timeout',
                     '👢 Kick',
                     '🔨 Temporary Ban',
-                    '⛔ Permanent Exile',
+                    '⛔ Permanent Ban',
                     '',
-                    'Severe violations may receive immediate punishment without previous warnings.'
+                    '-# Severe violations may receive immediate action.'
                 ].join('\n'),
 
             inline:
                 false
         },
+
         {
             name:
-                '╰・📜 FINAL ROYAL DECREE',
+                'Ⅹ・FINAL NOTICE',
 
             value:
                 [
-                    'By remaining within **Las Noches**, every Soul accepts these Royal Laws.',
+                    'By remaining in **THE Ⅹ SINS**, you agree to follow this code.',
                     '',
-                    'Honor the kingdom.',
-                    'Respect your fellow Souls.',
-                    'Grow stronger through discipline.',
-                    '',
-                    '> **Only those worthy shall stand beneath the eternal night.**'
+                    '**Respect is required. Fair play is expected.**'
                 ].join('\n'),
 
             inline:
@@ -333,7 +298,7 @@ async function publishSacredLaws(
 
     rulesEmbed.setAuthor({
         name:
-            'Umbra • Guardian of Las Noches',
+            'THE Ⅹ SINS',
 
         iconURL:
             interaction.client.user
@@ -348,7 +313,7 @@ async function publishSacredLaws(
 
     rulesEmbed.setFooter({
         text:
-            'Las Noches • Royal Laws',
+            'TTS • Code of Sins',
 
         iconURL:
             interaction.guild.iconURL({
@@ -384,8 +349,8 @@ async function publishSacredLaws(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Royal Laws Published',
-                `Umbra successfully published the Royal Laws in ${sacredLawsChannel}.`
+                '✅ Code of Sins Published',
+                `The Code of Sins was published in ${sacredLawsChannel}.`
             )
         ],
 
@@ -398,7 +363,7 @@ async function publishSacredLaws(
     );
 
     console.log(
-        '📜 Royal Laws Published'
+        'Ⅹ Code of Sins Published'
     );
 
     console.log(
@@ -410,7 +375,7 @@ async function publishSacredLaws(
     );
 
     console.log(
-        `🏰 Kingdom: ${interaction.guild.name}`
+        `🏰 Server: ${interaction.guild.name}`
     );
 
     console.log(

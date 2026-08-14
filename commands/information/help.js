@@ -22,7 +22,7 @@ module.exports = {
                 'help'
             )
             .setDescription(
-                'Open Umbra’s interactive command codex.'
+                'Open Evelynn’s interactive command menu.'
             )
             .setDMPermission(
                 false
@@ -44,8 +44,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'Umbra’s Command Codex can only be opened inside Las Noches.'
+                            '❌ Server Only Command',
+                            'The command menu can only be opened inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -66,8 +66,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Command Archive Empty',
-                            'No Umbra commands are currently loaded.'
+                            '❌ Commands Unavailable',
+                            'No commands are currently loaded.'
                         )
                     ],
 
@@ -94,14 +94,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /help command error:',
+                '❌ Evelynn /help command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Command Codex Unavailable',
-                    'Umbra could not open the interactive Command Codex.'
+                    '❌ Command Menu Unavailable',
+                    'Evelynn could not open the command menu.'
                 );
 
             if (

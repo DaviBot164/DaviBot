@@ -29,7 +29,7 @@ const {
 
 /**
  * Wait briefly between setup publications
- * to keep the process stable and organized.
+ * to keep the process stable.
  *
  * @param {number} milliseconds
  * @returns {Promise<void>}
@@ -46,18 +46,8 @@ function wait(
 }
 
 /**
- * Publish every available
- * Las Noches setup archive.
- *
- * Royal Laws are published inside
- * the dedicated Sacred Laws channel.
- *
- * Kingdom Guide, Kingdom Hierarchy
- * and Knowledge Archive are published
- * inside the Kingdom Archives channel.
- *
- * Verification Guide and Support Codex
- * remain inside their dedicated channels.
+ * Publish the complete
+ * THE Ⅹ SINS setup.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -69,26 +59,20 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '🚀 Las Noches Setup Initiated',
+                    'Ⅹ Setup Started',
                     [
-                        'Umbra is preparing the official archives of **Las Noches**.',
+                        'Evelynn is preparing the official **THE Ⅹ SINS** setup.',
                         '',
-                        'The following record will be published in the dedicated Sacred Laws channel:',
+                        'Publishing:',
                         '',
-                        '📜 **Royal Laws**',
+                        '✦ **Verification Guide**',
+                        'Ⅹ **Code of Sins**',
+                        '📖 **Sin Codex**',
+                        '♛ **Role Hierarchy**',
+                        '❓ **FAQ**',
+                        '🎫 **Support Guide**',
                         '',
-                        'The following records will be published in the Kingdom Archives:',
-                        '',
-                        '📖 **Kingdom Guide**',
-                        '👑 **Kingdom Hierarchy**',
-                        '📚 **Knowledge Archive**',
-                        '',
-                        'The following records will remain in their dedicated channels:',
-                        '',
-                        '⛩️ **Verification Guide**',
-                        '🎫 **Support Codex**',
-                        '',
-                        'Umbra will prepare each archive in sequence.'
+                        'Each section will be published in sequence.'
                     ].join('\n')
                 )
             ],
@@ -102,7 +86,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            '🚀 Las Noches Full Setup Started'
+            'Ⅹ THE Ⅹ SINS Full Setup Started'
         );
 
         console.log(
@@ -110,7 +94,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            `🏰 Kingdom: ${interaction.guild.name}`
+            `🏰 Server: ${interaction.guild.name}`
         );
 
         console.log(
@@ -164,26 +148,18 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '✅ Las Noches Setup Complete',
+                    '✅ Setup Complete',
                     [
-                        'Umbra successfully published every available setup archive.',
+                        'All **THE Ⅹ SINS** setup sections were published successfully.',
                         '',
-                        'Published in the dedicated Sacred Laws channel:',
+                        '✅ Verification Guide',
+                        '✅ Code of Sins',
+                        '✅ Sin Codex',
+                        '✅ Role Hierarchy',
+                        '✅ FAQ',
+                        '✅ Support Guide',
                         '',
-                        '✅ **Royal Laws**',
-                        '',
-                        'Published in the Kingdom Archives:',
-                        '',
-                        '✅ **Kingdom Guide**',
-                        '✅ **Kingdom Hierarchy**',
-                        '✅ **Knowledge Archive**',
-                        '',
-                        'Published in dedicated channels:',
-                        '',
-                        '✅ **Verification Guide**',
-                        '✅ **Support Codex**',
-                        '',
-                        '> **The official records of Las Noches are now ready.**'
+                        '**The server information system is ready.**'
                     ].join('\n')
                 )
             ],
@@ -197,7 +173,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            '✅ Las Noches Full Setup Completed'
+            '✅ THE Ⅹ SINS Full Setup Completed'
         );
 
         console.log(
@@ -205,7 +181,7 @@ async function publishFullSetup(
         );
 
         console.log(
-            `🏰 Kingdom: ${interaction.guild.name}`
+            `🏰 Server: ${interaction.guild.name}`
         );
 
         console.log(
@@ -213,7 +189,7 @@ async function publishFullSetup(
         );
     } catch (error) {
         console.error(
-            '❌ Umbra Las Noches full setup error:'
+            '❌ THE Ⅹ SINS full setup error:'
         );
 
         console.error(
@@ -223,13 +199,13 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Las Noches Setup Failed',
+                    '❌ Setup Failed',
                     [
-                        'Umbra could not complete every setup archive.',
+                        'Evelynn could not complete the full setup.',
                         '',
-                        'Some records may already have been published before the error occurred.',
+                        'Some sections may already have been published.',
                         '',
-                        'Check the configured channel IDs, Umbra permissions, and Northflank logs.'
+                        'Check channel IDs, permissions and Northflank logs.'
                     ].join('\n')
                 )
             ],
