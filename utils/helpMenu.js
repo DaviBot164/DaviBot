@@ -11,26 +11,16 @@ const {
 const embedConfig =
     require('../config/embed');
 
-/**
- * Evelynn Help Menu categories.
- *
- * Commands that are not currently loaded
- * are automatically hidden.
- */
+const HELP_COLOR =
+    '#B026FF';
+
 const HELP_CATEGORIES = [
     {
-        id:
-            'core',
-
-        label:
-            'Core',
-
-        emoji:
-            'Ⅹ',
-
+        id: 'core',
+        label: 'Core',
+        emoji: '✨',
         description:
             'Main navigation and essential commands.',
-
         commands: [
             'guide',
             'help',
@@ -38,20 +28,12 @@ const HELP_CATEGORIES = [
             'soul'
         ]
     },
-
     {
-        id:
-            'information',
-
-        label:
-            'Information',
-
-        emoji:
-            '📖',
-
+        id: 'information',
+        label: 'Information',
+        emoji: '📖',
         description:
             'Member and server information.',
-
         commands: [
             'avatar',
             'ping',
@@ -60,20 +42,12 @@ const HELP_CATEGORIES = [
             'userinfo'
         ]
     },
-
     {
-        id:
-            'progression',
-
-        label:
-            'Progression',
-
-        emoji:
-            '◆',
-
+        id: 'progression',
+        label: 'Progression',
+        emoji: '📈',
         description:
             'Levels, ranks and member progression.',
-
         commands: [
             'level',
             'rank',
@@ -81,20 +55,12 @@ const HELP_CATEGORIES = [
             'soul'
         ]
     },
-
     {
-        id:
-            'titles',
-
-        label:
-            'Titles',
-
-        emoji:
-            '♜',
-
+        id: 'titles',
+        label: 'Titles',
+        emoji: '🏷️',
         description:
             'Title collection and management.',
-
         commands: [
             'titles',
             'settitle',
@@ -103,20 +69,12 @@ const HELP_CATEGORIES = [
             'revoketitle'
         ]
     },
-
     {
-        id:
-            'ranks',
-
-        label:
-            'Sin Ranks',
-
-        emoji:
-            '⚔️',
-
+        id: 'ranks',
+        label: 'Sin Ranks',
+        emoji: '⚔️',
         description:
             'The Ten Sins ranking system.',
-
         commands: [
             'espada',
             'rankhistory',
@@ -124,20 +82,12 @@ const HELP_CATEGORIES = [
             'removerank'
         ]
     },
-
     {
-        id:
-            'moderation',
-
-        label:
-            'Moderation',
-
-        emoji:
-            '🛡️',
-
+        id: 'moderation',
+        label: 'Moderation',
+        emoji: '🛡️',
         description:
             'Warnings, punishments and channel control.',
-
         commands: [
             'ban',
             'cases',
@@ -155,101 +105,49 @@ const HELP_CATEGORIES = [
             'warnings'
         ]
     },
-
     {
-        id:
-            'support',
-
-        label:
-            'Support',
-
-        emoji:
-            '🎫',
-
+        id: 'support',
+        label: 'Support',
+        emoji: '🎫',
         description:
             'Tickets and member support.',
-
         commands: [
             'ticketpanel'
         ]
     },
-
     {
-        id:
-            'community',
-
-        label:
-            'Community',
-
-        emoji:
-            '♠️',
-
+        id: 'community',
+        label: 'Community',
+        emoji: '♠️',
         description:
             'Announcements, events and giveaways.',
-
         commands: [
             'announce',
             'event',
             'giveaway'
         ]
     },
-
     {
-        id:
-            'administration',
-
-        label:
-            'Administration',
-
-        emoji:
-            '♛',
-
+        id: 'administration',
+        label: 'Administration',
+        emoji: '⚙️',
         description:
             'THE Ⅹ SINS setup and configuration.',
-
         commands: [
             'setup',
             'setuprules',
             'testwelcome'
         ]
     }
-];/**
- * Get one loaded command.
- *
- * @param {import('discord.js').Client} client
- * @param {string} commandName
- * @returns {Object|null}
- */
-function getLoadedCommand(
-    client,
-    commandName
-) {
-    return (
-        client.commands?.get(
-            commandName
-        ) ||
-        null
-    );
-}
+];
 
-/**
- * Return every loaded command
- * from one Help category.
- *
- * @param {import('discord.js').Client} client
- * @param {Object} category
- * @returns {Object[]}
- */
 function getCategoryCommands(
     client,
     category
 ) {
     return category.commands
-        .map(commandName =>
-            getLoadedCommand(
-                client,
-                commandName
-            )
+        .map(name =>
+            client.commands?.get(name)
         )
         .filter(command =>
             Boolean(
@@ -258,18 +156,9 @@ function getCategoryCommands(
         );
 }
 
-/**
- * Count every loaded Slash Command.
- *
- * @param {import('discord.js').Client} client
- * @returns {number}
- */
-function getLoadedCommandCount(
-    client
-) {
+function getLoadedCommandCount(client) {
     return Array.from(
-        client.commands?.values() ||
-        []
+        client.commands?.values() ?? []
     ).filter(command =>
         Boolean(
             command?.data?.name
@@ -277,61 +166,37 @@ function getLoadedCommandCount(
     ).length;
 }
 
-/**
- * Format one Slash Command.
- *
- * @param {Object} command
- * @returns {string}
- */
-function formatCommand(
-    command
-) {
-    const name =
-        command.data.name;
-
-    const description =
-        command.data.description ||
-        'No description available.';
-
-    return (
-        `\`/${name}\`\n` +
-        `-# ${description}`
-    );
+function formatCommand(command) {
+    return [
+        `\`/${command.data.name}\``,
+        `-# ${
+            command.data.description ||
+            'No description available.'
+        }`
+    ].join('\n');
 }
 
-/**
- * Create the main
- * Evelynn Help Menu Embed.
- *
- * @param {import('discord.js').ChatInputCommandInteraction|import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function createHelpHomeEmbed(
-    interaction
-) {
+function getBotAvatar(interaction) {
+    return interaction.client.user
+        .displayAvatarURL({
+            size: 256,
+            forceStatic: false
+        });
+}function createHelpHomeEmbed(interaction) {
     const botAvatar =
-        interaction.client.user
-            .displayAvatarURL({
-                size:
-                    256,
-
-                forceStatic:
-                    false
-            });
+        getBotAvatar(interaction);
 
     const guildIcon =
         interaction.guild.iconURL({
-            size:
-                1024,
+            size: 1024,
+            forceStatic: false
+        }) ?? botAvatar;
 
-            forceStatic:
-                false
-        });
-
-    const categoryLines =
-        HELP_CATEGORIES.map(category =>
-            `${category.emoji} **${category.label}** — ${category.description}`
-        );
+    const categories =
+        HELP_CATEGORIES.map(
+            category =>
+                `${category.emoji} **${category.label}** — ${category.description}`
+        ).join('\n');
 
     return createEmbed({
         title:
@@ -343,27 +208,20 @@ function createHelpHomeEmbed(
                 '',
                 'Choose a category below.',
                 '',
-                categoryLines.join(
-                    '\n'
-                ),
+                categories,
                 '',
-                embedConfig
-                    .branding
-                    .divider,
+                embedConfig.branding.divider,
                 '',
                 `**Loaded Commands:** \`${getLoadedCommandCount(
                     interaction.client
                 )}\``
-            ].join(
-                '\n'
-            ),
+            ].join('\n'),
 
         color:
-            '#5B3A78',
+            HELP_COLOR,
 
         thumbnail:
-            guildIcon ||
-            botAvatar,
+            guildIcon,
 
         author: {
             name:
@@ -381,22 +239,16 @@ function createHelpHomeEmbed(
                 botAvatar
         }
     });
-}/**
- * Create one Help category Embed.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @param {string} categoryId
- * @returns {import('discord.js').EmbedBuilder|null}
- */
+}
+
 function createHelpCategoryEmbed(
     interaction,
     categoryId
 ) {
     const category =
         HELP_CATEGORIES.find(
-            configuredCategory =>
-                configuredCategory.id ===
-                categoryId
+            item =>
+                item.id === categoryId
         );
 
     if (!category) {
@@ -409,26 +261,15 @@ function createHelpCategoryEmbed(
             category
         );
 
-    const botAvatar =
-        interaction.client.user
-            .displayAvatarURL({
-                size:
-                    256,
-
-                forceStatic:
-                    false
-            });
-
     const commandText =
-        commands.length > 0
+        commands.length
             ? commands
-                .map(
-                    formatCommand
-                )
-                .join(
-                    '\n\n'
-                )
+                .map(formatCommand)
+                .join('\n\n')
             : '*No commands from this category are currently loaded.*';
+
+    const botAvatar =
+        getBotAvatar(interaction);
 
     return createEmbed({
         title:
@@ -438,17 +279,13 @@ function createHelpCategoryEmbed(
             [
                 category.description,
                 '',
-                embedConfig
-                    .branding
-                    .divider,
+                embedConfig.branding.divider,
                 '',
                 commandText
-            ].join(
-                '\n'
-            ),
+            ].join('\n'),
 
         color:
-            '#5B3A78',
+            HELP_COLOR,
 
         author: {
             name:
@@ -468,19 +305,10 @@ function createHelpCategoryEmbed(
     });
 }
 
-/**
- * Create the Help category Select Menu.
- *
- * Keep the existing custom ID because
- * interaction routing may depend on it.
- *
- * @param {string|null} selectedCategoryId
- * @returns {ActionRowBuilder}
- */
 function createHelpSelectMenu(
     selectedCategoryId = null
 ) {
-    const selectMenu =
+    const menu =
         new StringSelectMenuBuilder()
             .setCustomId(
                 'umbra_help_category'
@@ -488,48 +316,40 @@ function createHelpSelectMenu(
             .setPlaceholder(
                 'Choose a command category...'
             )
-            .setMinValues(
-                1
-            )
-            .setMaxValues(
-                1
+            .setMinValues(1)
+            .setMaxValues(1)
+            .addOptions(
+                HELP_CATEGORIES.map(
+                    category =>
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel(
+                                category.label
+                            )
+                            .setDescription(
+                                category.description
+                                    .slice(0, 100)
+                            )
+                            .setValue(
+                                category.id
+                            )
+                            .setEmoji(
+                                category.emoji
+                            )
+                            .setDefault(
+                                category.id ===
+                                selectedCategoryId
+                            )
+                )
             );
-
-    selectMenu.addOptions(
-        HELP_CATEGORIES.map(category =>
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    category.label
-                )
-                .setDescription(
-                    category.description
-                        .slice(
-                            0,
-                            100
-                        )
-                )
-                .setValue(
-                    category.id
-                )
-                .setEmoji(
-                    category.emoji
-                )
-                .setDefault(
-                    category.id ===
-                    selectedCategoryId
-                )
-        )
-    );
 
     return new ActionRowBuilder()
         .addComponents(
-            selectMenu
+            menu
         );
 }
 
 module.exports = {
     HELP_CATEGORIES,
-
     createHelpHomeEmbed,
     createHelpCategoryEmbed,
     createHelpSelectMenu
