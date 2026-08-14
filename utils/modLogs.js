@@ -10,12 +10,7 @@ const embedConfig =
     require('../config/embed');
 
 /**
- * Send an Umbra moderation log to the
- * configured moderation-log channel.
- *
- * Supports both:
- * - Member moderation actions
- * - Channel moderation actions
+ * Send a moderation log.
  *
  * @param {Object} options
  * @param {import('discord.js').Guild} options.guild
@@ -33,35 +28,17 @@ async function sendModLog({
     user = null,
     moderator,
     channel = null,
-    reason = 'No reason was provided.',
+    reason = 'No reason provided.',
     fields = []
 }) {
     try {
-        if (!guild) {
-            console.warn(
-                '⚠️ Umbra moderation log skipped: Guild was not provided.'
-            );
-
-            return false;
-        }
-
         if (
+            !guild ||
             typeof action !==
                 'string' ||
-            !action.trim()
+            !action.trim() ||
+            !moderator
         ) {
-            console.warn(
-                '⚠️ Umbra moderation log skipped: Action was not provided.'
-            );
-
-            return false;
-        }
-
-        if (!moderator) {
-            console.warn(
-                '⚠️ Umbra moderation log skipped: Moderator was not provided.'
-            );
-
             return false;
         }
 
@@ -70,7 +47,7 @@ async function sendModLog({
 
         if (!logChannelId) {
             console.warn(
-                '⚠️ Umbra moderation log skipped: modLogs channel ID is missing.'
+                '⚠️ Moderation log channel ID is missing.'
             );
 
             return false;
@@ -94,7 +71,7 @@ async function sendModLog({
             logChannel.isThread()
         ) {
             console.warn(
-                `⚠️ Umbra moderation log channel is unavailable in ${guild.name}.`
+                `⚠️ Moderation log channel is unavailable in ${guild.name}.`
             );
 
             return false;
@@ -104,10 +81,6 @@ async function sendModLog({
             guild.members.me;
 
         if (!botMember) {
-            console.warn(
-                '⚠️ Umbra moderation log skipped: bot member record is unavailable.'
-            );
-
             return false;
         }
 
@@ -124,11 +97,21 @@ async function sendModLog({
             ])
         ) {
             console.warn(
-                `⚠️ Umbra is missing moderation-log permissions in #${logChannel.name}.`
+                `⚠️ Evelynn cannot send moderation logs in #${logChannel.name}.`
             );
 
             return false;
         }
+
+        const botAvatar =
+            guild.client.user
+                .displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                });
 
         const logEmbed =
             new EmbedBuilder()
@@ -139,36 +122,14 @@ async function sendModLog({
                 )
                 .setAuthor({
                     name:
-                        'Umbra • Guardian of Las Noches',
+                        'Evelynn • Moderation',
 
                     iconURL:
-                        guild.client.user
-                            .displayAvatarURL({
-                                size:
-                                    128,
-
-                                forceStatic:
-                                    false
-                            })
+                        botAvatar
                 })
                 .setTitle(
                     action.trim()
                 )
-                .setDescription(
-                    [
-                        'Umbra has recorded an official moderation action within Las Noches.',
-                        '',
-                        embedConfig
-                            .branding
-                            .divider
-                    ].join('\n')
-                )
-                .setFooter({
-                    text:
-                        embedConfig
-                            .footer
-                            .text
-                })
                 .setTimestamp();
 
         if (user) {
@@ -184,11 +145,10 @@ async function sendModLog({
 
             logEmbed.addFields({
                 name:
-                    '🌙 Soul',
+                    '✦・MEMBER',
 
                 value:
-                    `${user.tag}\n` +
-                    `\`${user.id}\``,
+                    `${user}\n\`${user.id}\``,
 
                 inline:
                     true
@@ -198,11 +158,10 @@ async function sendModLog({
         if (channel) {
             logEmbed.addFields({
                 name:
-                    '📺 Channel',
+                    '📺・CHANNEL',
 
                 value:
-                    `${channel}\n` +
-                    `\`${channel.id}\``,
+                    `${channel}\n\`${channel.id}\``,
 
                 inline:
                     true
@@ -212,33 +171,22 @@ async function sendModLog({
         logEmbed.addFields(
             {
                 name:
-                    '🛡️ Moderator',
+                    '🛡️・MODERATOR',
 
                 value:
-                    `${moderator.tag}\n` +
-                    `\`${moderator.id}\``,
+                    `${moderator}\n\`${moderator.id}\``,
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '🏰 Las Noches',
-
-                value:
-                    `${guild.name}\n` +
-                    `\`${guild.id}\``,
-
-                inline:
-                    false
-            },
-            {
-                name:
-                    '📜 Reason',
+                    '📜・REASON',
 
                 value:
                     reason ||
-                    'No reason was provided.',
+                    'No reason provided.',
 
                 inline:
                     false
@@ -269,16 +217,13 @@ async function sendModLog({
         });
 
         console.log(
-            `✅ Umbra moderation log sent in ${guild.name}: ${action}`
+            `✅ Moderation log sent: ${action}`
         );
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Failed to send Umbra moderation log:'
-        );
-
-        console.error(
+            '❌ Failed to send moderation log:',
             error
         );
 

@@ -5,8 +5,7 @@ const {
 } = require('discord.js');
 
 const {
-    createErrorEmbed,
-    createWarningEmbed
+    createErrorEmbed
 } = require('../utils/embeds');
 
 const {
@@ -38,8 +37,7 @@ const {
 } = require('../utils/setup/publishFullSetup');
 
 /**
- * Safely send an ephemeral
- * Setup Wizard error.
+ * Send a Setup error safely.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @param {string} title
@@ -51,16 +49,18 @@ async function sendSetupError(
     title,
     description
 ) {
-    const errorEmbed =
+    const embed =
         createErrorEmbed(
             title,
             description
         );
 
-    if (interaction.deferred) {
+    if (
+        interaction.deferred
+    ) {
         await interaction.editReply({
             embeds: [
-                errorEmbed
+                embed
             ],
 
             components:
@@ -70,58 +70,28 @@ async function sendSetupError(
         return;
     }
 
-    if (interaction.replied) {
+    if (
+        interaction.replied
+    ) {
         await interaction.followUp({
-            flags:
-                MessageFlags.Ephemeral,
-
             embeds: [
-                errorEmbed
-            ]
+                embed
+            ],
+
+            flags:
+                MessageFlags.Ephemeral
         });
 
         return;
     }
 
     await interaction.reply({
-        flags:
-            MessageFlags.Ephemeral,
-
         embeds: [
-            errorEmbed
-        ]
-    });
-}
-
-/**
- * Show a temporary coming-soon
- * response for an unfinished module.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @param {string} emoji
- * @param {string} moduleName
- * @returns {Promise<void>}
- */
-async function showComingSoon(
-    interaction,
-    emoji,
-    moduleName
-) {
-    await interaction.editReply({
-        embeds: [
-            createWarningEmbed(
-                `${emoji} ${moduleName}`,
-                [
-                    `The **${moduleName}** archive is not connected yet.`,
-                    '',
-                    'This module has already been prepared inside the Umbra Setup Wizard.',
-                    'It will become available in a future Las Noches update.'
-                ].join('\n')
-            )
+            embed
         ],
 
-        components:
-            []
+        flags:
+            MessageFlags.Ephemeral
     });
 }
 
@@ -133,8 +103,7 @@ module.exports = {
         false,
 
     /**
-     * Handle Umbra Setup Wizard
-     * interactions.
+     * Handle Setup Menu interactions.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
@@ -143,14 +112,9 @@ module.exports = {
         interaction
     ) {
         if (
-            !interaction.isStringSelectMenu()
-        ) {
-            return;
-        }
-
-        if (
+            !interaction.isStringSelectMenu() ||
             interaction.customId !==
-            'umbra:setup:select'
+                'umbra:setup:select'
         ) {
             return;
         }
@@ -161,8 +125,8 @@ module.exports = {
             ) {
                 await sendSetupError(
                     interaction,
-                    '❌ Las Noches Only Action',
-                    'The Umbra Setup Wizard can only be used inside Las Noches.'
+                    '❌ Server Only Action',
+                    'The Setup Menu can only be used inside THE Ⅹ SINS.'
                 );
 
                 return;
@@ -176,8 +140,8 @@ module.exports = {
             ) {
                 await sendSetupError(
                     interaction,
-                    '❌ Authority Denied',
-                    'Only a Las Noches Administrator may use the Umbra Setup Wizard.'
+                    '❌ Permission Denied',
+                    'Only Administrators can use the Setup Menu.'
                 );
 
                 return;
@@ -200,14 +164,6 @@ module.exports = {
                 case 'sacred-laws':
                     await publishSacredLaws(
                         interaction
-                    );
-                    break;
-
-                case 'official-decrees':
-                    await showComingSoon(
-                        interaction,
-                        '📢',
-                        'Kingdom Decrees'
                     );
                     break;
 
@@ -245,8 +201,8 @@ module.exports = {
                     await interaction.editReply({
                         embeds: [
                             createErrorEmbed(
-                                '❌ Unknown Kingdom Archive',
-                                'The selected Setup Wizard module is not supported by Umbra.'
+                                '❌ Unknown Module',
+                                'The selected setup module is not supported.'
                             )
                         ],
 
@@ -256,27 +212,21 @@ module.exports = {
             }
         } catch (error) {
             console.error(
-                '❌ Umbra Setup Wizard interaction error:'
-            );
-
-            console.error(
+                '❌ Evelynn Setup interaction error:',
                 error
             );
 
             try {
                 await sendSetupError(
                     interaction,
-                    '❌ Kingdom Archive Failed',
-                    'Umbra could not process the selected Las Noches setup module.'
+                    '❌ Setup Failed',
+                    'Evelynn could not complete the selected setup action.'
                 );
             } catch (
                 responseError
             ) {
                 console.error(
-                    '❌ Failed to send Setup Wizard error response:'
-                );
-
-                console.error(
+                    '❌ Setup error response failed:',
                     responseError
                 );
             }

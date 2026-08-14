@@ -6,21 +6,7 @@ const embedConfig =
     require('../config/embed');
 
 /**
- * Create a standard Umbra embed.
- *
- * This is the shared foundation for:
- *
- * - Information
- * - Success
- * - Error
- * - Warning
- * - Moderation
- * - Soul Archives
- * - Arrancar Ranks
- * - Chronicle Titles
- * - Guardian
- * - Events
- * - Support
+ * Create a standard shared embed.
  *
  * @param {Object} options
  * @param {string} options.title
@@ -62,11 +48,15 @@ function createEmbed({
                 }
             );
 
-    if (timestamp) {
+    if (
+        timestamp
+    ) {
         embed.setTimestamp();
     }
 
-    if (description) {
+    if (
+        description
+    ) {
         embed.setDescription(
             description
         );
@@ -83,19 +73,25 @@ function createEmbed({
         );
     }
 
-    if (thumbnail) {
+    if (
+        thumbnail
+    ) {
         embed.setThumbnail(
             thumbnail
         );
     }
 
-    if (image) {
+    if (
+        image
+    ) {
         embed.setImage(
             image
         );
     }
 
-    if (author) {
+    if (
+        author
+    ) {
         embed.setAuthor(
             author
         );
@@ -105,7 +101,7 @@ function createEmbed({
 }
 
 /**
- * Create a successful action embed.
+ * Create a success embed.
  *
  * @param {string} title
  * @param {string} description
@@ -171,15 +167,7 @@ function createWarningEmbed(
 }
 
 /**
- * Create an Umbra moderation action embed.
- *
- * Used for actions such as:
- *
- * - Warn
- * - Kick
- * - Ban
- * - Timeout
- * - Untimeout
+ * Create a moderation action embed.
  *
  * @param {Object} options
  * @param {string} options.action
@@ -196,41 +184,36 @@ function createModerationEmbed({
     reason,
     duration = null
 }) {
-    const executedAt =
-        Math.floor(
-            Date.now() /
-            1_000
-        );
-
     const fields = [
         {
             name:
-                '🌙 Soul',
+                '✦・MEMBER',
 
             value:
-                `${user.tag}\n` +
-                `\`${user.id}\``,
+                `${user}\n\`${user.id}\``,
 
             inline:
                 true
         },
+
         {
             name:
-                '🛡️ Moderator',
+                '🛡️・MODERATOR',
 
             value:
-                `${moderator.tag}\n` +
-                `\`${moderator.id}\``,
+                `${moderator}\n\`${moderator.id}\``,
 
             inline:
                 true
         }
     ];
 
-    if (duration) {
+    if (
+        duration
+    ) {
         fields.push({
             name:
-                '⏳ Duration',
+                '⏳・DURATION',
 
             value:
                 duration,
@@ -240,30 +223,17 @@ function createModerationEmbed({
         });
     }
 
-    fields.push(
-        {
-            name:
-                '📜 Reason',
+    fields.push({
+        name:
+            '📜・REASON',
 
-            value:
-                reason ||
-                'No reason was provided.',
+        value:
+            reason ||
+            'No reason provided.',
 
-            inline:
-                false
-        },
-        {
-            name:
-                '🕒 Executed At',
-
-            value:
-                `<t:${executedAt}:F>\n` +
-                `(<t:${executedAt}:R>)`,
-
-            inline:
-                false
-        }
-    );
+        inline:
+            false
+    });
 
     return createEmbed({
         title:
@@ -273,15 +243,6 @@ function createModerationEmbed({
             embedConfig
                 .colors
                 .moderation,
-
-        description:
-            [
-                'Umbra has recorded an official moderation action within Las Noches.',
-                '',
-                embedConfig
-                    .branding
-                    .divider
-            ].join('\n'),
 
         thumbnail:
             user.displayAvatarURL({
@@ -300,13 +261,7 @@ function createModerationEmbed({
 }
 
 /**
- * Create an Umbra channel moderation embed.
- *
- * Used for actions such as:
- *
- * - Lock
- * - Unlock
- * - Slowmode
+ * Create a channel moderation embed.
  *
  * @param {Object} options
  * @param {string} options.action
@@ -321,12 +276,6 @@ function createChannelModerationEmbed({
     moderator,
     reason
 }) {
-    const executedAt =
-        Math.floor(
-            Date.now() /
-            1_000
-        );
-
     return createEmbed({
         title:
             action,
@@ -336,69 +285,36 @@ function createChannelModerationEmbed({
                 .colors
                 .moderation,
 
-        description:
-            [
-                `${channel} has been updated by the Las Noches moderation system.`,
-                '',
-                embedConfig
-                    .branding
-                    .divider,
-                '',
-                '*Umbra has preserved this action inside the official moderation archives.*'
-            ].join('\n'),
-
         fields: [
             {
                 name:
-                    '📺 Channel',
+                    '📺・CHANNEL',
 
                 value:
-                    `${channel}\n` +
-                    `\`${channel.id}\``,
+                    `${channel}\n\`${channel.id}\``,
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '🛡️ Moderator',
+                    '🛡️・MODERATOR',
 
                 value:
-                    `${moderator}\n` +
-                    `\`${moderator.id}\``,
+                    `${moderator}\n\`${moderator.id}\``,
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '🏰 Server',
-
-                value:
-                    `${channel.guild.name}\n` +
-                    `\`${channel.guild.id}\``,
-
-                inline:
-                    false
-            },
-            {
-                name:
-                    '📜 Reason',
+                    '📜・REASON',
 
                 value:
                     reason ||
-                    'No reason was provided.',
-
-                inline:
-                    false
-            },
-            {
-                name:
-                    '🕒 Executed At',
-
-                value:
-                    `<t:${executedAt}:F>\n` +
-                    `(<t:${executedAt}:R>)`,
+                    'No reason provided.',
 
                 inline:
                     false

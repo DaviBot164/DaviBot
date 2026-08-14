@@ -12,17 +12,14 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-/**
- * Umbra Setup Wizard visual color.
- *
- * Cold silver-blue matches the current
- * Las Noches visual identity.
- */
 const SETUP_EMBED_COLOR =
-    '#C8CDD4';
+    '#5B3A78';
 
 /**
- * Build the Setup Wizard selection menu.
+ * Build the Setup Menu.
+ *
+ * Internal custom ID remains unchanged
+ * for interaction routing compatibility.
  *
  * @returns {StringSelectMenuBuilder}
  */
@@ -31,29 +28,25 @@ function buildSetupMenu() {
         .setCustomId(
             'umbra:setup:select'
         )
-
         .setPlaceholder(
-            'Select a Las Noches setup module...'
+            'Choose a setup module...'
         )
-
         .setMinValues(
             1
         )
-
         .setMaxValues(
             1
         )
-
         .addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel(
                     'Verification Guide'
                 )
                 .setDescription(
-                    'Publish the official verification instructions'
+                    'Publish verification instructions'
                 )
                 .setEmoji(
-                    '⛩️'
+                    '✦'
                 )
                 .setValue(
                     'verification-guide'
@@ -61,10 +54,10 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Sacred Laws'
+                    'Code of Sins'
                 )
                 .setDescription(
-                    'Publish the official laws of Las Noches'
+                    'Publish the server rules'
                 )
                 .setEmoji(
                     '📜'
@@ -75,24 +68,10 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Official Decrees'
+                    'Sin Codex'
                 )
                 .setDescription(
-                    'Open the official announcement module'
-                )
-                .setEmoji(
-                    '📢'
-                )
-                .setValue(
-                    'official-decrees'
-                ),
-
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Server Guide'
-                )
-                .setDescription(
-                    'Publish the guide for new Souls'
+                    'Publish the server guide'
                 )
                 .setEmoji(
                     '📖'
@@ -103,13 +82,13 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Role Information'
+                    'Role Hierarchy'
                 )
                 .setDescription(
-                    'Publish information about server ranks and roles'
+                    'Publish roles and hierarchy'
                 )
                 .setEmoji(
-                    '🎖️'
+                    '♛'
                 )
                 .setValue(
                     'role-information'
@@ -117,10 +96,10 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Frequently Asked Questions'
+                    'FAQ'
                 )
                 .setDescription(
-                    'Publish answers to common questions'
+                    'Publish common questions and answers'
                 )
                 .setEmoji(
                     '❓'
@@ -131,10 +110,10 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Ticket Guide'
+                    'Support Guide'
                 )
                 .setDescription(
-                    'Publish instructions for the support system'
+                    'Publish ticket instructions'
                 )
                 .setEmoji(
                     '🎫'
@@ -145,13 +124,13 @@ function buildSetupMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Full Server Setup'
+                    'Full Setup'
                 )
                 .setDescription(
-                    'Publish every available setup module'
+                    'Publish every setup module'
                 )
                 .setEmoji(
-                    '🚀'
+                    'Ⅹ'
                 )
                 .setValue(
                     'full-setup'
@@ -160,7 +139,7 @@ function buildSetupMenu() {
 }
 
 /**
- * Build the main Setup Wizard Embed.
+ * Build the Setup Embed.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @returns {import('discord.js').EmbedBuilder}
@@ -178,141 +157,44 @@ function buildSetupEmbed(
                     false
             });
 
-    const guildIcon =
-        interaction.guild.iconURL({
-            size:
-                128,
+    return createEmbed({
+        title:
+            'Ⅹ・SETUP',
 
-            forceStatic:
-                false
-        }) ??
-        botAvatar;
+        description:
+            [
+                `Welcome, ${interaction.user}.`,
+                '',
+                'Choose what you want Evelynn to publish.',
+                '',
+                '✦ Verification Guide',
+                '📜 Code of Sins',
+                '📖 Sin Codex',
+                '♛ Role Hierarchy',
+                '❓ FAQ',
+                '🎫 Support Guide',
+                'Ⅹ Full Setup'
+            ].join('\n'),
 
-    const setupEmbed =
-        createEmbed({
-            title:
-                '🌙 Umbra Setup Wizard',
+        color:
+            SETUP_EMBED_COLOR,
 
-            description:
-                [
-                    `Welcome, ${interaction.user}.`,
-                    '',
-                    'Select a module below to publish or update the official systems of **Las Noches**.',
-                    '',
-                    'Only Administrators may use this control panel.'
-                ].join(
-                    '\n'
-                ),
+        thumbnail:
+            botAvatar,
 
-            color:
-                SETUP_EMBED_COLOR,
+        author: {
+            name:
+                'Evelynn • THE Ⅹ SINS',
 
-            thumbnail:
-                botAvatar,
+            iconURL:
+                botAvatar
+        },
 
-            fields: [
-                {
-                    name:
-                        '⛩️ Verification Guide',
-
-                    value:
-                        'Publish the official Bloxlink verification instructions.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📜 Sacred Laws',
-
-                    value:
-                        'Publish the rules and standards of Las Noches.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📢 Official Decrees',
-
-                    value:
-                        'Manage the official announcement module.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📖 Server Guide',
-
-                    value:
-                        'Publish a simple guide for new Souls.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🎖️ Role Information',
-
-                    value:
-                        'Explain staff roles and Arrancar ranks.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '❓ FAQ',
-
-                    value:
-                        'Publish answers to common server questions.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🎫 Ticket Guide',
-
-                    value:
-                        'Explain how members can request support.',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🚀 Full Setup',
-
-                    value:
-                        'Publish all available setup modules.',
-
-                    inline:
-                        true
-                }
-            ]
-        });
-
-    setupEmbed.setAuthor({
-        name:
-            'Umbra • Guardian of Las Noches',
-
-        iconURL:
-            botAvatar
+        footer: {
+            text:
+                'TTS • Setup'
+        }
     });
-
-    setupEmbed.setFooter({
-        text:
-            'Las Noches • Setup Center',
-
-        iconURL:
-            guildIcon
-    });
-
-    setupEmbed.setTimestamp();
-
-    return setupEmbed;
 }
 
 module.exports = {
@@ -324,21 +206,18 @@ module.exports = {
             .setName(
                 'setup'
             )
-
             .setDescription(
-                'Open the Umbra server setup wizard.'
+                'Open the server setup menu.'
             )
-
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.Administrator
             )
-
             .setDMPermission(
                 false
             ),
 
     /**
-     * Open the Umbra Setup Wizard.
+     * Execute /setup.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -351,15 +230,15 @@ module.exports = {
                 !interaction.inGuild()
             ) {
                 await interaction.reply({
-                    flags:
-                        MessageFlags.Ephemeral,
-
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'The Umbra Setup Wizard can only be opened inside Las Noches.'
+                            'The Setup Menu can only be opened inside THE Ⅹ SINS.'
                         )
-                    ]
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
                 });
 
                 return;
@@ -372,77 +251,54 @@ module.exports = {
                     )
             ) {
                 await interaction.reply({
-                    flags:
-                        MessageFlags.Ephemeral,
-
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only a Las Noches Administrator may access the Umbra Setup Wizard.'
+                            'Only Administrators can use the Setup Menu.'
                         )
-                    ]
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
                 });
 
                 return;
             }
 
-            const setupEmbed =
-                buildSetupEmbed(
-                    interaction
-                );
-
-            const setupMenu =
-                buildSetupMenu();
-
-            const setupRow =
+            const row =
                 new ActionRowBuilder()
                     .addComponents(
-                        setupMenu
-                    );            await interaction.reply({
-                flags:
-                    MessageFlags.Ephemeral,
+                        buildSetupMenu()
+                    );
 
+            await interaction.reply({
                 embeds: [
-                    setupEmbed
+                    buildSetupEmbed(
+                        interaction
+                    )
                 ],
 
                 components: [
-                    setupRow
-                ]
+                    row
+                ],
+
+                flags:
+                    MessageFlags.Ephemeral
             });
 
             console.log(
-                '======================================'
-            );
-
-            console.log(
-                '🌙 Umbra Setup Wizard Opened'
-            );
-
-            console.log(
-                `🛡️ Opened By: ${interaction.user.tag}`
-            );
-
-            console.log(
-                `🏰 Server: ${interaction.guild.name}`
-            );
-
-            console.log(
-                '======================================'
+                `Ⅹ Setup opened by ${interaction.user.tag}`
             );
         } catch (error) {
             console.error(
-                '❌ Umbra setup command error:'
-            );
-
-            console.error(
+                '❌ Evelynn /setup command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Setup Wizard Failed',
-                    'Umbra could not open the Las Noches Setup Wizard. Please try again later.'
+                    '❌ Setup Unavailable',
+                    'Evelynn could not open the Setup Menu.'
                 );
 
             if (
@@ -450,12 +306,12 @@ module.exports = {
             ) {
                 await interaction
                     .followUp({
-                        flags:
-                            MessageFlags.Ephemeral,
-
                         embeds: [
                             errorEmbed
-                        ]
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null
@@ -485,12 +341,12 @@ module.exports = {
 
             await interaction
                 .reply({
-                    flags:
-                        MessageFlags.Ephemeral,
-
                     embeds: [
                         errorEmbed
-                    ]
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
                 })
                 .catch(
                     () => null

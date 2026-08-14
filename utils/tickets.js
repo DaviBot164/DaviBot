@@ -10,19 +10,18 @@ const ticketConfig =
     require('../config/tickets');
 
 /**
- * Recognize both the current Umbra ticket
- * topic and the legacy Seraphiel ticket topic.
+ * Recognize current and legacy
+ * ticket channel topics.
  *
- * Keeping legacy support prevents existing
- * open or closed tickets from becoming invalid
- * after the bot rebrand.
+ * Legacy support keeps existing
+ * tickets functional after rebrands.
  */
 const TICKET_OWNER_PATTERN =
-    /(?:Umbra|Seraphiel) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
+    /(?:Evelynn|Umbra|Seraphiel) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
 
 /**
- * Convert configured permission names into
- * Discord permission bit values.
+ * Convert configured permission names
+ * into Discord permission values.
  *
  * @param {string[]} permissionNames
  * @returns {bigint[]}
@@ -53,7 +52,7 @@ function resolvePermissions(
 }
 
 /**
- * Create a safe Discord ticket channel name.
+ * Create a safe ticket channel name.
  *
  * @param {import('discord.js').User} user
  * @returns {string}
@@ -83,7 +82,7 @@ function createTicketChannelName(
 
     const username =
         safeUsername ||
-        `soul-${user.id.slice(-6)}`;
+        `user-${user.id.slice(-6)}`;
 
     return (
         `${ticketConfig.channelPrefix}-` +
@@ -92,7 +91,8 @@ function createTicketChannelName(
 }
 
 /**
- * Create a closed ticket channel name.
+ * Create a closed ticket
+ * channel name.
  *
  * @param {string} currentName
  * @returns {string}
@@ -115,7 +115,8 @@ function createClosedTicketChannelName(
 }
 
 /**
- * Restore the original ticket channel name.
+ * Restore an open ticket
+ * channel name.
  *
  * @param {string} currentName
  * @returns {string}
@@ -135,9 +136,7 @@ function createReopenedTicketChannelName(
 }
 
 /**
- * Create the topic stored inside a ticket channel.
- *
- * New tickets always use the Umbra identity.
+ * Create the internal ticket topic.
  *
  * @param {string} ownerId
  * @param {'open'|'closed'} status
@@ -145,20 +144,17 @@ function createReopenedTicketChannelName(
  */
 function createTicketTopic(
     ownerId,
-    status =
-        'open'
+    status = 'open'
 ) {
     return (
-        `Umbra Ticket | Owner: ${ownerId} | ` +
+        `Evelynn Ticket | Owner: ${ownerId} | ` +
         `Status: ${status}`
     );
 }
 
 /**
- * Read ticket information from a channel topic.
- *
- * Both current Umbra topics and legacy
- * Seraphiel topics are supported.
+ * Parse ticket information
+ * from a channel topic.
  *
  * @param {string|null} topic
  * @returns {{
@@ -192,8 +188,7 @@ function parseTicketTopic(
 }
 
 /**
- * Find an existing open ticket belonging
- * to a Soul.
+ * Find an existing open ticket.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} userId
@@ -241,32 +236,30 @@ function createTicketPanelButtons(
     categoryId,
     staffRoleId
 ) {
-    const createButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:create:${categoryId}:${staffRoleId}`
-            )
-            .setLabel(
-                ticketConfig.panel
-                    .buttonLabel
-            )
-            .setEmoji(
-                ticketConfig.panel
-                    .buttonEmoji
-            )
-            .setStyle(
-                ButtonStyle.Primary
-            );
-
     return new ActionRowBuilder()
         .addComponents(
-            createButton
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:create:${categoryId}:${staffRoleId}`
+                )
+                .setLabel(
+                    ticketConfig
+                        .panel
+                        .buttonLabel
+                )
+                .setEmoji(
+                    ticketConfig
+                        .panel
+                        .buttonEmoji
+                )
+                .setStyle(
+                    ButtonStyle.Primary
+                )
         );
 }
 
 /**
- * Create the button shown inside
- * an open ticket.
+ * Create the open ticket controls.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -276,31 +269,30 @@ function createOpenTicketButtons(
     ownerId,
     staffRoleId
 ) {
-    const closeButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:close:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                ticketConfig.ticket
-                    .closeButtonLabel
-            )
-            .setEmoji(
-                ticketConfig.ticket
-                    .closeButtonEmoji
-            )
-            .setStyle(
-                ButtonStyle.Danger
-            );
-
     return new ActionRowBuilder()
         .addComponents(
-            closeButton
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:close:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    ticketConfig
+                        .ticket
+                        .closeButtonLabel
+                )
+                .setEmoji(
+                    ticketConfig
+                        .ticket
+                        .closeButtonEmoji
+                )
+                .setStyle(
+                    ButtonStyle.Danger
+                )
         );
 }
 
 /**
- * Create Close Ticket confirmation buttons.
+ * Create close confirmation controls.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -310,46 +302,38 @@ function createCloseConfirmationButtons(
     ownerId,
     staffRoleId
 ) {
-    const confirmButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:confirm-close:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Confirm Close'
-            )
-            .setEmoji(
-                '✅'
-            )
-            .setStyle(
-                ButtonStyle.Danger
-            );
-
-    const cancelButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:cancel-close:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Cancel'
-            )
-            .setEmoji(
-                '❌'
-            )
-            .setStyle(
-                ButtonStyle.Secondary
-            );
-
     return new ActionRowBuilder()
         .addComponents(
-            confirmButton,
-            cancelButton
-        );
-}
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:confirm-close:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Confirm Close'
+                )
+                .setEmoji(
+                    '✅'
+                )
+                .setStyle(
+                    ButtonStyle.Danger
+                ),
 
-/**
- * Create buttons shown inside
- * a closed ticket.
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:cancel-close:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Cancel'
+                )
+                .setEmoji(
+                    '❌'
+                )
+                .setStyle(
+                    ButtonStyle.Secondary
+                )
+        );
+}/**
+ * Create closed ticket controls.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -359,45 +343,40 @@ function createClosedTicketButtons(
     ownerId,
     staffRoleId
 ) {
-    const reopenButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:reopen:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Reopen Ticket'
-            )
-            .setEmoji(
-                '🔓'
-            )
-            .setStyle(
-                ButtonStyle.Success
-            );
-
-    const deleteButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:delete:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Delete Ticket'
-            )
-            .setEmoji(
-                '🗑️'
-            )
-            .setStyle(
-                ButtonStyle.Danger
-            );
-
     return new ActionRowBuilder()
         .addComponents(
-            reopenButton,
-            deleteButton
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:reopen:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Reopen Ticket'
+                )
+                .setEmoji(
+                    '🔓'
+                )
+                .setStyle(
+                    ButtonStyle.Success
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:delete:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Delete Ticket'
+                )
+                .setEmoji(
+                    '🗑️'
+                )
+                .setStyle(
+                    ButtonStyle.Danger
+                )
         );
 }
 
 /**
- * Create Delete Ticket confirmation buttons.
+ * Create delete confirmation controls.
  *
  * @param {string} ownerId
  * @param {string} staffRoleId
@@ -407,46 +386,41 @@ function createDeleteConfirmationButtons(
     ownerId,
     staffRoleId
 ) {
-    const confirmButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:confirm-delete:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Confirm Delete'
-            )
-            .setEmoji(
-                '✅'
-            )
-            .setStyle(
-                ButtonStyle.Danger
-            );
-
-    const cancelButton =
-        new ButtonBuilder()
-            .setCustomId(
-                `ticket:cancel-delete:${ownerId}:${staffRoleId}`
-            )
-            .setLabel(
-                'Cancel'
-            )
-            .setEmoji(
-                '❌'
-            )
-            .setStyle(
-                ButtonStyle.Secondary
-            );
-
     return new ActionRowBuilder()
         .addComponents(
-            confirmButton,
-            cancelButton
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:confirm-delete:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Confirm Delete'
+                )
+                .setEmoji(
+                    '✅'
+                )
+                .setStyle(
+                    ButtonStyle.Danger
+                ),
+
+            new ButtonBuilder()
+                .setCustomId(
+                    `ticket:cancel-delete:${ownerId}:${staffRoleId}`
+                )
+                .setLabel(
+                    'Cancel'
+                )
+                .setEmoji(
+                    '❌'
+                )
+                .setStyle(
+                    ButtonStyle.Secondary
+                )
         );
 }
 
 /**
- * Create permission overwrites
- * for a ticket channel.
+ * Create ticket channel
+ * permission overwrites.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} ownerId
@@ -470,6 +444,7 @@ function createTicketPermissionOverwrites(
                     .ViewChannel
             ]
         },
+
         {
             id:
                 ownerId,
@@ -481,6 +456,7 @@ function createTicketPermissionOverwrites(
                         .user
                 )
         },
+
         {
             id:
                 staffRoleId,
@@ -492,6 +468,7 @@ function createTicketPermissionOverwrites(
                         .staff
                 )
         },
+
         {
             id:
                 botId,
@@ -507,10 +484,9 @@ function createTicketPermissionOverwrites(
 }
 
 /**
- * Check whether a member belongs to
- * the configured ticket staff role.
+ * Check ticket staff access.
  *
- * Administrators are also accepted.
+ * Administrators are always allowed.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {string} staffRoleId
@@ -520,7 +496,9 @@ function isTicketStaff(
     member,
     staffRoleId
 ) {
-    if (!member) {
+    if (
+        !member
+    ) {
         return false;
     }
 

@@ -20,7 +20,7 @@ module.exports = {
         false,
 
     /**
-     * Handle Umbra Help Menu interactions.
+     * Handle Help Menu interactions.
      *
      * @param {import('discord.js').StringSelectMenuInteraction} interaction
      * @returns {Promise<void>}
@@ -30,14 +30,9 @@ module.exports = {
     ) {
         try {
             if (
-                !interaction.isStringSelectMenu()
-            ) {
-                return;
-            }
-
-            if (
+                !interaction.isStringSelectMenu() ||
                 interaction.customId !==
-                'umbra_help_category'
+                    'umbra_help_category'
             ) {
                 return;
             }
@@ -48,8 +43,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Menu',
-                            'Umbra’s Command Codex can only be used inside Las Noches.'
+                            '❌ Server Only Menu',
+                            'The command menu can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -69,12 +64,14 @@ module.exports = {
                     selectedCategoryId
                 );
 
-            if (!categoryEmbed) {
+            if (
+                !categoryEmbed
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Category Not Found',
-                            'Umbra could not find the selected command category.'
+                            'Evelynn could not find the selected command category.'
                         )
                     ],
 
@@ -98,14 +95,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra Help Menu interaction error:',
+                '❌ Evelynn Help Menu interaction error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Command Category Unavailable',
-                    'Umbra could not open the selected command category.'
+                    'Evelynn could not open the selected command category.'
                 );
 
             if (

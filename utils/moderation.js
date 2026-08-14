@@ -7,7 +7,7 @@ const {
 } = require('./embeds');
 
 /**
- * Check if the bot has a required permission.
+ * Check bot permission.
  *
  * @param {import('discord.js').GuildMember} botMember
  * @param {bigint} permission
@@ -25,7 +25,7 @@ function hasBotPermission(
 }
 
 /**
- * Check if a member has a required permission.
+ * Check member permission.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {bigint} permission
@@ -43,8 +43,7 @@ function hasUserPermission(
 }
 
 /**
- * Check whether the target member is above
- * or equal to the moderator's highest role.
+ * Check moderator role hierarchy.
  *
  * @param {import('discord.js').GuildMember} moderator
  * @param {import('discord.js').GuildMember} target
@@ -61,8 +60,7 @@ function isTargetAboveModerator(
 }
 
 /**
- * Check whether the target member is above
- * or equal to the bot's highest role.
+ * Check bot role hierarchy.
  *
  * @param {import('discord.js').GuildMember} botMember
  * @param {import('discord.js').GuildMember} target
@@ -79,7 +77,8 @@ function isTargetAboveBot(
 }
 
 /**
- * Check whether a target can be moderated.
+ * Check whether a member
+ * can be moderated.
  *
  * @param {import('discord.js').GuildMember} target
  * @returns {boolean}
@@ -92,11 +91,6 @@ function canModerate(
 
 /**
  * Validate common moderation restrictions.
- *
- * Returns an error message when moderation
- * is not allowed.
- *
- * Returns null when moderation can continue.
  *
  * @param {Object} options
  * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
@@ -116,27 +110,21 @@ function getModerationError({
         target.id ===
         interaction.user.id
     ) {
-        return (
-            'You cannot moderate yourself.'
-        );
+        return 'You cannot moderate yourself.';
     }
 
     if (
         target.id ===
         interaction.client.user.id
     ) {
-        return (
-            'You cannot use this command on Umbra.'
-        );
+        return 'You cannot moderate Evelynn.';
     }
 
     if (
         target.id ===
         interaction.guild.ownerId
     ) {
-        return (
-            'The server owner cannot be moderated.'
-        );
+        return 'The server owner cannot be moderated.';
     }
 
     if (
@@ -159,7 +147,7 @@ function getModerationError({
         )
     ) {
         return (
-            'I cannot moderate this member because their role is equal to or higher than my role.'
+            'Evelynn cannot moderate this member because their role is equal to or higher than hers.'
         );
     }
 
@@ -167,16 +155,7 @@ function getModerationError({
 }
 
 /**
- * Handle an unexpected moderation command error.
- *
- * This provides one consistent error response
- * for every Umbra moderation command.
- *
- * It safely supports:
- *
- * - Deferred interactions
- * - Already replied interactions
- * - New interactions
+ * Handle moderation command errors.
  *
  * @param {Object} options
  * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
@@ -194,7 +173,7 @@ async function handleModerationCommandError({
     description
 }) {
     console.error(
-        `❌ Umbra /${commandName} command error:`,
+        `❌ Evelynn /${commandName} command error:`,
         error
     );
 

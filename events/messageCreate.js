@@ -27,33 +27,17 @@ const {
     sendTitleFeed
 } = require('../utils/kingdomFeed');
 
-/**
- * Rapid-message history.
- *
- * Key:
- * guildId:userId
- */
 const messageHistory =
     new Map();
 
-/**
- * Duplicate-message history.
- *
- * Key:
- * guildId:userId
- */
 const duplicateHistory =
     new Map();
 
-/**
- * Discord invite link pattern.
- */
 const DISCORD_INVITE_PATTERN =
     /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-zA-Z0-9-]+/i;
 
 /**
- * Escape characters that have a special
- * meaning inside a regular expression.
+ * Escape RegExp characters.
  *
  * @param {string} value
  * @returns {string}
@@ -68,8 +52,7 @@ function escapeRegExp(
 }
 
 /**
- * Convert common number and symbol
- * replacements back into normal letters.
+ * Normalize common leet replacements.
  *
  * @param {string} content
  * @returns {string}
@@ -138,8 +121,7 @@ function normalizeContent(
 }
 
 /**
- * Create a flexible regular expression
- * for one configured word or phrase.
+ * Create a flexible profanity pattern.
  *
  * @param {string} configuredWord
  * @returns {RegExp|null}
@@ -152,34 +134,28 @@ function createProfanityPattern(
             configuredWord
         );
 
-    if (!normalizedWord) {
+    if (
+        !normalizedWord
+    ) {
         return null;
     }
-
-    const characters =
-        Array.from(
-            normalizedWord
-        );
 
     const separatorPattern =
         '[\\s._*~`\\-–—|/\\\\]*';
 
     const wordPattern =
-        characters
-            .map(character => {
-                if (
+        Array.from(
+            normalizedWord
+        )
+            .map(
+                character =>
                     character ===
                     ' '
-                ) {
-                    return (
-                        '[\\s._*~`\\-–—|/\\\\]+'
-                    );
-                }
-
-                return escapeRegExp(
-                    character
-                );
-            })
+                        ? '[\\s._*~`\\-–—|/\\\\]+'
+                        : escapeRegExp(
+                            character
+                        )
+            )
             .join(
                 separatorPattern
             );
@@ -191,7 +167,7 @@ function createProfanityPattern(
 }
 
 /**
- * Search one configured word list.
+ * Find a configured word.
  *
  * @param {string} content
  * @param {string[]} words
@@ -216,8 +192,7 @@ function findWordFromList(
             );
 
         if (
-            pattern &&
-            pattern.test(
+            pattern?.test(
                 normalizedContent
             )
         ) {
@@ -241,10 +216,9 @@ function findBadWord(
     content
 ) {
     if (
-        !automodConfig.badWords ||
         !automodConfig
             .badWords
-            .enabled
+            ?.enabled
     ) {
         return null;
     }
@@ -258,7 +232,9 @@ function findBadWord(
                 []
         );
 
-    if (timeoutWord) {
+    if (
+        timeoutWord
+    ) {
         return {
             word:
                 timeoutWord,
@@ -277,7 +253,9 @@ function findBadWord(
                 []
         );
 
-    if (warningWord) {
+    if (
+        warningWord
+    ) {
         return {
             word:
                 warningWord,
@@ -291,8 +269,7 @@ function findBadWord(
 }
 
 /**
- * Check whether a member bypasses
- * Guardian AutoMod.
+ * Check AutoMod bypass.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -300,7 +277,9 @@ function findBadWord(
 function shouldBypassAutoMod(
     member
 ) {
-    if (!member) {
+    if (
+        !member
+    ) {
         return false;
     }
 
@@ -337,15 +316,12 @@ function shouldBypassAutoMod(
                     permissionName
                 ];
 
-            if (!permission) {
-                return false;
-            }
-
-            return member
-                .permissions
-                .has(
+            return Boolean(
+                permission &&
+                member.permissions.has(
                     permission
-                );
+                )
+            );
         }
     );
 }
@@ -360,17 +336,15 @@ function isMessageSpam(
     message
 ) {
     if (
-        !automodConfig.spam ||
         !automodConfig
             .spam
-            .enabled
+            ?.enabled
     ) {
         return false;
     }
 
     const key =
-        `${message.guild.id}:` +
-        `${message.author.id}`;
+        `${message.guild.id}:${message.author.id}`;
 
     const now =
         Date.now();
@@ -381,14 +355,13 @@ function isMessageSpam(
             .spam
             .intervalMilliseconds;
 
-    const previousTimestamps =
-        messageHistory.get(
-            key
-        ) ??
-        [];
-
     const activeTimestamps =
-        previousTimestamps.filter(
+        (
+            messageHistory.get(
+                key
+            ) ??
+            []
+        ).filter(
             timestamp =>
                 timestamp >=
                 minimumTimestamp
@@ -412,7 +385,7 @@ function isMessageSpam(
 }
 
 /**
- * Detect repeated-message spam.
+ * Detect duplicate-message spam.
  *
  * @param {import('discord.js').Message} message
  * @returns {boolean}
@@ -422,10 +395,8 @@ function isDuplicateSpam(
 ) {
     if (
         !automodConfig
-            .duplicateMessages ||
-        !automodConfig
             .duplicateMessages
-            .enabled
+            ?.enabled
     ) {
         return false;
     }
@@ -435,13 +406,14 @@ function isDuplicateSpam(
             message.content
         );
 
-    if (!normalizedContent) {
+    if (
+        !normalizedContent
+    ) {
         return false;
     }
 
     const key =
-        `${message.guild.id}:` +
-        `${message.author.id}`;
+        `${message.guild.id}:${message.author.id}`;
 
     const now =
         Date.now();
@@ -457,9 +429,9 @@ function isDuplicateSpam(
             normalizedContent ||
         now -
             previousData.firstMessageAt >
-            automodConfig
-                .duplicateMessages
-                .intervalMilliseconds
+        automodConfig
+            .duplicateMessages
+            .intervalMilliseconds
     ) {
         duplicateHistory.set(
             key,
@@ -481,11 +453,6 @@ function isDuplicateSpam(
     previousData.count +=
         1;
 
-    duplicateHistory.set(
-        key,
-        previousData
-    );
-
     return (
         previousData.count >=
         automodConfig
@@ -503,36 +470,18 @@ function isDuplicateSpam(
 function getMentionCount(
     message
 ) {
-    const userMentions =
-        message.mentions.users.size;
-
-    const roleMentions =
-        message.mentions.roles.size;
-
-    const everyoneMention =
-        message.mentions.everyone
-            ? 1
-            : 0;
-
     return (
-        userMentions +
-        roleMentions +
-        everyoneMention
+        message.mentions.users.size +
+        message.mentions.roles.size +
+        (
+            message.mentions.everyone
+                ? 1
+                : 0
+        )
     );
 }/**
- * Run progression systems after a valid
- * message passes every Guardian check.
- *
- * Order:
- * 1. Achievement System
- * 2. Title System
- * 3. Title Soul Progression Feed
- *
- * Achievement notifications are handled
- * directly by achievementHandler.js.
- *
- * Title notifications remain published
- * through the Soul Progression Feed.
+ * Run progression systems
+ * for a valid message.
  *
  * @param {import('discord.js').Message} message
  * @returns {Promise<void>}
@@ -540,37 +489,27 @@ function getMentionCount(
 async function checkMessageProgression(
     message
 ) {
-    let unlockedAchievements =
-        [];
-
     try {
-        const achievementResult =
+        const achievements =
             await checkMessageAchievements(
                 message
             );
 
-        unlockedAchievements =
+        if (
             Array.isArray(
-                achievementResult
-            )
-                ? achievementResult
-                : [];
+                achievements
+            ) &&
+            achievements.length >
+            0
+        ) {
+            console.log(
+                `🏆 ${achievements.length} Achievement(s) unlocked for ${message.author.tag}.`
+            );
+        }
     } catch (error) {
         console.error(
-            '❌ Umbra Achievement check failed:'
-        );
-
-        console.error(
+            '❌ Achievement check failed:',
             error
-        );
-    }
-
-    if (
-        unlockedAchievements.length >
-        0
-    ) {
-        console.log(
-            `🏆 ${unlockedAchievements.length} new Achievement(s) unlocked for ${message.author.tag}.`
         );
     }
 
@@ -584,10 +523,7 @@ async function checkMessageProgression(
             );
     } catch (error) {
         console.error(
-            '❌ Umbra Title check failed:'
-        );
-
-        console.error(
+            '❌ Title check failed:',
             error
         );
 
@@ -609,14 +545,9 @@ async function checkMessageProgression(
     }
 
     console.log(
-        `🏷️ ${newlyUnlockedTitles.length} new Title(s) unlocked for ${message.author.tag}.`
+        `♜ ${newlyUnlockedTitles.length} Title(s) unlocked for ${message.author.tag}.`
     );
 
-    /*
-     * Chronicle Titles are published
-     * only inside the configured
-     * Soul Progression Feed.
-     */
     await sendTitleFeed({
         member:
             message.member,
@@ -625,12 +556,12 @@ async function checkMessageProgression(
             newlyUnlockedTitles,
 
         source:
-            'Soul Level, Achievement or spiritual progression'
+            'Automatic progression'
     });
 }
 
 /**
- * Find Umbra AutoMod log channel.
+ * Find the AutoMod log channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -641,37 +572,33 @@ function findLogChannel(
     if (
         automodConfig.logChannelId
     ) {
-        const channelById =
+        const channel =
             guild.channels.cache.get(
                 automodConfig
                     .logChannelId
             );
 
         if (
-            channelById &&
-            channelById.isTextBased()
+            channel?.isTextBased()
         ) {
-            return channelById;
+            return channel;
         }
     }
 
-    const channelByName =
+    return (
         guild.channels.cache.find(
             channel =>
                 channel.isTextBased() &&
                 channel.name ===
                     automodConfig
                         .logChannelName
-        );
-
-    return (
-        channelByName ??
+        ) ||
         null
     );
 }
 
 /**
- * Send Umbra AutoMod log.
+ * Send a compact AutoMod log.
  *
  * @param {import('discord.js').Message} message
  * @param {string} reason
@@ -690,11 +617,9 @@ async function sendAutoModLog(
             message.guild
         );
 
-    if (!logChannel) {
-        console.warn(
-            `⚠️ Umbra AutoMod log channel was not found in ${message.guild.name}.`
-        );
-
+    if (
+        !logChannel
+    ) {
         return;
     }
 
@@ -714,7 +639,7 @@ async function sendAutoModLog(
     const caseNumber =
         savedCase?.id
             ? `#${savedCase.id}`
-            : 'Not saved';
+            : 'Unavailable';
 
     const embed =
         new EmbedBuilder()
@@ -723,62 +648,50 @@ async function sendAutoModLog(
             )
             .setAuthor({
                 name:
-                    'Umbra AutoMod',
+                    'Evelynn • AutoMod',
 
                 iconURL:
                     message.client.user
                         .displayAvatarURL({
-                            extension:
-                                'png',
-
                             size:
-                                256
+                                256,
+
+                            forceStatic:
+                                false
                         })
             })
             .setTitle(
                 `🛡️ AutoMod Case ${caseNumber}`
             )
             .setDescription(
-                'Umbra detected and recorded a violation within Las Noches.'
+                'A message violation was detected.'
             )
             .addFields(
                 {
                     name:
-                        '🌑 Soul',
+                        '✦・MEMBER',
 
                     value:
-                        `${message.author}\n` +
-                        `\`${message.author.id}\``,
+                        `${message.author}\n\`${message.author.id}\``,
 
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '📺 Channel',
+                        '📺・CHANNEL',
 
                     value:
-                        `${message.channel}\n` +
-                        `\`${message.channel.id}\``,
+                        `${message.channel}`,
 
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '🆔 Case ID',
-
-                    value:
-                        savedCase?.id
-                            ? `\`${savedCase.id}\``
-                            : '`Database error`',
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🚨 Violation',
+                        '🚨・VIOLATION',
 
                     value:
                         reason,
@@ -786,9 +699,10 @@ async function sendAutoModLog(
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '🛡️ Guardian Action',
+                        '🛡️・ACTION',
 
                     value:
                         action,
@@ -796,9 +710,10 @@ async function sendAutoModLog(
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '💬 Detected Message',
+                        '💬・MESSAGE',
 
                     value:
                         `\`\`\`\n${cleanContent}\n\`\`\``,
@@ -810,9 +725,6 @@ async function sendAutoModLog(
             .setThumbnail(
                 message.author
                     .displayAvatarURL({
-                        extension:
-                            'png',
-
                         size:
                             256,
 
@@ -820,11 +732,11 @@ async function sendAutoModLog(
                             false
                     })
             )
-            .setTimestamp()
             .setFooter({
                 text:
-                    `🌙 Umbra • Guardian of Las Noches • Soul ID: ${message.author.id}`
-            });
+                    'TTS • AutoMod'
+            })
+            .setTimestamp();
 
     try {
         await logChannel.send({
@@ -834,14 +746,13 @@ async function sendAutoModLog(
         });
     } catch (error) {
         console.error(
-            '❌ Failed to send Umbra AutoMod log:'
-        );
-
-        console.error(
+            '❌ AutoMod log failed:',
             error
         );
     }
-}/**
+}
+
+/**
  * Delete a violating message.
  *
  * @param {import('discord.js').Message} message
@@ -850,11 +761,9 @@ async function sendAutoModLog(
 async function deleteViolationMessage(
     message
 ) {
-    if (!message.deletable) {
-        console.warn(
-            `⚠️ Umbra cannot delete a message in #${message.channel.name}.`
-        );
-
+    if (
+        !message.deletable
+    ) {
         return false;
     }
 
@@ -864,10 +773,7 @@ async function deleteViolationMessage(
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra AutoMod failed to delete a message:'
-        );
-
-        console.error(
+            '❌ AutoMod message delete failed:',
             error
         );
 
@@ -876,7 +782,7 @@ async function deleteViolationMessage(
 }
 
 /**
- * Apply a Discord timeout.
+ * Apply a timeout.
  *
  * @param {import('discord.js').GuildMember} member
  * @param {number} duration
@@ -897,16 +803,13 @@ async function applyTimeout(
     try {
         await member.timeout(
             duration,
-            `Umbra AutoMod: ${reason}`
+            `Evelynn AutoMod: ${reason}`
         );
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra AutoMod failed to timeout a member:'
-        );
-
-        console.error(
+            '❌ AutoMod timeout failed:',
             error
         );
 
@@ -915,7 +818,7 @@ async function applyTimeout(
 }
 
 /**
- * Send a temporary channel warning.
+ * Send a temporary warning.
  *
  * @param {import('discord.js').Message} message
  * @param {string} warningText
@@ -935,7 +838,7 @@ async function sendTemporaryWarning(
         const warningMessage =
             await message.channel.send({
                 content:
-                    `${message.author}, 🌙 **Umbra Guardian:** ${warningText}`,
+                    `${message.author}, **Evelynn AutoMod:** ${warningText}`,
 
                 allowedMentions: {
                     users: [
@@ -953,19 +856,14 @@ async function sendTemporaryWarning(
         const warningTimer =
             setTimeout(
                 async () => {
-                    try {
-                        if (
-                            warningMessage
-                                .deletable
-                        ) {
-                            await warningMessage
-                                .delete();
-                        }
-                    } catch {
-                        /*
-                         * The warning may already
-                         * have been deleted.
-                         */
+                    if (
+                        warningMessage.deletable
+                    ) {
+                        await warningMessage
+                            .delete()
+                            .catch(
+                                () => null
+                            );
                     }
                 },
 
@@ -973,18 +871,10 @@ async function sendTemporaryWarning(
                     .warningDeleteDelayMilliseconds
             );
 
-        if (
-            typeof warningTimer.unref ===
-            'function'
-        ) {
-            warningTimer.unref();
-        }
+        warningTimer.unref?.();
     } catch (error) {
         console.error(
-            '❌ Failed to send Umbra AutoMod warning:'
-        );
-
-        console.error(
+            '❌ AutoMod warning failed:',
             error
         );
     }
@@ -1008,54 +898,43 @@ async function saveAutoModCase(
     timedOut
 ) {
     try {
-        const savedCase =
-            await addAutoModCase({
-                guildId:
-                    message.guild.id,
+        return await addAutoModCase({
+            guildId:
+                message.guild.id,
 
-                userId:
-                    message.author.id,
+            userId:
+                message.author.id,
 
-                channelId:
-                    message.channel.id,
+            channelId:
+                message.channel.id,
 
-                reason:
-                    violation.reason,
+            reason:
+                violation.reason,
 
-                action,
+            action,
 
-                messageContent:
-                    message.content
-                        ? message.content
-                            .slice(
-                                0,
-                                4_000
-                            )
-                        : null,
+            messageContent:
+                message.content
+                    ? message.content.slice(
+                        0,
+                        4_000
+                    )
+                    : null,
 
-                messageDeleted:
-                    deleted,
+            messageDeleted:
+                deleted,
 
-                timeoutApplied:
-                    timedOut,
+            timeoutApplied:
+                timedOut,
 
-                timeoutDurationMilliseconds:
-                    violation
-                        .timeoutDuration ??
-                    null
-            });
-
-        console.log(
-            `🛡️ Umbra AutoMod Case #${savedCase.id} saved for ${message.author.tag}.`
-        );
-
-        return savedCase;
+            timeoutDurationMilliseconds:
+                violation
+                    .timeoutDuration ??
+                null
+        });
     } catch (error) {
         console.error(
-            '❌ Failed to save Umbra AutoMod case:'
-        );
-
-        console.error(
+            '❌ AutoMod case save failed:',
             error
         );
 
@@ -1064,7 +943,7 @@ async function saveAutoModCase(
 }
 
 /**
- * Process an Umbra AutoMod violation.
+ * Process an AutoMod violation.
  *
  * @param {import('discord.js').Message} message
  * @param {{
@@ -1083,37 +962,28 @@ async function processViolation(
             message
         );
 
-    let timedOut =
-        false;
-
-    if (
+    const timedOut =
         violation.timeoutDuration
-    ) {
-        timedOut =
-            await applyTimeout(
+            ? await applyTimeout(
                 message.member,
-                violation
-                    .timeoutDuration,
+                violation.timeoutDuration,
                 violation.reason
-            );
-    }
+            )
+            : false;
 
-    const actions =
-        [];
-
-    actions.push(
+    const actions = [
         deleted
             ? 'Message deleted'
-            : 'Message could not be deleted'
-    );
+            : 'Delete failed'
+    ];
 
     if (
         violation.timeoutDuration
     ) {
         actions.push(
             timedOut
-                ? 'Soul timed out'
-                : 'Timeout could not be applied'
+                ? 'Member timed out'
+                : 'Timeout failed'
         );
     }
 
@@ -1152,7 +1022,13 @@ async function processViolation(
         false,
 
     /**
-     * Umbra Guardian entry point.
+     * Handle incoming server messages.
+     *
+     * AutoMod violations stop further
+     * processing for that message.
+     *
+     * Safe messages continue into
+     * progression systems.
      *
      * @param {import('discord.js').Message} message
      * @returns {Promise<void>}
@@ -1169,10 +1045,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Progression remains active when
-             * AutoMod itself is disabled.
-             */
             if (
                 !automodConfig.enabled
             ) {
@@ -1183,11 +1055,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Staff and other configured bypass
-             * members skip moderation checks,
-             * but still receive progression.
-             */
             if (
                 shouldBypassAutoMod(
                     message.member
@@ -1200,9 +1067,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Scam / phishing detection.
-             */
             const scamResult =
                 detectScam(
                     message.content
@@ -1211,19 +1075,15 @@ async function processViolation(
             if (
                 scamResult.detected
             ) {
-                const scamType =
-                    scamResult.scamType ||
-                    'Suspicious scam activity';
-
                 await processViolation(
                     message,
                     {
                         reason:
-                            `Scam or Phishing Detected (${scamType})`,
+                            `Scam or Phishing (${scamResult.scamType || 'Suspicious Content'})`,
 
                         warning:
                             scamResult.warning ||
-                            'Your message contained suspicious scam or phishing content and has been removed.',
+                            'Suspicious scam or phishing content was removed.',
 
                         timeoutDuration:
                             scamResult.timeoutDuration ??
@@ -1236,9 +1096,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Discord invite protection.
-             */
             if (
                 automodConfig
                     .inviteProtection
@@ -1266,15 +1123,14 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Bad word detection.
-             */
             const badWord =
                 findBadWord(
                     message.content
                 );
 
-            if (badWord) {
+            if (
+                badWord
+            ) {
                 await processViolation(
                     message,
                     {
@@ -1297,9 +1153,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Rapid-message spam.
-             */
             if (
                 isMessageSpam(
                     message
@@ -1324,9 +1177,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Duplicate-message spam.
-             */
             if (
                 isDuplicateSpam(
                     message
@@ -1351,9 +1201,6 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Mention spam.
-             */
             const mentionCount =
                 getMentionCount(
                     message
@@ -1387,30 +1234,21 @@ async function processViolation(
                 return;
             }
 
-            /*
-             * Safe message.
-             * Run progression systems.
-             */
             await checkMessageProgression(
                 message
             );
         } catch (error) {
             console.error(
-                '❌ Umbra MessageCreate error:'
-            );
-
-            console.error(
+                '❌ Evelynn MessageCreate error:',
                 error
             );
         }
     }
 };
 
-/*
- * Periodically clean cached spam history.
- *
- * This prevents old member activity from
- * remaining in memory indefinitely.
+/**
+ * Clean old spam history
+ * from memory.
  */
 const cleanupTimer =
     setInterval(
@@ -1437,7 +1275,7 @@ const cleanupTimer =
                 ]
                 of messageHistory.entries()
             ) {
-                const filtered =
+                const active =
                     timestamps.filter(
                         timestamp =>
                             now -
@@ -1446,7 +1284,7 @@ const cleanupTimer =
                     );
 
                 if (
-                    filtered.length ===
+                    active.length ===
                     0
                 ) {
                     messageHistory.delete(
@@ -1455,7 +1293,7 @@ const cleanupTimer =
                 } else {
                     messageHistory.set(
                         key,
-                        filtered
+                        active
                     );
                 }
             }
@@ -1478,18 +1316,10 @@ const cleanupTimer =
                 }
             }
         },
+
         5 *
-            60 *
-            1_000
+        60 *
+        1_000
     );
 
-/*
- * The cleanup interval must not keep
- * the Node.js process alive by itself.
- */
-if (
-    typeof cleanupTimer.unref ===
-    'function'
-) {
-    cleanupTimer.unref();
-}
+cleanupTimer.unref?.();

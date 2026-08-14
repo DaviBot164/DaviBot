@@ -9,15 +9,11 @@ const {
 const kingdomFeedConfig =
     require('../config/kingdomFeed');
 
-/**
- * Maximum number of Titles displayed
- * in one Kingdom Feed notification.
- */
 const MAX_VISIBLE_TITLES =
     10;
 
 /**
- * Format a numeric value.
+ * Format a number.
  *
  * @param {number|string|null|undefined} value
  * @returns {string}
@@ -25,66 +21,23 @@ const MAX_VISIBLE_TITLES =
 function formatNumber(
     value
 ) {
-    const numericValue =
+    const number =
         Number(
             value
         );
 
-    if (
-        !Number.isFinite(
-            numericValue
+    return Number.isFinite(
+        number
+    )
+        ? number.toLocaleString(
+            'en-US'
         )
-    ) {
-        return '0';
-    }
-
-    return numericValue.toLocaleString(
-        'en-US'
-    );
+        : '0';
 }
 
 /**
- * Format a Discord timestamp.
- *
- * @param {Date|string|number|null|undefined} value
- * @param {string} style
- * @returns {string}
- */
-function formatDiscordDate(
-    value,
-    style = 'F'
-) {
-    const date =
-        value
-            ? (
-                value instanceof Date
-                    ? value
-                    : new Date(
-                        value
-                    )
-            )
-            : new Date();
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return 'Not recorded';
-    }
-
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1_000
-        );
-
-    return `<t:${unixTimestamp}:${style}>`;
-}
-
-/**
- * Check whether one Feed event type
- * is currently enabled.
+ * Check whether a feed event
+ * is enabled.
  *
  * @param {'achievements'|'titles'|'ranks'|'levels'} eventType
  * @returns {boolean}
@@ -92,13 +45,8 @@ function formatDiscordDate(
 function isFeedEventEnabled(
     eventType
 ) {
-    if (
-        !kingdomFeedConfig.enabled
-    ) {
-        return false;
-    }
-
     return Boolean(
+        kingdomFeedConfig.enabled &&
         kingdomFeedConfig
             .events?.[
                 eventType
@@ -107,12 +55,7 @@ function isFeedEventEnabled(
 }
 
 /**
- * Find the configured Kingdom Feed
- * text channel.
- *
- * Search priority:
- * 1. Configured channel ID
- * 2. Configured channel name
+ * Find the configured feed channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -127,37 +70,36 @@ function findKingdomFeedChannel(
         return null;
     }
 
-    const configuredChannelId =
+    const channelId =
         String(
             kingdomFeedConfig.channelId ||
             ''
         ).trim();
 
     if (
-        configuredChannelId
+        channelId
     ) {
-        const channelById =
+        const channel =
             guild.channels.cache.get(
-                configuredChannelId
+                channelId
             );
 
         if (
-            channelById &&
-            channelById.isTextBased() &&
-            !channelById.isThread()
+            channel?.isTextBased() &&
+            !channel.isThread()
         ) {
-            return channelById;
+            return channel;
         }
     }
 
-    const configuredChannelName =
+    const channelName =
         String(
             kingdomFeedConfig.channelName ||
             ''
         ).trim();
 
     if (
-        !configuredChannelName
+        !channelName
     ) {
         return null;
     }
@@ -168,15 +110,15 @@ function findKingdomFeedChannel(
                 channel.isTextBased() &&
                 !channel.isThread() &&
                 channel.name ===
-                    configuredChannelName
+                    channelName
         ) ||
         null
     );
 }
 
 /**
- * Check whether Umbra can send embeds
- * inside the Kingdom Feed channel.
+ * Check whether the bot can
+ * publish to the feed.
  *
  * @param {import('discord.js').GuildTextBasedChannel} channel
  * @returns {boolean}
@@ -184,17 +126,12 @@ function findKingdomFeedChannel(
 function canSendToKingdomFeed(
     channel
 ) {
-    if (
-        !channel ||
-        !channel.guild
-    ) {
-        return false;
-    }
-
     const botMember =
-        channel.guild.members.me;
+        channel?.guild?.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         return false;
     }
 
@@ -203,25 +140,17 @@ function canSendToKingdomFeed(
             botMember
         );
 
-    if (!permissions) {
-        return false;
-    }
-
-    return (
-        permissions.has(
-            PermissionFlagsBits.ViewChannel
-        ) &&
-        permissions.has(
-            PermissionFlagsBits.SendMessages
-        ) &&
-        permissions.has(
+    return Boolean(
+        permissions?.has([
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
-        )
+        ])
     );
 }
 
 /**
- * Create the shared Kingdom Feed Embed.
+ * Create a shared TTS feed embed.
  *
  * @param {Object} options
  * @param {import('discord.js').Guild} options.guild
@@ -246,7 +175,7 @@ function createKingdomFeedEmbed({
                 'png',
 
             size:
-                1024,
+                512,
 
             forceStatic:
                 false
@@ -258,25 +187,16 @@ function createKingdomFeedEmbed({
                 'png',
 
             size:
-                1024,
+                512,
 
             forceStatic:
                 false
-        }) ||
+        }) ??
         null;
 
     return createEmbed({
         title,
-
-        description:
-            [
-                description,
-                '',
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-                '',
-                '*A new event has been preserved within the eternal chronicles of Las Noches.*'
-            ].join('\n'),
-
+        description,
         color,
 
         thumbnail:
@@ -285,30 +205,22 @@ function createKingdomFeedEmbed({
 
         author: {
             name:
-                `${guild.name} • Kingdom Chronicle`,
+                'Evelynn • THE Ⅹ SINS',
 
             iconURL:
                 guildIcon ||
                 userAvatar
         },
 
-        fields,
-
-        footer: {
-            text:
-                kingdomFeedConfig
-                    .footer
-                    .text
-        }
+        fields
     });
 }
 
 /**
- * Send one Embed into the configured
- * Kingdom Feed channel.
+ * Send an embed to the feed.
  *
- * Feed failures must never interrupt
- * Achievement, Title, Rank or Level logic.
+ * Feed failures never interrupt
+ * progression systems.
  *
  * @param {import('discord.js').Guild} guild
  * @param {import('discord.js').EmbedBuilder} embed
@@ -324,9 +236,11 @@ async function sendKingdomFeedEmbed(
                 guild
             );
 
-        if (!channel) {
+        if (
+            !channel
+        ) {
             console.warn(
-                `⚠️ Kingdom Feed channel was not found in ${guild?.name || 'Unknown Guild'}.`
+                `⚠️ Progression feed channel not found in ${guild?.name || 'Unknown Server'}.`
             );
 
             return false;
@@ -338,7 +252,7 @@ async function sendKingdomFeedEmbed(
             )
         ) {
             console.warn(
-                `⚠️ Umbra cannot send Kingdom Feed embeds in #${channel.name}.`
+                `⚠️ Evelynn cannot publish in #${channel.name}.`
             );
 
             return false;
@@ -347,13 +261,18 @@ async function sendKingdomFeedEmbed(
         await channel.send({
             embeds: [
                 embed
-            ]
+            ],
+
+            allowedMentions: {
+                parse:
+                    []
+            }
         });
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra Kingdom Feed send error:',
+            '❌ Progression feed error:',
             error
         );
 
@@ -362,7 +281,7 @@ async function sendKingdomFeedEmbed(
 }
 
 /**
- * Normalize one Achievement object.
+ * Normalize an Achievement.
  *
  * @param {Object|null|undefined} achievement
  * @returns {Object}
@@ -371,18 +290,13 @@ function normalizeAchievement(
     achievement
 ) {
     return {
-        id:
-            achievement?.achievementId ||
-            achievement?.id ||
-            'unknown_achievement',
-
         name:
             achievement?.name ||
             'Unknown Achievement',
 
         description:
             achievement?.description ||
-            'No description was recorded.',
+            'No description available.',
 
         icon:
             achievement?.icon ||
@@ -390,16 +304,15 @@ function normalizeAchievement(
 
         category:
             achievement?.category ||
-            'General',
-
-        unlockedAt:
-            achievement?.unlockedAt ||
-            new Date()
+            'General'
     };
 }
 
 /**
- * Normalize one Chronicle Title object.
+ * Normalize a Title.
+ *
+ * Internal database names may still
+ * use legacy terminology.
  *
  * @param {Object|null|undefined} title
  * @returns {Object}
@@ -408,23 +321,10 @@ function normalizeTitle(
     title
 ) {
     return {
-        id:
-            title?.titleId ||
-            title?.id ||
-            'unknown_title',
-
-        name:
-            title?.name ||
-            'Unknown Title',
-
         displayName:
             title?.displayName ||
             title?.name ||
-            'Unknown Chronicle Title',
-
-        description:
-            title?.description ||
-            'No description was recorded.',
+            'Unknown Title',
 
         rarity:
             title?.rarity ||
@@ -432,20 +332,12 @@ function normalizeTitle(
 
         category:
             title?.category ||
-            'General',
-
-        unlockSource:
-            title?.unlockSource ||
-            'Unknown Source',
-
-        unlockedAt:
-            title?.unlockedAt ||
-            new Date()
+            'General'
     };
 }
 
 /**
- * Format multiple unlocked Titles.
+ * Format unlocked Titles.
  *
  * @param {Object[]} titles
  * @returns {string}
@@ -460,16 +352,15 @@ function formatUnlockedTitles(
             )
                 ? titles
                 : []
-        )
-            .map(
-                normalizeTitle
-            );
+        ).map(
+            normalizeTitle
+        );
 
     if (
         normalizedTitles.length ===
         0
     ) {
-        return 'No Chronicle Titles were supplied.';
+        return 'No Titles available.';
     }
 
     const visibleTitles =
@@ -481,10 +372,7 @@ function formatUnlockedTitles(
     const lines =
         visibleTitles.map(
             title =>
-                [
-                    `🏷️ **${title.displayName}**`,
-                    `-# ${title.rarity} • ${title.category}`
-                ].join('\n')
+                `◆ **${title.displayName}** — ${title.rarity}`
         );
 
     const remaining =
@@ -496,14 +384,75 @@ function formatUnlockedTitles(
         0
     ) {
         lines.push(
-            `-# +${formatNumber(remaining)} additional Chronicle Titles`
+            `+${formatNumber(remaining)} more`
         );
     }
 
-    return lines.join('\n\n');
+    return lines.join(
+        '\n'
+    );
 }/**
- * Send an Achievement unlock into the
- * public Kingdom Feed.
+ * Convert legacy internal Rank names
+ * into public THE Ⅹ SINS names.
+ *
+ * Database values remain untouched
+ * until the Rank System is migrated.
+ *
+ * @param {string|null|undefined} rank
+ * @returns {string}
+ */
+function formatRankName(
+    rank
+) {
+    const rankNames = {
+        '👑 Espada 0':
+            'Ø・SIN OF DOMINION',
+
+        'Ⅰ Espada':
+            '♛・SIN OF PRIDE',
+
+        'Ⅱ Espada':
+            '🩸・SIN OF WRATH',
+
+        'Ⅲ Espada':
+            '🐍・SIN OF ENVY',
+
+        'Ⅳ Espada':
+            '💰・SIN OF GREED',
+
+        'Ⅴ Espada':
+            '🖤・SIN OF LUST',
+
+        'Ⅵ Espada':
+            '🍷・SIN OF GLUTTONY',
+
+        'Ⅶ Espada':
+            '💤・SIN OF SLOTH',
+
+        'Ⅷ Espada':
+            '☠️・SIN OF RUIN',
+
+        'Ⅸ Espada':
+            '⛧・SIN OF HERESY',
+
+        'Ⅹ Espada':
+            '⚔️・SIN OF VENGEANCE'
+    };
+
+    if (
+        !rank
+    ) {
+        return 'Unranked';
+    }
+
+    return (
+        rankNames[rank] ||
+        rank
+    );
+}
+
+/**
+ * Send an Achievement notification.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -536,10 +485,10 @@ async function sendAchievementFeed({
                 member.guild,
 
             title:
-                `${normalizedAchievement.icon} Achievement Unlocked`,
+                `${normalizedAchievement.icon}・ACHIEVEMENT UNLOCKED`,
 
             description:
-                `${member} has unlocked a new Soul Chronicle within Las Noches.`,
+                `${member} unlocked **${normalizedAchievement.name}**.`,
 
             color:
                 kingdomFeedConfig
@@ -552,28 +501,21 @@ async function sendAchievementFeed({
             fields: [
                 {
                     name:
-                        '🌙 Soul',
+                        '🏆・ACHIEVEMENT',
 
                     value:
-                        `${member}\n` +
-                        `\`${member.id}\``,
+                        [
+                            `**${normalizedAchievement.name}**`,
+                            normalizedAchievement.description
+                        ].join('\n'),
 
                     inline:
-                        true
+                        false
                 },
+
                 {
                     name:
-                        '🏆 Achievement',
-
-                    value:
-                        `${normalizedAchievement.icon} **${normalizedAchievement.name}**`,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📚 Category',
+                        '◆・CATEGORY',
 
                     value:
                         normalizedAchievement.category,
@@ -581,42 +523,14 @@ async function sendAchievementFeed({
                     inline:
                         true
                 },
+
                 {
                     name:
-                        '📖 Description',
-
-                    value:
-                        normalizedAchievement.description,
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🕒 Unlocked At',
-
-                    value:
-                        [
-                            formatDiscordDate(
-                                normalizedAchievement.unlockedAt,
-                                'F'
-                            ),
-                            formatDiscordDate(
-                                normalizedAchievement.unlockedAt,
-                                'R'
-                            )
-                        ].join('\n'),
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '⚙️ Unlock Source',
+                        '⚙️・SOURCE',
 
                     value:
                         source ||
-                        'Automatic Soul progression',
+                        'Automatic progression',
 
                     inline:
                         true
@@ -631,8 +545,7 @@ async function sendAchievementFeed({
 }
 
 /**
- * Send newly unlocked Chronicle Titles
- * into the public Kingdom Feed.
+ * Send newly unlocked Titles.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -673,9 +586,6 @@ async function sendTitleFeed({
             normalizeTitle
         );
 
-    const firstTitle =
-        normalizedTitles[0];
-
     const embed =
         createKingdomFeedEmbed({
             guild:
@@ -684,14 +594,16 @@ async function sendTitleFeed({
             title:
                 safeTitles.length ===
                 1
-                    ? '🏷️ Chronicle Title Unlocked'
-                    : `🏷️ ${formatNumber(safeTitles.length)} Chronicle Titles Unlocked`,
+                    ? '♜・TITLE UNLOCKED'
+                    : `♜・${formatNumber(
+                        safeTitles.length
+                    )} TITLES UNLOCKED`,
 
             description:
                 safeTitles.length ===
                 1
-                    ? `${member} has unlocked a new Chronicle Title.`
-                    : `${member} has unlocked multiple Chronicle Titles within Las Noches.`,
+                    ? `${member} earned a new Title.`
+                    : `${member} earned multiple Titles.`,
 
             color:
                 kingdomFeedConfig
@@ -704,39 +616,7 @@ async function sendTitleFeed({
             fields: [
                 {
                     name:
-                        '🌙 Soul',
-
-                    value:
-                        `${member}\n` +
-                        `\`${member.id}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🏷️ Titles Unlocked',
-
-                    value:
-                        `\`${formatNumber(safeTitles.length)}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🌟 Highest Visible Rarity',
-
-                    value:
-                        firstTitle?.rarity ||
-                        'Common',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📜 Chronicle Titles',
+                        '♜・TITLES',
 
                     value:
                         formatUnlockedTitles(
@@ -746,27 +626,14 @@ async function sendTitleFeed({
                     inline:
                         false
                 },
+
                 {
                     name:
-                        '⚙️ Unlock Source',
+                        '⚙️・SOURCE',
 
                     value:
                         source ||
-                        firstTitle?.unlockSource ||
-                        'Automatic Soul progression',
-
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        '🕒 Recorded At',
-
-                    value:
-                        formatDiscordDate(
-                            firstTitle?.unlockedAt,
-                            'F'
-                        ),
+                        'Automatic progression',
 
                     inline:
                         false
@@ -781,8 +648,11 @@ async function sendTitleFeed({
 }
 
 /**
- * Determine whether one Rank change
- * represents a promotion or demotion.
+ * Determine the type of
+ * one Rank change.
+ *
+ * Legacy internal names remain here
+ * until the Rank database is migrated.
  *
  * @param {string|null|undefined} oldRank
  * @param {string|null|undefined} newRank
@@ -810,11 +680,7 @@ function classifyRankChange(
         'Ⅶ Espada',
         'Ⅷ Espada',
         'Ⅸ Espada',
-        'Ⅹ Espada',
-        '🌘 Privaron Espada',
-        '⚔️ Fracción',
-        '🦴 Numeros',
-        '⚪ Unranked Arrancar'
+        'Ⅹ Espada'
     ];
 
     const oldIndex =
@@ -854,8 +720,7 @@ function classifyRankChange(
 }
 
 /**
- * Send one Arrancar Rank assignment,
- * change or revocation to Kingdom Feed.
+ * Send a Sin Rank change.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -885,7 +750,7 @@ async function sendRankFeed({
         return false;
     }
 
-    const rankChangeType =
+    const changeType =
         revoked
             ? 'revocation'
             : classifyRankChange(
@@ -893,25 +758,25 @@ async function sendRankFeed({
                 newRank
             );
 
-    const titleMap = {
+    const titles = {
         assignment:
-            '⚔️ Arrancar Rank Assigned',
+            '⚔️・SIN RANK ASSIGNED',
 
         promotion:
-            '👑 Arrancar Promotion',
+            '♛・SIN PROMOTION',
 
         demotion:
-            '⬇️ Arrancar Demotion',
+            '⬇️・SIN DEMOTION',
 
         change:
-            '⚔️ Arrancar Rank Changed',
+            '⚔️・SIN RANK CHANGED',
 
         revocation:
-            '🌑 Arrancar Rank Revoked'
+            '◇・SIN RANK REMOVED'
     };
 
     const color =
-        rankChangeType ===
+        changeType ===
         'revocation'
             ? kingdomFeedConfig
                 .colors
@@ -920,132 +785,119 @@ async function sendRankFeed({
                 .colors
                 .promotion;
 
+    const fields = [
+        {
+            name:
+                '✦・MEMBER',
+
+            value:
+                `${member}`,
+
+            inline:
+                true
+        },
+
+        {
+            name:
+                '♛・STAFF',
+
+            value:
+                moderator
+                    ? `${moderator}`
+                    : 'Not recorded',
+
+            inline:
+                true
+        },
+
+        {
+            name:
+                '⚔️・PREVIOUS',
+
+            value:
+                formatRankName(
+                    oldRank
+                ),
+
+            inline:
+                true
+        },
+
+        {
+            name:
+                revoked
+                    ? '◇・CURRENT'
+                    : 'Ⅹ・NEW RANK',
+
+            value:
+                revoked
+                    ? 'Unranked'
+                    : formatRankName(
+                        newRank
+                    ),
+
+            inline:
+                true
+        },
+
+        {
+            name:
+                '📜・REASON',
+
+            value:
+                reason ||
+                'No reason provided.',
+
+            inline:
+                false
+        }
+    ];
+
+    if (
+        historyId
+    ) {
+        fields.push({
+            name:
+                '🆔・RECORD',
+
+            value:
+                `\`#${historyId}\``,
+
+            inline:
+                true
+        });
+    }
+
     const embed =
         createKingdomFeedEmbed({
             guild:
                 member.guild,
 
             title:
-                titleMap[
-                    rankChangeType
+                titles[
+                    changeType
                 ],
 
             description:
                 revoked
-                    ? `${member} no longer holds a manually assigned Arrancar Rank.`
-                    : `${member} has received a new position within the hierarchy of Las Noches.`,
+                    ? `${member} no longer holds a Sin Rank.`
+                    : `${member} received a new position within **THE Ⅹ SINS**.`,
 
             color,
 
             user:
                 member.user,
 
-            fields: [
-                {
-                    name:
-                        '🌙 Soul',
-
-                    value:
-                        `${member}\n` +
-                        `\`${member.id}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '👑 High Command',
-
-                    value:
-                        moderator
-                            ? `${moderator}\n\`${moderator.id}\``
-                            : 'Not recorded',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📜 Previous Rank',
-
-                    value:
-                        oldRank ||
-                        'No previous Rank',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        revoked
-                            ? '🌑 Current Rank'
-                            : '⚔️ New Rank',
-
-                    value:
-                        revoked
-                            ? 'No manually assigned Arrancar Rank'
-                            : (
-                                newRank ||
-                                'Not recorded'
-                            ),
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🆔 Hierarchy Record',
-
-                    value:
-                        historyId
-                            ? `\`#${historyId}\``
-                            : '`Pending Archive`',
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🕒 Recorded At',
-
-                    value:
-                        [
-                            formatDiscordDate(
-                                new Date(),
-                                'F'
-                            ),
-                            formatDiscordDate(
-                                new Date(),
-                                'R'
-                            )
-                        ].join('\n'),
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '📖 Reason',
-
-                    value:
-                        reason ||
-                        'No reason was provided.',
-
-                    inline:
-                        false
-                }
-            ]
+            fields
         });
 
     return sendKingdomFeedEmbed(
         member.guild,
         embed
     );
-}
-
-/**
- * Check whether one Level should appear
- * in the public Kingdom Feed.
+}/**
+ * Check whether a Level
+ * is a configured milestone.
  *
  * @param {number|string|null|undefined} level
  * @returns {boolean}
@@ -1064,7 +916,7 @@ function isLevelMilestone(
             )
         );
 
-    return (
+    return Boolean(
         Array.isArray(
             kingdomFeedConfig
                 .levelMilestones
@@ -1078,8 +930,7 @@ function isLevelMilestone(
 }
 
 /**
- * Send a major Level milestone into
- * the public Kingdom Feed.
+ * Send a Level milestone.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -1104,10 +955,64 @@ async function sendLevelFeed({
         !isLevelMilestone(
             newLevel
         ) ||
-        Number(newLevel) <=
-            Number(previousLevel)
+        Number(
+            newLevel
+        ) <=
+        Number(
+            previousLevel
+        )
     ) {
         return false;
+    }
+
+    const fields = [
+        {
+            name:
+                '⭐・LEVEL',
+
+            value:
+                [
+                    `\`${formatNumber(
+                        previousLevel
+                    )}\` → \`${formatNumber(
+                        newLevel
+                    )}\``
+                ].join('\n'),
+
+            inline:
+                true
+        },
+
+        {
+            name:
+                '◆・XP',
+
+            value:
+                `\`${formatNumber(
+                    totalXp
+                )} XP\``,
+
+            inline:
+                true
+        }
+    ];
+
+    if (
+        messageCount !==
+        null
+    ) {
+        fields.push({
+            name:
+                '💬・MESSAGES',
+
+            value:
+                `\`${formatNumber(
+                    messageCount
+                )}\``,
+
+            inline:
+                true
+        });
     }
 
     const embed =
@@ -1116,10 +1021,12 @@ async function sendLevelFeed({
                 member.guild,
 
             title:
-                `⭐ Level ${formatNumber(newLevel)} Milestone`,
+                `⭐・LEVEL ${formatNumber(
+                    newLevel
+                )} MILESTONE`,
 
             description:
-                `${member} has reached a major Soul Level milestone within Las Noches.`,
+                `${member} reached a new progression milestone.`,
 
             color:
                 kingdomFeedConfig
@@ -1129,81 +1036,7 @@ async function sendLevelFeed({
             user:
                 member.user,
 
-            fields: [
-                {
-                    name:
-                        '🌙 Soul',
-
-                    value:
-                        `${member}\n` +
-                        `\`${member.id}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '⭐ Previous Level',
-
-                    value:
-                        `\`${formatNumber(previousLevel)}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🌕 New Soul Level',
-
-                    value:
-                        `\`${formatNumber(newLevel)}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '✨ Spiritual Power',
-
-                    value:
-                        `\`${formatNumber(totalXp)} XP\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '💬 Messages Recorded',
-
-                    value:
-                        messageCount ===
-                            null
-                            ? 'Not recorded'
-                            : `\`${formatNumber(messageCount)}\``,
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '🕒 Milestone Reached',
-
-                    value:
-                        [
-                            formatDiscordDate(
-                                new Date(),
-                                'F'
-                            ),
-                            formatDiscordDate(
-                                new Date(),
-                                'R'
-                            )
-                        ].join('\n'),
-
-                    inline:
-                        false
-                }
-            ]
+            fields
         });
 
     return sendKingdomFeedEmbed(
@@ -1215,6 +1048,7 @@ async function sendLevelFeed({
 module.exports = {
     findKingdomFeedChannel,
     canSendToKingdomFeed,
+
     isFeedEventEnabled,
     isLevelMilestone,
 
