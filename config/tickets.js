@@ -3,21 +3,19 @@ module.exports = {
 
     panel: {
         title:
-            '🌑 Umbra Support',
+            '🎫 Evelynn Support',
 
         description:
             [
-                'Do you require assistance from the Shadow Wardens?',
+                'Need help from TTS Staff?',
                 '',
-                'Click the button below to open a private support ticket.',
+                'Open a private ticket below and describe your issue clearly.',
                 '',
-                'Please create a ticket only when you genuinely need help.',
-                '',
-                '*Umbra will guide your request beneath the crimson moon.*'
+                'Please create a ticket only when support is genuinely needed.'
             ].join('\n'),
 
         buttonLabel:
-            'Open a Ticket',
+            'Open Ticket',
 
         buttonEmoji:
             '🎫'
@@ -25,17 +23,15 @@ module.exports = {
 
     ticket: {
         title:
-            '🎫 Las Noches Support Ticket',
+            '🎫 THE Ⅹ SINS Support',
 
         description:
             [
-                'Your request has been received by Umbra.',
+                'Your ticket has been opened.',
                 '',
-                'Please describe your issue clearly and include all relevant information.',
+                'Describe your issue and include any relevant details.',
                 '',
-                'A Shadow Warden will assist you as soon as possible.',
-                '',
-                '*Remain patient while the Shadow Wardens review your request.*'
+                'TTS Staff will assist you as soon as possible.'
             ].join('\n'),
 
         closeButtonLabel:
