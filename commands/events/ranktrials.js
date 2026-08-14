@@ -17,11 +17,8 @@ const rankTrialConfig =
     require('../../config/rankTrials');
 
 const {
-    rankTrials:
-        rankTrialDatabase,
-
-    rankTrialParticipants:
-        participantDatabase
+    rankTrials: rankTrialDatabase,
+    rankTrialParticipants: participantDatabase
 } = require('../../database');
 
 const {
@@ -58,352 +55,186 @@ const {
     getCurrentRegistrationStatistics
 } = require('../../utils/rankTrials/registration');
 
-/**
- * Available Rank Trial publication keys.
- */
-const PUBLICATION_KEYS =
-    new Set([
-        'opening',
-        'registrationReminder',
-        'finalReminder',
-        'battleStart',
-        'closing'
-    ]);
-
-/**
- * Staff Review interaction prefix.
- *
- * Review buttons contain:
- *
- * action
- * trial key
- * target user ID
- *
- * Example:
- *
- * umbra:ranktrial:review:approve:2026-08:123456789
- */
 const REVIEW_COMPONENT_PREFIX =
     'umbra:ranktrial:review';
 
-/**
- * Convert a publication key into a
- * readable command option label.
- *
- * @param {string} publicationKey
- * @returns {string}
- */
-function getPublicationChoiceName(
-    publicationKey
-) {
-    switch (
-        publicationKey
-    ) {
-        case 'opening':
-            return '⚔️ Opening Announcement';
+const PUBLICATIONS = {
+    opening:
+        '⚔️ Opening Announcement',
 
-        case 'registrationReminder':
-            return '⏳ Registration Reminder';
+    registrationReminder:
+        '⏳ Registration Reminder',
 
-        case 'finalReminder':
-            return '🌙 Final Reminder';
+    finalReminder:
+        '🌙 Final Reminder',
 
-        case 'battleStart':
-            return '🏆 Battle Start';
+    battleStart:
+        '🏆 Battle Start',
 
-        case 'closing':
-            return '📜 Closing Notice';
+    closing:
+        '📜 Closing Notice'
+};
 
-        default:
-            return 'Unknown Publication';
-    }
+const PUBLICATION_KEYS =
+    new Set(
+        Object.keys(PUBLICATIONS)
+    );
+
+const EVENT_SUCCESS_STATUSES =
+    new Set([
+        'created',
+        'recreated',
+        'updated',
+        'synchronized'
+    ]);
+
+const PARTICIPANT_STATUS = {
+    REGISTERED:
+        '⚔️ `REGISTERED`',
+
+    WITHDRAWN:
+        '🚪 `WITHDRAWN`',
+
+    UNDER_REVIEW:
+        '🔎 `UNDER_REVIEW`',
+
+    APPROVED:
+        '✅ `APPROVED`',
+
+    REJECTED:
+        '❌ `REJECTED`'
+};
+
+const REGISTRATION_STATUS = {
+    UPCOMING:
+        '🕒 `UPCOMING`',
+
+    OPEN:
+        '🟢 `OPEN`',
+
+    CLOSED:
+        '🔒 `CLOSED`'
+};
+
+function getPublicationChoiceName(key) {
+    return (
+        PUBLICATIONS[key] ??
+        'Unknown Publication'
+    );
 }
 
-/**
- * Return one publication from a monthly
- * Rank Trial schedule.
- *
- * @param {Object} schedule
- * @param {string} publicationKey
- * @returns {Object|null}
- */
 function getScheduledPublication(
     schedule,
-    publicationKey
+    key
 ) {
     return (
         schedule.publications.find(
             publication =>
-                publication.key ===
-                publicationKey
+                publication.key === key
         ) ??
         null
     );
 }
 
-/**
- * Format a publication database status.
- *
- * @param {Object|null} publicationRecord
- * @returns {string}
- */
-function formatPublicationDatabaseStatus(
-    publicationRecord
-) {
-    if (!publicationRecord) {
+function formatPublicationStatus(record) {
+    if (!record) {
         return '`PENDING`';
     }
 
-    if (
-        publicationRecord.publishedAt &&
-        publicationRecord.messageId
-    ) {
-        return '`PUBLISHED`';
-    }
-
-    return '`RESERVED`';
+    return (
+        record.publishedAt &&
+        record.messageId
+    )
+        ? '`PUBLISHED`'
+        : '`RESERVED`';
 }
 
-/**
- * Format one publication schedule entry.
- *
- * @param {Object} scheduledPublication
- * @param {Object|null} publicationRecord
- * @returns {string}
- */
 function formatSchedulePublication(
-    scheduledPublication,
-    publicationRecord
+    publication,
+    record
 ) {
-    const label =
-        getPublicationLabel(
-            scheduledPublication.key
-        );
-
-    const mentionState =
-        scheduledPublication.mentionEveryone
-            ? '`@everyone`'
-            : '`No mention`';
-
     return [
-        `**${label}**`,
-        `${toDiscordTimestamp(
-            scheduledPublication.scheduledFor,
+        `**${getPublicationLabel(
+            publication.key
+        )}**`,
+        toDiscordTimestamp(
+            publication.scheduledFor,
             'F'
-        )}`,
-        `${toDiscordTimestamp(
-            scheduledPublication.scheduledFor,
+        ),
+        toDiscordTimestamp(
+            publication.scheduledFor,
             'R'
-        )}`,
-        `**Mention:** ${mentionState}`,
-        `**Database:** ${formatPublicationDatabaseStatus(
-            publicationRecord
+        ),
+        `**Mention:** ${
+            publication.mentionEveryone
+                ? '`@everyone`'
+                : '`No mention`'
+        }`,
+        `**Database:** ${formatPublicationStatus(
+            record
         )}`
     ].join('\n');
 }
 
-/**
- * Format one recent publication record.
- *
- * @param {Object} publication
- * @returns {string}
- */
-function formatHistoryEntry(
-    publication
-) {
-    const publishedTimestamp =
-        publication.publishedAt
-            ? toDiscordTimestamp(
-                publication.publishedAt,
-                'F'
-            )
-            : '`Not completed`';
-
-    const messageReference =
-        publication.messageId
-            ? `\`${publication.messageId}\``
-            : '`No message ID`';
-
+function formatHistoryEntry(publication) {
     return [
         `**${publication.publicationType}**`,
         `Trial: \`${publication.trialKey}\``,
-        `Published: ${publishedTimestamp}`,
-        `Message: ${messageReference}`
+        `Published: ${
+            publication.publishedAt
+                ? toDiscordTimestamp(
+                    publication.publishedAt,
+                    'F'
+                )
+                : '`Not completed`'
+        }`,
+        `Message: ${
+            publication.messageId
+                ? `\`${publication.messageId}\``
+                : '`No message ID`'
+        }`
     ].join('\n');
 }
 
-/**
- * Convert an Event Manager result into
- * a readable status label.
- *
- * @param {string|null|undefined} status
- * @returns {string}
- */
-function formatEventManagerStatus(
-    status
-) {
-    switch (
-        status
-    ) {
-        case 'created':
-            return '`CREATED`';
-
-        case 'recreated':
-            return '`RECREATED`';
-
-        case 'updated':
-            return '`UPDATED`';
-
-        case 'synchronized':
-            return '`SYNCHRONIZED`';
-
-        case 'scheduled':
-        case 'SCHEDULED':
-            return '`SCHEDULED`';
-
-        case 'active':
-        case 'ACTIVE':
-            return '`ACTIVE`';
-
-        case 'completed':
-        case 'COMPLETED':
-            return '`COMPLETED`';
-
-        case 'cancelled':
-        case 'CANCELLED':
-            return '`CANCELLED`';
-
-        case 'deleted':
-        case 'DELETED':
-            return '`DELETED`';
-
-        case 'missing':
-            return '`MISSING`';
-
-        case 'disabled':
-            return '`DISABLED`';
-
-        case 'failed':
-            return '`FAILED`';
-
-        default:
-            return '`NOT CREATED`';
+function formatEventStatus(status) {
+    if (!status) {
+        return '`NOT CREATED`';
     }
+
+    return `\`${String(status).toUpperCase()}\``;
 }
 
-/**
- * Build a Discord Scheduled Event link.
- *
- * @param {string} guildId
- * @param {string|null|undefined} eventId
- * @returns {string}
- */
+function formatRegistrationState(state) {
+    return (
+        REGISTRATION_STATUS[state] ??
+        '⚪ `UNKNOWN`'
+    );
+}
+
+function formatParticipantStatus(status) {
+    return (
+        PARTICIPANT_STATUS[status] ??
+        '⚪ `UNKNOWN`'
+    );
+}
+
 function buildScheduledEventLink(
     guildId,
     eventId
 ) {
-    if (!eventId) {
-        return '`Unavailable`';
-    }
-
-    return (
-        `https://discord.com/events/` +
-        `${guildId}/${eventId}`
-    );
+    return eventId
+        ? `https://discord.com/events/${guildId}/${eventId}`
+        : null;
 }
 
-/**
- * Convert Rank Trials registration state
- * into a readable label.
- *
- * @param {string} state
- * @returns {string}
- */
-function formatRegistrationState(
-    state
-) {
-    switch (
-        state
-    ) {
-        case 'UPCOMING':
-            return '🕒 `UPCOMING`';
-
-        case 'OPEN':
-            return '🟢 `OPEN`';
-
-        case 'CLOSED':
-            return '🔒 `CLOSED`';
-
-        default:
-            return '⚪ `UNKNOWN`';
-    }
-}
-
-/**
- * Convert one participant state into a
- * Staff-facing readable label.
- *
- * @param {string|null|undefined} status
- * @returns {string}
- */
-function formatParticipantStatus(
-    status
-) {
-    switch (
-        status
-    ) {
-        case 'REGISTERED':
-            return '⚔️ `REGISTERED`';
-
-        case 'WITHDRAWN':
-            return '🚪 `WITHDRAWN`';
-
-        case 'UNDER_REVIEW':
-            return '🔎 `UNDER_REVIEW`';
-
-        case 'APPROVED':
-            return '✅ `APPROVED`';
-
-        case 'REJECTED':
-            return '❌ `REJECTED`';
-
-        default:
-            return '⚪ `UNKNOWN`';
-    }
-}
-
-/**
- * Build the normal production
- * registration controls.
- *
- * @param {string} registrationState
- * @returns {import('discord.js').ActionRowBuilder[]}
- */
-function buildRegistrationControlRows(
-    registrationState
-) {
-    if (
-        registrationState ===
-        'OPEN'
-    ) {
-        return [
-            buildOpenRegistrationComponents()
-        ];
-    }
-
+function buildRegistrationRows(state) {
     return [
-        buildClosedRegistrationComponents()
+        state === 'OPEN'
+            ? buildOpenRegistrationComponents()
+            : buildClosedRegistrationComponents()
     ];
 }
 
-/**
- * Build one Staff Review button Custom ID.
- *
- * @param {'approve'|'reject'|'reopen'} action
- * @param {string} trialKey
- * @param {string} userId
- * @returns {string}
- */
 function buildReviewCustomId(
     action,
     trialKey,
@@ -417,27 +248,14 @@ function buildReviewCustomId(
     ].join(':');
 }
 
-/**
- * Build Staff Review controls for one
- * participant.
- *
- * Pending:
- * Approve + Reject
- *
- * Reviewed:
- * Reopen Review
- *
- * @param {Object} participant
- * @returns {ActionRowBuilder[]}
- */
-function buildReviewComponents(
-    participant
-) {
+function buildReviewComponents(participant) {
     if (
-        participant.status ===
-            'REGISTERED' ||
-        participant.status ===
+        [
+            'REGISTERED',
             'UNDER_REVIEW'
+        ].includes(
+            participant.status
+        )
     ) {
         return [
             new ActionRowBuilder()
@@ -450,9 +268,7 @@ function buildReviewComponents(
                                 participant.userId
                             )
                         )
-                        .setLabel(
-                            'Approve'
-                        )
+                        .setLabel('Approve')
                         .setEmoji('✅')
                         .setStyle(
                             ButtonStyle.Success
@@ -466,9 +282,7 @@ function buildReviewComponents(
                                 participant.userId
                             )
                         )
-                        .setLabel(
-                            'Reject'
-                        )
+                        .setLabel('Reject')
                         .setEmoji('❌')
                         .setStyle(
                             ButtonStyle.Danger
@@ -478,11 +292,11 @@ function buildReviewComponents(
     }
 
     if (
-        (
-            participant.status ===
-                'APPROVED' ||
-            participant.status ===
-                'REJECTED'
+        [
+            'APPROVED',
+            'REJECTED'
+        ].includes(
+            participant.status
         ) &&
         !participant.promotedAt
     ) {
@@ -511,2133 +325,1381 @@ function buildReviewComponents(
     return [];
 }
 
-/**
- * Safely respond with an error Embed.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} title
- * @param {string} message
- * @returns {Promise<void>}
- */
-async function sendRankTrialError(
+async function sendError(
     interaction,
     title,
-    message
+    description
 ) {
-    const errorEmbed =
+    const embed =
         createErrorEmbed(
             title,
-            message
+            description
         );
 
-    if (
-        interaction.deferred
-    ) {
-        await interaction.editReply({
-            embeds:
-                [errorEmbed],
-
-            components:
-                []
+    if (interaction.deferred) {
+        return interaction.editReply({
+            embeds: [embed],
+            components: []
         });
-
-        return;
     }
 
-    if (
-        interaction.replied
-    ) {
-        await interaction.followUp({
-            embeds:
-                [errorEmbed],
-
+    if (interaction.replied) {
+        return interaction.followUp({
+            embeds: [embed],
             flags:
                 MessageFlags.Ephemeral
         });
-
-        return;
     }
 
-    await interaction.reply({
-        embeds:
-            [errorEmbed],
-
+    return interaction.reply({
+        embeds: [embed],
         flags:
             MessageFlags.Ephemeral
     });
-}module.exports = {
-    category:
-        'events',
+}
 
-    data:
-        new SlashCommandBuilder()
-            .setName(
-                'ranktrials'
-            )
-            .setDescription(
-                'Manage the Automatic Monthly Rank Trials system.'
-            )
-            .setDefaultMemberPermissions(
-                PermissionFlagsBits.Administrator
-            )
-            .setDMPermission(
-                false
-            )
+function getBotAvatar(interaction) {
+    return interaction.client.user
+        .displayAvatarURL({
+            size: 256,
+            forceStatic: false
+        });
+}
 
-            /*
-             * /ranktrials status
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'status'
-                        )
-                        .setDescription(
-                            'View the next Rank Trial schedule and scheduler status.'
-                        )
-            )
+function getGuildIcon(interaction) {
+    return interaction.guild.iconURL({
+        size: 512,
+        forceStatic: false
+    }) ?? getBotAvatar(interaction);
+}
 
-            /*
-             * /ranktrials registration
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'registration'
-                        )
-                        .setDescription(
-                            'Open the Rank Trials 2.0 registration control panel.'
-                        )
-            )
+function applyRankTrialBranding(
+    interaction,
+    embed,
+    footer
+) {
+    return embed
+        .setAuthor({
+            name:
+                rankTrialConfig.branding
+                    .authorName,
 
-            /*
-             * /ranktrials testregistration
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'testregistration'
-                        )
-                        .setDescription(
-                            'Open the Rank Trials 2.0 registration test panel.'
-                        )
-            )
+            iconURL:
+                getBotAvatar(interaction)
+        })
+        .setFooter({
+            text:
+                footer,
 
-            /*
-             * /ranktrials review member:@Soul
-             *
-             * Opens the Staff Review panel for
-             * one selected Rank Trial participant.
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'review'
-                        )
-                        .setDescription(
-                            'Open the Staff Review panel for one Rank Trial participant.'
-                        )
-                        .addUserOption(
-                            option =>
-                                option
-                                    .setName(
-                                        'member'
-                                    )
-                                    .setDescription(
-                                        'Select the Soul to review'
-                                    )
-                                    .setRequired(
-                                        true
-                                    )
-                        )
-            )
+            iconURL:
+                interaction.guild.iconURL({
+                    size: 128,
+                    forceStatic: false
+                }) ??
+                getBotAvatar(interaction)
+        })
+        .setTimestamp();
+}
 
-            /*
-             * /ranktrials preview
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'preview'
-                        )
-                        .setDescription(
-                            'Privately preview a Rank Trial announcement.'
-                        )
-                        .addStringOption(
-                            option =>
-                                option
-                                    .setName(
-                                        'announcement'
-                                    )
-                                    .setDescription(
-                                        'Select the announcement to preview'
-                                    )
-                                    .setRequired(
-                                        true
-                                    )
-                                    .addChoices(
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'opening'
-                                                ),
-
-                                            value:
-                                                'opening'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'registrationReminder'
-                                                ),
-
-                                            value:
-                                                'registrationReminder'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'finalReminder'
-                                                ),
-
-                                            value:
-                                                'finalReminder'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'battleStart'
-                                                ),
-
-                                            value:
-                                                'battleStart'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'closing'
-                                                ),
-
-                                            value:
-                                                'closing'
-                                        }
-                                    )
-                        )
-            )
-
-            /*
-             * /ranktrials publish
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'publish'
-                        )
-                        .setDescription(
-                            'Manually publish a scheduled Rank Trial announcement.'
-                        )
-                        .addStringOption(
-                            option =>
-                                option
-                                    .setName(
-                                        'announcement'
-                                    )
-                                    .setDescription(
-                                        'Select the announcement to publish'
-                                    )
-                                    .setRequired(
-                                        true
-                                    )
-                                    .addChoices(
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'opening'
-                                                ),
-
-                                            value:
-                                                'opening'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'registrationReminder'
-                                                ),
-
-                                            value:
-                                                'registrationReminder'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'finalReminder'
-                                                ),
-
-                                            value:
-                                                'finalReminder'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'battleStart'
-                                                ),
-
-                                            value:
-                                                'battleStart'
-                                        },
-                                        {
-                                            name:
-                                                getPublicationChoiceName(
-                                                    'closing'
-                                                ),
-
-                                            value:
-                                                'closing'
-                                        }
-                                    )
-                        )
-            )
-
-            /*
-             * /ranktrials check
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'check'
-                        )
-                        .setDescription(
-                            'Run an immediate automatic Rank Trial schedule check.'
-                        )
-            )
-
-            /*
-             * /ranktrials history
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'history'
-                        )
-                        .setDescription(
-                            'View recent Rank Trial publication history.'
-                        )
-                        .addIntegerOption(
-                            option =>
-                                option
-                                    .setName(
-                                        'limit'
-                                    )
-                                    .setDescription(
-                                        'Number of history entries to display'
-                                    )
-                                    .setMinValue(
-                                        1
-                                    )
-                                    .setMaxValue(
-                                        10
-                                    )
-                                    .setRequired(
-                                        false
-                                    )
-                        )
-            )
-
-            /*
-             * /ranktrials event
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'event'
-                        )
-                        .setDescription(
-                            'View the current Rank Trial Discord Scheduled Event.'
-                        )
-            )
-
-            /*
-             * /ranktrials sync
-             */
-            .addSubcommand(
-                subcommand =>
-                    subcommand
-                        .setName(
-                            'sync'
-                        )
-                        .setDescription(
-                            'Create, restore or synchronize the Rank Trial Discord Event.'
-                        )
-            ),
-
-    /**
-     * Execute the /ranktrials command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(
-        interaction
-    ) {
-        try {
-            if (
-                !interaction.inGuild()
-            ) {
-                await sendRankTrialError(
-                    interaction,
-                    '❌ Server Only Command',
-                    'The Rank Trials System can only be managed inside Las Noches.'
-                );
-
-                return;
-            }
-
-            if (
-                !interaction.memberPermissions
-                    .has(
-                        PermissionFlagsBits.Administrator
-                    )
-            ) {
-                await sendRankTrialError(
-                    interaction,
-                    '❌ Permission Denied',
-                    'Only a Las Noches Administrator may manage the Monthly Rank Trials System.'
-                );
-
-                return;
-            }
-
-            const subcommand =
-                interaction.options
-                    .getSubcommand();            /*
-             * STATUS
-             */
-            if (
-                subcommand ===
-                'status'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const schedule =
-                    getRelevantRankTrialSchedule();
-
-                const publicationHistory =
-                    await rankTrialDatabase
-                        .getTrialPublications(
-                            interaction.guild.id,
-                            schedule.trialKey
-                        );
-
-                const publicationMap =
-                    new Map(
-                        publicationHistory.map(
-                            publication => [
-                                publication.publicationType,
-                                publication
-                            ]
-                        )
-                    );
-
-                const statusFields =
-                    schedule.publications.map(
-                        publication => ({
-                            name:
-                                getPublicationChoiceName(
-                                    publication.key
-                                ),
-
-                            value:
-                                formatSchedulePublication(
-                                    publication,
-                                    publicationMap.get(
-                                        publication.type
-                                    ) ??
-                                    null
-                                ),
-
-                            inline:
-                                false
+function addAnnouncementOption(
+    subcommand,
+    description
+) {
+    return subcommand
+        .addStringOption(option =>
+            option
+                .setName(
+                    'announcement'
+                )
+                .setDescription(
+                    description
+                )
+                .setRequired(true)
+                .addChoices(
+                    ...Object.entries(
+                        PUBLICATIONS
+                    ).map(
+                        ([
+                            value,
+                            name
+                        ]) => ({
+                            name,
+                            value
                         })
-                    );
+                    )
+                )
+        );
+}const data =
+    new SlashCommandBuilder()
+        .setName('ranktrials')
+        .setDescription(
+            'Manage the monthly TTS Rank Trials system.'
+        )
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.Administrator
+        )
+        .setDMPermission(false)
 
-                const schedulerIntervalMinutes =
-                    getRankTrialSchedulerInterval() /
-                    60_000;
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('status')
+                .setDescription(
+                    'View the current Rank Trial schedule and system status.'
+                )
+        )
 
-                const registration =
-                    getRegistrationState(
-                        schedule
-                    );
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('registration')
+                .setDescription(
+                    'Open the current Rank Trial registration panel.'
+                )
+        )
 
-                const statusEmbed =
-                    createEmbed({
-                        title:
-                            '⚔️ Monthly Rank Trials Status',
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('testregistration')
+                .setDescription(
+                    'Open the Rank Trial registration test panel.'
+                )
+        )
 
-                        description:
-                            [
-                                'Umbra Automatic Rank Trials System',
-                                '',
-                                `**System:** ${
-                                    rankTrialConfig.enabled
-                                        ? '`ENABLED`'
-                                        : '`DISABLED`'
-                                }`,
-                                `**Scheduler:** ${
-                                    isRankTrialSchedulerRunning()
-                                        ? '`RUNNING`'
-                                        : '`STOPPED`'
-                                }`,
-                                `**Scheduled Events:** ${
-                                    rankTrialConfig
-                                        .scheduledEvent
-                                        ?.enabled
-                                        ? '`ENABLED`'
-                                        : '`DISABLED`'
-                                }`,
-                                `**Registration:** ${formatRegistrationState(
-                                    registration.state
-                                )}`,
-                                `**Check Interval:** \`${schedulerIntervalMinutes} minutes\``,
-                                `**Timezone:** \`${rankTrialConfig.timezone}\``,
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                '',
-                                `**Registration Opens:** ${toDiscordTimestamp(
-                                    registration.opensAt,
-                                    'F'
-                                )}`,
-                                `**Registration Closes:** ${toDiscordTimestamp(
-                                    registration.closesAt,
-                                    'F'
-                                )}`,
-                                '',
-                                `**Battle Start:** ${toDiscordTimestamp(
-                                    schedule.battleStart,
-                                    'F'
-                                )}`,
-                                `**Relative Time:** ${toDiscordTimestamp(
-                                    schedule.battleStart,
-                                    'R'
-                                )}`
-                            ].join('\n'),
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('review')
+                .setDescription(
+                    'Review one Rank Trial participant.'
+                )
+                .addUserOption(option =>
+                    option
+                        .setName('member')
+                        .setDescription(
+                            'Select the member to review'
+                        )
+                        .setRequired(true)
+                )
+        )
 
-                        fields:
-                            statusFields,
+        .addSubcommand(subcommand =>
+            addAnnouncementOption(
+                subcommand
+                    .setName('preview')
+                    .setDescription(
+                        'Preview a Rank Trial announcement.'
+                    ),
+                'Select the announcement to preview'
+            )
+        )
 
-                        thumbnail:
-                            interaction.guild.iconURL({
-                                size:
-                                    512,
+        .addSubcommand(subcommand =>
+            addAnnouncementOption(
+                subcommand
+                    .setName('publish')
+                    .setDescription(
+                        'Manually publish a Rank Trial announcement.'
+                    ),
+                'Select the announcement to publish'
+            )
+        )
 
-                                forceStatic:
-                                    false
-                            }) ??
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        512,
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('check')
+                .setDescription(
+                    'Run an immediate scheduler check.'
+                )
+        )
 
-                                    forceStatic:
-                                        false
-                                })
-                    });
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('history')
+                .setDescription(
+                    'View recent Rank Trial publication history.'
+                )
+                .addIntegerOption(option =>
+                    option
+                        .setName('limit')
+                        .setDescription(
+                            'Number of entries to display'
+                        )
+                        .setMinValue(1)
+                        .setMaxValue(10)
+                )
+        )
 
-                statusEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('event')
+                .setDescription(
+                    'View the current Rank Trial Discord Event.'
+                )
+        )
 
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('sync')
+                .setDescription(
+                    'Create or synchronize the Rank Trial Discord Event.'
+                )
+        );async function handleStatus(interaction) {
+    await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+    });
 
-                                forceStatic:
-                                    false
-                            })
-                });
+    const schedule =
+        getRelevantRankTrialSchedule();
 
-                statusEmbed.setFooter({
-                    text:
-                        'Umbra • Rank Trials Control'
-                });
+    const history =
+        await rankTrialDatabase
+            .getTrialPublications(
+                interaction.guild.id,
+                schedule.trialKey
+            );
 
-                statusEmbed.setTimestamp();
+    const publicationMap =
+        new Map(
+            history.map(
+                item => [
+                    item.publicationType,
+                    item
+                ]
+            )
+        );
 
-                await interaction.editReply({
-                    embeds:
-                        [statusEmbed],
+    const registration =
+        getRegistrationState(
+            schedule
+        );
 
-                    components:
-                        []
-                });
+    const fields =
+        schedule.publications.map(
+            publication => ({
+                name:
+                    getPublicationChoiceName(
+                        publication.key
+                    ),
 
-                return;
-            }
+                value:
+                    formatSchedulePublication(
+                        publication,
+                        publicationMap.get(
+                            publication.type
+                        ) ?? null
+                    ),
 
-            /*
-             * REGISTRATION
-             */
-            if (
-                subcommand ===
-                'registration'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                inline: false
+            })
+        );
 
-                const schedule =
-                    getRelevantRankTrialSchedule();
+    const embed =
+        applyRankTrialBranding(
+            interaction,
+            createEmbed({
+                title:
+                    '⚔️ Monthly Rank Trials Status',
 
-                const registration =
-                    getRegistrationState(
-                        schedule
-                    );
+                description:
+                    [
+                        'Evelynn Rank Trials System',
+                        '',
+                        `**System:** \`${rankTrialConfig.enabled ? 'ENABLED' : 'DISABLED'}\``,
+                        `**Scheduler:** \`${isRankTrialSchedulerRunning() ? 'RUNNING' : 'STOPPED'}\``,
+                        `**Scheduled Events:** \`${rankTrialConfig.scheduledEvent?.enabled ? 'ENABLED' : 'DISABLED'}\``,
+                        `**Registration:** ${formatRegistrationState(
+                            registration.state
+                        )}`,
+                        `**Interval:** \`${getRankTrialSchedulerInterval() / 60_000} min\``,
+                        `**Timezone:** \`${rankTrialConfig.timezone}\``,
+                        `**Cycle:** \`${schedule.trialKey}\``,
+                        '',
+                        `**Opens:** ${toDiscordTimestamp(
+                            registration.opensAt,
+                            'F'
+                        )}`,
+                        `**Closes:** ${toDiscordTimestamp(
+                            registration.closesAt,
+                            'F'
+                        )}`,
+                        `**Battle:** ${toDiscordTimestamp(
+                            schedule.battleStart,
+                            'F'
+                        )}`,
+                        `**Relative:** ${toDiscordTimestamp(
+                            schedule.battleStart,
+                            'R'
+                        )}`
+                    ].join('\n'),
 
-                const {
-                    statistics
-                } =
-                    await getCurrentRegistrationStatistics({
-                        guildId:
-                            interaction.guild.id
-                    });
+                fields,
+                thumbnail:
+                    getGuildIcon(
+                        interaction
+                    )
+            }),
+            'Evelynn • Rank Trials Control'
+        );
 
-                const registrationEmbed =
-                    createEmbed({
-                        title:
-                            '⚔️ Rank Trials 2.0 Registration',
+    await interaction.editReply({
+        embeds: [embed],
+        components: []
+    });
+}
 
-                        description:
-                            [
-                                'Administrator control panel for the current Monthly Rank Trial.',
-                                '',
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                `**Registration:** ${formatRegistrationState(
-                                    registration.state
-                                )}`,
-                                '',
-                                `**Opens:** ${toDiscordTimestamp(
-                                    registration.opensAt,
-                                    'F'
-                                )}`,
-                                `**Closes:** ${toDiscordTimestamp(
-                                    registration.closesAt,
-                                    'F'
-                                )}`,
-                                `**Battle Start:** ${toDiscordTimestamp(
-                                    schedule.battleStart,
-                                    'F'
-                                )}`,
-                                '',
-                                registration.state ===
-                                    'OPEN'
-                                    ? 'Use the controls below to register or withdraw from the current Trial.'
-                                    : registration.state ===
-                                        'UPCOMING'
-                                        ? 'Registration has not opened yet. The controls will become available when the Opening Announcement is due.'
-                                        : 'Registration is closed. Registered Souls have entered the Staff Review phase.'
-                            ].join('\n'),
+function buildStatisticsField(
+    statistics,
+    title = '👥 Participant Registry'
+) {
+    return {
+        name: title,
+        value: [
+            `**Total:** \`${statistics.total}\``,
+            `**Registered:** \`${statistics.registered}\``,
+            `**Withdrawn:** \`${statistics.withdrawn}\``,
+            `**Under Review:** \`${statistics.underReview}\``,
+            `**Approved:** \`${statistics.approved}\``,
+            `**Rejected:** \`${statistics.rejected}\``,
+            `**Promoted:** \`${statistics.promoted}\``
+        ].join('\n'),
+        inline: false
+    };
+}
 
-                        fields: [
-                            {
-                                name:
-                                    '👥 Participant Registry',
+async function handleRegistration(
+    interaction
+) {
+    await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+    });
 
-                                value:
-                                    [
-                                        `**Total Records:** \`${statistics.total}\``,
-                                        `**Registered:** \`${statistics.registered}\``,
-                                        `**Withdrawn:** \`${statistics.withdrawn}\``,
-                                        `**Under Review:** \`${statistics.underReview}\``,
-                                        `**Approved:** \`${statistics.approved}\``,
-                                        `**Rejected:** \`${statistics.rejected}\``,
-                                        `**Promoted:** \`${statistics.promoted}\``
-                                    ].join('\n'),
+    const schedule =
+        getRelevantRankTrialSchedule();
 
-                                inline:
-                                    false
-                            },
-                            {
-                                name:
-                                    '🔒 Registration Rules',
+    const registration =
+        getRegistrationState(
+            schedule
+        );
 
-                                value:
-                                    [
-                                        '• Registration opens with the Opening Announcement.',
-                                        '• Registration closes with the Final Reminder.',
-                                        '• A withdrawn Soul may register again while registration remains open.',
-                                        '• After closing, active registrations automatically move to Staff Review.'
-                                    ].join('\n'),
+    const { statistics } =
+        await getCurrentRegistrationStatistics({
+            guildId:
+                interaction.guild.id
+        });
 
-                                inline:
-                                    false
-                            }
-                        ]
-                    });
+    const stateText =
+        registration.state === 'OPEN'
+            ? 'Registration is open.'
+            : registration.state === 'UPCOMING'
+                ? 'Registration has not opened yet.'
+                : 'Registration is closed and active entries are in Staff Review.';
 
-                const registrationComponents =
-                    buildRegistrationControlRows(
+    const embed =
+        createEmbed({
+            title:
+                '⚔️ Rank Trial Registration',
+
+            description:
+                [
+                    `**Cycle:** \`${schedule.trialKey}\``,
+                    `**Status:** ${formatRegistrationState(
                         registration.state
-                    );
+                    )}`,
+                    '',
+                    `**Opens:** ${toDiscordTimestamp(
+                        registration.opensAt,
+                        'F'
+                    )}`,
+                    `**Closes:** ${toDiscordTimestamp(
+                        registration.closesAt,
+                        'F'
+                    )}`,
+                    `**Battle:** ${toDiscordTimestamp(
+                        schedule.battleStart,
+                        'F'
+                    )}`,
+                    '',
+                    stateText
+                ].join('\n'),
 
-                await interaction.editReply({
-                    embeds:
-                        [registrationEmbed],
-
-                    components:
-                        registrationComponents
-                });
-
-                return;
-            }
-
-            /*
-             * TESTREGISTRATION
-             */
-            if (
-                subcommand ===
-                'testregistration'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const schedule =
-                    getRelevantRankTrialSchedule();
-
-                const {
+            fields: [
+                buildStatisticsField(
                     statistics
-                } =
-                    await getCurrentRegistrationStatistics({
-                        guildId:
-                            interaction.guild.id
-                    });
+                )
+            ]
+        });
 
-                const testEmbed =
-                    createEmbed({
-                        title:
-                            '🧪 Rank Trials 2.0 Runtime Test',
+    await interaction.editReply({
+        embeds: [embed],
+        components:
+            buildRegistrationRows(
+                registration.state
+            )
+    });
+}
 
-                        description:
-                            [
-                                'Administrator-only registration test panel.',
-                                '',
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                '',
-                                '**Recommended Test Order**',
-                                '1. Test Register',
-                                '2. Test Withdraw',
-                                '3. Test Register again',
-                                '',
-                                'The test uses the real PostgreSQL participant registry.'
-                            ].join('\n'),
+async function handleTestRegistration(
+    interaction
+) {
+    await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+    });
 
-                        fields: [
-                            {
-                                name:
-                                    '👥 Current Registry State',
+    const schedule =
+        getRelevantRankTrialSchedule();
 
-                                value:
-                                    [
-                                        `**Total Records:** \`${statistics.total}\``,
-                                        `**Registered:** \`${statistics.registered}\``,
-                                        `**Withdrawn:** \`${statistics.withdrawn}\``,
-                                        `**Under Review:** \`${statistics.underReview}\``,
-                                        `**Approved:** \`${statistics.approved}\``,
-                                        `**Rejected:** \`${statistics.rejected}\``,
-                                        `**Promoted:** \`${statistics.promoted}\``
-                                    ].join('\n'),
+    const { statistics } =
+        await getCurrentRegistrationStatistics({
+            guildId:
+                interaction.guild.id
+        });
 
-                                inline:
-                                    false
-                            }
-                        ]
-                    });
+    await interaction.editReply({
+        embeds: [
+            createEmbed({
+                title:
+                    '🧪 Rank Trial Runtime Test',
 
-                await interaction.editReply({
-                    embeds:
-                        [testEmbed],
+                description:
+                    [
+                        `**Cycle:** \`${schedule.trialKey}\``,
+                        '',
+                        '1. Test Register',
+                        '2. Test Withdraw',
+                        '3. Test Register again',
+                        '',
+                        'This uses the real PostgreSQL participant registry.'
+                    ].join('\n'),
 
-                    components: [
-                        buildTestRegistrationComponents()
-                    ]
-                });
+                fields: [
+                    buildStatisticsField(
+                        statistics,
+                        '👥 Current Registry'
+                    )
+                ]
+            })
+        ],
 
-                return;
-            }
+        components: [
+            buildTestRegistrationComponents()
+        ]
+    });
+}
 
-            /*
-             * REVIEW
-             */
-            if (
-                subcommand ===
-                'review'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+async function handleReview(interaction) {
+    await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+    });
 
-                const schedule =
-                    getRelevantRankTrialSchedule();
+    const schedule =
+        getRelevantRankTrialSchedule();
 
-                const targetUser =
-                    interaction.options
-                        .getUser(
-                            'member',
-                            true
-                        );
+    const targetUser =
+        interaction.options.getUser(
+            'member',
+            true
+        );
 
-                const participant =
-                    await participantDatabase
-                        .getParticipant(
-                            interaction.guild.id,
-                            schedule.trialKey,
-                            targetUser.id
-                        );
+    const participant =
+        await participantDatabase
+            .getParticipant(
+                interaction.guild.id,
+                schedule.trialKey,
+                targetUser.id
+            );
 
-                if (!participant) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Participant Not Found',
-                                [
-                                    `${targetUser} does not have a participant record for this Rank Trial.`,
-                                    '',
-                                    `**Trial Cycle:** \`${schedule.trialKey}\``
-                                ].join('\n')
-                            )
-                        ],
+    if (!participant) {
+        return sendError(
+            interaction,
+            '❌ Participant Not Found',
+            [
+                `${targetUser} has no participant record for this Rank Trial.`,
+                `**Cycle:** \`${schedule.trialKey}\``
+            ].join('\n')
+        );
+    }
 
-                        components:
-                            []
-                    });
+    const reviewedAt =
+        participant.reviewedAt
+            ? toDiscordTimestamp(
+                participant.reviewedAt,
+                'F'
+            )
+            : '`Not reviewed`';
 
-                    return;
-                }
+    const promotedAt =
+        participant.promotedAt
+            ? toDiscordTimestamp(
+                participant.promotedAt,
+                'F'
+            )
+            : '`Not promoted`';
 
-                const reviewFields = [
+    await interaction.editReply({
+        embeds: [
+            createEmbed({
+                title:
+                    '🔎 Rank Trial Staff Review',
+
+                description:
+                    `**Cycle:** \`${schedule.trialKey}\``,
+
+                fields: [
                     {
                         name:
                             '👤 Participant',
 
-                        value:
-                            [
-                                `**Soul:** ${targetUser}`,
-                                `**User ID:** \`${targetUser.id}\``,
-                                `**Status:** ${formatParticipantStatus(
-                                    participant.status
-                                )}`,
-                                `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
-                                `**Proposed/New Rank:** \`${participant.newRank ?? 'Not selected'}\``
-                            ].join('\n'),
+                        value: [
+                            `**Member:** ${targetUser}`,
+                            `**Status:** ${formatParticipantStatus(
+                                participant.status
+                            )}`,
+                            `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
+                            `**New Rank:** \`${participant.newRank ?? 'Not selected'}\``
+                        ].join('\n'),
 
-                        inline:
-                            false
+                        inline: false
                     },
                     {
                         name:
                             '📖 Review Record',
 
-                        value:
-                            [
-                                `**Reviewed By:** ${
-                                    participant.reviewedBy
-                                        ? `<@${participant.reviewedBy}>`
-                                        : '`Not reviewed`'
-                                }`,
-                                `**Review Reason:** ${
-                                    participant.reviewReason
-                                        ? participant.reviewReason
-                                        : '`No reason recorded`'
-                                }`,
-                                `**Reviewed At:** ${
-                                    participant.reviewedAt
-                                        ? toDiscordTimestamp(
-                                            participant.reviewedAt,
-                                            'F'
-                                        )
-                                        : '`Not reviewed`'
-                                }`,
-                                `**Promoted At:** ${
-                                    participant.promotedAt
-                                        ? toDiscordTimestamp(
-                                            participant.promotedAt,
-                                            'F'
-                                        )
-                                        : '`Not promoted`'
-                                }`
-                            ].join('\n'),
+                        value: [
+                            `**Reviewed By:** ${
+                                participant.reviewedBy
+                                    ? `<@${participant.reviewedBy}>`
+                                    : '`Not reviewed`'
+                            }`,
+                            `**Reason:** ${participant.reviewReason || '`No reason recorded`'}`,
+                            `**Reviewed:** ${reviewedAt}`,
+                            `**Promoted:** ${promotedAt}`
+                        ].join('\n'),
 
-                        inline:
-                            false
+                        inline: false
                     }
-                ];
+                ]
+            })
+        ],
 
-                const reviewEmbed =
-                    createEmbed({
-                        title:
-                            '🔎 Rank Trials 2.0 Staff Review',
+        components:
+            buildReviewComponents(
+                participant
+            )
+    });
+}function getSelectedPublication(
+    interaction
+) {
+    const publicationKey =
+        interaction.options.getString(
+            'announcement',
+            true
+        );
 
-                        description:
-                            [
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                '',
-                                'Use the Staff Review controls below to manage this participant.'
-                            ].join('\n'),
+    if (!PUBLICATION_KEYS.has(
+        publicationKey
+    )) {
+        return {
+            error:
+                'Invalid announcement.',
+            publicationKey
+        };
+    }
 
-                        fields:
-                            reviewFields
-                    });
+    const schedule =
+        getRelevantRankTrialSchedule();
 
-                const reviewComponents =
-                    buildReviewComponents(
-                        participant
-                    );
+    const publication =
+        getScheduledPublication(
+            schedule,
+            publicationKey
+        );
 
-                await interaction.editReply({
-                    embeds:
-                        [reviewEmbed],
+    if (!publication) {
+        return {
+            error:
+                'This announcement is disabled in `config/rankTrials.js`.',
+            publicationKey,
+            schedule
+        };
+    }
 
-                    components:
-                        reviewComponents
-                });
+    return {
+        publicationKey,
+        schedule,
+        publication
+    };
+}
 
-                return;
-            }            /*
-             * PREVIEW
-             */
-            if (
-                subcommand ===
-                'preview'
-            ) {
-                const publicationKey =
-                    interaction.options
-                        .getString(
-                            'announcement',
-                            true
-                        );
+async function handlePreview(
+    interaction
+) {
+    const selected =
+        getSelectedPublication(
+            interaction
+        );
 
-                if (
-                    !PUBLICATION_KEYS.has(
-                        publicationKey
-                    )
-                ) {
-                    await sendRankTrialError(
-                        interaction,
-                        '❌ Invalid Announcement',
-                        'Umbra could not recognize the selected Rank Trial announcement.'
-                    );
+    if (selected.error) {
+        return sendError(
+            interaction,
+            '❌ Announcement Unavailable',
+            selected.error
+        );
+    }
 
-                    return;
-                }
+    const {
+        publicationKey,
+        schedule,
+        publication
+    } = selected;
 
-                const schedule =
-                    getRelevantRankTrialSchedule();
+    const embed =
+        applyRankTrialBranding(
+            interaction,
+            buildPublicationEmbed(
+                publicationKey,
+                schedule
+            ),
+            `${rankTrialConfig.branding.footerText} • Preview`
+        );
 
-                const scheduledPublication =
-                    getScheduledPublication(
-                        schedule,
-                        publicationKey
-                    );
+    await interaction.reply({
+        content:
+            publication.mentionEveryone
+                ? '`Preview mention: @everyone`'
+                : '`Preview mention: none`',
 
-                if (
-                    !scheduledPublication
-                ) {
-                    await sendRankTrialError(
-                        interaction,
-                        '❌ Announcement Disabled',
-                        'This Rank Trial announcement is currently disabled in `config/rankTrials.js`.'
-                    );
+        embeds: [embed],
 
-                    return;
-                }
+        flags:
+            MessageFlags.Ephemeral,
 
-                const previewEmbed =
-                    buildPublicationEmbed(
-                        publicationKey,
-                        schedule
-                    );
+        allowedMentions: {
+            parse: []
+        }
+    });
+}
 
-                previewEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
+async function handlePublish(
+    interaction
+) {
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
 
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
+    const selected =
+        getSelectedPublication(
+            interaction
+        );
 
-                                forceStatic:
-                                    false
-                            })
-                });
+    if (selected.error) {
+        return sendError(
+            interaction,
+            '❌ Announcement Unavailable',
+            selected.error
+        );
+    }
 
-                previewEmbed.setFooter({
-                    text:
-                        [
-                            rankTrialConfig
-                                .branding
-                                .footerText,
+    const {
+        publicationKey,
+        schedule,
+        publication
+    } = selected;
 
-                            'Preview Only'
-                        ].join(
-                            ' • '
-                        ),
+    const result =
+        await publishRankTrialAnnouncement(
+            interaction.client,
+            interaction.guild,
+            schedule,
+            publication
+        );
 
-                    iconURL:
-                        interaction.guild.iconURL({
-                            size:
-                                128,
+    if (result.status === 'duplicate') {
+        return sendError(
+            interaction,
+            '⚠️ Announcement Already Published',
+            `This announcement already exists for cycle \`${schedule.trialKey}\`.`
+        );
+    }
 
-                            forceStatic:
-                                false
-                        }) ??
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    128,
+    if (result.status !== 'published') {
+        return sendError(
+            interaction,
+            '❌ Publication Failed',
+            result.reason ??
+                'Evelynn could not publish this Rank Trial announcement.'
+        );
+    }
 
-                                forceStatic:
-                                    false
-                            })
-                });
+    const lines = [
+        `**Announcement:** ${getPublicationChoiceName(
+            publicationKey
+        )}`,
+        `**Cycle:** \`${schedule.trialKey}\``,
+        `**Channel:** <#${rankTrialConfig.channelId}>`,
+        `**Message ID:** \`${result.messageId}\``
+    ];
 
-                await interaction.reply({
-                    content:
-                        scheduledPublication
-                            .mentionEveryone
-                            ? '`Preview mention: @everyone`'
-                            : '`Preview mention: none`',
+    if (
+        result.scheduledEvent?.attempted
+    ) {
+        lines.push(
+            '',
+            '**Discord Event**',
+            `**Status:** ${formatEventStatus(
+                result.scheduledEvent.status
+            )}`
+        );
 
-                    embeds:
-                        [previewEmbed],
+        if (
+            result.scheduledEvent
+                .discordEventId
+        ) {
+            const link =
+                buildScheduledEventLink(
+                    interaction.guild.id,
+                    result.scheduledEvent
+                        .discordEventId
+                );
 
-                    flags:
-                        MessageFlags.Ephemeral,
+            lines.push(
+                `**Event:** ${link}`
+            );
+        }
 
-                    allowedMentions: {
-                        parse:
-                            []
-                    }
-                });
+        if (
+            result.scheduledEvent.reason
+        ) {
+            lines.push(
+                `**Notice:** ${result.scheduledEvent.reason}`
+            );
+        }
+    }
 
-                return;
-            }
+    await interaction.editReply({
+        embeds: [
+            createSuccessEmbed(
+                '✅ Rank Trial Announcement Published',
+                lines.join('\n')
+            )
+        ],
+        components: []
+    });
+}
 
-            /*
-             * PUBLISH
-             */
-            if (
-                subcommand ===
-                'publish'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+async function handleCheck(
+    interaction
+) {
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
 
-                const publicationKey =
-                    interaction.options
-                        .getString(
-                            'announcement',
-                            true
-                        );
+    const result =
+        await checkRankTrialSchedule(
+            interaction.client
+        );
 
-                if (
-                    !PUBLICATION_KEYS.has(
-                        publicationKey
-                    )
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Invalid Announcement',
-                                'Umbra could not recognize the selected Rank Trial announcement.'
-                            )
-                        ],
+    const failed =
+        result.failed > 0 ||
+        (result.registrationCloseFailed ?? 0) > 0 ||
+        (result.eventFailed ?? 0) > 0;
 
-                        components:
-                            []
-                    });
+    const lines = [
+        '**Announcements**',
+        `Published: \`${result.published}\``,
+        `Existing: \`${result.duplicates}\``,
+        `Failed: \`${result.failed}\``,
+        `Expired: \`${result.expired}\``,
+        '',
+        '**Registration**',
+        `Closed: \`${result.registrationClosed ?? 0}\``,
+        `Moved To Review: \`${result.registrationMovedToReview ?? 0}\``,
+        `Failures: \`${result.registrationCloseFailed ?? 0}\``,
+        '',
+        '**Scheduled Events**',
+        `Created: \`${result.eventCreated ?? 0}\``,
+        `Recreated: \`${result.eventRecreated ?? 0}\``,
+        `Updated: \`${result.eventUpdated ?? 0}\``,
+        `Synchronized: \`${result.eventSynchronized ?? 0}\``,
+        `Failures: \`${result.eventFailed ?? 0}\``,
+        '',
+        '**Recovery**',
+        `Publication Reservations: \`${result.staleReservationsRemoved}\``,
+        `Event Reservations: \`${result.staleEventReservationsRemoved ?? 0}\``,
+        `Skipped: \`${result.skipped}\``
+    ];
 
-                    return;
-                }
+    await interaction.editReply({
+        embeds: [
+            failed
+                ? createErrorEmbed(
+                    '⚠️ Rank Trial Check Completed',
+                    lines.join('\n')
+                )
+                : createSuccessEmbed(
+                    '✅ Rank Trial Check Completed',
+                    lines.join('\n')
+                )
+        ],
+        components: []
+    });
+}
 
-                const schedule =
-                    getRelevantRankTrialSchedule();
+async function handleHistory(
+    interaction
+) {
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
 
-                const scheduledPublication =
-                    getScheduledPublication(
-                        schedule,
-                        publicationKey
-                    );
+    const limit =
+        interaction.options.getInteger(
+            'limit'
+        ) ?? 5;
 
-                if (
-                    !scheduledPublication
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Announcement Disabled',
-                                'This Rank Trial announcement is currently disabled in `config/rankTrials.js`.'
-                            )
-                        ],
+    const history =
+        await rankTrialDatabase
+            .getRecentPublications(
+                interaction.guild.id,
+                limit
+            );
 
-                        components:
-                            []
-                    });
+    const embed =
+        createEmbed({
+            title:
+                '📜 Rank Trial Publication History',
 
-                    return;
-                }
+            description:
+                history.length
+                    ? `Latest \`${history.length}\` publication record(s).`
+                    : 'No Rank Trial publications have been recorded yet.',
 
-                const result =
-                    await publishRankTrialAnnouncement(
-                        interaction.client,
-                        interaction.guild,
-                        schedule,
-                        scheduledPublication
-                    );
-
-                if (
-                    result.status ===
-                    'published'
-                ) {
-                    const scheduledEventLines =
-                        [];
-
-                    if (
-                        result.scheduledEvent
-                            ?.attempted
-                    ) {
-                        scheduledEventLines.push(
-                            '',
-                            '**Discord Scheduled Event**',
-                            `**Status:** ${formatEventManagerStatus(
-                                result.scheduledEvent
-                                    .status
-                            )}`
-                        );
-
-                        if (
-                            result.scheduledEvent
-                                .discordEventId
-                        ) {
-                            scheduledEventLines.push(
-                                `**Event:** ${buildScheduledEventLink(
-                                    interaction.guild.id,
-                                    result.scheduledEvent
-                                        .discordEventId
-                                )}`
-                            );
-                        }
-
-                        if (
-                            result.scheduledEvent
-                                .reason
-                        ) {
-                            scheduledEventLines.push(
-                                `**Event Notice:** ${result.scheduledEvent.reason}`
-                            );
-                        }
-                    }
-
-                    await interaction.editReply({
-                        embeds: [
-                            createSuccessEmbed(
-                                '✅ Rank Trial Announcement Published',
-                                [
-                                    `**Announcement:** ${getPublicationChoiceName(
-                                        publicationKey
-                                    )}`,
-                                    `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                    `**Channel:** <#${rankTrialConfig.channelId}>`,
-                                    `**Message ID:** \`${result.messageId}\``,
-                                    '',
-                                    'The publication was saved permanently in PostgreSQL.',
-                                    ...scheduledEventLines
-                                ].join('\n')
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                if (
-                    result.status ===
-                    'duplicate'
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '⚠️ Announcement Already Published',
-                                [
-                                    `The selected announcement already exists for Rank Trial cycle \`${schedule.trialKey}\`.`,
-                                    '',
-                                    'Umbra blocked the duplicate publication using PostgreSQL history.'
-                                ].join('\n')
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Publication Failed',
-                            [
-                                'Umbra could not publish the selected Rank Trial announcement.',
-                                '',
-                                `**Reason:** ${result.reason ?? 'Unknown publication error.'}`
-                            ].join('\n')
-                        )
-                    ],
-
-                    components:
-                        []
-                });
-
-                return;
-            }            /*
-             * CHECK
-             */
-            if (
-                subcommand ===
-                'check'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const result =
-                    await checkRankTrialSchedule(
-                        interaction.client
-                    );
-
-                const checkLines = [
-                    result.failed > 0
-                        ? 'Umbra completed an immediate scheduler check with one or more failures.'
-                        : 'Umbra completed an immediate scheduler check.',
-                    '',
-                    '**Announcements**',
-                    `**Published:** \`${result.published}\``,
-                    `**Already Existing:** \`${result.duplicates}\``,
-                    `**Failed:** \`${result.failed}\``,
-                    `**Expired:** \`${result.expired}\``,
-                    '',
-                    '**Rank Trials 2.0 Registration**',
-                    `**Close Attempts:** \`${result.registrationCloseAttempted ?? 0}\``,
-                    `**Cycles Closed:** \`${result.registrationClosed ?? 0}\``,
-                    `**Moved To Review:** \`${result.registrationMovedToReview ?? 0}\``,
-                    `**Close Failures:** \`${result.registrationCloseFailed ?? 0}\``,
-                    '',
-                    '**Scheduled Events**',
-                    `**Created:** \`${result.eventCreated ?? 0}\``,
-                    `**Recreated:** \`${result.eventRecreated ?? 0}\``,
-                    `**Updated:** \`${result.eventUpdated ?? 0}\``,
-                    `**Synchronized:** \`${result.eventSynchronized ?? 0}\``,
-                    `**Failures:** \`${result.eventFailed ?? 0}\``,
-                    '',
-                    '**Recovery**',
-                    `**Publication Reservations Removed:** \`${result.staleReservationsRemoved}\``,
-                    `**Event Reservations Removed:** \`${result.staleEventReservationsRemoved ?? 0}\``,
-                    `**Scheduler Skipped:** \`${result.skipped}\``
-                ];
-
-                const checkEmbed =
-                    result.failed > 0 ||
+            fields:
+                history.map(
                     (
-                        result.registrationCloseFailed ??
-                        0
-                    ) > 0 ||
-                    (
-                        result.eventFailed ??
-                        0
-                    ) > 0
-                        ? createErrorEmbed(
-                            '⚠️ Rank Trial Check Completed',
-                            checkLines.join('\n')
-                        )
-                        : createSuccessEmbed(
-                            '✅ Rank Trial Check Completed',
-                            checkLines.join('\n')
-                        );
-
-                await interaction.editReply({
-                    embeds:
-                        [checkEmbed],
-
-                    components:
-                        []
-                });
-
-                return;
-            }
-
-            /*
-             * HISTORY
-             */
-            if (
-                subcommand ===
-                'history'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const limit =
-                    interaction.options
-                        .getInteger(
-                            'limit'
-                        ) ??
-                    5;
-
-                const history =
-                    await rankTrialDatabase
-                        .getRecentPublications(
-                            interaction.guild.id,
-                            limit
-                        );
-
-                if (
-                    history.length ===
-                    0
-                ) {
-                    const emptyHistoryEmbed =
-                        createEmbed({
-                            title:
-                                '📜 Rank Trial Publication History',
-
-                            description:
-                                [
-                                    'No Rank Trial publications have been recorded yet.',
-                                    '',
-                                    'History will appear after Umbra publishes or reserves its first automatic announcement.'
-                                ].join('\n'),
-
-                            thumbnail:
-                                interaction.guild.iconURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                }) ??
-                                interaction.client.user
-                                    .displayAvatarURL({
-                                        size:
-                                            512,
-
-                                        forceStatic:
-                                            false
-                                    })
-                        });
-
-                    emptyHistoryEmbed.setAuthor({
+                        publication,
+                        index
+                    ) => ({
                         name:
-                            rankTrialConfig
-                                .branding
-                                .authorName,
-
-                        iconURL:
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        256,
-
-                                    forceStatic:
-                                        false
-                                })
-                    });
-
-                    emptyHistoryEmbed.setFooter({
-                        text:
-                            'Umbra • Rank Trials Archive'
-                    });
-
-                    emptyHistoryEmbed.setTimestamp();
-
-                    await interaction.editReply({
-                        embeds:
-                            [emptyHistoryEmbed],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                const historyFields =
-                    history.map(
-                        (
-                            publication,
-                            index
-                        ) => ({
-                            name:
-                                `${index + 1}. ${publication.publicationType}`,
-
-                            value:
-                                formatHistoryEntry(
-                                    publication
-                                ),
-
-                            inline:
-                                false
-                        })
-                    );
-
-                const historyEmbed =
-                    createEmbed({
-                        title:
-                            '📜 Rank Trial Publication History',
-
-                        description:
-                            [
-                                `Showing the latest \`${history.length}\` Rank Trial publication record(s).`,
-                                '',
-                                'PostgreSQL history protects the system from duplicate announcements after restarts and redeployments.'
-                            ].join('\n'),
-
-                        fields:
-                            historyFields,
-
-                        thumbnail:
-                            interaction.guild.iconURL({
-                                size:
-                                    512,
-
-                                forceStatic:
-                                    false
-                            }) ??
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                })
-                    });
-
-                historyEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
-
-                                forceStatic:
-                                    false
-                            })
-                });
-
-                historyEmbed.setFooter({
-                    text:
-                        'Umbra • Rank Trials Archive'
-                });
-
-                historyEmbed.setTimestamp();
-
-                await interaction.editReply({
-                    embeds:
-                        [historyEmbed],
-
-                    components:
-                        []
-                });
-
-                return;
-            }            /*
-             * EVENT
-             */
-            if (
-                subcommand ===
-                'event'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const schedule =
-                    getRelevantRankTrialSchedule();
-
-                const permissionState =
-                    getScheduledEventPermissions(
-                        interaction.guild
-                    );
-
-                const eventState =
-                    await getRankTrialScheduledEventState(
-                        interaction.guild,
-                        schedule
-                    );
-
-                const databaseRecord =
-                    eventState.record;
-
-                const discordEvent =
-                    eventState.discordEvent;
-
-                if (
-                    !databaseRecord &&
-                    !discordEvent
-                ) {
-                    const notCreatedEmbed =
-                        createEmbed({
-                            title:
-                                '📅 Rank Trial Scheduled Event',
-
-                            description:
-                                [
-                                    `No Discord Scheduled Event exists for cycle \`${schedule.trialKey}\`.`,
-                                    '',
-                                    'Use `/ranktrials sync` to create it safely.',
-                                    '',
-                                    `**Battle Start:** ${toDiscordTimestamp(
-                                        schedule.battleStart,
-                                        'F'
-                                    )}`,
-                                    `**Relative Time:** ${toDiscordTimestamp(
-                                        schedule.battleStart,
-                                        'R'
-                                    )}`
-                                ].join('\n'),
-
-                            fields: [
-                                {
-                                    name:
-                                        '🛡️ Umbra Event Permissions',
-
-                                    value:
-                                        [
-                                            `**Allowed:** ${
-                                                permissionState.allowed
-                                                    ? '`YES`'
-                                                    : '`NO`'
-                                            }`,
-                                            `**Administrator:** ${
-                                                permissionState.hasAdministrator
-                                                    ? '`YES`'
-                                                    : '`NO`'
-                                            }`,
-                                            `**Create Events:** ${
-                                                permissionState.hasCreateEvents
-                                                    ? '`YES`'
-                                                    : '`NO`'
-                                            }`,
-                                            `**Manage Events:** ${
-                                                permissionState.hasManageEvents
-                                                    ? '`YES`'
-                                                    : '`NO`'
-                                            }`
-                                        ].join('\n'),
-
-                                    inline:
-                                        false
-                                }
-                            ],
-
-                            thumbnail:
-                                interaction.guild.iconURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                }) ??
-                                interaction.client.user
-                                    .displayAvatarURL({
-                                        size:
-                                            512,
-
-                                        forceStatic:
-                                            false
-                                    })
-                        });
-
-                    notCreatedEmbed.setAuthor({
-                        name:
-                            rankTrialConfig
-                                .branding
-                                .authorName,
-
-                        iconURL:
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        256,
-
-                                    forceStatic:
-                                        false
-                                })
-                    });
-
-                    notCreatedEmbed.setFooter({
-                        text:
-                            'Umbra • Rank Trial Event Manager'
-                    });
-
-                    notCreatedEmbed.setTimestamp();
-
-                    await interaction.editReply({
-                        embeds:
-                            [notCreatedEmbed],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                const eventId =
-                    discordEvent
-                        ?.id ??
-                    databaseRecord
-                        ?.discordEventId ??
-                    null;
-
-                const eventStatus =
-                    discordEvent
-                        ?.status ??
-                    databaseRecord
-                        ?.status ??
-                    null;
-
-                const eventName =
-                    discordEvent
-                        ?.name ??
-                    databaseRecord
-                        ?.eventName ??
-                    'Monthly Rank Trials';
-
-                const startsAt =
-                    discordEvent
-                        ?.scheduledStartAt ??
-                    databaseRecord
-                        ?.startsAt ??
-                    schedule.battleStart;
-
-                const endsAt =
-                    discordEvent
-                        ?.scheduledEndAt ??
-                    databaseRecord
-                        ?.endsAt ??
-                    null;
-
-                const eventLocation =
-                    discordEvent
-                        ?.entityMetadata
-                        ?.location ??
-                    databaseRecord
-                        ?.eventLocation ??
-                    rankTrialConfig
-                        .scheduledEvent
-                        .location;
-
-                const eventDescription =
-                    discordEvent
-                        ?.description ??
-                    databaseRecord
-                        ?.eventDescription ??
-                    'No Event description is currently available.';
-
-                const eventLink =
-                    buildScheduledEventLink(
-                        interaction.guild.id,
-                        eventId
-                    );
-
-                const eventFields = [
-                    {
-                        name:
-                            '📖 Event Identity',
+                            `${index + 1}. ${publication.publicationType}`,
 
                         value:
-                            [
-                                `**Name:** ${eventName}`,
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                `**Status:** ${formatEventManagerStatus(
-                                    eventStatus
-                                )}`,
-                                `**Discord Event ID:** ${
-                                    eventId
-                                        ? `\`${eventId}\``
-                                        : '`Unavailable`'
-                                }`
-                            ].join('\n'),
-
-                        inline:
-                            false
-                    },
-                    {
-                        name:
-                            '⏰ Schedule',
-
-                        value:
-                            [
-                                `**Starts:** ${
-                                    startsAt
-                                        ? toDiscordTimestamp(
-                                            startsAt,
-                                            'F'
-                                        )
-                                        : '`Unavailable`'
-                                }`,
-                                `**Relative:** ${
-                                    startsAt
-                                        ? toDiscordTimestamp(
-                                            startsAt,
-                                            'R'
-                                        )
-                                        : '`Unavailable`'
-                                }`,
-                                `**Ends:** ${
-                                    endsAt
-                                        ? toDiscordTimestamp(
-                                            endsAt,
-                                            'F'
-                                        )
-                                        : '`Unavailable`'
-                                }`
-                            ].join('\n'),
-
-                        inline:
-                            false
-                    },
-                    {
-                        name:
-                            '📍 Arena',
-
-                        value:
-                            eventLocation ||
-                            '`No location configured`',
-
-                        inline:
-                            true
-                    },
-                    {
-                        name:
-                            '👥 Interested Souls',
-
-                        value:
-                            `\`${eventState.interestedCount}\``,
-
-                        inline:
-                            true
-                    },
-                    {
-                        name:
-                            '🔗 Discord Event',
-
-                        value:
-                            eventId
-                                ? `[Open Scheduled Event](${eventLink})`
-                                : '`Unavailable`',
-
-                        inline:
-                            false
-                    },
-                    {
-                        name:
-                            '🛡️ Umbra Permissions',
-
-                        value:
-                            [
-                                `**Allowed:** ${
-                                    permissionState.allowed
-                                        ? '`YES`'
-                                        : '`NO`'
-                                }`,
-                                `**Create Events:** ${
-                                    permissionState.hasCreateEvents
-                                        ? '`YES`'
-                                        : '`NO`'
-                                }`,
-                                `**Manage Events:** ${
-                                    permissionState.hasManageEvents
-                                        ? '`YES`'
-                                        : '`NO`'
-                                }`
-                            ].join('\n'),
-
-                        inline:
-                            false
-                    }
-                ];
-
-                if (
-                    databaseRecord
-                        ?.syncedAt
-                ) {
-                    eventFields.push({
-                        name:
-                            '🔄 Last Database Sync',
-
-                        value:
-                            toDiscordTimestamp(
-                                databaseRecord.syncedAt,
-                                'F'
+                            formatHistoryEntry(
+                                publication
                             ),
 
                         inline:
                             false
-                    });
-                }
+                    })
+                ),
 
-                const eventEmbed =
-                    createEmbed({
-                        title:
-                            '📅 Rank Trial Scheduled Event',
+            thumbnail:
+                getGuildIcon(
+                    interaction
+                )
+        });
 
-                        description:
-                            [
-                                eventDescription,
-                                '',
-                                discordEvent
-                                    ? 'The Discord Scheduled Event is currently connected to Umbra.'
-                                    : 'The PostgreSQL record exists, but the Discord Scheduled Event is currently missing.'
+    applyRankTrialBranding(
+        interaction,
+        embed,
+        'Evelynn • Rank Trials Archive'
+    );
+
+    await interaction.editReply({
+        embeds: [embed],
+        components: []
+    });
+}async function handleEvent(
+    interaction
+) {
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    const schedule =
+        getRelevantRankTrialSchedule();
+
+    const permissions =
+        getScheduledEventPermissions(
+            interaction.guild
+        );
+
+    const state =
+        await getRankTrialScheduledEventState(
+            interaction.guild,
+            schedule
+        );
+
+    const record =
+        state.record;
+
+    const discordEvent =
+        state.discordEvent;
+
+    if (!record && !discordEvent) {
+        const embed =
+            applyRankTrialBranding(
+                interaction,
+                createEmbed({
+                    title:
+                        '📅 Rank Trial Scheduled Event',
+
+                    description: [
+                        `No Discord Scheduled Event exists for cycle \`${schedule.trialKey}\`.`,
+                        '',
+                        'Use `/ranktrials sync` to create it.',
+                        '',
+                        `**Battle:** ${toDiscordTimestamp(
+                            schedule.battleStart,
+                            'F'
+                        )}`,
+                        `**Relative:** ${toDiscordTimestamp(
+                            schedule.battleStart,
+                            'R'
+                        )}`
+                    ].join('\n'),
+
+                    fields: [
+                        {
+                            name:
+                                '🛡️ Evelynn Permissions',
+
+                            value: [
+                                `**Allowed:** \`${permissions.allowed ? 'YES' : 'NO'}\``,
+                                `**Create Events:** \`${permissions.hasCreateEvents ? 'YES' : 'NO'}\``,
+                                `**Manage Events:** \`${permissions.hasManageEvents ? 'YES' : 'NO'}\``
                             ].join('\n'),
 
-                        fields:
-                            eventFields,
-
-                        thumbnail:
-                            interaction.guild.iconURL({
-                                size:
-                                    512,
-
-                                forceStatic:
-                                    false
-                            }) ??
-                            interaction.client.user
-                                .displayAvatarURL({
-                                    size:
-                                        512,
-
-                                    forceStatic:
-                                        false
-                                })
-                    });
-
-                eventEmbed.setAuthor({
-                    name:
-                        rankTrialConfig
-                            .branding
-                            .authorName,
-
-                    iconURL:
-                        interaction.client.user
-                            .displayAvatarURL({
-                                size:
-                                    256,
-
-                                forceStatic:
-                                    false
-                            })
-                });
-
-                eventEmbed.setFooter({
-                    text:
-                        'Umbra • Rank Trial Event Manager'
-                });
-
-                eventEmbed.setTimestamp();
-
-                await interaction.editReply({
-                    embeds:
-                        [eventEmbed],
-
-                    components:
-                        []
-                });
-
-                return;
-            }
-
-            /*
-             * SYNC
-             */
-            if (
-                subcommand ===
-                'sync'
-            ) {
-                await interaction.deferReply({
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                const schedule =
-                    getRelevantRankTrialSchedule();
-
-                const permissionState =
-                    getScheduledEventPermissions(
-                        interaction.guild
-                    );
-
-                if (
-                    !permissionState.allowed
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Missing Event Permissions',
-                                [
-                                    'Umbra cannot create or synchronize the Discord Scheduled Event.',
-                                    '',
-                                    'Required bot permission:',
-                                    '• Create Events',
-                                    '',
-                                    'Recommended additional permission:',
-                                    '• Manage Events',
-                                    '',
-                                    `**Administrator:** ${
-                                        permissionState.hasAdministrator
-                                            ? '`YES`'
-                                            : '`NO`'
-                                    }`,
-                                    `**Create Events:** ${
-                                        permissionState.hasCreateEvents
-                                            ? '`YES`'
-                                            : '`NO`'
-                                    }`,
-                                    `**Manage Events:** ${
-                                        permissionState.hasManageEvents
-                                            ? '`YES`'
-                                            : '`NO`'
-                                    }`
-                                ].join('\n')
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                const result =
-                    await synchronizeRankTrialScheduledEvent(
-                        interaction.guild,
-                        schedule
-                    );
-
-                if (
-                    result.status ===
-                        'created' ||
-                    result.status ===
-                        'recreated' ||
-                    result.status ===
-                        'updated' ||
-                    result.status ===
-                        'synchronized'
-                ) {
-                    const discordEventId =
-                        result.discordEvent
-                            ?.id ??
-                        result.record
-                            ?.discordEventId ??
-                        null;
-
-                    const eventLink =
-                        buildScheduledEventLink(
-                            interaction.guild.id,
-                            discordEventId
-                        );
-
-                    const successTitle =
-                        result.status ===
-                            'created'
-                            ? '✅ Rank Trial Event Created'
-                            : result.status ===
-                                'recreated'
-                                ? '✅ Rank Trial Event Recreated'
-                                : result.status ===
-                                    'updated'
-                                    ? '✅ Rank Trial Event Updated'
-                                    : '✅ Rank Trial Event Synchronized';
-
-                    await interaction.editReply({
-                        embeds: [
-                            createSuccessEmbed(
-                                successTitle,
-                                [
-                                    `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                    `**Result:** ${formatEventManagerStatus(
-                                        result.status
-                                    )}`,
-                                    `**Battle Start:** ${toDiscordTimestamp(
-                                        schedule.battleStart,
-                                        'F'
-                                    )}`,
-                                    `**Discord Event ID:** ${
-                                        discordEventId
-                                            ? `\`${discordEventId}\``
-                                            : '`Unavailable`'
-                                    }`,
-                                    '',
-                                    discordEventId
-                                        ? `**Event:** [Open Scheduled Event](${eventLink})`
-                                        : '**Event:** `Unavailable`',
-                                    '',
-                                    'PostgreSQL and Discord are now synchronized.'
-                                ].join('\n')
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                if (
-                    result.status ===
-                    'disabled'
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '⚠️ Scheduled Events Disabled',
-                                result.reason ??
-                                'Rank Trial Scheduled Events are disabled in configuration.'
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                if (
-                    result.status ===
-                    'missing'
-                ) {
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '⚠️ Scheduled Event Missing',
-                                [
-                                    result.reason ??
-                                    'The Discord Scheduled Event is missing.',
-                                    '',
-                                    'Enable `recreateIfDeleted` in `config/rankTrials.js` to allow automatic recovery.'
-                                ].join('\n')
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-
-                    return;
-                }
-
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Event Synchronization Failed',
-                            [
-                                'Umbra could not synchronize the Rank Trial Scheduled Event.',
-                                '',
-                                `**Trial Cycle:** \`${schedule.trialKey}\``,
-                                `**Result:** ${formatEventManagerStatus(
-                                    result.status
-                                )}`,
-                                `**Reason:** ${
-                                    result.reason ??
-                                    'Unknown Event Manager error.'
-                                }`
-                            ].join('\n')
-                        )
+                            inline: false
+                        }
                     ],
 
-                    components:
-                        []
-                });
+                    thumbnail:
+                        getGuildIcon(
+                            interaction
+                        )
+                }),
+                'Evelynn • Rank Trial Event Manager'
+            );
 
-                return;
-            }            await sendRankTrialError(
-                interaction,
-                '❌ Unknown Rank Trial Action',
-                'Umbra could not recognize the selected Rank Trials action.'
+        return interaction.editReply({
+            embeds: [embed],
+            components: []
+        });
+    }
+
+    const eventId =
+        discordEvent?.id ??
+        record?.discordEventId ??
+        null;
+
+    const eventStatus =
+        discordEvent?.status ??
+        record?.status ??
+        null;
+
+    const eventName =
+        discordEvent?.name ??
+        record?.eventName ??
+        'Monthly Rank Trials';
+
+    const startsAt =
+        discordEvent?.scheduledStartAt ??
+        record?.startsAt ??
+        schedule.battleStart;
+
+    const endsAt =
+        discordEvent?.scheduledEndAt ??
+        record?.endsAt ??
+        null;
+
+    const location =
+        discordEvent
+            ?.entityMetadata
+            ?.location ??
+        record?.eventLocation ??
+        rankTrialConfig
+            .scheduledEvent
+            .location;
+
+    const description =
+        discordEvent?.description ??
+        record?.eventDescription ??
+        'No event description is available.';
+
+    const link =
+        buildScheduledEventLink(
+            interaction.guild.id,
+            eventId
+        );
+
+    const fields = [
+        {
+            name:
+                '📖 Event',
+
+            value: [
+                `**Name:** ${eventName}`,
+                `**Cycle:** \`${schedule.trialKey}\``,
+                `**Status:** ${formatEventStatus(
+                    eventStatus
+                )}`,
+                `**Event ID:** ${
+                    eventId
+                        ? `\`${eventId}\``
+                        : '`Unavailable`'
+                }`
+            ].join('\n'),
+
+            inline: false
+        },
+        {
+            name:
+                '⏰ Schedule',
+
+            value: [
+                `**Starts:** ${
+                    startsAt
+                        ? toDiscordTimestamp(
+                            startsAt,
+                            'F'
+                        )
+                        : '`Unavailable`'
+                }`,
+                `**Relative:** ${
+                    startsAt
+                        ? toDiscordTimestamp(
+                            startsAt,
+                            'R'
+                        )
+                        : '`Unavailable`'
+                }`,
+                `**Ends:** ${
+                    endsAt
+                        ? toDiscordTimestamp(
+                            endsAt,
+                            'F'
+                        )
+                        : '`Unavailable`'
+                }`
+            ].join('\n'),
+
+            inline: false
+        },
+        {
+            name:
+                '📍 Arena',
+
+            value:
+                location ||
+                '`Not configured`',
+
+            inline: true
+        },
+        {
+            name:
+                '👥 Interested',
+
+            value:
+                `\`${state.interestedCount}\``,
+
+            inline: true
+        },
+        {
+            name:
+                '🔗 Discord Event',
+
+            value:
+                link
+                    ? `[Open Event](${link})`
+                    : '`Unavailable`',
+
+            inline: false
+        },
+        {
+            name:
+                '🛡️ Evelynn Permissions',
+
+            value: [
+                `**Allowed:** \`${permissions.allowed ? 'YES' : 'NO'}\``,
+                `**Create Events:** \`${permissions.hasCreateEvents ? 'YES' : 'NO'}\``,
+                `**Manage Events:** \`${permissions.hasManageEvents ? 'YES' : 'NO'}\``
+            ].join('\n'),
+
+            inline: false
+        }
+    ];
+
+    if (record?.syncedAt) {
+        fields.push({
+            name:
+                '🔄 Last Sync',
+
+            value:
+                toDiscordTimestamp(
+                    record.syncedAt,
+                    'F'
+                ),
+
+            inline: false
+        });
+    }
+
+    const embed =
+        applyRankTrialBranding(
+            interaction,
+            createEmbed({
+                title:
+                    '📅 Rank Trial Scheduled Event',
+
+                description: [
+                    description,
+                    '',
+                    discordEvent
+                        ? 'The Discord Scheduled Event is connected to Evelynn.'
+                        : 'The PostgreSQL record exists, but the Discord Event is missing.'
+                ].join('\n'),
+
+                fields,
+
+                thumbnail:
+                    getGuildIcon(
+                        interaction
+                    )
+            }),
+            'Evelynn • Rank Trial Event Manager'
+        );
+
+    await interaction.editReply({
+        embeds: [embed],
+        components: []
+    });
+}
+
+async function handleSync(
+    interaction
+) {
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    const schedule =
+        getRelevantRankTrialSchedule();
+
+    const permissions =
+        getScheduledEventPermissions(
+            interaction.guild
+        );
+
+    if (!permissions.allowed) {
+        return sendError(
+            interaction,
+            '❌ Missing Event Permissions',
+            [
+                'Evelynn cannot synchronize the Discord Scheduled Event.',
+                '',
+                `**Create Events:** \`${permissions.hasCreateEvents ? 'YES' : 'NO'}\``,
+                `**Manage Events:** \`${permissions.hasManageEvents ? 'YES' : 'NO'}\``
+            ].join('\n')
+        );
+    }
+
+    const result =
+        await synchronizeRankTrialScheduledEvent(
+            interaction.guild,
+            schedule
+        );
+
+    if (
+        EVENT_SUCCESS_STATUSES.has(
+            result.status
+        )
+    ) {
+        const eventId =
+            result.discordEvent?.id ??
+            result.record?.discordEventId ??
+            null;
+
+        const link =
+            buildScheduledEventLink(
+                interaction.guild.id,
+                eventId
+            );
+
+        const title = {
+            created:
+                '✅ Rank Trial Event Created',
+
+            recreated:
+                '✅ Rank Trial Event Recreated',
+
+            updated:
+                '✅ Rank Trial Event Updated',
+
+            synchronized:
+                '✅ Rank Trial Event Synchronized'
+        }[result.status];
+
+        return interaction.editReply({
+            embeds: [
+                createSuccessEmbed(
+                    title,
+                    [
+                        `**Cycle:** \`${schedule.trialKey}\``,
+                        `**Result:** ${formatEventStatus(
+                            result.status
+                        )}`,
+                        `**Battle:** ${toDiscordTimestamp(
+                            schedule.battleStart,
+                            'F'
+                        )}`,
+                        `**Event ID:** ${
+                            eventId
+                                ? `\`${eventId}\``
+                                : '`Unavailable`'
+                        }`,
+                        link
+                            ? `**Event:** [Open Event](${link})`
+                            : '**Event:** `Unavailable`'
+                    ].join('\n')
+                )
+            ],
+            components: []
+        });
+    }
+
+    if (
+        result.status ===
+        'disabled'
+    ) {
+        return sendError(
+            interaction,
+            '⚠️ Scheduled Events Disabled',
+            result.reason ??
+                'Rank Trial Scheduled Events are disabled.'
+        );
+    }
+
+    if (
+        result.status ===
+        'missing'
+    ) {
+        return sendError(
+            interaction,
+            '⚠️ Scheduled Event Missing',
+            result.reason ??
+                'The Discord Scheduled Event is missing.'
+        );
+    }
+
+    return sendError(
+        interaction,
+        '❌ Event Synchronization Failed',
+        [
+            `**Cycle:** \`${schedule.trialKey}\``,
+            `**Result:** ${formatEventStatus(
+                result.status
+            )}`,
+            `**Reason:** ${
+                result.reason ??
+                'Unknown Event Manager error.'
+            }`
+        ].join('\n')
+    );
+}const HANDLERS = {
+    status:
+        handleStatus,
+
+    registration:
+        handleRegistration,
+
+    testregistration:
+        handleTestRegistration,
+
+    review:
+        handleReview,
+
+    preview:
+        handlePreview,
+
+    publish:
+        handlePublish,
+
+    check:
+        handleCheck,
+
+    history:
+        handleHistory,
+
+    event:
+        handleEvent,
+
+    sync:
+        handleSync
+};
+
+module.exports = {
+    category: 'events',
+    data,
+
+    async execute(interaction) {
+        try {
+            if (!interaction.inGuild()) {
+                return sendError(
+                    interaction,
+                    '❌ Server Only Command',
+                    'The Rank Trials System can only be managed inside THE Ⅹ SINS.'
+                );
+            }
+
+            if (
+                !interaction.memberPermissions?.has(
+                    PermissionFlagsBits.Administrator
+                )
+            ) {
+                return sendError(
+                    interaction,
+                    '❌ Permission Denied',
+                    'Only Administrators may manage the TTS Rank Trials System.'
+                );
+            }
+
+            const subcommand =
+                interaction.options
+                    .getSubcommand();
+
+            const handler =
+                HANDLERS[subcommand];
+
+            if (!handler) {
+                return sendError(
+                    interaction,
+                    '❌ Unknown Rank Trial Action',
+                    'Evelynn could not recognize this Rank Trials action.'
+                );
+            }
+
+            await handler(
+                interaction
             );
         } catch (error) {
             console.error(
-                '======================================'
-            );
-
-            console.error(
-                '❌ Umbra Rank Trials command error:'
-            );
-
-            console.error(
+                '❌ Evelynn /ranktrials failed:',
                 error
             );
 
-            console.error(
-                '======================================'
-            );
-
-            await sendRankTrialError(
+            await sendError(
                 interaction,
                 '❌ Rank Trials Command Failed',
-                [
-                    'Umbra could not complete this Rank Trials action.',
-                    '',
-                    'Please check the PostgreSQL connection, Event permissions, scheduler configuration and channel access.'
-                ].join('\n')
+                'Evelynn could not complete this Rank Trials action.'
             ).catch(
-                responseError => {
+                responseError =>
                     console.error(
-                        '❌ Failed to send the Rank Trials command error response:'
-                    );
-
-                    console.error(
+                        '❌ Rank Trials error response failed:',
                         responseError
-                    );
-                }
+                    )
             );
         }
     }

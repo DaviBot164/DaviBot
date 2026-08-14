@@ -12,53 +12,22 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-/**
- * Internal Guide menu ID.
- *
- * Keep stable because interaction
- * routing may depend on it.
- */
 const GUIDE_MENU_ID =
     'umbra_guide_category_menu';
 
-/**
- * Guide page identifiers.
- */
 const GUIDE_PAGES = {
-    overview:
-        'guide_overview',
-
-    moderation:
-        'guide_moderation',
-
-    ranks:
-        'guide_ranks',
-
-    titles:
-        'guide_titles',
-
-    progression:
-        'guide_progression',
-
-    server:
-        'guide_server',
-
-    support:
-        'guide_support',
-
-    events:
-        'guide_events',
-
-    administration:
-        'guide_administration',
-
-    information:
-        'guide_information'
+    overview: 'guide_overview',
+    moderation: 'guide_moderation',
+    ranks: 'guide_ranks',
+    titles: 'guide_titles',
+    progression: 'guide_progression',
+    server: 'guide_server',
+    support: 'guide_support',
+    events: 'guide_events',
+    administration: 'guide_administration',
+    information: 'guide_information'
 };
 
-/**
- * Guide category order.
- */
 const GUIDE_PAGE_ORDER = [
     GUIDE_PAGES.overview,
     GUIDE_PAGES.moderation,
@@ -72,849 +41,504 @@ const GUIDE_PAGE_ORDER = [
     GUIDE_PAGES.information
 ];
 
-/**
- * Guide category display.
- */
 const GUIDE_PAGE_DETAILS = {
     [GUIDE_PAGES.overview]: {
-        emoji:
-            'Ⅹ',
-
-        label:
-            'Overview',
-
+        emoji: 'Ⅹ',
+        label: 'Overview',
         description:
             'Main command and system overview'
     },
 
     [GUIDE_PAGES.moderation]: {
-        emoji:
-            '🛡️',
-
-        label:
-            'Moderation',
-
+        emoji: '🛡️',
+        label: 'Moderation',
         description:
             'Warnings, punishments and channel control'
     },
 
     [GUIDE_PAGES.ranks]: {
-        emoji:
-            '⚔️',
-
-        label:
-            'Sin Ranks',
-
+        emoji: '⚔️',
+        label: 'Sin Ranks',
         description:
             'Sin ranking and competitive records'
     },
 
     [GUIDE_PAGES.titles]: {
-        emoji:
-            '♜',
-
-        label:
-            'Titles',
-
+        emoji: '♜',
+        label: 'Titles',
         description:
             'Title collection and management'
     },
 
     [GUIDE_PAGES.progression]: {
-        emoji:
-            '◆',
-
-        label:
-            'Progression',
-
+        emoji: '◆',
+        label: 'Progression',
         description:
             'Member progression and profiles'
     },
 
     [GUIDE_PAGES.server]: {
-        emoji:
-            'Ⅹ',
-
-        label:
-            'THE Ⅹ SINS',
-
+        emoji: 'Ⅹ',
+        label: 'THE Ⅹ SINS',
         description:
             'Server information and central records'
     },
 
     [GUIDE_PAGES.support]: {
-        emoji:
-            '🎫',
-
-        label:
-            'Support',
-
+        emoji: '🎫',
+        label: 'Support',
         description:
             'Tickets and member assistance'
     },
 
     [GUIDE_PAGES.events]: {
-        emoji:
-            '🎉',
-
-        label:
-            'Events',
-
+        emoji: '🎉',
+        label: 'Events',
         description:
             'Events, giveaways and community activity'
     },
 
     [GUIDE_PAGES.administration]: {
-        emoji:
-            '♛',
-
-        label:
-            'Administration',
-
+        emoji: '♛',
+        label: 'Administration',
         description:
             'Setup and server management'
     },
 
     [GUIDE_PAGES.information]: {
-        emoji:
-            '📖',
-
-        label:
-            'Information',
-
+        emoji: '📖',
+        label: 'Information',
         description:
             'General commands and utilities'
     }
 };
 
-/**
- * Command access levels.
- */
-const ACCESS_LEVELS = {
-    everyone:
-        'Everyone',
+const ACCESS = {
+    everyone: 'Everyone',
+    self: 'Personal Use',
+    moderator: '⚔️ Lieutenant or Higher',
+    administrator: '🛡️ Captain or Higher',
+    highCommand: '♛ High Command',
+    owner: '♛ Sovereign Only'
+};
 
-    self:
-        'Personal Use',
-
-    moderator:
-        '⚔️ Lieutenant or Higher',
-
-    administrator:
-        '🛡️ Captain or Higher',
-
-    highCommand:
-        '♛ High Command',
-
-    owner:
-        '♛ Sovereign Only'
-};/**
- * Command documentation used
- * by Evelynn's Guide.
- *
- * Commands that are not currently loaded
- * are automatically hidden.
- */
 const GUIDE_COMMANDS = {
-    /*
-     * ======================================================
-     * Moderation
-     * ======================================================
-     */
-    ban: {
-        page:
-            GUIDE_PAGES.moderation,
+    ban: [
+        'moderation',
+        '/ban user [reason] [delete_messages]',
+        'Ban a member from the server.',
+        'administrator'
+    ],
+
+    kick: [
+        'moderation',
+        '/kick user [reason]',
+        'Remove a member without permanently banning them.',
+        'moderator'
+    ],
+
+    timeout: [
+        'moderation',
+        '/timeout user duration [reason]',
+        'Temporarily restrict a member from interacting.',
+        'moderator'
+    ],
+
+    untimeout: [
+        'moderation',
+        '/untimeout user [reason]',
+        'Remove an active timeout from a member.',
+        'moderator'
+    ],
+
+    warn: [
+        'moderation',
+        '/warn user reason',
+        'Record an official warning.',
+        'moderator'
+    ],
+
+    warnings: [
+        'moderation',
+        '/warnings user',
+        'View warnings recorded against a member.',
+        'moderator'
+    ],
+
+    unwarn: [
+        'moderation',
+        '/unwarn warning_id [reason]',
+        'Remove one warning record.',
+        'moderator'
+    ],
+
+    clearwarnings: [
+        'moderation',
+        '/clearwarnings user [reason]',
+        'Remove all warnings from a member.',
+        'administrator'
+    ],
+
+    cases: [
+        'moderation',
+        '/cases [user] [limit]',
+        'View moderation and AutoMod cases.',
+        'moderator'
+    ],
+
+    history: [
+        'moderation',
+        '/history user [limit]',
+        'View a member’s moderation history.',
+        'moderator'
+    ],
+
+    clear: [
+        'moderation',
+        '/clear amount [user]',
+        'Delete multiple messages from a channel.',
+        'moderator'
+    ],
+
+    lock: [
+        'moderation',
+        '/lock [channel] [reason]',
+        'Prevent regular members from sending messages.',
+        'moderator'
+    ],
+
+    unlock: [
+        'moderation',
+        '/unlock [channel] [reason]',
+        'Restore message access in a locked channel.',
+        'moderator'
+    ],
+
+    slowmode: [
+        'moderation',
+        '/slowmode seconds [channel] [reason]',
+        'Set or remove a channel slowmode delay.',
+        'moderator'
+    ],
+
+    setrank: [
+        'ranks',
+        '/setrank user rank reason',
+        'Assign or replace a managed Sin Rank.',
+        'highCommand'
+    ],
+
+    removerank: [
+        'ranks',
+        '/removerank user reason',
+        'Remove a member’s current managed Sin Rank.',
+        'highCommand'
+    ],
+
+    rankhistory: [
+        'ranks',
+        '/rankhistory [user] [limit]',
+        'View rank assignment and removal history.',
+        'everyone'
+    ],
+
+    espada: [
+        'ranks',
+        '/espada',
+        'View the current Ten Sins hierarchy.',
+        'everyone'
+    ],
+
+    titles: [
+        'titles',
+        '/titles [user]',
+        'View unlocked, active and locked Titles.',
+        'everyone'
+    ],
+
+    settitle: [
+        'titles',
+        '/settitle category',
+        'Activate one of your unlocked Titles.',
+        'self'
+    ],
+
+    removetitle: [
+        'titles',
+        '/removetitle',
+        'Remove your active Title.',
+        'self'
+    ],
+
+    granttitle: [
+        'titles',
+        '/granttitle user title reason [activate]',
+        'Grant a Manual or Event Title to a member.',
+        'highCommand'
+    ],
+
+    revoketitle: [
+        'titles',
+        '/revoketitle user title reason',
+        'Revoke a manually granted Title.',
+        'highCommand'
+    ],
+
+    soul: [
+        'progression',
+        '/soul [user]',
+        'Open the complete progression record for a member.',
+        'everyone'
+    ],
+
+    profile: [
+        'progression',
+        '/profile [user]',
+        'View a compact member profile.',
+        'everyone'
+    ],
+
+    level: [
+        'progression',
+        '/level [user]',
+        'View current level and progression.',
+        'everyone'
+    ],
+
+    rank: [
+        'progression',
+        '/rank [user]',
+        'View current rank information.',
+        'everyone'
+    ],
+
+    leaderboard: [
+        'progression',
+        '/leaderboard',
+        'View progression leaderboards.',
+        'everyone'
+    ],
+
+    dashboard: [
+        'server',
+        '/dashboard',
+        'Open the interactive THE Ⅹ SINS server overview.',
+        'everyone'
+    ],
+
+    ticketpanel: [
+        'support',
+        '/ticketpanel',
+        'Publish the interactive support panel.',
+        'administrator'
+    ],
+
+    ticket: [
+        'support',
+        '/ticket',
+        'Create or manage a personal support ticket.',
+        'everyone'
+    ],
+
+    tickets: [
+        'support',
+        '/tickets',
+        'View support ticket management options.',
+        'moderator'
+    ],
+
+    event: [
+        'events',
+        '/event',
+        'Create or manage an official server event.',
+        'administrator'
+    ],
+
+    giveaway: [
+        'events',
+        '/giveaway',
+        'Create or manage a community giveaway.',
+        'administrator'
+    ],
+
+    setup: [
+        'administration',
+        '/setup',
+        'Open Evelynn’s interactive server setup.',
+        'administrator'
+    ],
+
+    setuprules: [
+        'administration',
+        '/setuprules',
+        'Publish or refresh the Code of Sins.',
+        'administrator'
+    ],
+
+    testwelcome: [
+        'administration',
+        '/testwelcome',
+        'Preview the current Welcome design.',
+        'administrator'
+    ],
+
+    announce: [
+        'administration',
+        '/announce',
+        'Publish an official server announcement.',
+        'administrator'
+    ],
+
+    help: [
+        'information',
+        '/help',
+        'Open Evelynn’s quick command menu.',
+        'everyone'
+    ],
+
+    guide: [
+        'information',
+        '/guide',
+        'Open this detailed interactive command guide.',
+        'everyone'
+    ],
+
+    ping: [
+        'information',
+        '/ping',
+        'Check Evelynn’s latency and connection status.',
+        'everyone'
+    ],
+
+    avatar: [
+        'information',
+        '/avatar [user]',
+        'View a user’s Discord avatar.',
+        'everyone'
+    ],
+
+    userinfo: [
+        'information',
+        '/userinfo [user]',
+        'View detailed Discord member information.',
+        'everyone'
+    ],
+
+    serverinfo: [
+        'information',
+        '/serverinfo',
+        'View detailed information about THE Ⅹ SINS.',
+        'everyone'
+    ]
+};
 
-        syntax:
-            '/ban user [reason] [delete_messages]',
-
-        summary:
-            'Ban a member from the server.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    kick: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/kick user [reason]',
-
-        summary:
-            'Remove a member without permanently banning them.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    timeout: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/timeout user duration [reason]',
-
-        summary:
-            'Temporarily restrict a member from interacting.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    untimeout: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/untimeout user [reason]',
-
-        summary:
-            'Remove an active timeout from a member.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    warn: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/warn user reason',
-
-        summary:
-            'Record an official warning.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    warnings: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/warnings user',
-
-        summary:
-            'View warnings recorded against a member.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    unwarn: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/unwarn warning_id [reason]',
-
-        summary:
-            'Remove one warning record.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    clearwarnings: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/clearwarnings user [reason]',
-
-        summary:
-            'Remove all warnings from a member.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    cases: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/cases [user] [limit]',
-
-        summary:
-            'View moderation and AutoMod cases.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    history: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/history user [limit]',
-
-        summary:
-            'View a member’s moderation history.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    clear: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/clear amount [user]',
-
-        summary:
-            'Delete multiple messages from a channel.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    lock: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/lock [channel] [reason]',
-
-        summary:
-            'Prevent regular members from sending messages.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    unlock: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/unlock [channel] [reason]',
-
-        summary:
-            'Restore message access in a locked channel.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    slowmode: {
-        page:
-            GUIDE_PAGES.moderation,
-
-        syntax:
-            '/slowmode seconds [channel] [reason]',
-
-        summary:
-            'Set or remove a channel slowmode delay.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    /*
-     * ======================================================
-     * Sin Rank System
-     * ======================================================
-     */
-    setrank: {
-        page:
-            GUIDE_PAGES.ranks,
-
-        syntax:
-            '/setrank user rank reason',
-
-        summary:
-            'Assign or replace a managed Sin Rank.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
-    removerank: {
-        page:
-            GUIDE_PAGES.ranks,
-
-        syntax:
-            '/removerank user reason',
-
-        summary:
-            'Remove a member’s current managed Sin Rank.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
-    rankhistory: {
-        page:
-            GUIDE_PAGES.ranks,
-
-        syntax:
-            '/rankhistory [user] [limit]',
-
-        summary:
-            'View rank assignment and removal history.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    espada: {
-        page:
-            GUIDE_PAGES.ranks,
-
-        syntax:
-            '/espada',
-
-        summary:
-            'View the current Ten Sins hierarchy.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    /*
-     * ======================================================
-     * Title System
-     * ======================================================
-     */
-    titles: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/titles [user]',
-
-        summary:
-            'View unlocked, active and locked Titles.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    settitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/settitle category',
-
-        summary:
-            'Activate one of your unlocked Titles.',
-
-        access:
-            ACCESS_LEVELS.self
-    },
-
-    removetitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/removetitle',
-
-        summary:
-            'Remove your active Title.',
-
-        access:
-            ACCESS_LEVELS.self
-    },
-
-    granttitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/granttitle user title reason [activate]',
-
-        summary:
-            'Grant a Manual or Event Title to a member.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
-    revoketitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/revoketitle user title reason',
-
-        summary:
-            'Revoke a manually granted Title.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
-    /*
-     * ======================================================
-     * Progression
-     * ======================================================
-     */
-    soul: {
-        page:
-            GUIDE_PAGES.progression,
-
-        syntax:
-            '/soul [user]',
-
-        summary:
-            'Open the complete progression record for a member.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    profile: {
-        page:
-            GUIDE_PAGES.progression,
-
-        syntax:
-            '/profile [user]',
-
-        summary:
-            'View a compact member profile.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    level: {
-        page:
-            GUIDE_PAGES.progression,
-
-        syntax:
-            '/level [user]',
-
-        summary:
-            'View current level and progression.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    rank: {
-        page:
-            GUIDE_PAGES.progression,
-
-        syntax:
-            '/rank [user]',
-
-        summary:
-            'View current rank information.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    leaderboard: {
-        page:
-            GUIDE_PAGES.progression,
-
-        syntax:
-            '/leaderboard',
-
-        summary:
-            'View progression leaderboards.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    /*
-     * ======================================================
-     * THE Ⅹ SINS
-     * ======================================================
-     */
-    lasnoches: {
-        page:
-            GUIDE_PAGES.server,
-
-        syntax:
-            '/lasnoches',
-
-        summary:
-            'Open the interactive THE Ⅹ SINS server overview.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    /*
-     * ======================================================
-     * Support
-     * ======================================================
-     */
-    ticketpanel: {
-        page:
-            GUIDE_PAGES.support,
-
-        syntax:
-            '/ticketpanel',
-
-        summary:
-            'Publish the interactive support panel.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    ticket: {
-        page:
-            GUIDE_PAGES.support,
-
-        syntax:
-            '/ticket',
-
-        summary:
-            'Create or manage a personal support ticket.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    tickets: {
-        page:
-            GUIDE_PAGES.support,
-
-        syntax:
-            '/tickets',
-
-        summary:
-            'View support ticket management options.',
-
-        access:
-            ACCESS_LEVELS.moderator
-    },
-
-    /*
-     * ======================================================
-     * Events & Community
-     * ======================================================
-     */
-    event: {
-        page:
-            GUIDE_PAGES.events,
-
-        syntax:
-            '/event',
-
-        summary:
-            'Create or manage an official server event.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    giveaway: {
-        page:
-            GUIDE_PAGES.events,
-
-        syntax:
-            '/giveaway',
-
-        summary:
-            'Create or manage a community giveaway.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    /*
-     * ======================================================
-     * Administration
-     * ======================================================
-     */
-    setup: {
-        page:
-            GUIDE_PAGES.administration,
-
-        syntax:
-            '/setup',
-
-        summary:
-            'Open Evelynn’s interactive server setup.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    setuprules: {
-        page:
-            GUIDE_PAGES.administration,
-
-        syntax:
-            '/setuprules',
-
-        summary:
-            'Publish or refresh the Code of Sins.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    testwelcome: {
-        page:
-            GUIDE_PAGES.administration,
-
-        syntax:
-            '/testwelcome',
-
-        summary:
-            'Preview the current Welcome design.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    announce: {
-        page:
-            GUIDE_PAGES.administration,
-
-        syntax:
-            '/announce',
-
-        summary:
-            'Publish an official server announcement.',
-
-        access:
-            ACCESS_LEVELS.administrator
-    },
-
-    /*
-     * ======================================================
-     * Information
-     * ======================================================
-     */
-    help: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/help',
-
-        summary:
-            'Open Evelynn’s quick command menu.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    guide: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/guide',
-
-        summary:
-            'Open this detailed interactive command guide.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    ping: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/ping',
-
-        summary:
-            'Check Evelynn’s latency and connection status.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    avatar: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/avatar [user]',
-
-        summary:
-            'View a user’s Discord avatar.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    userinfo: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/userinfo [user]',
-
-        summary:
-            'View detailed Discord member information.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
-    serverinfo: {
-        page:
-            GUIDE_PAGES.information,
-
-        syntax:
-            '/serverinfo',
-
-        summary:
-            'View detailed information about THE Ⅹ SINS.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    }
-};/**
- * Quick workflows shown
- * on selected Guide pages.
- */
 const PAGE_WORKFLOWS = {
-    [GUIDE_PAGES.ranks]: [
+    ranks: [
         '`/setrank` — assign a Sin Rank',
         '`/rankhistory` — review rank history',
         '`/espada` — view the Ten Sins hierarchy'
     ],
 
-    [GUIDE_PAGES.titles]: [
+    titles: [
         '`/titles` — view unlocked Titles',
         '`/settitle` — activate a Title',
-        '`/soul` — confirm your active progression record'
+        '`/soul` — confirm your progression record'
     ],
 
-    [GUIDE_PAGES.progression]: [
+    progression: [
         '`/soul` — open the full progression record',
         '`/level` — check current level',
         '`/rankhistory` — review rank history'
     ],
 
-    [GUIDE_PAGES.support]: [
+    support: [
         '`/ticketpanel` — publish the support panel',
         '`/ticket` — open a support request',
         '`/tickets` — manage active tickets'
     ]
-};
+};function getCategoryCommands(
+    client,
+    category
+) {
+    return Object.entries(
+        GUIDE_COMMANDS
+    )
+        .filter(
+            ([name, details]) =>
+                details[0] === category &&
+                client.commands.has(name)
+        )
+        .map(
+            ([name, details]) => ({
+                name,
+                syntax: details[1],
+                summary: details[2],
+                access: details[3]
+            })
+        );
+}
 
-/**
- * Create the interactive
- * Guide category menu.
- *
- * @param {string} selectedPage
- * @param {boolean} disabled
- * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
- */
-function createGuideMenu(
+function getCategoryName(
+    pageId
+) {
+    const details =
+        GUIDE_PAGE_DETAILS[pageId];
+
+    return details?.label ??
+        'Guide';
+}
+
+function getCategoryFromPage(
+    pageId
+) {
+    return Object.keys(
+        GUIDE_PAGE_DETAILS
+    ).find(
+        key =>
+            GUIDE_PAGE_DETAILS[key] &&
+            pageId === key
+    );
+}
+
+function getPageCategory(
+    pageId
+) {
+    return (
+        {
+            [GUIDE_PAGES.overview]:
+                'overview',
+
+            [GUIDE_PAGES.moderation]:
+                'moderation',
+
+            [GUIDE_PAGES.ranks]:
+                'ranks',
+
+            [GUIDE_PAGES.titles]:
+                'titles',
+
+            [GUIDE_PAGES.progression]:
+                'progression',
+
+            [GUIDE_PAGES.server]:
+                'server',
+
+            [GUIDE_PAGES.support]:
+                'support',
+
+            [GUIDE_PAGES.events]:
+                'events',
+
+            [GUIDE_PAGES.administration]:
+                'administration',
+
+            [GUIDE_PAGES.information]:
+                'information'
+        }[pageId]
+    );
+}
+
+function buildGuideMenu(
     selectedPage,
     disabled = false
 ) {
@@ -926,645 +550,307 @@ function createGuideMenu(
             .setPlaceholder(
                 'Choose a guide category...'
             )
-            .setMinValues(
-                1
-            )
-            .setMaxValues(
-                1
-            )
-            .setDisabled(
-                disabled
+            .setMinValues(1)
+            .setMaxValues(1)
+            .setDisabled(disabled)
+            .addOptions(
+                GUIDE_PAGE_ORDER.map(
+                    pageId => {
+                        const page =
+                            GUIDE_PAGE_DETAILS[
+                                pageId
+                            ];
+
+                        return new StringSelectMenuOptionBuilder()
+                            .setLabel(
+                                page.label
+                            )
+                            .setDescription(
+                                page.description
+                            )
+                            .setEmoji(
+                                page.emoji
+                            )
+                            .setValue(
+                                pageId
+                            )
+                            .setDefault(
+                                pageId ===
+                                selectedPage
+                            );
+                    }
+                )
             );
 
-    for (
-        const pageId
-        of GUIDE_PAGE_ORDER
-    ) {
-        const details =
-            GUIDE_PAGE_DETAILS[
-                pageId
-            ];
-
-        menu.addOptions(
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    details.label
-                )
-                .setDescription(
-                    details.description
-                )
-                .setEmoji(
-                    details.emoji
-                )
-                .setValue(
-                    pageId
-                )
-                .setDefault(
-                    selectedPage ===
-                    pageId
-                )
-        );
-    }
-
     return new ActionRowBuilder()
-        .addComponents(
-            menu
-        );
+        .addComponents(menu);
 }
 
-/**
- * Check whether one command
- * is currently loaded.
- *
- * @param {import('discord.js').Client} client
- * @param {string} commandName
- * @returns {boolean}
- */
-function isCommandAvailable(
-    client,
-    commandName
-) {
-    return Boolean(
-        client.commands?.has(
-            commandName
-        )
-    );
-}
-
-/**
- * Get every available command
- * belonging to one Guide page.
- *
- * @param {import('discord.js').Client} client
- * @param {string} pageId
- * @returns {Array<{
- *     name: string,
- *     syntax: string,
- *     summary: string,
- *     access: string
- * }>}
- */
-function getAvailablePageCommands(
-    client,
-    pageId
-) {
-    return Object.entries(
-        GUIDE_COMMANDS
-    )
-        .filter(
-            (
-                [
-                    commandName,
-                    command
-                ]
-            ) =>
-                command.page ===
-                    pageId &&
-                isCommandAvailable(
-                    client,
-                    commandName
-                )
-        )
-        .map(
-            (
-                [
-                    commandName,
-                    command
-                ]
-            ) => ({
-                name:
-                    commandName,
-
-                syntax:
-                    command.syntax,
-
-                summary:
-                    command.summary,
-
-                access:
-                    command.access
-            })
-        )
-        .sort(
-            (
-                firstCommand,
-                secondCommand
-            ) =>
-                firstCommand.name
-                    .localeCompare(
-                        secondCommand.name
-                    )
-        );
-}
-
-/**
- * Count every documented
- * command currently loaded.
- *
- * @param {import('discord.js').Client} client
- * @returns {number}
- */
-function countAvailableGuideCommands(
-    client
-) {
-    return Object.keys(
-        GUIDE_COMMANDS
-    ).filter(
-        commandName =>
-            isCommandAvailable(
-                client,
-                commandName
-            )
-    ).length;
-}
-
-/**
- * Count available commands
- * belonging to one page.
- *
- * @param {import('discord.js').Client} client
- * @param {string} pageId
- * @returns {number}
- */
-function countPageCommands(
-    client,
-    pageId
-) {
-    return getAvailablePageCommands(
-        client,
-        pageId
-    ).length;
-}
-
-/**
- * Format one documented command.
- *
- * @param {Object} command
- * @returns {string}
- */
-function formatGuideCommand(
-    command
-) {
-    return [
-        `### \`${command.syntax}\``,
-        command.summary,
-        `-# Access: ${command.access}`
-    ].join('\n');
-}
-
-/**
- * Split command entries into safe
- * Discord Embed field values.
- *
- * @param {string[]} entries
- * @param {number} maxLength
- * @returns {string[]}
- */
-function splitCommandEntries(
-    entries,
-    maxLength = 1_000
-) {
-    const chunks =
-        [];
-
-    let currentChunk =
-        '';
-
-    for (
-        const entry
-        of entries
-    ) {
-        const separator =
-            currentChunk
-                ? '\n\n'
-                : '';
-
-        const nextChunk =
-            `${currentChunk}${separator}${entry}`;
-
-        if (
-            nextChunk.length >
-            maxLength
-        ) {
-            if (
-                currentChunk
-            ) {
-                chunks.push(
-                    currentChunk
-                );
-            }
-
-            currentChunk =
-                entry;
-        } else {
-            currentChunk =
-                nextChunk;
-        }
-    }
-
-    if (
-        currentChunk
-    ) {
-        chunks.push(
-            currentChunk
-        );
-    }
-
-    return chunks;
-}
-
-/**
- * Create the shared
- * Evelynn Guide Embed.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} title
- * @param {string} description
- * @returns {import('discord.js').EmbedBuilder}
- */
-function createGuideEmbed(
+function buildGuideEmbed(
     interaction,
     title,
-    description
+    description,
+    fields = []
 ) {
-    const botAvatar =
+    const avatar =
         interaction.client.user
             .displayAvatarURL({
-                extension:
-                    'png',
-
-                size:
-                    1024,
-
-                forceStatic:
-                    false
+                size: 256,
+                forceStatic: false
             });
 
-    const guildIcon =
-        interaction.guild?.iconURL({
-            extension:
-                'png',
-
-            size:
-                1024,
-
-            forceStatic:
-                false
-        });
+    const icon =
+        interaction.guild.iconURL({
+            size: 256,
+            forceStatic: false
+        }) ?? avatar;
 
     return createEmbed({
         title,
 
-        description:
-            [
-                description,
-                '',
-                '-# Choose another category below to continue.'
-            ].join('\n'),
+        description,
 
         color:
             '#5B3A78',
 
         thumbnail:
-            guildIcon ||
-            botAvatar,
+            icon,
 
         author: {
             name:
                 'Evelynn • THE Ⅹ SINS',
 
             iconURL:
-                botAvatar
+                avatar
         },
+
+        fields,
 
         footer: {
             text:
-                `TTS • Opened by ${interaction.user.username}`,
-
-            iconURL:
-                botAvatar
+                'TTS • Command Guide'
         }
     });
 }
 
-/**
- * Add a quick workflow
- * when one is configured.
- *
- * @param {import('discord.js').EmbedBuilder} embed
- * @param {string} pageId
- * @returns {void}
- */
-function addWorkflowField(
-    embed,
-    pageId
+function formatCommand(
+    command
 ) {
-    const workflow =
-        PAGE_WORKFLOWS[
-            pageId
-        ];
+    return [
+        `### ${command.syntax}`,
 
-    if (
-        !Array.isArray(
-            workflow
-        ) ||
-        workflow.length ===
-            0
-    ) {
-        return;
+        command.summary,
+
+        `-# Access: ${
+            ACCESS[
+                command.access
+            ] ??
+            ACCESS.everyone
+        }`
+    ].join('\n');
+}
+
+function buildCommandFields(
+    commands
+) {
+    if (!commands.length) {
+        return [
+            {
+                name:
+                    'No Commands Available',
+
+                value:
+                    'No registered commands are available in this category.',
+
+                inline: false
+            }
+        ];
     }
 
-    embed.addFields({
-        name:
-            '◆・QUICK FLOW',
+    const fields = [];
+    let current = [];
 
-        value:
-            workflow.join(
-                '\n'
-            ),
+    for (const command of commands) {
+        const block =
+            formatCommand(
+                command
+            );
 
-        inline:
-            false
-    });
-}/**
- * Build the main Guide overview.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
+        const length =
+            current.join('\n\n')
+                .length +
+            block.length;
+
+        if (
+            length > 1000 &&
+            current.length
+        ) {
+            fields.push({
+                name:
+                    fields.length
+                        ? 'Commands'
+                        : 'Commands',
+
+                value:
+                    current.join(
+                        '\n\n'
+                    ),
+
+                inline: false
+            });
+
+            current = [];
+        }
+
+        current.push(block);
+    }
+
+    if (current.length) {
+        fields.push({
+            name:
+                fields.length
+                    ? 'Commands'
+                    : 'Commands',
+
+            value:
+                current.join(
+                    '\n\n'
+                ),
+
+            inline: false
+        });
+    }
+
+    return fields;
+}
+
 function buildOverviewPage(
     interaction
 ) {
-    const availableCommandCount =
-        countAvailableGuideCommands(
-            interaction.client
-        );
+    const commands =
+        Object.values(
+            GUIDE_COMMANDS
+        )
+            .filter(
+                details =>
+                    interaction.client
+                        .commands
+                        .has(
+                            Object.keys(
+                                GUIDE_COMMANDS
+                            ).find(
+                                name =>
+                                    GUIDE_COMMANDS[
+                                        name
+                                    ] === details
+                            )
+                        )
+            );
 
-    const totalLoadedCommands =
-        interaction.client.commands
-            ?.size ||
-        0;
+    const loaded =
+        interaction.client.commands.size;
 
-    const embed =
-        createGuideEmbed(
-            interaction,
-            'Ⅹ・COMMAND GUIDE',
-            [
-                `Welcome, ${interaction.user}.`,
-                '',
-                'Browse Evelynn’s command categories, syntax and access requirements.',
-                '',
-                `**Loaded Commands:** \`${totalLoadedCommands}\``,
-                `**Documented Commands:** \`${availableCommandCount}\``
-            ].join('\n')
-        );
+    const documented =
+        Object.keys(
+            GUIDE_COMMANDS
+        ).filter(
+            name =>
+                interaction.client.commands
+                    .has(name)
+        ).length;
 
-    embed.addFields(
-        {
-            name:
-                '🛡️・MODERATION',
+    return buildGuideEmbed(
+        interaction,
 
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.moderation
-                )}\` commands`,
+        'Ⅹ・Command Guide',
 
-            inline:
-                true
-        },
+        [
+            'Welcome to the THE Ⅹ SINS Command Guide.',
+            '',
+            'Use the menu below to explore commands by category.',
+            '',
+            `**Loaded Commands:** \`${loaded}\``,
+            `**Documented Commands:** \`${documented}\``,
+            '',
+            'Only commands currently loaded by Evelynn are displayed.'
+        ].join('\n'),
 
-        {
-            name:
-                '⚔️・SIN RANKS',
+        [
+            {
+                name:
+                    '🧭 Quick Access',
 
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.ranks
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '♜・TITLES',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.titles
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '◆・PROGRESSION',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.progression
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                'Ⅹ・THE Ⅹ SINS',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.server
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '🎫・SUPPORT',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.support
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '🎉・EVENTS',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.events
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '♛・ADMINISTRATION',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.administration
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '📖・INFORMATION',
-
-            value:
-                `\`${countPageCommands(
-                    interaction.client,
-                    GUIDE_PAGES.information
-                )}\` commands`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                'Ⅹ・QUICK ACCESS',
-
-            value:
-                [
+                value: [
                     '`/help` — quick command menu',
-                    '`/guide` — detailed documentation',
-                    '`/soul` — progression record',
-                    '`/lasnoches` — server overview'
+                    '`/dashboard` — server overview',
+                    '`/profile` — member profile',
+                    '`/soul` — progression archive'
                 ].join('\n'),
 
-            inline:
-                false
-        }
+                inline: false
+            }
+        ]
     );
-
-    return embed;
 }
 
-/**
- * Build one Guide category.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} pageId
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildCategoryPage(
     interaction,
     pageId
 ) {
-    const pageDetails =
+    const category =
+        getPageCategory(
+            pageId
+        );
+
+    const commands =
+        getCategoryCommands(
+            interaction.client,
+            category
+        );
+
+    const page =
         GUIDE_PAGE_DETAILS[
             pageId
         ];
 
-    if (!pageDetails) {
-        return buildOverviewPage(
-            interaction
-        );
-    }
-
-    const commands =
-        getAvailablePageCommands(
-            interaction.client,
-            pageId
+    const fields =
+        buildCommandFields(
+            commands
         );
 
-    const embed =
-        createGuideEmbed(
-            interaction,
-            `${pageDetails.emoji}・${pageDetails.label.toUpperCase()}`,
-            pageDetails.description
-        );
+    const workflow =
+        PAGE_WORKFLOWS[
+            category
+        ];
 
-    addWorkflowField(
-        embed,
-        pageId
-    );
-
-    if (
-        commands.length ===
-        0
-    ) {
-        embed.addFields({
+    if (workflow) {
+        fields.push({
             name:
-                '◇・NO COMMANDS',
+                '🧭 Recommended Flow',
 
             value:
-                'No commands from this category are currently loaded.',
+                workflow.join('\n'),
 
-            inline:
-                false
+            inline: false
         });
-
-        return embed;
     }
 
-    const commandEntries =
-        commands.map(
-            formatGuideCommand
-        );
+    return buildGuideEmbed(
+        interaction,
 
-    const commandChunks =
-        splitCommandEntries(
-            commandEntries
-        );
+        `${page.emoji}・${page.label}`,
 
-    commandChunks.forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
-                name:
-                    index === 0
-                        ? `${pageDetails.emoji}・COMMANDS`
-                        : `${pageDetails.emoji}・COMMANDS — CONTINUED`,
+        [
+            page.description,
+            '',
+            `**Available Commands:** \`${commands.length}\``
+        ].join('\n'),
 
-                value:
-                    chunk,
-
-                inline:
-                    false
-            });
-        }
+        fields
     );
-
-    return embed;
 }
 
-/**
- * Build the requested Guide page.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} pageId
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildGuidePage(
+function buildPage(
     interaction,
     pageId
 ) {
@@ -1577,23 +863,11 @@ function buildGuidePage(
         );
     }
 
-    if (
-        GUIDE_PAGE_ORDER.includes(
-            pageId
-        )
-    ) {
-        return buildCategoryPage(
-            interaction,
-            pageId
-        );
-    }
-
-    return buildOverviewPage(
-        interaction
+    return buildCategoryPage(
+        interaction,
+        pageId
     );
-}
-
-module.exports = {
+}module.exports = {
     category:
         'information',
 
@@ -1603,18 +877,12 @@ module.exports = {
                 'guide'
             )
             .setDescription(
-                'Open Evelynn’s interactive command guide.'
+                'Open the interactive command guide.'
             )
             .setDMPermission(
                 false
             ),
 
-    /**
-     * Execute the /guide command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
@@ -1622,19 +890,17 @@ module.exports = {
             if (
                 !interaction.inGuild()
             ) {
-                await interaction.reply({
+                return interaction.reply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'The command guide can only be opened inside THE Ⅹ SINS.'
+                            'The Command Guide can only be opened inside THE Ⅹ SINS.'
                         )
                     ],
 
                     flags:
                         MessageFlags.Ephemeral
                 });
-
-                return;
             }
 
             await interaction.deferReply({
@@ -1645,20 +911,17 @@ module.exports = {
             let selectedPage =
                 GUIDE_PAGES.overview;
 
-            const initialEmbed =
-                buildGuidePage(
-                    interaction,
-                    selectedPage
-                );
-
-            const replyMessage =
+            const message =
                 await interaction.editReply({
                     embeds: [
-                        initialEmbed
+                        buildPage(
+                            interaction,
+                            selectedPage
+                        )
                     ],
 
                     components: [
-                        createGuideMenu(
+                        buildGuideMenu(
                             selectedPage
                         )
                     ],
@@ -1668,128 +931,93 @@ module.exports = {
                 });
 
             const collector =
-                replyMessage
-                    .createMessageComponentCollector({
-                        componentType:
-                            ComponentType.StringSelect,
+                message.createMessageComponentCollector({
+                    componentType:
+                        ComponentType.StringSelect,
 
-                        time:
-                            10 * 60 * 1000
-                    });
+                    time:
+                        10 * 60 * 1000
+                });
 
             collector.on(
                 'collect',
                 async menuInteraction => {
+                    if (
+                        menuInteraction.user.id !==
+                        interaction.user.id
+                    ) {
+                        return menuInteraction.reply({
+                            embeds: [
+                                createErrorEmbed(
+                                    '❌ Private Guide',
+                                    'Only the member who opened this Guide can control it.'
+                                )
+                            ],
+
+                            flags:
+                                MessageFlags.Ephemeral
+                        });
+                    }
+
+                    if (
+                        menuInteraction.customId !==
+                        GUIDE_MENU_ID
+                    ) {
+                        return;
+                    }
+
+                    const page =
+                        menuInteraction.values[0];
+
+                    if (
+                        !GUIDE_PAGE_ORDER.includes(
+                            page
+                        )
+                    ) {
+                        return menuInteraction.reply({
+                            embeds: [
+                                createErrorEmbed(
+                                    '❌ Unknown Guide Page',
+                                    'Evelynn could not recognize the selected category.'
+                                )
+                            ],
+
+                            flags:
+                                MessageFlags.Ephemeral
+                        });
+                    }
+
                     try {
-                        if (
-                            menuInteraction.user.id !==
-                            interaction.user.id
-                        ) {
-                            await menuInteraction.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        '❌ Private Guide',
-                                        'Only the member who opened this guide may use its menu.'
-                                    )
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            });
-
-                            return;
-                        }
-
-                        if (
-                            menuInteraction.customId !==
-                            GUIDE_MENU_ID
-                        ) {
-                            return;
-                        }
-
-                        const requestedPage =
-                            menuInteraction.values[0];
-
-                        if (
-                            !GUIDE_PAGE_ORDER.includes(
-                                requestedPage
-                            )
-                        ) {
-                            await menuInteraction.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        '❌ Unknown Category',
-                                        'Evelynn could not recognize the selected guide category.'
-                                    )
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            });
-
-                            return;
-                        }
-
                         selectedPage =
-                            requestedPage;
-
-                        const updatedEmbed =
-                            buildGuidePage(
-                                interaction,
-                                selectedPage
-                            );
+                            page;
 
                         await menuInteraction.update({
                             embeds: [
-                                updatedEmbed
+                                buildPage(
+                                    interaction,
+                                    selectedPage
+                                )
                             ],
 
                             components: [
-                                createGuideMenu(
+                                buildGuideMenu(
                                     selectedPage
                                 )
                             ]
                         });
-                    } catch (menuError) {
+                    } catch (error) {
                         console.error(
-                            '❌ Evelynn /guide navigation error:',
-                            menuError
+                            '❌ Evelynn Guide navigation error:',
+                            error
                         );
-
-                        const navigationErrorEmbed =
-                            createErrorEmbed(
-                                '❌ Guide Navigation Failed',
-                                [
-                                    'Evelynn could not open the selected category.',
-                                    '',
-                                    'Please run `/guide` again.'
-                                ].join('\n')
-                            );
-
-                        if (
-                            menuInteraction.deferred ||
-                            menuInteraction.replied
-                        ) {
-                            await menuInteraction
-                                .followUp({
-                                    embeds: [
-                                        navigationErrorEmbed
-                                    ],
-
-                                    flags:
-                                        MessageFlags.Ephemeral
-                                })
-                                .catch(
-                                    () => null
-                                );
-
-                            return;
-                        }
 
                         await menuInteraction
                             .reply({
                                 embeds: [
-                                    navigationErrorEmbed
+                                    createErrorEmbed(
+                                        '❌ Guide Navigation Failed',
+                                        'Evelynn could not open the selected Guide page.'
+                                    )
                                 ],
 
                                 flags:
@@ -1804,25 +1032,11 @@ module.exports = {
 
             collector.on(
                 'end',
-                async (
-                    collected,
-                    reason
-                ) => {
-                    if (
-                        reason ===
-                        'messageDelete' ||
-                        reason ===
-                        'channelDelete' ||
-                        reason ===
-                        'guildDelete'
-                    ) {
-                        return;
-                    }
-
+                async () => {
                     await interaction
                         .editReply({
                             components: [
-                                createGuideMenu(
+                                buildGuideMenu(
                                     selectedPage,
                                     true
                                 )
@@ -1835,50 +1049,24 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Evelynn /guide command error:',
+                '❌ Evelynn /guide error:',
                 error
             );
 
-            const errorEmbed =
+            const embed =
                 createErrorEmbed(
-                    '❌ Command Guide Unavailable',
-                    [
-                        'Evelynn could not open the interactive guide.',
-                        '',
-                        'Check the Northflank logs and try again.'
-                    ].join('\n')
+                    '❌ Guide Unavailable',
+                    'Evelynn could not open the Command Guide.'
                 );
 
             if (
+                interaction.replied ||
                 interaction.deferred
             ) {
                 await interaction
                     .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
+                        embeds: [embed],
+                        components: []
                     })
                     .catch(
                         () => null
@@ -1889,10 +1077,7 @@ module.exports = {
 
             await interaction
                 .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
+                    embeds: [embed],
                     flags:
                         MessageFlags.Ephemeral
                 })
