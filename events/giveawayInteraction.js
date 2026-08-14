@@ -7,9 +7,7 @@ const {
     ButtonStyle
 } = require('discord.js');
 
-const {
-    randomUUID
-} = require('crypto');
+const { randomUUID } = require('crypto');
 
 const {
     createEmbed,
@@ -19,55 +17,31 @@ const {
 } = require('../utils/embeds');
 
 const {
-    giveaways:
-        giveawayDatabase
+    giveaways: giveawayDatabase
 } = require('../database');
 
-/**
- * Official Las Noches Community Events channel.
- *
- * Events and Giveaways are published
- * inside the same shared activity channel.
- */
 const GIVEAWAY_CHANNEL_ID =
     '1535755486505476147';
 
-/**
- * Maximum supported Giveaway duration.
- *
- * 14 days.
- */
-const MAX_GIVEAWAY_DURATION_MS =
-    14 * 24 * 60 * 60 * 1000;
-
-/**
- * Minimum supported Giveaway duration.
- *
- * 10 seconds is allowed for testing.
- */
 const MIN_GIVEAWAY_DURATION_MS =
     10 * 1000;
 
-/**
- * Prevent duplicate interaction execution.
- */
+const MAX_GIVEAWAY_DURATION_MS =
+    14 * 24 * 60 * 60 * 1000;
+
 const processingInteractions =
     new Set();
 
-/**
- * Store active timers for the current process.
- *
- * The Giveaway data itself is stored permanently
- * inside PostgreSQL.
- */
 const giveawayTimers =
     new Map();
 
-/**
- * Generate a short Giveaway ID.
- *
- * @returns {string}
- */
+const DURATION_UNITS = {
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000
+};
+
 function createGiveawayId() {
     return randomUUID()
         .replaceAll('-', '')
@@ -75,165 +49,66 @@ function createGiveawayId() {
         .toLowerCase();
 }
 
-/**
- * Parse a Giveaway duration.
- *
- * Supported examples:
- * 10s, 30m, 2h, 1d
- *
- * @param {string} rawDuration
- * @returns {number|null}
- */
-function parseDuration(
-    rawDuration
-) {
-    const normalizedDuration =
-        rawDuration
-            ?.trim()
-            .toLowerCase();
-
-    if (!normalizedDuration) {
-        return null;
-    }
-
+function parseDuration(value) {
     const match =
-        normalizedDuration.match(
-            /^(\d+)\s*(s|m|h|d)$/
-        );
+        value
+            ?.trim()
+            .toLowerCase()
+            .match(/^(\d+)\s*(s|m|h|d)$/);
 
     if (!match) {
         return null;
     }
 
-    const amount =
-        Number.parseInt(
-            match[1],
-            10
-        );
+    const duration =
+        Number(match[1]) *
+        DURATION_UNITS[match[2]];
 
-    const unit =
-        match[2];
-
-    const unitMultipliers = {
-        s:
-            1000,
-
-        m:
-            60 * 1000,
-
-        h:
-            60 * 60 * 1000,
-
-        d:
-            24 * 60 * 60 * 1000
-    };
-
-    const durationMs =
-        amount *
-        unitMultipliers[unit];
-
-    if (
-        !Number.isSafeInteger(
-            durationMs
-        ) ||
-        durationMs <
-            MIN_GIVEAWAY_DURATION_MS ||
-        durationMs >
-            MAX_GIVEAWAY_DURATION_MS
-    ) {
-        return null;
-    }
-
-    return durationMs;
+    return (
+        Number.isSafeInteger(duration) &&
+        duration >= MIN_GIVEAWAY_DURATION_MS &&
+        duration <= MAX_GIVEAWAY_DURATION_MS
+    )
+        ? duration
+        : null;
 }
 
-/**
- * Parse the number of Giveaway winners.
- *
- * @param {string} rawWinnerCount
- * @returns {number|null}
- */
-function parseWinnerCount(
-    rawWinnerCount
-) {
-    const normalizedValue =
-        rawWinnerCount
-            ?.trim();
-
-    if (
-        !normalizedValue ||
-        !/^\d+$/.test(
-            normalizedValue
-        )
-    ) {
+function parseWinnerCount(value) {
+    if (!/^\d+$/.test(value?.trim() || '')) {
         return null;
     }
 
-    const winnerCount =
-        Number.parseInt(
-            normalizedValue,
-            10
-        );
+    const count =
+        Number(value);
 
-    if (
-        !Number.isInteger(
-            winnerCount
-        ) ||
-        winnerCount < 1 ||
-        winnerCount > 20
-    ) {
-        return null;
-    }
-
-    return winnerCount;
+    return (
+        Number.isInteger(count) &&
+        count >= 1 &&
+        count <= 20
+    )
+        ? count
+        : null;
 }
 
-/**
- * Fetch the official Community Events channel.
- *
- * @param {import('discord.js').Guild} guild
- * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
- */
-async function fetchGiveawayChannel(
-    guild
-) {
+async function fetchGiveawayChannel(guild) {
     const channel =
         await guild.channels
-            .fetch(
-                GIVEAWAY_CHANNEL_ID
-            )
-            .catch(
-                () => null
-            );
+            .fetch(GIVEAWAY_CHANNEL_ID)
+            .catch(() => null);
 
-    if (
-        !channel ||
-        !channel.isTextBased()
-    ) {
-        return null;
-    }
-
-    return channel;
+    return (
+        channel?.isTextBased()
+            ? channel
+            : null
+    );
 }
 
-/**
- * Check whether Umbra can publish Giveaways.
- *
- * @param {import('discord.js').GuildTextBasedChannel} channel
- * @param {import('discord.js').GuildMember} botMember
- * @returns {boolean}
- */
 function hasGiveawayPermissions(
     channel,
     botMember
 ) {
-    const permissions =
-        channel.permissionsFor(
-            botMember
-        );
-
     return Boolean(
-        permissions?.has([
+        channel.permissionsFor(botMember)?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks,
@@ -242,331 +117,209 @@ function hasGiveawayPermissions(
     );
 }
 
-/**
- * Build the main Giveaway embed.
- *
- * @param {Object} giveawayData
- * @param {import('discord.js').User} host
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildGiveawayEmbed(
-    giveawayData,
+    giveaway,
     host
 ) {
-    const participantCount =
-        giveawayData.participants
-            instanceof Set
-            ? giveawayData
-                .participants
-                .size
+    const entries =
+        giveaway.participants instanceof Set
+            ? giveaway.participants.size
             : 0;
 
-    const endTimestamp =
+    const endsAt =
         Math.floor(
-            giveawayData.endsAt /
-            1000
+            giveaway.endsAt / 1000
         );
 
-    const statusConfig = {
-        Active:
-            '🟢 Active',
+    const status = {
+        Active: '🟢 Active',
+        Ended: '🏁 Ended',
+        Cancelled: '🔴 Cancelled'
+    }[giveaway.status] || giveaway.status;
 
-        Ended:
-            '🏁 Ended',
-
-        Cancelled:
-            '🔴 Cancelled'
-    };
-
-    const statusDisplay =
-        statusConfig[
-            giveawayData.status
-        ] ||
-        giveawayData.status;
-
-    const requirement =
-        giveawayData.requirement ||
-        'No special requirement.';
-
-    const winnerDisplay =
-        Array.isArray(
-            giveawayData.winners
-        ) &&
-        giveawayData.winners.length > 0
-            ? giveawayData.winners
-                .map(
-                    userId =>
-                        `<@${userId}>`
-                )
-                .join(', ')
-            : null;
-
-    const descriptionLines = [
-        giveawayData.description,
-        '',
-        '━━━━━━━━━━━━━━━━━━━━',
-        '',
-        '🎁 **Prize**',
-        giveawayData.prize,
-        '',
-        '🏆 **Number of Winners**',
-        `\`${giveawayData.winnerCount}\``,
-        '',
-        '📜 **Entry Requirement**',
-        requirement,
-        '',
-        '👥 **Entries**',
-        `\`${participantCount}\``,
-        '',
-        '⏳ **Ends**',
-        `<t:${endTimestamp}:F>`,
-        `(<t:${endTimestamp}:R>)`,
-        '',
-        `👑 **Hosted By:** ${host}`,
-        `📍 **Status:** ${statusDisplay}`,
-        '',
-        `🆔 **Giveaway ID:** \`${giveawayData.id}\``
+    const fields = [
+        {
+            name: '🎁 Prize',
+            value: giveaway.prize,
+            inline: true
+        },
+        {
+            name: '🏆 Winners',
+            value: `\`${giveaway.winnerCount}\``,
+            inline: true
+        },
+        {
+            name: '👥 Entries',
+            value: `\`${entries}\``,
+            inline: true
+        },
+        {
+            name: '📜 Requirement',
+            value: giveaway.requirement || 'None',
+            inline: false
+        },
+        {
+            name: '⏳ Ends',
+            value:
+                `<t:${endsAt}:F>\n<t:${endsAt}:R>`,
+            inline: true
+        },
+        {
+            name: '📍 Status',
+            value: status,
+            inline: true
+        }
     ];
 
-    if (winnerDisplay) {
-        descriptionLines.push(
-            '',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '',
-            '🏆 **Selected Winner(s)**',
-            winnerDisplay
-        );
+    if (
+        Array.isArray(giveaway.winners) &&
+        giveaway.winners.length
+    ) {
+        fields.push({
+            name: '🏆 Winner(s)',
+            value: giveaway.winners
+                .map(id => `<@${id}>`)
+                .join(', '),
+            inline: false
+        });
     }
 
-    descriptionLines.push(
-        '',
-        '━━━━━━━━━━━━━━━━━━━━',
-        '',
-        giveawayData.status ===
-        'Active'
-            ? '*Enter beneath the crimson moon and test your fortune.*'
-            : '*This Giveaway has officially ended.*'
-    );
-
     return createEmbed({
-        title:
-            `🎁 ${giveawayData.prize}`,
-
-        description:
-            descriptionLines.join(
-                '\n'
-            ),
-
+        title: `🎁 ${giveaway.prize}`,
+        description: [
+            giveaway.description,
+            '',
+            `👑 Hosted by ${host}`,
+            `🆔 \`${giveaway.id}\``
+        ].join('\n'),
         thumbnail:
             host.displayAvatarURL({
-                extension:
-                    'png',
-
-                size:
-                    512,
-
-                forceStatic:
-                    false
-            })
+                extension: 'png',
+                size: 512,
+                forceStatic: false
+            }),
+        fields
     });
-}/**
- * Build Giveaway buttons.
- *
- * @param {Object} giveawayData
- * @returns {ActionRowBuilder}
- */
-function buildGiveawayButtons(
-    giveawayData
-) {
-    const giveawayClosed =
-        giveawayData.status !==
-        'Active';
+}
+
+function buildGiveawayButtons(giveaway) {
+    const closed =
+        giveaway.status !== 'Active';
 
     return new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId(
-                    `umbra:giveaway:join:${giveawayData.id}`
+                    `umbra:giveaway:join:${giveaway.id}`
                 )
                 .setLabel(
-                    giveawayClosed
+                    closed
                         ? 'Giveaway Ended'
                         : 'Enter Giveaway'
                 )
                 .setEmoji('🎉')
-                .setStyle(
-                    ButtonStyle.Success
-                )
-                .setDisabled(
-                    giveawayClosed
-                ),
+                .setStyle(ButtonStyle.Success)
+                .setDisabled(closed),
 
             new ButtonBuilder()
                 .setCustomId(
-                    `umbra:giveaway:leave:${giveawayData.id}`
+                    `umbra:giveaway:leave:${giveaway.id}`
                 )
-                .setLabel(
-                    'Leave Giveaway'
-                )
+                .setLabel('Leave Giveaway')
                 .setEmoji('❌')
-                .setStyle(
-                    ButtonStyle.Secondary
-                )
-                .setDisabled(
-                    giveawayClosed
-                ),
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(closed),
 
             new ButtonBuilder()
                 .setCustomId(
-                    `umbra:giveaway:participants:${giveawayData.id}`
+                    `umbra:giveaway:participants:${giveaway.id}`
                 )
-                .setLabel(
-                    'Entries'
-                )
+                .setLabel('Entries')
                 .setEmoji('👥')
-                .setStyle(
-                    ButtonStyle.Primary
-                )
+                .setStyle(ButtonStyle.Primary)
         );
 }
 
-/**
- * Build the Giveaway entries embed.
- *
- * @param {Object} giveawayData
- * @param {string|null} thumbnail
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildParticipantsEmbed(
-    giveawayData,
+    giveaway,
     thumbnail = null
 ) {
-    const participantIds =
-        giveawayData.participants
-            instanceof Set
-            ? Array.from(
-                giveawayData.participants
-            )
+    const participants =
+        giveaway.participants instanceof Set
+            ? [...giveaway.participants]
             : [];
 
-    const visibleParticipants =
-        participantIds.slice(
-            0,
-            50
+    const visible =
+        participants.slice(0, 50);
+
+    const lines =
+        visible.map(
+            (id, index) =>
+                `${index + 1}. <@${id}>`
         );
 
-    const participantLines =
-        visibleParticipants.map(
-            (
-                userId,
-                index
-            ) =>
-                `${index + 1}. <@${userId}>`
-        );
-
-    if (
-        participantIds.length > 50
-    ) {
-        participantLines.push(
-            '',
-            `…and ${participantIds.length - 50} more Souls.`
+    if (participants.length > 50) {
+        lines.push(
+            `…and ${participants.length - 50} more.`
         );
     }
-
-    const participantList =
-        participantLines.length > 0
-            ? participantLines.join(
-                '\n'
-            )
-            : 'No Souls have entered this Giveaway yet.';
 
     return createEmbed({
         title:
-            `👥 Giveaway Entries • ${giveawayData.prize}`,
-
-        description:
-            [
-                `📜 **Total Entries:** \`${participantIds.length}\``,
-                `🏆 **Winners:** \`${giveawayData.winnerCount}\``,
-                `🆔 **Giveaway ID:** \`${giveawayData.id}\``,
-                '',
-                '━━━━━━━━━━━━━━━━━━━━',
-                '',
-                participantList
-            ].join('\n'),
-
+            `👥 Giveaway Entries • ${giveaway.prize}`,
+        description: [
+            `**Entries:** \`${participants.length}\``,
+            `**Winners:** \`${giveaway.winnerCount}\``,
+            `**ID:** \`${giveaway.id}\``,
+            '',
+            lines.join('\n') || 'No entries yet.'
+        ].join('\n'),
         thumbnail
     });
-}
-
-/**
- * Select random winners without duplicates.
- *
- * @param {Set<string>} participants
- * @param {number} requestedWinnerCount
- * @returns {string[]}
- */
-function selectWinners(
+}function selectWinners(
     participants,
-    requestedWinnerCount
+    winnerCount
 ) {
-    const participantIds =
-        Array.from(
-            participants
-        );
-
-    const shuffledParticipants =
-        [...participantIds];
+    const pool =
+        [...participants];
 
     for (
-        let index =
-            shuffledParticipants.length - 1;
-        index > 0;
-        index -= 1
+        let i = pool.length - 1;
+        i > 0;
+        i--
     ) {
-        const randomIndex =
+        const j =
             Math.floor(
                 Math.random() *
-                (index + 1)
+                (i + 1)
             );
 
         [
-            shuffledParticipants[index],
-            shuffledParticipants[randomIndex]
+            pool[i],
+            pool[j]
         ] = [
-            shuffledParticipants[randomIndex],
-            shuffledParticipants[index]
+            pool[j],
+            pool[i]
         ];
     }
 
-    return shuffledParticipants.slice(
+    return pool.slice(
         0,
         Math.min(
-            requestedWinnerCount,
-            shuffledParticipants.length
+            winnerCount,
+            pool.length
         )
     );
 }
 
-/**
- * Fetch the original Giveaway message.
- *
- * @param {import('discord.js').Client} client
- * @param {Object} giveawayData
- * @returns {Promise<import('discord.js').Message|null>}
- */
 async function fetchGiveawayMessage(
     client,
-    giveawayData
+    giveaway
 ) {
     const guild =
         await client.guilds
-            .fetch(
-                giveawayData.guildId
-            )
-            .catch(
-                () => null
-            );
+            .fetch(giveaway.guildId)
+            .catch(() => null);
 
     if (!guild) {
         return null;
@@ -574,157 +327,111 @@ async function fetchGiveawayMessage(
 
     const channel =
         await guild.channels
-            .fetch(
-                giveawayData.channelId
-            )
-            .catch(
-                () => null
-            );
+            .fetch(giveaway.channelId)
+            .catch(() => null);
 
-    if (
-        !channel ||
-        !channel.isTextBased()
-    ) {
+    if (!channel?.isTextBased()) {
         return null;
     }
 
     return channel.messages
-        .fetch(
-            giveawayData.messageId
-        )
-        .catch(
-            () => null
-        );
+        .fetch(giveaway.messageId)
+        .catch(() => null);
 }
 
-/**
- * End a Giveaway and save winners permanently.
- *
- * @param {import('discord.js').Client} client
- * @param {string} giveawayId
- * @param {string} guildId
- * @returns {Promise<void>}
- */
 async function endGiveaway(
     client,
     giveawayId,
     guildId
 ) {
-    let giveawayData =
-        await giveawayDatabase
-            .getGiveaway(
-                giveawayId,
-                guildId
-            );
+    let giveaway =
+        await giveawayDatabase.getGiveaway(
+            giveawayId,
+            guildId
+        );
 
     if (
-        !giveawayData ||
-        giveawayData.status !==
-            'Active'
+        !giveaway ||
+        giveaway.status !== 'Active'
     ) {
         return;
     }
 
     const winners =
         selectWinners(
-            giveawayData.participants,
-            giveawayData.winnerCount
+            giveaway.participants,
+            giveaway.winnerCount
         );
 
-    await giveawayDatabase
-        .saveGiveawayWinners(
-            giveawayData.id,
-            giveawayData.guildId,
-            winners
+    await giveawayDatabase.saveGiveawayWinners(
+        giveaway.id,
+        giveaway.guildId,
+        winners
+    );
+
+    giveaway =
+        await giveawayDatabase.updateGiveawayStatus(
+            giveaway.id,
+            giveaway.guildId,
+            'Ended'
         );
 
-    giveawayData =
-        await giveawayDatabase
-            .updateGiveawayStatus(
-                giveawayData.id,
-                giveawayData.guildId,
-                'Ended'
-            );
-
-    if (!giveawayData) {
+    if (!giveaway) {
         return;
     }
 
-    const giveawayMessage =
+    const message =
         await fetchGiveawayMessage(
             client,
-            giveawayData
+            giveaway
         );
 
     const host =
         await client.users
-            .fetch(
-                giveawayData.hostId
-            )
-            .catch(
-                () => client.user
-            );
+            .fetch(giveaway.hostId)
+            .catch(() => client.user);
 
-    if (giveawayMessage) {
-        await giveawayMessage.edit({
+    if (message) {
+        await message.edit({
             embeds: [
                 buildGiveawayEmbed(
-                    giveawayData,
+                    giveaway,
                     host
                 )
             ],
-
             components: [
                 buildGiveawayButtons(
-                    giveawayData
+                    giveaway
                 )
             ]
         });
 
-        if (
-            giveawayData.winners.length >
-            0
-        ) {
-            const winnerMentions =
-                giveawayData.winners
-                    .map(
-                        userId =>
-                            `<@${userId}>`
-                    )
+        if (giveaway.winners.length) {
+            const mentions =
+                giveaway.winners
+                    .map(id => `<@${id}>`)
                     .join(', ');
 
-            await giveawayMessage.reply({
+            await message.reply({
                 content:
-                    `🎉 Congratulations ${winnerMentions}!`,
-
+                    `🎉 Congratulations ${mentions}!`,
                 embeds: [
                     createSuccessEmbed(
                         '🏆 Giveaway Winner',
-                        [
-                            `${winnerMentions} won **${giveawayData.prize}**!`,
-                            '',
-                            `🆔 Giveaway ID: \`${giveawayData.id}\``,
-                            '',
-                            '💾 The winner was saved permanently.'
-                        ].join('\n')
+                        `${mentions} won **${giveaway.prize}**!`
                     )
                 ],
-
                 allowedMentions: {
                     users:
-                        giveawayData.winners
+                        giveaway.winners
                 }
             });
         } else {
-            await giveawayMessage.reply({
+            await message.reply({
                 embeds: [
                     createWarningEmbed(
-                        '⚠️ No Giveaway Winner',
-                        [
-                            `The Giveaway for **${giveawayData.prize}** ended without any valid entries.`,
-                            '',
-                            `🆔 Giveaway ID: \`${giveawayData.id}\``
-                        ].join('\n')
+                        '⚠️ No Winner',
+                        `The Giveaway for **${giveaway.prize}** ended without valid entries.`
                     )
                 ]
             });
@@ -733,72 +440,33 @@ async function endGiveaway(
 
     const timer =
         giveawayTimers.get(
-            giveawayData.id
+            giveaway.id
         );
 
     if (timer) {
         clearTimeout(timer);
-
         giveawayTimers.delete(
-            giveawayData.id
+            giveaway.id
         );
     }
+}
 
-    console.log(
-        '======================================'
-    );
-
-    console.log(
-        '🏁 Las Noches Giveaway Ended'
-    );
-
-    console.log(
-        `🆔 Giveaway ID: ${giveawayData.id}`
-    );
-
-    console.log(
-        `🎁 Prize: ${giveawayData.prize}`
-    );
-
-    console.log(
-        `👥 Entries: ${giveawayData.participants.size}`
-    );
-
-    console.log(
-        `🏆 Winners: ${giveawayData.winners.length}`
-    );
-
-    console.log(
-        '💾 Giveaway saved in PostgreSQL'
-    );
-
-    console.log(
-        '======================================'
-    );
-}/**
- * Schedule a Giveaway ending.
- *
- * @param {import('discord.js').Client} client
- * @param {Object} giveawayData
- */
 function scheduleGiveaway(
     client,
-    giveawayData
+    giveaway
 ) {
-    const existingTimer =
+    const existing =
         giveawayTimers.get(
-            giveawayData.id
+            giveaway.id
         );
 
-    if (existingTimer) {
-        clearTimeout(
-            existingTimer
-        );
+    if (existing) {
+        clearTimeout(existing);
     }
 
-    const remainingTime =
+    const delay =
         Math.max(
-            giveawayData.endsAt -
+            giveaway.endsAt -
             Date.now(),
             0
         );
@@ -808,142 +476,107 @@ function scheduleGiveaway(
             () => {
                 endGiveaway(
                     client,
-                    giveawayData.id,
-                    giveawayData.guildId
+                    giveaway.id,
+                    giveaway.guildId
                 ).catch(
-                    error => {
+                    error =>
                         console.error(
-                            '❌ Automatic Giveaway ending failed:'
-                        );
-
-                        console.error(
+                            '❌ Giveaway ending failed:',
                             error
-                        );
-                    }
+                        )
                 );
             },
-            remainingTime
+            delay
         );
 
     giveawayTimers.set(
-        giveawayData.id,
+        giveaway.id,
         timer
     );
-}
-
-/**
- * Handle Giveaway Modal submission.
- *
- * @param {import('discord.js').ModalSubmitInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleCreateModal(
-    interaction
+}async function replyError(
+    interaction,
+    title,
+    description
 ) {
-    const customIdParts =
-        interaction.customId.split(
-            ':'
+    const embed =
+        createErrorEmbed(
+            title,
+            description
         );
 
+    if (interaction.deferred) {
+        await interaction.editReply({
+            embeds: [embed],
+            components: []
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral
+    });
+}
+
+async function handleCreateModal(interaction) {
     const creatorId =
-        customIdParts[3];
+        interaction.customId
+            .split(':')[3];
 
     if (
         !creatorId ||
         creatorId !== interaction.user.id
     ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Invalid Giveaway Form',
-                    'This Giveaway form does not belong to you.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+        await replyError(
+            interaction,
+            '❌ Invalid Giveaway Form',
+            'This Giveaway form does not belong to you.'
+        );
 
         return;
     }
 
     if (!interaction.inGuild()) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Server Only Action',
-                    'Giveaways can only be created inside a server.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+        await replyError(
+            interaction,
+            '❌ Server Only Action',
+            'Giveaways can only be created inside a server.'
+        );
 
         return;
     }
 
+    const getValue =
+        id =>
+            interaction.fields
+                .getTextInputValue(id)
+                .trim();
+
     const prize =
-        interaction.fields
-            .getTextInputValue(
-                'giveaway-prize'
-            )
-            .trim();
+        getValue('giveaway-prize');
 
     const rawDuration =
-        interaction.fields
-            .getTextInputValue(
-                'giveaway-duration'
-            )
-            .trim();
+        getValue('giveaway-duration');
 
     const rawWinnerCount =
-        interaction.fields
-            .getTextInputValue(
-                'giveaway-winner-count'
-            )
-            .trim();
+        getValue('giveaway-winner-count');
 
     const description =
-        interaction.fields
-            .getTextInputValue(
-                'giveaway-description'
-            )
-            .trim();
+        getValue('giveaway-description');
 
     const requirement =
-        interaction.fields
-            .getTextInputValue(
-                'giveaway-requirement'
-            )
-            .trim();
+        getValue('giveaway-requirement');
 
     const durationMs =
-        parseDuration(
-            rawDuration
-        );
+        parseDuration(rawDuration);
 
     if (!durationMs) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Invalid Giveaway Duration',
-                    [
-                        'Use one of these formats:',
-                        '',
-                        '• `10s` — 10 seconds',
-                        '• `30m` — 30 minutes',
-                        '• `2h` — 2 hours',
-                        '• `1d` — 1 day',
-                        '',
-                        'The duration must be between 10 seconds and 14 days.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+        await replyError(
+            interaction,
+            '❌ Invalid Giveaway Duration',
+            'Use `10s`, `30m`, `2h` or `1d`. Allowed range: `10 seconds` to `14 days`.'
+        );
 
         return;
     }
@@ -954,47 +587,30 @@ async function handleCreateModal(
         );
 
     if (!winnerCount) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Invalid Winner Count',
-                    'The number of winners must be between `1` and `20`.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+        await replyError(
+            interaction,
+            '❌ Invalid Winner Count',
+            'Enter a number between `1` and `20`.'
+        );
 
         return;
     }
 
-    /*
-     * Acknowledge the Modal immediately.
-     */
     await interaction.deferReply({
-        flags:
-            MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral
     });
 
-    const giveawayChannel =
+    const channel =
         await fetchGiveawayChannel(
             interaction.guild
         );
 
-    if (!giveawayChannel) {
-        await interaction.editReply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Giveaway Channel Not Found',
-                    [
-                        'Umbra could not find the official Community Events channel.',
-                        '',
-                        `Configured Channel ID: \`${GIVEAWAY_CHANNEL_ID}\``
-                    ].join('\n')
-                )
-            ]
-        });
+    if (!channel) {
+        await replyError(
+            interaction,
+            '❌ Giveaway Channel Not Found',
+            `Evelynn could not find the configured channel.\n\nID: \`${GIVEAWAY_CHANNEL_ID}\``
+        );
 
         return;
     }
@@ -1005,112 +621,67 @@ async function handleCreateModal(
     if (
         !botMember ||
         !hasGiveawayPermissions(
-            giveawayChannel,
+            channel,
             botMember
         )
     ) {
-        await interaction.editReply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Missing Giveaway Permissions',
-                    [
-                        `Umbra cannot publish Giveaways in ${giveawayChannel}.`,
-                        '',
-                        'Required permissions:',
-                        '• View Channel',
-                        '• Send Messages',
-                        '• Embed Links',
-                        '• Read Message History'
-                    ].join('\n')
-                )
-            ]
-        });
+        await replyError(
+            interaction,
+            '❌ Missing Giveaway Permissions',
+            `Evelynn cannot publish Giveaways in ${channel}.`
+        );
 
         return;
     }
 
-    const giveawayId =
-        createGiveawayId();
-
-    const giveawayData = {
-        id:
-            giveawayId,
-
-        guildId:
-            interaction.guild.id,
-
-        channelId:
-            giveawayChannel.id,
-
-        messageId:
-            null,
-
-        hostId:
-            interaction.user.id,
-
+    const giveaway = {
+        id: createGiveawayId(),
+        guildId: interaction.guild.id,
+        channelId: channel.id,
+        messageId: null,
+        hostId: interaction.user.id,
         prize,
         description,
         requirement,
         winnerCount,
-
-        status:
-            'Active',
-
-        participants:
-            new Set(),
-
-        winners:
-            [],
-
-        createdAt:
-            Date.now(),
-
-        endsAt:
-            Date.now() +
-            durationMs,
-
-        endedAt:
-            null
+        status: 'Active',
+        participants: new Set(),
+        winners: [],
+        createdAt: Date.now(),
+        endsAt: Date.now() + durationMs,
+        endedAt: null
     };
 
-    const giveawayEmbed =
-        buildGiveawayEmbed(
-            giveawayData,
-            interaction.user
-        );
-
-    const giveawayButtons =
-        buildGiveawayButtons(
-            giveawayData
-        );
-
-    let giveawayMessage =
-        null;
+    let message = null;
 
     try {
-        giveawayMessage =
-            await giveawayChannel.send({
-                embeds:
-                    [giveawayEmbed],
-
-                components:
-                    [giveawayButtons]
+        message =
+            await channel.send({
+                embeds: [
+                    buildGiveawayEmbed(
+                        giveaway,
+                        interaction.user
+                    )
+                ],
+                components: [
+                    buildGiveawayButtons(
+                        giveaway
+                    )
+                ]
             });
 
-        giveawayData.messageId =
-            giveawayMessage.id;
+        giveaway.messageId =
+            message.id;
 
         await giveawayDatabase
             .createGiveaway(
-                giveawayData
+                giveaway
             );
     } catch (error) {
-        if (giveawayMessage) {
-            await giveawayMessage
+        if (message) {
+            await message
                 .delete()
-                .catch(
-                    () => null
-                );
+                .catch(() => null);
         }
 
         throw error;
@@ -1118,7 +689,7 @@ async function handleCreateModal(
 
     scheduleGiveaway(
         interaction.client,
-        giveawayData
+        giveaway
     );
 
     await interaction.editReply({
@@ -1126,90 +697,132 @@ async function handleCreateModal(
             createSuccessEmbed(
                 '✅ Giveaway Published',
                 [
-                    `The Giveaway for **${prize}** was published successfully in ${giveawayChannel}.`,
-                    '',
-                    `⏳ Duration: \`${rawDuration}\``,
-                    `🏆 Winners: \`${winnerCount}\``,
-                    `🆔 Giveaway ID: \`${giveawayId}\``,
-                    '',
-                    '💾 The Giveaway was saved permanently in PostgreSQL.'
+                    `**${prize}** was published in ${channel}.`,
+                    `⏳ \`${rawDuration}\` • 🏆 \`${winnerCount}\` winner(s)`,
+                    `🆔 \`${giveaway.id}\``
                 ].join('\n')
+            )
+        ],
+        components: []
+    });
+}async function updateGiveawayMessage(
+    interaction,
+    giveaway
+) {
+    const host =
+        await interaction.client.users
+            .fetch(giveaway.hostId)
+            .catch(
+                () => interaction.user
+            );
+
+    await interaction.message.edit({
+        embeds: [
+            buildGiveawayEmbed(
+                giveaway,
+                host
+            )
+        ],
+        components: [
+            buildGiveawayButtons(
+                giveaway
             )
         ]
     });
+}
 
-    console.log(
-        '======================================'
+async function handleParticipantAction(
+    interaction,
+    giveaway,
+    action
+) {
+    const joining =
+        action === 'join';
+
+    const changed =
+        joining
+            ? await giveawayDatabase
+                .addGiveawayParticipant(
+                    giveaway.id,
+                    giveaway.guildId,
+                    interaction.user.id
+                )
+            : await giveawayDatabase
+                .removeGiveawayParticipant(
+                    giveaway.id,
+                    giveaway.guildId,
+                    interaction.user.id
+                );
+
+    if (!changed) {
+        await interaction.reply({
+            embeds: [
+                createWarningEmbed(
+                    joining
+                        ? '⚠️ Already Entered'
+                        : '⚠️ Not Entered',
+                    joining
+                        ? `You have already entered **${giveaway.prize}**.`
+                        : `You have not entered **${giveaway.prize}**.`
+                )
+            ],
+            flags: MessageFlags.Ephemeral
+        });
+
+        return;
+    }
+
+    giveaway =
+        await giveawayDatabase.getGiveaway(
+            giveaway.id,
+            giveaway.guildId
+        );
+
+    await interaction.deferUpdate();
+
+    await updateGiveawayMessage(
+        interaction,
+        giveaway
     );
 
-    console.log(
-        '🎁 Las Noches Giveaway Created'
-    );
+    await interaction.followUp({
+        embeds: [
+            createSuccessEmbed(
+                joining
+                    ? '🎉 Giveaway Entered'
+                    : '✅ Giveaway Left',
+                [
+                    joining
+                        ? `You entered **${giveaway.prize}**.`
+                        : `You left **${giveaway.prize}**.`,
+                    `👥 Entries: \`${giveaway.participants.size}\``
+                ].join('\n')
+            )
+        ],
+        flags: MessageFlags.Ephemeral
+    });
+}
 
-    console.log(
-        `🆔 Giveaway ID: ${giveawayData.id}`
-    );
-
-    console.log(
-        `🎁 Prize: ${giveawayData.prize}`
-    );
-
-    console.log(
-        `🏆 Winners: ${giveawayData.winnerCount}`
-    );
-
-    console.log(
-        `👑 Host: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `📍 Channel: ${giveawayChannel.name}`
-    );
-
-    console.log(
-        '💾 Saved to PostgreSQL'
-    );
-
-    console.log(
-        '======================================'
-    );
-}/**
- * Handle Giveaway buttons.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
 async function handleGiveawayButton(
     interaction
 ) {
-    const customIdParts =
-        interaction.customId.split(
-            ':'
-        );
-
-    const action =
-        customIdParts[2];
-
-    const giveawayId =
-        customIdParts[3]
-            ?.trim()
-            .toLowerCase();
+    const [
+        ,
+        ,
+        action,
+        giveawayId
+    ] =
+        interaction.customId.split(':');
 
     if (
         !action ||
         !giveawayId
     ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Invalid Giveaway Action',
-                    'Umbra could not identify this Giveaway action.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+        await replyError(
+            interaction,
+            '❌ Invalid Giveaway Action',
+            'Evelynn could not identify this Giveaway action.'
+        );
 
         return;
     }
@@ -1218,82 +831,56 @@ async function handleGiveawayButton(
         return;
     }
 
-    let giveawayData =
-        await giveawayDatabase
-            .getGiveaway(
-                giveawayId,
-                interaction.guildId
-            );
+    const giveaway =
+        await giveawayDatabase.getGiveaway(
+            giveawayId
+                .trim()
+                .toLowerCase(),
+            interaction.guildId
+        );
 
-    if (!giveawayData) {
+    if (!giveaway) {
         await interaction.reply({
             embeds: [
                 createWarningEmbed(
-                    '⚠️ Giveaway Data Unavailable',
-                    [
-                        `No Giveaway was found with ID \`${giveawayId}\`.`,
-                        '',
-                        'The Giveaway may have been deleted from PostgreSQL.'
-                    ].join('\n')
+                    '⚠️ Giveaway Unavailable',
+                    `No Giveaway was found with ID \`${giveawayId}\`.`
                 )
             ],
-
-            flags:
-                MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral
         });
 
         return;
     }
 
-    /*
-     * VIEW ENTRIES
-     */
-    if (
-        action ===
-        'participants'
-    ) {
+    if (action === 'participants') {
         const thumbnail =
             interaction.guild.iconURL({
-                extension:
-                    'png',
-
-                size:
-                    256,
-
-                forceStatic:
-                    false
+                extension: 'png',
+                size: 256,
+                forceStatic: false
             }) ||
             interaction.client.user
                 .displayAvatarURL({
-                    extension:
-                        'png',
-
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
+                    extension: 'png',
+                    size: 256,
+                    forceStatic: false
                 });
 
         await interaction.reply({
             embeds: [
                 buildParticipantsEmbed(
-                    giveawayData,
+                    giveaway,
                     thumbnail
                 )
             ],
-
-            flags:
-                MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral
         });
 
         return;
     }
 
-    if (
-        giveawayData.status !==
-        'Active'
-    ) {
+    if (giveaway.status !== 'Active') {
         await interaction.reply({
             embeds: [
                 createWarningEmbed(
@@ -1301,217 +888,80 @@ async function handleGiveawayButton(
                     'This Giveaway is no longer accepting entries.'
                 )
             ],
-
-            flags:
-                MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral
         });
 
         return;
     }
 
-    /*
-     * ENTER GIVEAWAY
-     */
-    if (action === 'join') {
-        const participantAdded =
-            await giveawayDatabase
-                .addGiveawayParticipant(
-                    giveawayData.id,
-                    giveawayData.guildId,
-                    interaction.user.id
-                );
-
-        if (!participantAdded) {
-            await interaction.reply({
-                embeds: [
-                    createWarningEmbed(
-                        '⚠️ Already Entered',
-                        `You have already entered the Giveaway for **${giveawayData.prize}**.`
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
-
-            return;
-        }
-
-        giveawayData =
-            await giveawayDatabase
-                .getGiveaway(
-                    giveawayData.id,
-                    giveawayData.guildId
-                );
-
-        await interaction.deferUpdate();
-
-        const host =
-            await interaction.client.users
-                .fetch(
-                    giveawayData.hostId
-                )
-                .catch(
-                    () => interaction.user
-                );
-
-        await interaction.message.edit({
-            embeds: [
-                buildGiveawayEmbed(
-                    giveawayData,
-                    host
-                )
-            ],
-
-            components: [
-                buildGiveawayButtons(
-                    giveawayData
-                )
-            ]
-        });
-
-        await interaction.followUp({
-            embeds: [
-                createSuccessEmbed(
-                    '🎉 Giveaway Entered',
-                    [
-                        `You entered the Giveaway for **${giveawayData.prize}**.`,
-                        '',
-                        `👥 Current Entries: \`${giveawayData.participants.size}\``,
-                        '',
-                        '💾 Your entry was saved permanently.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }    /*
-     * LEAVE GIVEAWAY
-     */
-    if (action === 'leave') {
-        const participantRemoved =
-            await giveawayDatabase
-                .removeGiveawayParticipant(
-                    giveawayData.id,
-                    giveawayData.guildId,
-                    interaction.user.id
-                );
-
-        if (!participantRemoved) {
-            await interaction.reply({
-                embeds: [
-                    createWarningEmbed(
-                        '⚠️ Not Entered',
-                        `You have not entered the Giveaway for **${giveawayData.prize}**.`
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
-
-            return;
-        }
-
-        giveawayData =
-            await giveawayDatabase
-                .getGiveaway(
-                    giveawayData.id,
-                    giveawayData.guildId
-                );
-
-        await interaction.deferUpdate();
-
-        const host =
-            await interaction.client.users
-                .fetch(
-                    giveawayData.hostId
-                )
-                .catch(
-                    () => interaction.user
-                );
-
-        await interaction.message.edit({
-            embeds: [
-                buildGiveawayEmbed(
-                    giveawayData,
-                    host
-                )
-            ],
-
-            components: [
-                buildGiveawayButtons(
-                    giveawayData
-                )
-            ]
-        });
-
-        await interaction.followUp({
-            embeds: [
-                createSuccessEmbed(
-                    '✅ Giveaway Left',
-                    [
-                        `You left the Giveaway for **${giveawayData.prize}**.`,
-                        '',
-                        `👥 Current Entries: \`${giveawayData.participants.size}\``,
-                        '',
-                        '💾 The database was updated successfully.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
+    if (
+        action === 'join' ||
+        action === 'leave'
+    ) {
+        await handleParticipantAction(
+            interaction,
+            giveaway,
+            action
+        );
 
         return;
     }
 
-    await interaction.reply({
-        embeds: [
-            createErrorEmbed(
-                '❌ Unknown Giveaway Action',
-                'Umbra does not recognize this Giveaway button.'
-            )
-        ],
+    await replyError(
+        interaction,
+        '❌ Unknown Giveaway Action',
+        'Evelynn does not recognize this Giveaway button.'
+    );
+}
 
-        flags:
-            MessageFlags.Ephemeral
-    });
-}module.exports = {
-    name:
-        Events.InteractionCreate,
+async function sendInteractionError(
+    interaction,
+    embed
+) {
+    if (interaction.deferred) {
+        return interaction
+            .editReply({
+                embeds: [embed],
+                components: []
+            })
+            .catch(() => null);
+    }
 
-    once:
-        false,
+    if (interaction.replied) {
+        return interaction
+            .followUp({
+                embeds: [embed],
+                flags: MessageFlags.Ephemeral
+            })
+            .catch(() => null);
+    }
 
-    /**
-     * Handle Giveaway Modal and button interactions.
-     *
-     * @param {import('discord.js').Interaction} interaction
-     * @returns {Promise<void>}
-     */
+    return interaction
+        .reply({
+            embeds: [embed],
+            flags: MessageFlags.Ephemeral
+        })
+        .catch(() => null);
+}
+
+module.exports = {
+    name: Events.InteractionCreate,
+    once: false,
+
     async execute(interaction) {
-        const isGiveawayModal =
+        const isModal =
             interaction.isModalSubmit() &&
             interaction.customId.startsWith(
                 'umbra:giveaway:create:'
             );
 
-        const isGiveawayButton =
+        const isButton =
             interaction.isButton() &&
             interaction.customId.startsWith(
                 'umbra:giveaway:'
             );
 
-        if (
-            !isGiveawayModal &&
-            !isGiveawayButton
-        ) {
+        if (!isModal && !isButton) {
             return;
         }
 
@@ -1528,84 +978,34 @@ async function handleGiveawayButton(
         );
 
         try {
-            if (isGiveawayModal) {
+            if (isModal) {
                 await handleCreateModal(
                     interaction
                 );
-
-                return;
+            } else {
+                await handleGiveawayButton(
+                    interaction
+                );
             }
-
-            await handleGiveawayButton(
-                interaction
-            );
         } catch (error) {
             console.error(
-                '❌ Umbra Giveaway interaction error:'
+                '❌ Evelynn Giveaway failed:',
+                error
             );
 
-            console.error(error);
-
-            const errorEmbed =
+            await sendInteractionError(
+                interaction,
                 createErrorEmbed(
                     '❌ Giveaway Action Failed',
-                    [
-                        'Umbra could not complete this Giveaway action.',
-                        '',
-                        'Please check the PostgreSQL connection and try again.'
-                    ].join('\n')
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds:
-                            [errorEmbed],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds:
-                            [errorEmbed],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds:
-                        [errorEmbed],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+                    'Evelynn could not complete this Giveaway action.'
+                )
+            );
         } finally {
             setTimeout(
-                () => {
+                () =>
                     processingInteractions.delete(
                         interaction.id
-                    );
-                },
+                    ),
                 15_000
             );
         }

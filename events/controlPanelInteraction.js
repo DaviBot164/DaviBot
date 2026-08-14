@@ -9,8 +9,7 @@ const {
     createErrorEmbed
 } = require('../utils/embeds');
 
-const Terminal =
-    require('../utils/terminal');
+const Terminal = require('../utils/terminal');
 
 const {
     terminalIncidents,
@@ -23,35 +22,18 @@ const {
     CONTROL_PANEL_REFRESH_ID,
     INCIDENT_CENTER_REFRESH_ID,
     SERVICES_CENTER_REFRESH_ID,
-
     formatBooleanStatus,
     formatHealthState,
-
     collectHealthSafely,
-
     buildControlPanelComponents,
     buildIncidentCenterComponents,
     buildServicesCenterComponents,
     buildControlPanelEmbed
 } = require('../commands/information/controlpanel');
 
-/**
- * Maximum number of recent Incidents
- * displayed inside Incident Center.
- */
-const INCIDENT_CENTER_LIMIT =
-    8;
+const INCIDENT_CENTER_LIMIT = 8;
+const SERVICES_CENTER_LIMIT = 20;
 
-/**
- * Maximum number of Services displayed
- * inside one Services Center page.
- */
-const SERVICES_CENTER_LIMIT =
-    20;
-
-/**
- * Official Service display order.
- */
 const SERVICE_DISPLAY_ORDER = [
     'postgresql',
     'gateway',
@@ -71,813 +53,326 @@ const SERVICE_DISPLAY_ORDER = [
     'soul_records'
 ];
 
-/**
- * Convert one Incident severity into
- * a readable emoji.
- *
- * @param {string} severity
- * @returns {string}
- */
-function getIncidentSeverityEmoji(
-    severity
-) {
-    switch (
-        severity
-    ) {
-        case 'critical':
-            return '🔴';
+const SERVICE_ICONS = {
+    postgresql: '🗄️',
+    gateway: '📡',
+    memory: '🧠',
+    guardian: '🛡️',
+    kingdom_feed: '📈',
+    rank_trials: '⚔️',
+    ticket_system: '🎫',
+    verification: '⛩️',
+    setup_wizard: '📚',
+    levels: '⭐',
+    achievements: '🏆',
+    titles: '🏷️',
+    arrancar: '👑',
+    events: '🎉',
+    giveaways: '🎁',
+    soul_records: '📖'
+};
 
-        case 'warning':
-            return '🟡';
+const STATUS_ICONS = {
+    ONLINE: '🟢',
+    DEGRADED: '🟡',
+    OFFLINE: '🔴',
+    STARTING: '🔵',
+    STOPPED: '⚫'
+};
 
-        case 'success':
-            return '🟢';
+const SEVERITY_ICONS = {
+    critical: '🔴',
+    warning: '🟡',
+    success: '🟢',
+    info: '🔵'
+};
 
-        case 'info':
-            return '🔵';
-
-        default:
-            return '⚪';
-    }
+function formatSeverity(severity) {
+    return `\`${String(severity || 'UNKNOWN').toUpperCase()}\``;
 }
 
-/**
- * Convert one Incident severity into
- * an uppercase label.
- *
- * @param {string} severity
- * @returns {string}
- */
-function formatIncidentSeverity(
-    severity
-) {
-    const normalizedSeverity =
-        typeof severity ===
-            'string'
-            ? severity.toUpperCase()
-            : 'UNKNOWN';
-
-    return `\`${normalizedSeverity}\``;
+function formatServiceStatus(status) {
+    const value = String(status || 'UNKNOWN').toUpperCase();
+    return `${STATUS_ICONS[value] || '⚪'} \`${value}\``;
 }
 
-/**
- * Convert one Service status into
- * a readable emoji.
- *
- * @param {string|null|undefined} status
- * @returns {string}
- */
-function getServiceStatusEmoji(
-    status
-) {
-    switch (
-        status
-    ) {
-        case 'ONLINE':
-            return '🟢';
+function formatTimestamp(value, detailed = false) {
+    if (!value) return '`Unavailable`';
 
-        case 'DEGRADED':
-            return '🟡';
+    const date = value instanceof Date
+        ? value
+        : new Date(value);
 
-        case 'OFFLINE':
-            return '🔴';
-
-        case 'STARTING':
-            return '🔵';
-
-        case 'STOPPED':
-            return '⚫';
-
-        default:
-            return '⚪';
-    }
-}
-
-/**
- * Convert one Service status into
- * a compact Terminal label.
- *
- * @param {string|null|undefined} status
- * @returns {string}
- */
-function formatServiceStatus(
-    status
-) {
-    const normalizedStatus =
-        typeof status ===
-            'string'
-            ? status.toUpperCase()
-            : 'UNKNOWN';
-
-    return (
-        `${getServiceStatusEmoji(
-            normalizedStatus
-        )} \`${normalizedStatus}\``
-    );
-}
-
-/**
- * Convert one JavaScript date into
- * Discord timestamp syntax.
- *
- * @param {Date|string|null} value
- * @returns {string}
- */
-function formatIncidentTimestamp(
-    value
-) {
-    if (!value) {
+    if (Number.isNaN(date.getTime())) {
         return '`Unavailable`';
     }
 
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
+    const unix = Math.floor(date.getTime() / 1000);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return '`Unavailable`';
+    return detailed
+        ? `<t:${unix}:F>\n<t:${unix}:R>`
+        : `<t:${unix}:R>`;
+}
+
+function truncateText(value, maxLength = 180) {
+    const text = String(
+        value || 'No information provided.'
+    ).trim();
+
+    if (text.length <= maxLength) {
+        return text;
     }
 
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1_000
+    return `${text.slice(0, maxLength - 3)}...`;
+}
+
+function sortServices(services) {
+    const getIndex = service => {
+        const index = SERVICE_DISPLAY_ORDER.indexOf(
+            service.serviceKey
         );
 
-    return (
-        `<t:${unixTimestamp}:F>\n` +
-        `<t:${unixTimestamp}:R>`
-    );
-}
-
-/**
- * Compact timestamp used by
- * Services Center entries.
- *
- * @param {Date|string|null} value
- * @returns {string}
- */
-function formatServiceTimestamp(
-    value
-) {
-    if (!value) {
-        return '`Unavailable`';
-    }
-
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return '`Unavailable`';
-    }
-
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1_000
-        );
-
-    return `<t:${unixTimestamp}:R>`;
-}
-
-/**
- * Limit Incident text before displaying
- * it inside the Control Panel.
- *
- * @param {unknown} value
- * @param {number} maxLength
- * @returns {string}
- */
-function limitIncidentDisplayText(
-    value,
-    maxLength =
-        180
-) {
-    const text =
-        typeof value ===
-            'string'
-            ? value.trim()
-            : String(
-                value ??
-                'No information provided.'
-            ).trim();
-
-    if (
-        text.length <=
-        maxLength
-    ) {
-        return (
-            text ||
-            'No information provided.'
-        );
-    }
-
-    return (
-        text.slice(
-            0,
-            maxLength -
-                16
-        ) +
-        '... truncated'
-    );
-}
-
-/**
- * Return the visual icon used for
- * one official Umbra Service.
- *
- * @param {string} serviceKey
- * @returns {string}
- */
-function getServiceIcon(
-    serviceKey
-) {
-    const icons = {
-        postgresql:
-            '🗄️',
-
-        gateway:
-            '📡',
-
-        memory:
-            '🧠',
-
-        guardian:
-            '🛡️',
-
-        kingdom_feed:
-            '📈',
-
-        rank_trials:
-            '⚔️',
-
-        ticket_system:
-            '🎫',
-
-        verification:
-            '⛩️',
-
-        setup_wizard:
-            '📚',
-
-        levels:
-            '⭐',
-
-        achievements:
-            '🏆',
-
-        titles:
-            '🏷️',
-
-        arrancar:
-            '👑',
-
-        events:
-            '🎉',
-
-        giveaways:
-            '🎁',
-
-        soul_records:
-            '📖'
+        return index === -1
+            ? Number.MAX_SAFE_INTEGER
+            : index;
     };
 
-    return (
-        icons[
-            serviceKey
-        ] ||
-        '⚙️'
-    );
-}
+    return [...services].sort((a, b) => {
+        const order = getIndex(a) - getIndex(b);
 
-/**
- * Sort Services in the official
- * Umbra display order.
- *
- * Unknown future Services remain
- * visible after the official list.
- *
- * @param {Object[]} services
- * @returns {Object[]}
- */
-function sortServices(
-    services
-) {
-    return [
-        ...services
-    ].sort(
-        (
-            first,
-            second
-        ) => {
-            const firstIndex =
-                SERVICE_DISPLAY_ORDER
-                    .indexOf(
-                        first.serviceKey
-                    );
-
-            const secondIndex =
-                SERVICE_DISPLAY_ORDER
-                    .indexOf(
-                        second.serviceKey
-                    );
-
-            const safeFirstIndex =
-                firstIndex ===
-                    -1
-                    ? Number.MAX_SAFE_INTEGER
-                    : firstIndex;
-
-            const safeSecondIndex =
-                secondIndex ===
-                    -1
-                    ? Number.MAX_SAFE_INTEGER
-                    : secondIndex;
-
-            if (
-                safeFirstIndex !==
-                safeSecondIndex
-            ) {
-                return (
-                    safeFirstIndex -
-                    safeSecondIndex
-                );
-            }
-
-            return String(
-                first.displayName ??
-                first.serviceKey
-            ).localeCompare(
-                String(
-                    second.displayName ??
-                    second.serviceKey
-                )
-            );
+        if (order !== 0) {
+            return order;
         }
-    );
+
+        return String(
+            a.displayName || a.serviceKey
+        ).localeCompare(
+            String(
+                b.displayName || b.serviceKey
+            )
+        );
+    });
 }
 
-/**
- * Build one compact Services Center field.
- *
- * @param {Object} service
- * @param {number} index
- * @returns {{
- *     name: string,
- *     value: string,
- *     inline: boolean
- * }}
- */
-function buildServiceField(
-    service,
-    index
-) {
-    const displayName =
+function buildServiceField(service, index) {
+    const key = service.serviceKey || 'unknown';
+    const name =
         service.displayName ||
         service.serviceKey ||
         `Service ${index + 1}`;
 
-    const serviceKey =
-        service.serviceKey ||
-        'unknown';
-
-    const status =
-        formatServiceStatus(
-            service.status
-        );
-
-    const severity =
-        formatIncidentSeverity(
-            service.severity
-        );
-
-    const lastChecked =
-        formatServiceTimestamp(
-            service.lastCheckedAt
-        );
-
-    const lastChanged =
-        formatServiceTimestamp(
-            service.lastChangedAt
-        );
-
-    const incident =
-        service.incidentType
-            ? `\`${service.incidentType}\``
-            : '`NONE`';
-
     return {
-        name:
-            `${getServiceIcon(
-                serviceKey
-            )} ${displayName}`,
-
-        value:
-            [
-                `**Status:** ${status}`,
-                `**Severity:** ${severity}`,
-                `**Key:** \`${serviceKey}\``,
-                `**Incident:** ${incident}`,
-                `**Last Checked:** ${lastChecked}`,
-                `**Last Changed:** ${lastChanged}`
-            ].join(
-                '\n'
-            ),
-
-        inline:
-            true
+        name: `${SERVICE_ICONS[key] || '⚙️'} ${name}`,
+        value: [
+            `**Status:** ${formatServiceStatus(service.status)}`,
+            `**Severity:** ${formatSeverity(service.severity)}`,
+            `**Incident:** \`${service.incidentType || 'NONE'}\``,
+            `**Checked:** ${formatTimestamp(service.lastCheckedAt)}`
+        ].join('\n'),
+        inline: true
     };
 }
 
-/**
- * Build a common Umbra Terminal
- * module Embed.
- *
- * @param {Object} options
- * @param {import('discord.js').Interaction} options.interaction
- * @param {string} options.title
- * @param {string} options.description
- * @param {Object[]} [options.fields]
- * @param {string} [options.color]
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildModuleEmbed({
     interaction,
     title,
     description,
-    fields =
-        [],
-    color =
-        CONTROL_PANEL_COLOR
+    fields = [],
+    color = CONTROL_PANEL_COLOR
 }) {
     const botAvatar =
-        interaction.client.user
-            .displayAvatarURL({
-                size:
-                    256,
-
-                forceStatic:
-                    false
-            });
+        interaction.client.user.displayAvatarURL({
+            size: 256,
+            forceStatic: false
+        });
 
     const guildIcon =
         interaction.guild.iconURL({
-            size:
-                128,
+            size: 128,
+            forceStatic: false
+        }) || botAvatar;
 
-            forceStatic:
-                false
-        }) ??
-        botAvatar;
-
-    const embed =
-        createEmbed({
-            title,
-
-            description,
-
-            color,
-
-            thumbnail:
-                botAvatar,
-
-            fields
-        });
-
-    embed.setAuthor({
-        name:
-            'Umbra • Core Operations',
-
-        iconURL:
-            botAvatar
-    });
-
-    embed.setFooter({
-        text:
-            'Las Noches • Administrative Terminal',
-
-        iconURL:
-            guildIcon
-    });
-
-    embed.setTimestamp();
-
-    return embed;
+    return createEmbed({
+        title,
+        description,
+        color,
+        thumbnail: botAvatar,
+        fields
+    })
+        .setAuthor({
+            name: 'Evelynn • Control Panel',
+            iconURL: botAvatar
+        })
+        .setFooter({
+            text: 'THE Ⅹ SINS • Administration',
+            iconURL: guildIcon
+        })
+        .setTimestamp();
 }
 
-/**
- * Build the live Terminal Overview page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @param {Object} snapshot
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildSystemOverviewEmbed(
     interaction,
     snapshot
 ) {
-    const processUptime =
-        Terminal.formatters.uptime(
-            process.uptime() *
-            1_000
-        );
+    const uptime = Terminal.formatters.uptime(
+        process.uptime() * 1000
+    );
 
-    const rssMemory =
-        Terminal.formatters.bytes(
-            snapshot.memoryUsage.rss
-        );
+    const rss = Terminal.formatters.bytes(
+        snapshot.memoryUsage.rss
+    );
 
-    const heapMemory =
-        Terminal.formatters.bytes(
-            snapshot.memoryUsage.heapUsed
-        );
+    const heap = Terminal.formatters.bytes(
+        snapshot.memoryUsage.heapUsed
+    );
 
     const databaseLatency =
-        snapshot.databaseLatency !==
-        null
+        snapshot.databaseLatency !== null
             ? `${snapshot.databaseLatency} ms`
             : 'Unavailable';
 
-    const descriptionLines = [
-        `**System State:** \`${snapshot.overallHealth.label}\``,
-        '',
+    const description = [
+        `**System:** \`${snapshot.overallHealth.label}\``,
         snapshot.overallHealth.message,
-        '',
-        `Last diagnostic check: <t:${snapshot.checkedAt}:R>`
+        `Checked <t:${snapshot.checkedAt}:R>`
     ];
 
-    if (
-        snapshot.fallback
-    ) {
-        descriptionLines.push(
-            '',
-            '⚠️ Some PostgreSQL statistics are temporarily unavailable.'
+    if (snapshot.fallback) {
+        description.push(
+            '⚠️ Some PostgreSQL statistics are unavailable.'
         );
     }
 
     return buildModuleEmbed({
         interaction,
-
-        title:
-            `${snapshot.overallHealth.emoji} Umbra Terminal Overview`,
-
-        description:
-            descriptionLines.join(
-                '\n'
-            ),
-
+        title: `${snapshot.overallHealth.emoji} System Overview`,
+        description: description.join('\n\n'),
         color:
-            snapshot.overallHealth.color ??
+            snapshot.overallHealth.color ||
             CONTROL_PANEL_COLOR,
-
         fields: [
             {
-                name:
-                    '📡 Discord Gateway',
-
-                value:
-                    [
-                        formatBooleanStatus(
-                            snapshot.gatewayConnected,
-                            'CONNECTED',
-                            'DISCONNECTED'
-                        ),
-                        `**Latency:** \`${snapshot.gatewayPing} ms\``,
-                        `**State:** ${formatHealthState(
-                            snapshot.gatewayLatencyState
-                        )}`
-                    ].join(
-                        '\n'
+                name: '📡 Gateway',
+                value: [
+                    formatBooleanStatus(
+                        snapshot.gatewayConnected,
+                        'CONNECTED',
+                        'DISCONNECTED'
                     ),
-
-                inline:
-                    true
+                    `**Latency:** \`${snapshot.gatewayPing} ms\``,
+                    `**State:** ${formatHealthState(
+                        snapshot.gatewayLatencyState
+                    )}`
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '🗄️ PostgreSQL',
-
-                value:
-                    [
-                        formatBooleanStatus(
-                            snapshot.databaseConnected,
-                            'CONNECTED',
-                            'UNAVAILABLE'
-                        ),
-                        `**Latency:** \`${databaseLatency}\``
-                    ].join(
-                        '\n'
+                name: '🗄️ PostgreSQL',
+                value: [
+                    formatBooleanStatus(
+                        snapshot.databaseConnected,
+                        'CONNECTED',
+                        'UNAVAILABLE'
                     ),
-
-                inline:
-                    true
+                    `**Latency:** \`${databaseLatency}\``
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '🧠 Process Memory',
-
-                value:
-                    [
-                        `**RSS:** \`${rssMemory}\``,
-                        `**Heap:** \`${heapMemory}\``,
-                        `**State:** ${formatHealthState(
-                            snapshot.memoryState
-                        )}`
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '🧠 Memory',
+                value: [
+                    `**RSS:** \`${rss}\``,
+                    `**Heap:** \`${heap}\``,
+                    `**State:** ${formatHealthState(
+                        snapshot.memoryState
+                    )}`
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '⏱️ Runtime',
-
-                value:
-                    [
-                        `**Uptime:** \`${processUptime}\``,
-                        `**Process ID:** \`${process.pid}\``
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '⏱️ Runtime',
+                value: [
+                    `**Uptime:** \`${uptime}\``,
+                    `**PID:** \`${process.pid}\``
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '🌙 Las Noches',
-
-                value:
-                    [
-                        `**Members:** \`${interaction.guild.memberCount}\``,
-                        `**Commands:** \`${snapshot.commandCount}\``
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: 'Ⅹ THE Ⅹ SINS',
+                value: [
+                    `**Members:** \`${interaction.guild.memberCount}\``,
+                    `**Commands:** \`${snapshot.commandCount}\``
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '🖥️ Terminal Channel',
-
-                value:
-                    `<#${Terminal.TERMINAL_CHANNEL_ID}>`,
-
-                inline:
-                    true
+                name: '🖥️ Terminal',
+                value: `<#${Terminal.TERMINAL_CHANNEL_ID}>`,
+                inline: true
             }
         ]
     });
-}/**
- * Load every Black Box service stored
- * for the current Discord server.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {Promise<Object[]>}
- */
-async function loadServicesCenterData(
-    interaction
-) {
+}async function loadServicesCenterData(interaction) {
     const services =
-        await terminalServices
-            .getTerminalServices(
-                interaction.guild.id
-            );
+        await terminalServices.getTerminalServices(
+            interaction.guild.id
+        );
 
-    return sortServices(
-        services
-    ).slice(
+    return sortServices(services).slice(
         0,
         SERVICES_CENTER_LIMIT
     );
 }
 
-/**
- * Build a summary of service states.
- *
- * @param {Object[]} services
- * @returns {{
- *     total: number,
- *     online: number,
- *     degraded: number,
- *     offline: number,
- *     starting: number,
- *     stopped: number,
- *     unknown: number
- * }}
- */
-function getServiceSummary(
-    services
-) {
+function getServiceSummary(services) {
     const summary = {
-        total:
-            services.length,
-
-        online:
-            0,
-
-        degraded:
-            0,
-
-        offline:
-            0,
-
-        starting:
-            0,
-
-        stopped:
-            0,
-
-        unknown:
-            0
+        total: services.length,
+        online: 0,
+        degraded: 0,
+        offline: 0,
+        starting: 0,
+        stopped: 0,
+        unknown: 0
     };
 
-    for (
-        const service
-        of services
-    ) {
-        switch (
-            service.status
-        ) {
+    for (const service of services) {
+        switch (service.status) {
             case 'ONLINE':
-                summary.online +=
-                    1;
-
+                summary.online++;
                 break;
 
             case 'DEGRADED':
-                summary.degraded +=
-                    1;
-
+                summary.degraded++;
                 break;
 
             case 'OFFLINE':
-                summary.offline +=
-                    1;
-
+                summary.offline++;
                 break;
 
             case 'STARTING':
-                summary.starting +=
-                    1;
-
+                summary.starting++;
                 break;
 
             case 'STOPPED':
-                summary.stopped +=
-                    1;
-
+                summary.stopped++;
                 break;
 
             default:
-                summary.unknown +=
-                    1;
+                summary.unknown++;
         }
     }
 
     return summary;
 }
 
-/**
- * Determine Services Center visual color.
- *
- * @param {ReturnType<typeof getServiceSummary>} summary
- * @returns {string}
- */
-function getServicesCenterColor(
-    summary
-) {
-    if (
-        summary.offline >
-        0
-    ) {
+function getServicesCenterColor(summary) {
+    if (summary.offline > 0) {
         return '#ED4245';
     }
 
     if (
-        summary.degraded >
-            0 ||
-        summary.starting >
-            0
+        summary.degraded > 0 ||
+        summary.starting > 0
     ) {
         return '#FEE75C';
     }
@@ -885,991 +380,460 @@ function getServicesCenterColor(
     return '#57F287';
 }
 
-/**
- * Build the Umbra Black Box
- * Services Center.
- *
- * @param {import('discord.js').Interaction} interaction
- * @param {Object[]} services
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildServicesCenterEmbed(
     interaction,
     services
 ) {
-    const summary =
-        getServiceSummary(
-            services
-        );
-
-    const serviceFields =
-        services.map(
-            buildServiceField
-        );
+    const summary = getServiceSummary(services);
 
     const fields = [
         {
-            name:
-                '📊 Service Summary',
-
-            value:
-                [
-                    `**Registered:** \`${summary.total}\``,
-                    `🟢 **Online:** \`${summary.online}\``,
-                    `🟡 **Degraded:** \`${summary.degraded}\``,
-                    `🔴 **Offline:** \`${summary.offline}\``,
-                    `🔵 **Starting:** \`${summary.starting}\``,
-                    `⚫ **Stopped:** \`${summary.stopped}\``
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                true
+            name: '📊 Summary',
+            value: [
+                `🟢 Online: \`${summary.online}\``,
+                `🟡 Degraded: \`${summary.degraded}\``,
+                `🔴 Offline: \`${summary.offline}\``,
+                `🔵 Starting: \`${summary.starting}\``,
+                `⚫ Stopped: \`${summary.stopped}\``
+            ].join('\n'),
+            inline: true
         },
         {
-            name:
-                '🚨 Active Problems',
-
-            value:
-                summary.offline +
-                    summary.degraded >
-                0
-                    ? [
-                        `**Offline:** \`${summary.offline}\``,
-                        `**Degraded:** \`${summary.degraded}\``,
-                        '',
-                        'Review the affected service entries below.'
-                    ].join(
-                        '\n'
-                    )
-                    : [
-                        '🟢 `NO ACTIVE SERVICE INCIDENTS`',
-                        '',
-                        'All registered services are operating normally.'
-                    ].join(
-                        '\n'
-                    ),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '🕒 Registry State',
-
-            value:
-                [
-                    `**Displayed:** \`${services.length}/${SERVICES_CENTER_LIMIT}\``,
-                    `**Checked:** <t:${Math.floor(
-                        Date.now() /
-                        1_000
-                    )}:R>`
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                true
+            name: '🕒 Registry',
+            value: [
+                `**Registered:** \`${summary.total}\``,
+                `**Displayed:** \`${services.length}/${SERVICES_CENTER_LIMIT}\``,
+                `**Checked:** <t:${Math.floor(Date.now() / 1000)}:R>`
+            ].join('\n'),
+            inline: true
         }
     ];
 
-    if (
-        serviceFields.length >
-        0
-    ) {
+    if (services.length > 0) {
         fields.push(
-            {
-                name:
-                    '━━━━━━━━ BLACK BOX SERVICES ━━━━━━━━',
-
-                value:
-                    'Live operational state of every Umbra service registered for Las Noches.',
-
-                inline:
-                    false
-            },
-
-            ...serviceFields
+            ...services.map(buildServiceField)
         );
     } else {
         fields.push({
-            name:
-                '⚠️ No Registered Services',
-
-            value:
-                [
-                    'No Black Box services were found for this server.',
-                    '',
-                    'Check the Terminal Services registry and PostgreSQL initialization.'
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                false
+            name: '⚠️ No Services',
+            value: 'No registered Terminal services were found.',
+            inline: false
         });
     }
 
     return buildModuleEmbed({
         interaction,
-
         title:
-            summary.offline >
-            0
-                ? '🔴 Umbra Services Center'
-                : summary.degraded >
-                    0
-                    ? '🟡 Umbra Services Center'
-                    : '🟢 Umbra Services Center',
-
+            summary.offline > 0
+                ? '🔴 Services Center'
+                : summary.degraded > 0
+                    ? '🟡 Services Center'
+                    : '🟢 Services Center',
         description:
-            [
-                'Inspect the live state of every subsystem registered inside Umbra Black Box.',
-                '',
-                'Service states are read directly from PostgreSQL and reflect the latest Black Box heartbeat.'
-            ].join(
-                '\n'
-            ),
-
+            'Live status of Evelynn system services.',
         color:
-            getServicesCenterColor(
-                summary
-            ),
-
+            getServicesCenterColor(summary),
         fields
     });
 }
 
-/**
- * Build one recent Incident field.
- *
- * @param {Object} incident
- * @param {number} index
- * @returns {{
- *     name: string,
- *     value: string,
- *     inline: boolean
- * }}
- */
 function buildRecentIncidentField(
     incident,
     index
 ) {
-    const severityEmoji =
-        getIncidentSeverityEmoji(
-            incident.severity
-        );
-
-    const incidentTitle =
-        limitIncidentDisplayText(
-            incident.title,
-            120
-        );
-
-    const incidentMessage =
-        limitIncidentDisplayText(
-            incident.message,
-            220
-        );
-
     return {
-        name:
-            `${severityEmoji} #${incident.id ?? index + 1} • ${incidentTitle}`,
-
-        value:
-            [
-                `**Type:** \`${incident.incidentType ?? 'UNKNOWN'}\``,
-                `**Severity:** ${formatIncidentSeverity(
-                    incident.severity
-                )}`,
-                `**Time:** ${formatIncidentTimestamp(
-                    incident.createdAt
-                )}`,
-                '',
-                incidentMessage
-            ].join(
-                '\n'
-            ),
-
-        inline:
-            false
+        name: `${
+            SEVERITY_ICONS[incident.severity] || '⚪'
+        } #${incident.id ?? index + 1} • ${
+            truncateText(incident.title, 120)
+        }`,
+        value: [
+            `**Type:** \`${incident.incidentType || 'UNKNOWN'}\``,
+            `**Severity:** ${formatSeverity(
+                incident.severity
+            )}`,
+            `**Time:** ${formatTimestamp(
+                incident.createdAt,
+                true
+            )}`,
+            '',
+            truncateText(
+                incident.message,
+                220
+            )
+        ].join('\n'),
+        inline: false
     };
 }
 
-/**
- * Build the PostgreSQL Incident Center.
- *
- * @param {import('discord.js').Interaction} interaction
- * @param {Object[]} incidents
- * @param {Object} statistics
- * @returns {import('discord.js').EmbedBuilder}
- */
+async function loadIncidentCenterData(interaction) {
+    const [incidents, statistics] =
+        await Promise.all([
+            terminalIncidents.getRecentTerminalIncidents(
+                interaction.guild.id,
+                INCIDENT_CENTER_LIMIT
+            ),
+            terminalIncidents.getTerminalIncidentStatistics(
+                interaction.guild.id
+            )
+        ]);
+
+    return {
+        incidents,
+        statistics
+    };
+}
+
 function buildIncidentCenterEmbed(
     interaction,
     incidents,
     statistics
 ) {
-    const recentIncidentFields =
-        incidents.map(
-            buildRecentIncidentField
-        );
-
-    const lastIncident =
-        statistics.lastIncidentAt
-            ? formatIncidentTimestamp(
-                statistics.lastIncidentAt
-            )
-            : '`No incidents recorded`';
-
     const fields = [
         {
-            name:
-                '📊 Archive Summary',
-
-            value:
-                [
-                    `**Total:** \`${statistics.total}\``,
-                    `**Critical:** \`${statistics.critical}\``,
-                    `**Warnings:** \`${statistics.warning}\``,
-                    `**Info:** \`${statistics.info}\``
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                true
+            name: '📊 Archive',
+            value: [
+                `**Total:** \`${statistics.total}\``,
+                `**Critical:** \`${statistics.critical}\``,
+                `**Warnings:** \`${statistics.warning}\``,
+                `**Info:** \`${statistics.info}\``
+            ].join('\n'),
+            inline: true
         },
         {
-            name:
-                '🕒 Latest Incident',
-
-            value:
-                lastIncident,
-
-            inline:
-                true
-        },
-        {
-            name:
-                '🗄️ Archive State',
-
-            value:
-                [
-                    '🟢 `CONNECTED`',
-                    `**Displayed:** \`${incidents.length}/${INCIDENT_CENTER_LIMIT}\``
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                true
+            name: '🕒 Latest',
+            value: statistics.lastIncidentAt
+                ? formatTimestamp(
+                    statistics.lastIncidentAt,
+                    true
+                )
+                : '`No incidents recorded`',
+            inline: true
         }
     ];
 
-    if (
-        recentIncidentFields.length >
-        0
-    ) {
+    if (incidents.length > 0) {
         fields.push(
-            {
-                name:
-                    '━━━━━━━━ RECENT INCIDENTS ━━━━━━━━',
-
-                value:
-                    'The newest Umbra system records are displayed below.',
-
-                inline:
-                    false
-            },
-
-            ...recentIncidentFields
+            ...incidents.map(
+                buildRecentIncidentField
+            )
         );
     } else {
         fields.push({
-            name:
-                '✅ No Archived Incidents',
-
+            name: '✅ No Incidents',
             value:
-                [
-                    'Umbra has not recorded any system incidents yet.',
-                    '',
-                    'New warnings, failures and recoveries will appear here automatically.'
-                ].join(
-                    '\n'
-                ),
-
-            inline:
-                false
+                'No system incidents have been recorded yet.',
+            inline: false
         });
     }
 
     return buildModuleEmbed({
         interaction,
-
-        title:
-            '🚨 Umbra Incident Center',
-
+        title: '🚨 Incident Center',
         description:
-            [
-                'Review permanent system Incident records stored inside PostgreSQL.',
-                '',
-                'Incidents are archived before being published in the Umbra Terminal channel.'
-            ].join(
-                '\n'
-            ),
-
+            'Recent Evelynn system incidents stored in PostgreSQL.',
         color:
-            statistics.critical >
-            0
+            statistics.critical > 0
                 ? '#ED4245'
-                : statistics.warning >
-                    0
+                : statistics.warning > 0
                     ? '#FEE75C'
                     : '#57F287',
-
+        fields
+    });
+}function buildStaticModule(
+    interaction,
+    title,
+    description,
+    fields
+) {
+    return buildModuleEmbed({
+        interaction,
+        title,
+        description,
         fields
     });
 }
 
-/**
- * Load all data required by the
- * Incident Center.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {Promise<{
- *     incidents: Object[],
- *     statistics: Object
- * }>}
- */
-async function loadIncidentCenterData(
-    interaction
-) {
-    const [
-        incidents,
-        statistics
-    ] = await Promise.all([
-        terminalIncidents
-            .getRecentTerminalIncidents(
-                interaction.guild.id,
-                INCIDENT_CENTER_LIMIT
-            ),
-
-        terminalIncidents
-            .getTerminalIncidentStatistics(
-                interaction.guild.id
-            )
-    ]);
-
-    return {
-        incidents,
-        statistics
-    };
-}
-
-/**
- * Build the Rank Trials page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildRankTrialsEmbed(
-    interaction
-) {
-    return buildModuleEmbed({
+function buildRankTrialsEmbed(interaction) {
+    return buildStaticModule(
         interaction,
-
-        title:
-            '⚔️ Rank Trials Control',
-
-        description:
-            [
-                'Manage the Automatic Monthly Rank Trials system.',
-                '',
-                'Umbra protects announcements and Discord Scheduled Events from duplicate creation.'
-            ].join(
-                '\n'
-            ),
-
-        fields: [
+        '⚔️ Rank Trials',
+        'Manage the monthly Rank Trials system.',
+        [
             {
-                name:
-                    '📊 Status',
-
-                value:
-                    '`/ranktrials status`\nView the active monthly schedule.',
-
-                inline:
-                    true
+                name: '📊 Status',
+                value: '`/ranktrials status`',
+                inline: true
             },
             {
-                name:
-                    '🔍 Immediate Check',
-
-                value:
-                    '`/ranktrials check`\nRun the scheduler immediately.',
-
-                inline:
-                    true
+                name: '🔍 Check',
+                value: '`/ranktrials check`',
+                inline: true
             },
             {
-                name:
-                    '🔄 Event Sync',
-
-                value:
-                    '`/ranktrials sync`\nCreate or synchronize the Discord Event.',
-
-                inline:
-                    true
+                name: '🔄 Sync',
+                value: '`/ranktrials sync`',
+                inline: true
             },
             {
-                name:
-                    '👁️ Preview',
-
-                value:
-                    '`/ranktrials preview`\nPreview an announcement privately.',
-
-                inline:
-                    true
+                name: '👁️ Preview',
+                value: '`/ranktrials preview`',
+                inline: true
             },
             {
-                name:
-                    '📢 Manual Publication',
-
-                value:
-                    '`/ranktrials publish`\nPublish one scheduled announcement.',
-
-                inline:
-                    true
+                name: '📢 Publish',
+                value: '`/ranktrials publish`',
+                inline: true
             },
             {
-                name:
-                    '📜 History',
-
-                value:
-                    '`/ranktrials history`\nView PostgreSQL publication records.',
-
-                inline:
-                    true
+                name: '📜 History',
+                value: '`/ranktrials history`',
+                inline: true
             }
         ]
-    });
+    );
 }
 
-/**
- * Build the Ticket Management page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildTicketsEmbed(
-    interaction
-) {
-    return buildModuleEmbed({
+function buildTicketsEmbed(interaction) {
+    return buildStaticModule(
         interaction,
-
-        title:
-            '🎫 Ticket Management',
-
-        description:
-            [
-                'Review and manage the Umbra support system.',
-                '',
-                'Ticket creation and management are handled through Umbra’s secure interaction buttons.'
-            ].join(
-                '\n'
-            ),
-
-        fields: [
+        '🎫 Ticket Management',
+        'Manage the Evelynn support system.',
+        [
             {
-                name:
-                    '🧩 Create Support Panel',
-
-                value:
-                    [
-                        '`/ticketpanel`',
-                        'Publish the public Umbra support panel.'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '🧩 Panel',
+                value: '`/ticketpanel`',
+                inline: true
             },
             {
-                name:
-                    '🎫 Member Controls',
-
-                value:
-                    [
-                        'Members open tickets using the **Open Ticket** button.',
-                        '',
-                        'Ticket owners may request closure directly from their private ticket.'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '🎫 Members',
+                value: 'Open and close tickets through buttons.',
+                inline: true
             },
             {
-                name:
-                    '🛡️ Staff Controls',
-
-                value:
-                    [
-                        'Shadow Wardens may manage tickets through the buttons inside each ticket channel.',
-                        '',
-                        'Supported actions include closing, reopening and deleting tickets.'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '🛡️ Staff',
+                value: 'Close, reopen or delete ticket channels.',
+                inline: true
             },
             {
-                name:
-                    '🔐 Umbra Requirements',
-
+                name: '🔐 Requirements',
                 value:
-                    [
-                        '• View Channel',
-                        '• Send Messages',
-                        '• Embed Links',
-                        '• Manage Channels'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    false
+                    'View Channel • Send Messages • Embed Links • Manage Channels',
+                inline: false
             }
         ]
-    });
+    );
 }
 
-/**
- * Build the Arrancar Ranks page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildArrancarRanksEmbed(
-    interaction
-) {
-    return buildModuleEmbed({
+function buildArrancarRanksEmbed(interaction) {
+    return buildStaticModule(
         interaction,
-
-        title:
-            '👑 Arrancar Rank Control',
-
-        description:
-            [
-                'Manage the official Las Noches hierarchy.',
-                '',
-                'Every Rank change is preserved in PostgreSQL and published through Umbra progression feeds.'
-            ].join(
-                '\n'
-            ),
-
-        fields: [
+        '👑 TTS Rank Control',
+        'Manage THE Ⅹ SINS rank hierarchy.',
+        [
             {
-                name:
-                    '⚔️ Assign Rank',
-
-                value:
-                    '`/setrank`\nAssign or change an Arrancar Rank.',
-
-                inline:
-                    true
+                name: '⚔️ Assign',
+                value: '`/setrank`',
+                inline: true
             },
             {
-                name:
-                    '🌘 Remove Rank',
-
-                value:
-                    '`/removerank`\nRevoke the current Arrancar Rank.',
-
-                inline:
-                    true
+                name: '🌘 Remove',
+                value: '`/removerank`',
+                inline: true
             },
             {
-                name:
-                    '📜 Rank History',
-
-                value:
-                    '`/rankhistory`\nView a Soul’s Rank records.',
-
-                inline:
-                    true
+                name: '📜 History',
+                value: '`/rankhistory`',
+                inline: true
             },
             {
-                name:
-                    '🛡️ Authority',
-
+                name: '🛡️ Authority',
                 value:
-                    [
-                        '• Server Owner',
-                        '• Administrator',
-                        '• Configured High Command roles'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    false
+                    'Server Owner • Administrator • Configured Staff roles',
+                inline: false
             }
         ]
-    });
+    );
 }
 
-/**
- * Build the Setup Center page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildSetupCenterEmbed(
-    interaction
-) {
-    return buildModuleEmbed({
+function buildSetupCenterEmbed(interaction) {
+    return buildStaticModule(
         interaction,
-
-        title:
-            '📚 Las Noches Setup Center',
-
-        description:
-            [
-                'Publish and update the official Las Noches guides.',
-                '',
-                'Use the Setup Wizard for safe Administrator-only publication.'
-            ].join(
-                '\n'
-            ),
-
-        fields: [
+        '📚 TTS Setup Center',
+        'Publish and update THE Ⅹ SINS guides.',
+        [
             {
-                name:
-                    '🌙 Setup Wizard',
-
-                value:
-                    '`/setup`\nOpen the interactive publication menu.',
-
-                inline:
-                    true
+                name: '⚙️ Setup',
+                value: '`/setup`',
+                inline: true
             },
             {
-                name:
-                    '📜 Sacred Laws',
-
-                value:
-                    'Publish official rules inside the dedicated Sacred Laws channel.',
-
-                inline:
-                    true
+                name: '📜 Sacred Laws',
+                value: 'Publish server rules.',
+                inline: true
             },
             {
-                name:
-                    '⛩️ Verification Guide',
-
-                value:
-                    'Publish compact Bloxlink verification instructions.',
-
-                inline:
-                    true
+                name: '⛩️ Verification',
+                value: 'Publish the Bloxlink guide.',
+                inline: true
             },
             {
-                name:
-                    '📖 Kingdom Archives',
-
+                name: '📖 Guides',
                 value:
-                    [
-                        '• Server Guide',
-                        '• Role Information',
-                        '• FAQ',
-                        '• Ticket Guide'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    false
+                    'Server Guide • Role Information • FAQ • Ticket Guide',
+                inline: false
             }
         ]
-    });
-}/**
- * Build the live Guardian page.
- *
- * @param {import('discord.js').Interaction} interaction
- * @param {Object} snapshot
- * @returns {import('discord.js').EmbedBuilder}
- */
+    );
+}
+
 function buildGuardianEmbed(
     interaction,
     snapshot
 ) {
-    const guardianOperational =
+    const operational =
         snapshot.gatewayConnected &&
         snapshot.databaseConnected;
 
     return buildModuleEmbed({
         interaction,
-
-        title:
-            '🛡️ Umbra Guardian',
-
-        description:
-            [
-                'Guardian protects messages before other Umbra systems process them.',
-                '',
-                guardianOperational
-                    ? 'The protection pipeline is currently operational.'
-                    : 'Guardian may be affected by the current system-health condition.'
-            ].join(
-                '\n'
-            ),
-
-        color:
-            guardianOperational
-                ? '#57F287'
-                : '#ED4245',
-
+        title: '🛡️ Evelynn Guardian',
+        description: operational
+            ? 'Protection systems are operational.'
+            : 'Protection systems are degraded.',
+        color: operational
+            ? '#57F287'
+            : '#ED4245',
         fields: [
             {
-                name:
-                    '🛡️ Guardian State',
-
-                value:
-                    formatBooleanStatus(
-                        guardianOperational,
-                        'ACTIVE',
-                        'DEGRADED'
-                    ),
-
-                inline:
-                    true
+                name: '🛡️ Guardian',
+                value: formatBooleanStatus(
+                    operational,
+                    'ACTIVE',
+                    'DEGRADED'
+                ),
+                inline: true
             },
             {
-                name:
-                    '📡 Gateway',
-
-                value:
-                    [
-                        formatBooleanStatus(
-                            snapshot.gatewayConnected,
-                            'CONNECTED',
-                            'DISCONNECTED'
-                        ),
-                        `**Latency:** \`${snapshot.gatewayPing} ms\``
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
-            },
-            {
-                name:
-                    '🗄️ Database',
-
-                value:
+                name: '📡 Gateway',
+                value: [
                     formatBooleanStatus(
-                        snapshot.databaseConnected,
+                        snapshot.gatewayConnected,
                         'CONNECTED',
-                        'UNAVAILABLE'
+                        'DISCONNECTED'
                     ),
-
-                inline:
-                    true
+                    `**Latency:** \`${snapshot.gatewayPing} ms\``
+                ].join('\n'),
+                inline: true
             },
             {
-                name:
-                    '🔍 Protection Modules',
-
-                value:
-                    [
-                        '• Spam Protection',
-                        '• Invite Protection',
-                        '• Profanity Filter',
-                        '• Scam Detection'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                name: '🗄️ Database',
+                value: formatBooleanStatus(
+                    snapshot.databaseConnected,
+                    'CONNECTED',
+                    'UNAVAILABLE'
+                ),
+                inline: true
             },
             {
-                name:
-                    '📋 Records',
-
+                name: '🔍 Protection',
                 value:
-                    [
-                        '• AutoMod Cases',
-                        '• Guardian Warnings',
-                        '• Incident Logs',
-                        '• Moderation Logs'
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                    'Spam • Invites • Profanity • Scam Detection',
+                inline: true
             },
             {
-                name:
-                    '🧠 Process State',
-
+                name: '📋 Records',
                 value:
-                    [
-                        `**Memory:** ${formatHealthState(
-                            snapshot.memoryState
-                        )}`,
-                        `**Overall:** \`${snapshot.overallHealth.label}\``
-                    ].join(
-                        '\n'
-                    ),
-
-                inline:
-                    true
+                    'AutoMod • Guardian • Incidents • Moderation',
+                inline: true
+            },
+            {
+                name: '🧠 System',
+                value: [
+                    `**Memory:** ${formatHealthState(
+                        snapshot.memoryState
+                    )}`,
+                    `**Overall:** \`${snapshot.overallHealth.label}\``
+                ].join('\n'),
+                inline: true
             }
         ]
     });
-}
-
-/**
- * Safely send an Umbra Terminal error.
- *
- * @param {import('discord.js').Interaction} interaction
- * @param {string} title
- * @param {string} description
- * @returns {Promise<void>}
- */
-async function sendControlPanelError(
+}async function sendControlPanelError(
     interaction,
     title,
     description
 ) {
-    const errorEmbed =
+    const embed =
         createErrorEmbed(
             title,
             description
         );
 
-    if (
-        interaction.deferred
-    ) {
+    if (interaction.deferred) {
         await interaction.editReply({
-            embeds: [
-                errorEmbed
-            ],
-
-            components:
-                []
+            embeds: [embed],
+            components: []
         });
 
         return;
     }
 
-    if (
-        interaction.replied
-    ) {
+    if (interaction.replied) {
         await interaction.followUp({
-            flags:
-                MessageFlags.Ephemeral,
-
-            embeds: [
-                errorEmbed
-            ]
+            embeds: [embed],
+            flags: MessageFlags.Ephemeral
         });
 
         return;
     }
 
     await interaction.reply({
-        flags:
-            MessageFlags.Ephemeral,
-
-        embeds: [
-            errorEmbed
-        ]
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral
     });
 }
 
-/**
- * Check whether one interaction belongs
- * to the Umbra Terminal.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {boolean}
- */
-function isControlPanelInteraction(
-    interaction
-) {
-    if (
-        interaction.isStringSelectMenu()
-    ) {
+function isControlPanelInteraction(interaction) {
+    if (interaction.isStringSelectMenu()) {
         return (
             interaction.customId ===
             CONTROL_PANEL_CUSTOM_ID
         );
     }
 
-    if (
-        interaction.isButton()
-    ) {
-        return (
-            interaction.customId ===
-                CONTROL_PANEL_REFRESH_ID ||
-            interaction.customId ===
-                INCIDENT_CENTER_REFRESH_ID ||
-            interaction.customId ===
-                SERVICES_CENTER_REFRESH_ID
-        );
+    if (!interaction.isButton()) {
+        return false;
     }
 
-    return false;
-}
-
-/**
- * Check whether the member may use
- * the Umbra Terminal.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {boolean}
- */
-function hasTerminalAuthority(
-    interaction
-) {
-    return Boolean(
-        interaction.memberPermissions
-            ?.has(
-                PermissionFlagsBits.Administrator
-            )
+    return [
+        CONTROL_PANEL_REFRESH_ID,
+        INCIDENT_CENTER_REFRESH_ID,
+        SERVICES_CENTER_REFRESH_ID
+    ].includes(
+        interaction.customId
     );
 }
 
-/**
- * Handle the Terminal module menu.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleModuleSelection(
-    interaction
-) {
+function hasTerminalAuthority(interaction) {
+    return (
+        interaction.memberPermissions?.has(
+            PermissionFlagsBits.Administrator
+        ) === true
+    );
+}
+
+async function handleModuleSelection(interaction) {
     await interaction.deferUpdate();
 
-    const selectedModule =
+    const moduleId =
         interaction.values[0];
 
     let embed;
-    let components;
+    let components =
+        buildControlPanelComponents();
 
-    switch (
-        selectedModule
-    ) {
+    switch (moduleId) {
         case 'system-overview': {
             const snapshot =
                 await collectHealthSafely(
@@ -1881,9 +845,6 @@ async function handleModuleSelection(
                     interaction,
                     snapshot
                 );
-
-            components =
-                buildControlPanelComponents();
 
             break;
         }
@@ -1933,10 +894,6 @@ async function handleModuleSelection(
                 buildRankTrialsEmbed(
                     interaction
                 );
-
-            components =
-                buildControlPanelComponents();
-
             break;
 
         case 'tickets':
@@ -1944,10 +901,6 @@ async function handleModuleSelection(
                 buildTicketsEmbed(
                     interaction
                 );
-
-            components =
-                buildControlPanelComponents();
-
             break;
 
         case 'arrancar-ranks':
@@ -1955,10 +908,6 @@ async function handleModuleSelection(
                 buildArrancarRanksEmbed(
                     interaction
                 );
-
-            components =
-                buildControlPanelComponents();
-
             break;
 
         case 'setup-center':
@@ -1966,10 +915,6 @@ async function handleModuleSelection(
                 buildSetupCenterEmbed(
                     interaction
                 );
-
-            components =
-                buildControlPanelComponents();
-
             break;
 
         case 'guardian-status': {
@@ -1984,42 +929,24 @@ async function handleModuleSelection(
                     snapshot
                 );
 
-            components =
-                buildControlPanelComponents();
-
             break;
         }
 
         default:
             embed =
                 createErrorEmbed(
-                    '❌ Unknown Terminal Module',
-                    'Umbra could not load the selected Terminal module.'
+                    '❌ Unknown Module',
+                    'Evelynn could not load the selected module.'
                 );
-
-            components =
-                buildControlPanelComponents();
     }
 
     await interaction.editReply({
-        embeds: [
-            embed
-        ],
-
+        embeds: [embed],
         components
     });
 }
 
-/**
- * Refresh the live Umbra
- * Health Snapshot.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleHealthRefresh(
-    interaction
-) {
+async function refreshHealth(interaction) {
     await interaction.update({
         components:
             buildControlPanelComponents(
@@ -2032,72 +959,19 @@ async function handleHealthRefresh(
             interaction.client
         );
 
-    const terminalEmbed =
-        buildControlPanelEmbed(
-            interaction,
-            snapshot
-        );
-
     await interaction.editReply({
         embeds: [
-            terminalEmbed
+            buildControlPanelEmbed(
+                interaction,
+                snapshot
+            )
         ],
-
         components:
             buildControlPanelComponents()
     });
-
-    console.log(
-        '======================================'
-    );
-
-    console.log(
-        '🔄 Umbra Terminal Health Refreshed'
-    );
-
-    console.log(
-        `🛡️ Refreshed By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        `📡 Gateway: ${
-            snapshot.gatewayConnected
-                ? 'CONNECTED'
-                : 'DISCONNECTED'
-        }`
-    );
-
-    console.log(
-        `🗄️ Database: ${
-            snapshot.databaseConnected
-                ? 'CONNECTED'
-                : 'UNAVAILABLE'
-        }`
-    );
-
-    console.log(
-        `🌙 Overall Health: ${snapshot.overallHealth.label}`
-    );
-
-    console.log(
-        '======================================'
-    );
 }
 
-/**
- * Refresh the PostgreSQL
- * Incident Center records.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleIncidentRefresh(
-    interaction
-) {
+async function refreshIncidents(interaction) {
     await interaction.update({
         components:
             buildIncidentCenterComponents(
@@ -2113,69 +987,20 @@ async function handleIncidentRefresh(
             interaction
         );
 
-    const incidentCenterEmbed =
-        buildIncidentCenterEmbed(
-            interaction,
-            incidents,
-            statistics
-        );
-
     await interaction.editReply({
         embeds: [
-            incidentCenterEmbed
+            buildIncidentCenterEmbed(
+                interaction,
+                incidents,
+                statistics
+            )
         ],
-
         components:
             buildIncidentCenterComponents()
     });
-
-    console.log(
-        '======================================'
-    );
-
-    console.log(
-        '🚨 Umbra Incident Center Refreshed'
-    );
-
-    console.log(
-        `🛡️ Refreshed By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        `📚 Incidents Displayed: ${incidents.length}`
-    );
-
-    console.log(
-        `🔴 Critical Records: ${statistics.critical}`
-    );
-
-    console.log(
-        `🟡 Warning Records: ${statistics.warning}`
-    );
-
-    console.log(
-        `📊 Total Records: ${statistics.total}`
-    );
-
-    console.log(
-        '======================================'
-    );
 }
 
-/**
- * Refresh the Black Box
- * Services Center.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleServicesRefresh(
-    interaction
-) {
+async function refreshServices(interaction) {
     await interaction.update({
         components:
             buildServicesCenterComponents(
@@ -2188,86 +1013,34 @@ async function handleServicesRefresh(
             interaction
         );
 
-    const servicesCenterEmbed =
-        buildServicesCenterEmbed(
-            interaction,
-            services
-        );
-
-    const summary =
-        getServiceSummary(
-            services
-        );
-
     await interaction.editReply({
         embeds: [
-            servicesCenterEmbed
+            buildServicesCenterEmbed(
+                interaction,
+                services
+            )
         ],
-
         components:
             buildServicesCenterComponents()
     });
+}
 
-    console.log(
-        '======================================'
-    );
+const BUTTON_HANDLERS = {
+    [CONTROL_PANEL_REFRESH_ID]:
+        refreshHealth,
 
-    console.log(
-        '⚙️ Umbra Services Center Refreshed'
-    );
+    [INCIDENT_CENTER_REFRESH_ID]:
+        refreshIncidents,
 
-    console.log(
-        `🛡️ Refreshed By: ${interaction.user.tag}`
-    );
+    [SERVICES_CENTER_REFRESH_ID]:
+        refreshServices
+};
 
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
+module.exports = {
+    name: Events.InteractionCreate,
+    once: false,
 
-    console.log(
-        `🖥️ Services Displayed: ${services.length}`
-    );
-
-    console.log(
-        `🟢 Online: ${summary.online}`
-    );
-
-    console.log(
-        `🟡 Degraded: ${summary.degraded}`
-    );
-
-    console.log(
-        `🔴 Offline: ${summary.offline}`
-    );
-
-    console.log(
-        `🔵 Starting: ${summary.starting}`
-    );
-
-    console.log(
-        `⚫ Stopped: ${summary.stopped}`
-    );
-
-    console.log(
-        '======================================'
-    );
-}module.exports = {
-    name:
-        Events.InteractionCreate,
-
-    once:
-        false,
-
-    /**
-     * Handle Umbra Terminal menus
-     * and action buttons.
-     *
-     * @param {import('discord.js').Interaction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(
-        interaction
-    ) {
+    async execute(interaction) {
         if (
             !isControlPanelInteraction(
                 interaction
@@ -2277,13 +1050,11 @@ async function handleServicesRefresh(
         }
 
         try {
-            if (
-                !interaction.inGuild()
-            ) {
+            if (!interaction.inGuild()) {
                 await sendControlPanelError(
                     interaction,
                     '❌ Server Only Action',
-                    'The Umbra Terminal can only be used inside Las Noches.'
+                    'The Evelynn Control Panel can only be used inside THE Ⅹ SINS.'
                 );
 
                 return;
@@ -2297,7 +1068,7 @@ async function handleServicesRefresh(
                 await sendControlPanelError(
                     interaction,
                     '❌ Authority Denied',
-                    'Only a Las Noches Administrator may use the Umbra Terminal.'
+                    'Only Administrators can use the Evelynn Control Panel.'
                 );
 
                 return;
@@ -2313,67 +1084,30 @@ async function handleServicesRefresh(
                 return;
             }
 
-            if (
-                interaction.isButton() &&
-                interaction.customId ===
-                    CONTROL_PANEL_REFRESH_ID
-            ) {
-                await handleHealthRefresh(
+            const handler =
+                BUTTON_HANDLERS[
+                    interaction.customId
+                ];
+
+            if (handler) {
+                await handler(
                     interaction
                 );
-
-                return;
-            }
-
-            if (
-                interaction.isButton() &&
-                interaction.customId ===
-                    INCIDENT_CENTER_REFRESH_ID
-            ) {
-                await handleIncidentRefresh(
-                    interaction
-                );
-
-                return;
-            }
-
-            if (
-                interaction.isButton() &&
-                interaction.customId ===
-                    SERVICES_CENTER_REFRESH_ID
-            ) {
-                await handleServicesRefresh(
-                    interaction
-                );
-
-                return;
             }
         } catch (error) {
             console.error(
-                '❌ Umbra Terminal interaction failed:'
-            );
-
-            console.error(
+                '❌ Evelynn Control Panel failed:',
                 error
             );
 
             await sendControlPanelError(
                 interaction,
-                '❌ Terminal Action Failed',
-                [
-                    'Umbra could not complete the selected Terminal action.',
-                    '',
-                    'Check the Discord Gateway, PostgreSQL connection and Black Box modules.'
-                ].join(
-                    '\n'
-                )
+                '❌ Control Panel Failed',
+                'Evelynn could not complete the selected action.'
             ).catch(
                 responseError => {
                     console.error(
-                        '❌ Failed to send the Terminal interaction error:'
-                    );
-
-                    console.error(
+                        '❌ Control Panel error response failed:',
                         responseError
                     );
                 }

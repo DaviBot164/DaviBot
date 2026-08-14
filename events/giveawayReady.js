@@ -20,40 +20,32 @@ module.exports = {
 
     /**
      * Restore active Giveaway timers
-     * after Umbra starts or redeploys.
+     * after Evelynn starts or redeploys.
      *
      * @param {import('discord.js').Client<true>} client
      * @returns {Promise<void>}
      */
-    async execute(client) {
-        console.log(
-            '======================================'
-        );
-
-        console.log(
-            '🎁 Restoring active Giveaways...'
-        );
-
+    async execute(
+        client
+    ) {
         try {
             const activeGiveaways =
                 await giveawayDatabase
                     .getActiveGiveaways();
 
             if (
-                activeGiveaways.length === 0
+                activeGiveaways.length ===
+                0
             ) {
                 console.log(
-                    'ℹ️ No active Giveaways require restoration.'
-                );
-
-                console.log(
-                    '======================================'
+                    '🎁 Giveaway Restore: No active giveaways'
                 );
 
                 return;
             }
 
-            let restoredCount = 0;
+            let restoredCount =
+                0;
 
             for (
                 const giveawayData
@@ -65,7 +57,7 @@ module.exports = {
                     !giveawayData.endsAt
                 ) {
                     console.warn(
-                        '⚠️ Skipped an invalid Giveaway database record.'
+                        '⚠️ Skipped invalid Giveaway record'
                     );
 
                     continue;
@@ -76,47 +68,17 @@ module.exports = {
                     giveawayData
                 );
 
-                restoredCount += 1;
-
-                const remainingTime =
-                    giveawayData.endsAt -
-                    Date.now();
-
-                if (remainingTime <= 0) {
-                    console.log(
-                        `⏳ Restored expired Giveaway for immediate ending: ${giveawayData.id}`
-                    );
-                } else {
-                    const remainingSeconds =
-                        Math.ceil(
-                            remainingTime /
-                            1000
-                        );
-
-                    console.log(
-                        `✅ Restored Giveaway: ${giveawayData.id} (${remainingSeconds}s remaining)`
-                    );
-                }
+                restoredCount +=
+                    1;
             }
 
             console.log(
-                `🎁 Active Giveaways Restored: ${restoredCount}`
-            );
-
-            console.log(
-                '======================================'
+                `🎁 Giveaways Restored: ${restoredCount}`
             );
         } catch (error) {
             console.error(
-                '❌ Failed to restore active Giveaways:'
-            );
-
-            console.error(
+                '❌ Giveaway restoration failed:',
                 error
-            );
-
-            console.error(
-                '======================================'
             );
         }
     }

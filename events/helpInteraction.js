@@ -95,7 +95,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn Help Menu interaction error:',
+                '❌ Evelynn Help Menu interaction failed:',
                 error
             );
 
@@ -106,7 +106,25 @@ module.exports = {
                 );
 
             if (
-                interaction.deferred ||
+                interaction.deferred
+            ) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        components:
+                            []
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
                 interaction.replied
             ) {
                 await interaction

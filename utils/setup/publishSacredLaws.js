@@ -11,9 +11,12 @@ const {
 const setupChannels =
     require('../../config/setupChannels');
 
+const RULES_EMBED_COLOR =
+    '#B026FF';
+
 /**
- * Get and validate the
- * THE Ⅹ SINS rules channel.
+ * Get the THE Ⅹ SINS
+ * rules channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,7 +24,7 @@ const setupChannels =
 async function getSacredLawsChannel(
     interaction
 ) {
-    const sacredLawsChannel =
+    const channel =
         await interaction.guild.channels
             .fetch(
                 setupChannels
@@ -32,8 +35,9 @@ async function getSacredLawsChannel(
             );
 
     if (
-        !sacredLawsChannel ||
-        !sacredLawsChannel.isTextBased()
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -57,8 +61,8 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Bot Unavailable',
-                    'The bot could not access its server member record.'
+                    '❌ Evelynn Unavailable',
+                    'Evelynn could not access her server member record.'
                 )
             ],
 
@@ -69,13 +73,13 @@ async function getSacredLawsChannel(
         return null;
     }
 
-    const channelPermissions =
-        sacredLawsChannel.permissionsFor(
+    const permissions =
+        channel.permissionsFor(
             botMember
         );
 
     if (
-        !channelPermissions?.has([
+        !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
@@ -86,7 +90,7 @@ async function getSacredLawsChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Cannot publish the Code of Sins in ${sacredLawsChannel}.`,
+                        `Evelynn cannot publish the Code of Sins in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -103,7 +107,7 @@ async function getSacredLawsChannel(
         return null;
     }
 
-    return sacredLawsChannel;
+    return channel;
 }
 
 /**
@@ -116,14 +120,34 @@ async function getSacredLawsChannel(
 async function publishSacredLaws(
     interaction
 ) {
-    const sacredLawsChannel =
+    const channel =
         await getSacredLawsChannel(
             interaction
         );
 
-    if (!sacredLawsChannel) {
+    if (!channel) {
         return;
     }
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const rulesEmbed =
         createEmbed({
@@ -138,7 +162,7 @@ async function publishSacredLaws(
                 ].join('\n'),
 
             color:
-                '#5B3A78',
+                RULES_EMBED_COLOR,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -148,14 +172,7 @@ async function publishSacredLaws(
                     forceStatic:
                         false
                 }) ??
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
+                botAvatar,
 
             fields: [
                 {
@@ -223,119 +240,96 @@ async function publishSacredLaws(
 
                     inline:
                         false
+                },
+
+                {
+                    name:
+                        'Ⅴ・TICKETS & SUPPORT',
+
+                    value:
+                        [
+                            '• Open tickets only when help is genuinely needed.',
+                            '• Explain the issue clearly.',
+                            '• Provide evidence when possible.',
+                            '• Do not create false or joke tickets.',
+                            '• Be patient while waiting for a response.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅵ・PRIVACY & SAFETY',
+
+                    value:
+                        [
+                            '• Do not expose private information.',
+                            '• Do not spread false accusations.',
+                            '• Report serious violations when necessary.',
+                            '• Help keep the community safe and respectful.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '⚖️・ENFORCEMENT',
+
+                    value:
+                        [
+                            'Violations may result in:',
+                            '',
+                            '⚠️ Warning',
+                            '🔇 Timeout',
+                            '👢 Kick',
+                            '🔨 Temporary Ban',
+                            '⛔ Permanent Ban',
+                            '',
+                            '-# Severe violations may receive immediate action.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅹ・FINAL NOTICE',
+
+                    value:
+                        [
+                            'By remaining in **THE Ⅹ SINS**, you agree to follow this code.',
+                            '',
+                            '**Respect is required. Fair play is expected.**'
+                        ].join('\n'),
+
+                    inline:
+                        false
                 }
-            ]
-        });    rulesEmbed.addFields(
-        {
-            name:
-                'Ⅴ・TICKETS & SUPPORT',
+            ],
 
-            value:
-                [
-                    '• Open tickets only when help is genuinely needed.',
-                    '• Explain the issue clearly.',
-                    '• Provide evidence when possible.',
-                    '• Do not create false or joke tickets.',
-                    '• Be patient while waiting for a response.'
-                ].join('\n'),
+            author: {
+                name:
+                    'Evelynn • THE Ⅹ SINS',
 
-            inline:
-                false
-        },
+                iconURL:
+                    botAvatar
+            },
 
-        {
-            name:
-                'Ⅵ・PRIVACY & SAFETY',
+            footer: {
+                text:
+                    'TTS • Code of Sins',
 
-            value:
-                [
-                    '• Do not expose private information.',
-                    '• Do not spread false accusations.',
-                    '• Report serious violations when necessary.',
-                    '• Help keep the community safe and respectful.'
-                ].join('\n'),
+                iconURL:
+                    guildIcon
+            }
+        });
 
-            inline:
-                false
-        },
-
-        {
-            name:
-                '⚖️・ENFORCEMENT',
-
-            value:
-                [
-                    'Violations may result in:',
-                    '',
-                    '⚠️ Warning',
-                    '🔇 Timeout',
-                    '👢 Kick',
-                    '🔨 Temporary Ban',
-                    '⛔ Permanent Ban',
-                    '',
-                    '-# Severe violations may receive immediate action.'
-                ].join('\n'),
-
-            inline:
-                false
-        },
-
-        {
-            name:
-                'Ⅹ・FINAL NOTICE',
-
-            value:
-                [
-                    'By remaining in **THE Ⅹ SINS**, you agree to follow this code.',
-                    '',
-                    '**Respect is required. Fair play is expected.**'
-                ].join('\n'),
-
-            inline:
-                false
-        }
-    );
-
-    rulesEmbed.setAuthor({
-        name:
-            'THE Ⅹ SINS',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    rulesEmbed.setFooter({
-        text:
-            'TTS • Code of Sins',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    rulesEmbed.setTimestamp();
-
-    await sacredLawsChannel.send({
+    await channel.send({
         embeds: [
             rulesEmbed
         ],
@@ -350,7 +344,7 @@ async function publishSacredLaws(
         embeds: [
             createSuccessEmbed(
                 '✅ Code of Sins Published',
-                `The Code of Sins was published in ${sacredLawsChannel}.`
+                `The Code of Sins was published in ${channel}.`
             )
         ],
 
@@ -359,30 +353,11 @@ async function publishSacredLaws(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        'Ⅹ Code of Sins Published'
-    );
-
-    console.log(
-        `📍 Channel: ${sacredLawsChannel.name}`
-    );
-
-    console.log(
-        `🛡️ Published By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        '======================================'
+        `Ⅹ Code of Sins published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
+    RULES_EMBED_COLOR,
     publishSacredLaws
 };

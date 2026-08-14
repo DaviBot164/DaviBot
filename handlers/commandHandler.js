@@ -6,20 +6,14 @@ const {
 } = require('discord.js');
 
 /**
- * Load every Umbra Slash Command.
+ * Load every Slash Command.
  *
  * Commands are organized inside category
  * folders under the /commands directory.
  *
  * @param {import('discord.js').Client} client
  */
-module.exports = (
-    client
-) => {
-    /*
-     * Preserve the existing Discord.js
-     * Collection when one was already created.
-     */
+module.exports = client => {
     if (
         !(client.commands instanceof Collection)
     ) {
@@ -36,33 +30,13 @@ module.exports = (
             'commands'
         );
 
-    console.log(
-        '======================================'
-    );
-
-    console.log(
-        '📂 Loading Commands...'
-    );
-
-    console.log(
-        '======================================'
-    );
-
-    /*
-     * Validate the commands directory before
-     * attempting to read category folders.
-     */
     if (
         !fs.existsSync(
             commandsPath
         )
     ) {
         console.error(
-            `❌ Commands directory was not found: ${commandsPath}`
-        );
-
-        console.log(
-            '======================================'
+            `❌ Commands directory not found: ${commandsPath}`
         );
 
         return;
@@ -77,19 +51,15 @@ module.exports = (
             );
     } catch (error) {
         console.error(
-            '❌ Failed to read the Commands directory:'
-        );
-
-        console.error(
+            '❌ Failed to read Commands directory:',
             error
-        );
-
-        console.log(
-            '======================================'
         );
 
         return;
     }
+
+    let failedCount =
+        0;
 
     for (
         const folder
@@ -109,11 +79,11 @@ module.exports = (
                     folderPath
                 );
         } catch (error) {
-            console.error(
-                `⚠️ Could not inspect command category: ${folder}`
-            );
+            failedCount +=
+                1;
 
             console.error(
+                `⚠️ Failed to inspect command category: ${folder}`,
                 error
             );
 
@@ -141,20 +111,16 @@ module.exports = (
                     )
                     .sort();
         } catch (error) {
-            console.error(
-                `⚠️ Failed to read command category: ${folder}`
-            );
+            failedCount +=
+                1;
 
             console.error(
+                `⚠️ Failed to read command category: ${folder}`,
                 error
             );
 
             continue;
         }
-
-        console.log(
-            `📁 Category: ${folder}`
-        );
 
         for (
             const file
@@ -165,10 +131,6 @@ module.exports = (
                     folderPath,
                     file
                 );
-
-            console.log(
-                `📄 Loading file: ${file}`
-            );
 
             try {
                 const command =
@@ -181,8 +143,11 @@ module.exports = (
                     typeof command.execute !==
                         'function'
                 ) {
+                    failedCount +=
+                        1;
+
                     console.warn(
-                        `❌ ${file} is missing command.data or command.execute().`
+                        `⚠️ Invalid command file: ${folder}/${file}`
                     );
 
                     continue;
@@ -196,61 +161,41 @@ module.exports = (
                         'string' ||
                     !commandName.trim()
                 ) {
+                    failedCount +=
+                        1;
+
                     console.warn(
-                        `❌ ${file} has an invalid command name.`
+                        `⚠️ Invalid command name: ${folder}/${file}`
                     );
 
                     continue;
                 }
 
-                /*
-                 * Prevent hidden command replacement.
-                 */
                 if (
                     client.commands.has(
                         commandName
                     )
                 ) {
-                    console.error(
-                        `❌ Duplicate Slash Command detected: /${commandName}`
-                    );
+                    failedCount +=
+                        1;
 
                     console.error(
-                        `   Skipped file: ${folder}/${file}`
+                        `❌ Duplicate Slash Command: /${commandName} (${folder}/${file})`
                     );
 
                     continue;
                 }
 
-                console.log(
-                    `📌 Command Name : ${commandName}`
-                );
-
-                console.log(
-                    `📝 Description  : ${
-                        command.data.description ||
-                        'No description'
-                    }`
-                );
-
                 client.commands.set(
                     commandName,
                     command
                 );
-
-                console.log(
-                    `✅ Successfully Loaded: ${commandName}`
-                );
-
-                console.log(
-                    '--------------------------------------'
-                );
             } catch (error) {
-                console.error(
-                    `❌ Failed to load: ${folder}/${file}`
-                );
+                failedCount +=
+                    1;
 
                 console.error(
+                    `❌ Failed to load command: ${folder}/${file}`,
                     error
                 );
             }
@@ -258,27 +203,15 @@ module.exports = (
     }
 
     console.log(
-        '======================================'
+        `📦 Commands Loaded: ${client.commands.size}`
     );
 
-    console.log(
-        `📦 Total Commands Loaded: ${client.commands.size}`
-    );
-
-    console.log(
-        '📜 Commands List:'
-    );
-
-    for (
-        const commandName
-        of client.commands.keys()
+    if (
+        failedCount >
+        0
     ) {
-        console.log(
-            `➡ ${commandName}`
+        console.warn(
+            `⚠️ Command Load Failures: ${failedCount}`
         );
     }
-
-    console.log(
-        '======================================'
-    );
 };

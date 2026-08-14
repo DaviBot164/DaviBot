@@ -24,33 +24,37 @@ const {
     events: eventDatabase
 } = require('../database');
 
-/**
- * Official Las Noches Community Events channel.
+/*
+ * Official TTS Events channel.
  *
- * Events and Giveaways are published
- * inside the same shared activity channel.
+ * Keep this ID stable unless the
+ * Discord channel itself changes.
  */
 const EVENT_CHANNEL_ID =
     '1535755486505476147';
 
-/**
- * Interactions currently being processed.
- *
- * Prevents accidental duplicate execution
- * inside the same Umbra process.
+/*
+ * Prevent duplicate processing of the
+ * same interaction inside this process.
  */
 const processingInteractions =
     new Set();
 
 /**
- * Generate a short readable Event ID.
+ * Generate a short Event ID.
  *
  * @returns {string}
  */
 function createEventId() {
     return randomUUID()
-        .replaceAll('-', '')
-        .slice(0, 10)
+        .replaceAll(
+            '-',
+            ''
+        )
+        .slice(
+            0,
+            10
+        )
         .toLowerCase();
 }
 
@@ -95,7 +99,7 @@ function parseMaxPlayers(
 }
 
 /**
- * Fetch the configured Community Events channel.
+ * Fetch the configured Events channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -123,7 +127,8 @@ async function fetchEventChannel(
 }
 
 /**
- * Ensure Umbra can publish and update Events.
+ * Check Evelynn's Event channel
+ * permissions.
  *
  * @param {import('discord.js').GuildTextBasedChannel} channel
  * @param {import('discord.js').GuildMember} botMember
@@ -200,27 +205,29 @@ async function updateEventMessage(
         );
 
     /*
-     * Usually interaction.message is the original
-     * Event message, so update it directly.
+     * Usually the button belongs to the
+     * original Event message.
      */
     if (
         interaction.message?.id ===
         eventData.messageId
     ) {
         await interaction.message.edit({
-            embeds:
-                [updatedEmbed],
+            embeds: [
+                updatedEmbed
+            ],
 
-            components:
-                [updatedButtons]
+            components: [
+                updatedButtons
+            ]
         });
 
         return;
     }
 
     /*
-     * Fallback: fetch the original message
-     * using its stored Channel and Message IDs.
+     * Fallback to the stored Channel
+     * and Message IDs.
      */
     const eventChannel =
         await interaction.guild.channels
@@ -252,11 +259,13 @@ async function updateEventMessage(
     }
 
     await eventMessage.edit({
-        embeds:
-            [updatedEmbed],
+        embeds: [
+            updatedEmbed
+        ],
 
-        components:
-            [updatedButtons]
+        components: [
+            updatedButtons
+        ]
     });
 }/**
  * Handle the Event creation Modal.
@@ -277,7 +286,8 @@ async function handleCreateModal(
 
     if (
         !creatorId ||
-        creatorId !== interaction.user.id
+        creatorId !==
+            interaction.user.id
     ) {
         await interaction.reply({
             embeds: [
@@ -294,12 +304,14 @@ async function handleCreateModal(
         return;
     }
 
-    if (!interaction.inGuild()) {
+    if (
+        !interaction.inGuild()
+    ) {
         await interaction.reply({
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'Las Noches Events can only be created inside a server.'
+                    'TTS Events can only be created inside a server.'
                 )
             ],
 
@@ -355,11 +367,7 @@ async function handleCreateModal(
             embeds: [
                 createErrorEmbed(
                     '❌ Invalid Maximum Players',
-                    [
-                        'Maximum Players must contain numbers only.',
-                        '',
-                        'Please enter a value between `1` and `9999`.'
-                    ].join('\n')
+                    'Enter a number between `1` and `9999`.'
                 )
             ],
 
@@ -370,9 +378,6 @@ async function handleCreateModal(
         return;
     }
 
-    /*
-     * Acknowledge the Modal immediately.
-     */
     await interaction.deferReply({
         flags:
             MessageFlags.Ephemeral
@@ -389,10 +394,12 @@ async function handleCreateModal(
                 createErrorEmbed(
                     '❌ Event Channel Not Found',
                     [
-                        'Umbra could not find the official Community Events channel.',
+                        'Evelynn could not find the configured Events channel.',
                         '',
-                        `Configured Channel ID: \`${EVENT_CHANNEL_ID}\``
-                    ].join('\n')
+                        `Channel ID: \`${EVENT_CHANNEL_ID}\``
+                    ].join(
+                        '\n'
+                    )
                 )
             ],
 
@@ -418,14 +425,16 @@ async function handleCreateModal(
                 createErrorEmbed(
                     '❌ Missing Event Permissions',
                     [
-                        `Umbra cannot publish Events in ${eventChannel}.`,
+                        `Evelynn cannot publish Events in ${eventChannel}.`,
                         '',
-                        'Required permissions:',
+                        'Required:',
                         '• View Channel',
                         '• Send Messages',
                         '• Embed Links',
                         '• Read Message History'
-                    ].join('\n')
+                    ].join(
+                        '\n'
+                    )
                 )
             ],
 
@@ -485,33 +494,31 @@ async function handleCreateModal(
             eventData
         );
 
-    let eventMessage = null;
+    let eventMessage =
+        null;
 
     try {
         eventMessage =
             await eventChannel.send({
-                embeds:
-                    [eventEmbed],
+                embeds: [
+                    eventEmbed
+                ],
 
-                components:
-                    [eventButtons]
+                components: [
+                    eventButtons
+                ]
             });
 
         eventData.messageId =
             eventMessage.id;
 
-        /*
-         * Store the Event permanently
-         * inside PostgreSQL.
-         */
         await eventDatabase.createEvent(
             eventData
         );
     } catch (error) {
         /*
-         * If Discord published the message but the
-         * database insert failed, remove the orphaned
-         * Event message.
+         * Remove an orphaned Discord
+         * message if database save fails.
          */
         if (eventMessage) {
             await eventMessage
@@ -529,13 +536,13 @@ async function handleCreateModal(
             createSuccessEmbed(
                 '✅ Event Published',
                 [
-                    `The Event **${title}** was published successfully in ${eventChannel}.`,
+                    `**${title}** was published in ${eventChannel}.`,
                     '',
-                    `👥 Maximum Players: \`${maxPlayers}\``,
-                    `🆔 Event ID: \`${eventId}\``,
-                    '',
-                    '💾 The Event was saved permanently in PostgreSQL.'
-                ].join('\n')
+                    `👥 Players: \`${maxPlayers}\``,
+                    `🆔 ID: \`${eventId}\``
+                ].join(
+                    '\n'
+                )
             )
         ],
 
@@ -544,39 +551,7 @@ async function handleCreateModal(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        '🎉 Las Noches Event Created'
-    );
-
-    console.log(
-        `🆔 Event ID: ${eventId}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        `⚔️ Host: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `👥 Maximum Players: ${maxPlayers}`
-    );
-
-    console.log(
-        `📍 Channel: ${eventChannel.name}`
-    );
-
-    console.log(
-        '💾 Saved to PostgreSQL'
-    );
-
-    console.log(
-        '======================================'
+        `🎉 Event created: ${eventId} by ${interaction.user.tag}`
     );
 }/**
  * Handle Event buttons.
@@ -608,7 +583,7 @@ async function handleEventButton(
             embeds: [
                 createErrorEmbed(
                     '❌ Invalid Event Action',
-                    'Umbra could not identify this Event action.'
+                    'Evelynn could not identify this Event action.'
                 )
             ],
 
@@ -619,12 +594,14 @@ async function handleEventButton(
         return;
     }
 
-    if (!interaction.inGuild()) {
+    if (
+        !interaction.inGuild()
+    ) {
         await interaction.reply({
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'Las Noches Event buttons can only be used inside a server.'
+                    'TTS Event controls can only be used inside a server.'
                 )
             ],
 
@@ -635,10 +612,6 @@ async function handleEventButton(
         return;
     }
 
-    /*
-     * Load the Event and every participant
-     * directly from PostgreSQL.
-     */
     let eventData =
         await eventDatabase.getEvent(
             eventId,
@@ -649,12 +622,8 @@ async function handleEventButton(
         await interaction.reply({
             embeds: [
                 createWarningEmbed(
-                    '⚠️ Event Data Unavailable',
-                    [
-                        `No Event was found with ID \`${eventId}\`.`,
-                        '',
-                        'The Event may have been deleted from the database.'
-                    ].join('\n')
+                    '⚠️ Event Unavailable',
+                    `No Event was found with ID \`${eventId}\`.`
                 )
             ],
 
@@ -702,8 +671,9 @@ async function handleEventButton(
             );
 
         await interaction.reply({
-            embeds:
-                [participantsEmbed],
+            embeds: [
+                participantsEmbed
+            ],
 
             flags:
                 MessageFlags.Ephemeral
@@ -737,7 +707,10 @@ async function handleEventButton(
     /*
      * JOIN EVENT
      */
-    if (action === 'join') {
+    if (
+        action ===
+        'join'
+    ) {
         const alreadyJoined =
             await eventDatabase
                 .isEventParticipant(
@@ -746,7 +719,9 @@ async function handleEventButton(
                     interaction.user.id
                 );
 
-        if (alreadyJoined) {
+        if (
+            alreadyJoined
+        ) {
             await interaction.reply({
                 embeds: [
                     createWarningEmbed(
@@ -778,10 +753,12 @@ async function handleEventButton(
                     createWarningEmbed(
                         '⚠️ Event Full',
                         [
-                            `The Event **${eventData.title}** has reached its player limit.`,
+                            `**${eventData.title}** has reached its player limit.`,
                             '',
                             `👥 Maximum Players: \`${eventData.maxPlayers}\``
-                        ].join('\n')
+                        ].join(
+                            '\n'
+                        )
                     )
                 ],
 
@@ -800,7 +777,9 @@ async function handleEventButton(
                     interaction.user.id
                 );
 
-        if (!participantAdded) {
+        if (
+            !participantAdded
+        ) {
             await interaction.reply({
                 embeds: [
                     createWarningEmbed(
@@ -817,8 +796,8 @@ async function handleEventButton(
         }
 
         /*
-         * Reload the Event so the participant Set
-         * contains the newly joined Soul.
+         * Reload the Event so the
+         * participant list is current.
          */
         eventData =
             await eventDatabase.getEvent(
@@ -838,12 +817,12 @@ async function handleEventButton(
                 createSuccessEmbed(
                     '✅ Event Joined',
                     [
-                        `You have joined **${eventData.title}**.`,
+                        `You joined **${eventData.title}**.`,
                         '',
-                        `👥 Players: \`${eventData.participants.size} / ${eventData.maxPlayers}\``,
-                        '',
-                        '💾 Your participation was saved permanently.'
-                    ].join('\n')
+                        `👥 Players: \`${eventData.participants.size} / ${eventData.maxPlayers}\``
+                    ].join(
+                        '\n'
+                    )
                 )
             ],
 
@@ -852,38 +831,19 @@ async function handleEventButton(
         });
 
         console.log(
-            '======================================'
-        );
-
-        console.log(
-            '✅ Event Participant Joined'
-        );
-
-        console.log(
-            `🆔 Event ID: ${eventData.id}`
-        );
-
-        console.log(
-            `👤 User: ${interaction.user.tag}`
-        );
-
-        console.log(
-            `👥 Players: ${eventData.participants.size}/${eventData.maxPlayers}`
-        );
-
-        console.log(
-            '💾 Participant saved to PostgreSQL'
-        );
-
-        console.log(
-            '======================================'
+            `✅ Event joined: ${eventData.id} by ${interaction.user.tag}`
         );
 
         return;
-    }    /*
+    }
+
+    /*
      * LEAVE EVENT
      */
-    if (action === 'leave') {
+    if (
+        action ===
+        'leave'
+    ) {
         const participantRemoved =
             await eventDatabase
                 .removeEventParticipant(
@@ -892,7 +852,9 @@ async function handleEventButton(
                     interaction.user.id
                 );
 
-        if (!participantRemoved) {
+        if (
+            !participantRemoved
+        ) {
             await interaction.reply({
                 embeds: [
                     createWarningEmbed(
@@ -909,8 +871,8 @@ async function handleEventButton(
         }
 
         /*
-         * Reload the Event so the participant Set
-         * reflects the removal.
+         * Reload the Event so the
+         * participant list is current.
          */
         eventData =
             await eventDatabase.getEvent(
@@ -930,12 +892,12 @@ async function handleEventButton(
                 createSuccessEmbed(
                     '✅ Event Left',
                     [
-                        `You have left **${eventData.title}**.`,
+                        `You left **${eventData.title}**.`,
                         '',
-                        `👥 Players: \`${eventData.participants.size} / ${eventData.maxPlayers}\``,
-                        '',
-                        '💾 The database was updated successfully.'
-                    ].join('\n')
+                        `👥 Players: \`${eventData.participants.size} / ${eventData.maxPlayers}\``
+                    ].join(
+                        '\n'
+                    )
                 )
             ],
 
@@ -944,31 +906,7 @@ async function handleEventButton(
         });
 
         console.log(
-            '======================================'
-        );
-
-        console.log(
-            '❌ Event Participant Left'
-        );
-
-        console.log(
-            `🆔 Event ID: ${eventData.id}`
-        );
-
-        console.log(
-            `👤 User: ${interaction.user.tag}`
-        );
-
-        console.log(
-            `👥 Players: ${eventData.participants.size}/${eventData.maxPlayers}`
-        );
-
-        console.log(
-            '💾 Participant removed from PostgreSQL'
-        );
-
-        console.log(
-            '======================================'
+            `↩️ Event left: ${eventData.id} by ${interaction.user.tag}`
         );
 
         return;
@@ -978,7 +916,7 @@ async function handleEventButton(
         embeds: [
             createErrorEmbed(
                 '❌ Unknown Event Action',
-                'Umbra does not recognize this Event button.'
+                'Evelynn does not recognize this Event button.'
             )
         ],
 
@@ -993,12 +931,15 @@ async function handleEventButton(
         false,
 
     /**
-     * Handle Event buttons and Modal submissions.
+     * Handle Event buttons and
+     * Event creation Modal submissions.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         const isEventButton =
             interaction.isButton() &&
             interaction.customId.startsWith(
@@ -1035,7 +976,9 @@ async function handleEventButton(
         );
 
         try {
-            if (isEventModal) {
+            if (
+                isEventModal
+            ) {
                 await handleCreateModal(
                     interaction
                 );
@@ -1048,26 +991,30 @@ async function handleEventButton(
             );
         } catch (error) {
             console.error(
-                '❌ Umbra Event interaction error:'
+                '❌ Evelynn Event interaction failed:',
+                error
             );
-
-            console.error(error);
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Event Action Failed',
                     [
-                        'Umbra could not complete this Event action.',
+                        'Evelynn could not complete this Event action.',
                         '',
-                        'Please check the PostgreSQL connection and try again.'
-                    ].join('\n')
+                        'Check the PostgreSQL connection and try again.'
+                    ].join(
+                        '\n'
+                    )
                 );
 
-            if (interaction.deferred) {
+            if (
+                interaction.deferred
+            ) {
                 await interaction
                     .editReply({
-                        embeds:
-                            [errorEmbed],
+                        embeds: [
+                            errorEmbed
+                        ],
 
                         components:
                             []
@@ -1079,11 +1026,14 @@ async function handleEventButton(
                 return;
             }
 
-            if (interaction.replied) {
+            if (
+                interaction.replied
+            ) {
                 await interaction
                     .followUp({
-                        embeds:
-                            [errorEmbed],
+                        embeds: [
+                            errorEmbed
+                        ],
 
                         flags:
                             MessageFlags.Ephemeral
@@ -1097,8 +1047,9 @@ async function handleEventButton(
 
             await interaction
                 .reply({
-                    embeds:
-                        [errorEmbed],
+                    embeds: [
+                        errorEmbed
+                    ],
 
                     flags:
                         MessageFlags.Ephemeral

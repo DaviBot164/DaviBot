@@ -22,7 +22,7 @@ module.exports = {
                 'testwelcome'
             )
             .setDescription(
-                'Preview the THE Ⅹ SINS welcome message.'
+                'Preview the current THE Ⅹ SINS Welcome message.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -32,7 +32,7 @@ module.exports = {
             ),
 
     /**
-     * Execute the /testwelcome command.
+     * Execute /testwelcome.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -55,11 +55,6 @@ module.exports = {
                 return;
             }
 
-            const welcomeEmbed =
-                createWelcomeEmbed(
-                    interaction.member
-                );
-
             const bannerPath =
                 path.join(
                     __dirname,
@@ -72,7 +67,9 @@ module.exports = {
 
             await interaction.reply({
                 embeds: [
-                    welcomeEmbed
+                    createWelcomeEmbed(
+                        interaction.member
+                    )
                 ],
 
                 files: [
@@ -87,31 +84,17 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing /testwelcome:',
+                '❌ Evelynn /testwelcome command error:',
                 error
             );
 
             const errorMessage = {
                 content:
-                    '❌ Could not generate the welcome preview.',
+                    '❌ Evelynn could not generate the Welcome preview.',
 
                 flags:
                     MessageFlags.Ephemeral
             };
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp(
-                        errorMessage
-                    )
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
 
             if (
                 interaction.deferred
@@ -121,6 +104,20 @@ module.exports = {
                         content:
                             errorMessage.content
                     })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp(
+                        errorMessage
+                    )
                     .catch(
                         () => null
                     );

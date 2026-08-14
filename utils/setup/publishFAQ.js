@@ -11,9 +11,11 @@ const {
 const setupChannels =
     require('../../config/setupChannels');
 
+const FAQ_EMBED_COLOR =
+    '#B026FF';
+
 /**
- * Get and validate the
- * THE Ⅹ SINS information channel.
+ * Get the FAQ channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,7 +23,7 @@ const setupChannels =
 async function getFAQChannel(
     interaction
 ) {
-    const informationChannel =
+    const channel =
         await interaction.guild.channels
             .fetch(
                 setupChannels
@@ -32,8 +34,9 @@ async function getFAQChannel(
             );
 
     if (
-        !informationChannel ||
-        !informationChannel.isTextBased()
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -70,7 +73,7 @@ async function getFAQChannel(
     }
 
     const permissions =
-        informationChannel.permissionsFor(
+        channel.permissionsFor(
             botMember
         );
 
@@ -86,7 +89,7 @@ async function getFAQChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish the FAQ in ${informationChannel}.`,
+                        `Evelynn cannot publish the FAQ in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -103,7 +106,7 @@ async function getFAQChannel(
         return null;
     }
 
-    return informationChannel;
+    return channel;
 }
 
 /**
@@ -116,14 +119,34 @@ async function getFAQChannel(
 async function publishFAQ(
     interaction
 ) {
-    const informationChannel =
+    const channel =
         await getFAQChannel(
             interaction
         );
 
-    if (!informationChannel) {
+    if (!channel) {
         return;
     }
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const faqEmbed =
         createEmbed({
@@ -131,14 +154,10 @@ async function publishFAQ(
                 'Ⅹ・FAQ',
 
             description:
-                [
-                    '**Quick answers to common questions.**',
-                    '',
-                    'Check here before opening a support ticket.'
-                ].join('\n'),
+                '**Quick answers to common questions.**',
 
             color:
-                '#5B3A78',
+                FAQ_EMBED_COLOR,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -148,14 +167,7 @@ async function publishFAQ(
                     forceStatic:
                         false
                 }) ??
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
+                botAvatar,
 
             fields: [
                 {
@@ -166,9 +178,7 @@ async function publishFAQ(
                         [
                             'Verify your Roblox account through **Bloxlink**.',
                             '',
-                            '**◇・UNSWORN** → **✦・SWORN**',
-                            '',
-                            'If verification fails, open a support ticket.'
+                            '**◇・UNSWORN** → **✦・SWORN**'
                         ].join('\n'),
 
                     inline:
@@ -180,11 +190,7 @@ async function publishFAQ(
                         '📜・WHERE ARE THE RULES?',
 
                     value:
-                        [
-                            'Read the **Code of Sins** in the information section.',
-                            '',
-                            'The Code applies to every member and Staff role.'
-                        ].join('\n'),
+                        'Read the **Code of Sins** in the information section.',
 
                     inline:
                         false
@@ -195,10 +201,21 @@ async function publishFAQ(
                         '🎫・HOW DO I CONTACT STAFF?',
 
                     value:
+                        'Open a private support ticket for reports, appeals or server issues.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '⚖️・CAN I APPEAL?',
+
+                    value:
                         [
-                            'Open a private support ticket.',
+                            '**Yes.** Use the Ticket System and explain what happened.',
                             '',
-                            'Use tickets for reports, appeals, verification issues, private evidence or server problems.'
+                            '-# Appeals do not guarantee removal of a punishment.'
                         ].join('\n'),
 
                     inline:
@@ -207,146 +224,82 @@ async function publishFAQ(
 
                 {
                     name:
-                        '⚖️・CAN I APPEAL A PUNISHMENT?',
+                        '🤖・WHO IS EVELYNN?',
+
+                    value:
+                        '**Evelynn** is the guardian and companion of **THE Ⅹ SINS**.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '🛡️・WHY WAS MY MESSAGE REMOVED?',
+
+                    value:
+                        'Evelynn may automatically remove prohibited language, spam, invites, malicious links or filter bypass attempts.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '⚔️・ARE EXPLOITS ALLOWED?',
+
+                    value:
+                        '**No.** Scripts, exploits, cheats and unfair tools are forbidden.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '◆・HOW DO I PROGRESS?',
 
                     value:
                         [
-                            '**Yes.** Submit an appeal through the Ticket System.',
+                            'Stay active to earn Levels, Achievements, Titles and progression roles.',
                             '',
-                            'Explain what happened and include relevant evidence.',
-                            '',
-                            '-# An appeal does not guarantee the punishment will be removed.'
+                            'Sin ranks are earned separately through competition.'
                         ].join('\n'),
 
                     inline:
                         false
+                },
+
+                {
+                    name:
+                        'Ⅹ・STILL NEED HELP?',
+
+                    value:
+                        'For private or moderation-related matters, open a support ticket.',
+
+                    inline:
+                        false
                 }
-            ]
-        });    faqEmbed.addFields(
-        {
-            name:
-                '🤖・WHO IS EVELYNN?',
+            ],
 
-            value:
-                [
-                    '**Evelynn** is the public guardian and companion of **THE Ⅹ SINS**.',
-                    '',
-                    'She manages server systems through the internal **Umbra Core**.'
-                ].join('\n'),
+            author: {
+                name:
+                    'Evelynn • THE Ⅹ SINS',
 
-            inline:
-                false
-        },
+                iconURL:
+                    botAvatar
+            },
 
-        {
-            name:
-                '🛡️・WHY WAS MY MESSAGE REMOVED?',
+            footer: {
+                text:
+                    'TTS • FAQ',
 
-            value:
-                [
-                    'Automated protection may remove messages containing:',
-                    '',
-                    '• Prohibited language',
-                    '• Spam',
-                    '• Unauthorized invites',
-                    '• Malicious links',
-                    '• Filter bypass attempts'
-                ].join('\n'),
+                iconURL:
+                    guildIcon
+            }
+        });
 
-            inline:
-                false
-        },
-
-        {
-            name:
-                '⚔️・ARE EXPLOITS ALLOWED?',
-
-            value:
-                [
-                    '**No.**',
-                    '',
-                    'Scripts, exploits, cheats and unfair tools are forbidden.',
-                    '',
-                    '-# Serious violations may result in immediate moderation.'
-                ].join('\n'),
-
-            inline:
-                false
-        },
-
-        {
-            name:
-                '◆・HOW DO I PROGRESS?',
-
-            value:
-                [
-                    'Stay active and participate in the community.',
-                    '',
-                    'You may earn levels, achievements, titles and progression roles.',
-                    '',
-                    'Sin ranks are earned separately through competition.'
-                ].join('\n'),
-
-            inline:
-                false
-        },
-
-        {
-            name:
-                'Ⅹ・STILL NEED HELP?',
-
-            value:
-                [
-                    'Ask in the appropriate community channel for general questions.',
-                    '',
-                    'For private or moderation-related matters, open a support ticket.'
-                ].join('\n'),
-
-            inline:
-                false
-        }
-    );
-
-    faqEmbed.setAuthor({
-        name:
-            'Evelynn • THE Ⅹ SINS',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    faqEmbed.setFooter({
-        text:
-            'TTS • FAQ',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    faqEmbed.setTimestamp();
-
-    await informationChannel.send({
+    await channel.send({
         embeds: [
             faqEmbed
         ],
@@ -361,7 +314,7 @@ async function publishFAQ(
         embeds: [
             createSuccessEmbed(
                 '✅ FAQ Published',
-                `The FAQ was published in ${informationChannel}.`
+                `The FAQ was published in ${channel}.`
             )
         ],
 
@@ -370,30 +323,11 @@ async function publishFAQ(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        'Ⅹ FAQ Published'
-    );
-
-    console.log(
-        `📍 Channel: ${informationChannel.name}`
-    );
-
-    console.log(
-        `🛡️ Published By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        '======================================'
+        `Ⅹ FAQ published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
+    FAQ_EMBED_COLOR,
     publishFAQ
 };

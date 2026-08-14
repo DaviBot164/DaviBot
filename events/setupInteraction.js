@@ -49,7 +49,7 @@ async function sendSetupError(
     title,
     description
 ) {
-    const embed =
+    const errorEmbed =
         createErrorEmbed(
             title,
             description
@@ -60,7 +60,7 @@ async function sendSetupError(
     ) {
         await interaction.editReply({
             embeds: [
-                embed
+                errorEmbed
             ],
 
             components:
@@ -75,7 +75,7 @@ async function sendSetupError(
     ) {
         await interaction.followUp({
             embeds: [
-                embed
+                errorEmbed
             ],
 
             flags:
@@ -87,7 +87,7 @@ async function sendSetupError(
 
     await interaction.reply({
         embeds: [
-            embed
+            errorEmbed
         ],
 
         flags:
@@ -212,7 +212,7 @@ module.exports = {
             }
         } catch (error) {
             console.error(
-                '❌ Evelynn Setup interaction error:',
+                '❌ Evelynn Setup interaction failed:',
                 error
             );
 

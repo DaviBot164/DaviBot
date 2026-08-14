@@ -28,367 +28,215 @@ const {
 } = require('../utils/rankTrials/calendar');
 
 const {
-    ranks:
-        rankDatabase,
-
-    rankTrialParticipants:
-        participantDatabase
+    ranks: rankDatabase,
+    rankTrialParticipants: participantDatabase
 } = require('../database');
 
-/**
- * Staff Review component prefixes.
- */
 const REVIEW_COMPONENT_PREFIX =
     'umbra:ranktrial:review';
 
 const REVIEW_MODAL_PREFIX =
     'umbra:ranktrial:reviewmodal';
 
-/**
- * Prevent duplicate Rank Trial interaction
- * execution inside the same Umbra process.
- */
 const processingInteractions =
     new Set();
 
-/**
- * Load one Soul's current Arrancar Rank.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<string|null>}
- */
+const TRIAL_KEY_PATTERN =
+    /^[0-9]{4}-(0[1-9]|1[0-2])$/;
+
+const USER_ID_PATTERN =
+    /^[0-9]{16,22}$/;
+
 async function getCurrentArrancarRank(
     guildId,
     userId
 ) {
-    const rankRecord =
+    return (
         await rankDatabase
             .getCurrentRank(
                 guildId,
                 userId
             )
-            .catch(
-                () => null
-            );
+            .catch(() => null)
+    )?.rank_name ?? null;
+}
 
+function isAdministrator(interaction) {
     return (
-        rankRecord?.rank_name ??
-        null
+        interaction.memberPermissions?.has(
+            PermissionFlagsBits.Administrator
+        ) === true
     );
 }
 
-/**
- * Check Administrator permission.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {boolean}
- */
-function hasAdministratorPermission(
-    interaction
+function parseReviewId(
+    customId,
+    area,
+    allowedActions
 ) {
-    return (
-        interaction.memberPermissions
-            ?.has(
-                PermissionFlagsBits.Administrator
-            ) ===
-        true
-    );
-}
-
-/**
- * Registration test controls remain
- * Administrator-only.
- *
- * @param {import('discord.js').Interaction} interaction
- * @returns {boolean}
- */
-function canUseRegistrationTest(
-    interaction
-) {
-    return hasAdministratorPermission(
-        interaction
-    );
-}
-
-/**
- * Parse one Staff Review button Custom ID.
- *
- * Example:
- *
- * umbra:ranktrial:review:approve:2026-08:USER_ID
- *
- * @param {string} customId
- * @returns {{
- *     action: 'approve'|'reject'|'reopen',
- *     trialKey: string,
- *     userId: string
- * }|null}
- */
-function parseReviewCustomId(
-    customId
-) {
-    if (
-        typeof customId !==
-        'string'
-    ) {
+    if (typeof customId !== 'string') {
         return null;
     }
 
     const parts =
         customId.split(':');
 
-    if (
-        parts.length !==
-        6
-    ) {
+    if (parts.length !== 6) {
         return null;
     }
 
     const [
         namespace,
         system,
-        area,
+        parsedArea,
         action,
         trialKey,
         userId
-    ] =
-        parts;
+    ] = parts;
 
     if (
-        namespace !==
-            'umbra' ||
-        system !==
-            'ranktrial' ||
-        area !==
-            'review'
+        namespace !== 'umbra' ||
+        system !== 'ranktrial' ||
+        parsedArea !== area ||
+        !allowedActions.includes(action) ||
+        !TRIAL_KEY_PATTERN.test(trialKey) ||
+        !USER_ID_PATTERN.test(userId)
     ) {
         return null;
     }
 
-    if (
-        action !==
-            'approve' &&
-        action !==
-            'reject' &&
-        action !==
+    return {
+        action,
+        trialKey,
+        userId
+    };
+}
+
+function parseReviewCustomId(customId) {
+    return parseReviewId(
+        customId,
+        'review',
+        [
+            'approve',
+            'reject',
             'reopen'
-    ) {
-        return null;
-    }
-
-    if (
-        !/^[0-9]{4}-(0[1-9]|1[0-2])$/
-            .test(
-                trialKey
-            )
-    ) {
-        return null;
-    }
-
-    if (
-        !/^[0-9]{16,22}$/
-            .test(
-                userId
-            )
-    ) {
-        return null;
-    }
-
-    return {
-        action,
-        trialKey,
-        userId
-    };
-}
-
-/**
- * Parse one Staff Review Modal Custom ID.
- *
- * Example:
- *
- * umbra:ranktrial:reviewmodal:approve:2026-08:USER_ID
- *
- * @param {string} customId
- * @returns {{
- *     action: 'approve'|'reject',
- *     trialKey: string,
- *     userId: string
- * }|null}
- */
-function parseReviewModalCustomId(
-    customId
-) {
-    if (
-        typeof customId !==
-        'string'
-    ) {
-        return null;
-    }
-
-    const parts =
-        customId.split(':');
-
-    if (
-        parts.length !==
-        6
-    ) {
-        return null;
-    }
-
-    const [
-        namespace,
-        system,
-        area,
-        action,
-        trialKey,
-        userId
-    ] =
-        parts;
-
-    if (
-        namespace !==
-            'umbra' ||
-        system !==
-            'ranktrial' ||
-        area !==
-            'reviewmodal'
-    ) {
-        return null;
-    }
-
-    if (
-        action !==
-            'approve' &&
-        action !==
-            'reject'
-    ) {
-        return null;
-    }
-
-    if (
-        !/^[0-9]{4}-(0[1-9]|1[0-2])$/
-            .test(
-                trialKey
-            )
-    ) {
-        return null;
-    }
-
-    if (
-        !/^[0-9]{16,22}$/
-            .test(
-                userId
-            )
-    ) {
-        return null;
-    }
-
-    return {
-        action,
-        trialKey,
-        userId
-    };
-}
-
-/**
- * Verify that one review control belongs
- * to the currently relevant Rank Trial.
- *
- * @param {string} trialKey
- * @returns {boolean}
- */
-function isCurrentReviewCycle(
-    trialKey
-) {
-    const schedule =
-        getRelevantRankTrialSchedule();
-
-    return (
-        schedule.trialKey ===
-        trialKey
+        ]
     );
 }
 
-/**
- * Build the Staff Review reason Modal.
- *
- * @param {'approve'|'reject'} action
- * @param {string} trialKey
- * @param {string} userId
- * @returns {ModalBuilder}
- */
+function parseReviewModalCustomId(customId) {
+    return parseReviewId(
+        customId,
+        'reviewmodal',
+        [
+            'approve',
+            'reject'
+        ]
+    );
+}
+
+function isCurrentReviewCycle(trialKey) {
+    return (
+        getRelevantRankTrialSchedule()
+            .trialKey === trialKey
+    );
+}
+
 function buildReviewReasonModal(
     action,
     trialKey,
     userId
 ) {
-    const modal =
-        new ModalBuilder()
-            .setCustomId(
-                [
-                    REVIEW_MODAL_PREFIX,
-                    action,
-                    trialKey,
-                    userId
-                ].join(':')
-            )
-            .setTitle(
-                action ===
-                    'approve'
-                    ? 'Approve Rank Trial Participant'
-                    : 'Reject Rank Trial Participant'
-            );
+    const approving =
+        action === 'approve';
 
-    const reasonInput =
+    const input =
         new TextInputBuilder()
-            .setCustomId(
-                'reviewReason'
-            )
-            .setLabel(
-                'Review Reason'
-            )
+            .setCustomId('reviewReason')
+            .setLabel('Review Reason')
             .setPlaceholder(
-                action ===
-                    'approve'
-                    ? 'Why was this participant approved?'
-                    : 'Why was this participant rejected?'
+                approving
+                    ? 'Why was this member approved?'
+                    : 'Why was this member rejected?'
             )
             .setStyle(
                 TextInputStyle.Paragraph
             )
-            .setRequired(
-                true
-            )
-            .setMinLength(
-                3
-            )
-            .setMaxLength(
-                500
-            );
+            .setRequired(true)
+            .setMinLength(3)
+            .setMaxLength(500);
 
-    modal.addComponents(
-        new ActionRowBuilder()
-            .addComponents(
-                reasonInput
-            )
-    );
+    return new ModalBuilder()
+        .setCustomId(
+            [
+                REVIEW_MODAL_PREFIX,
+                action,
+                trialKey,
+                userId
+            ].join(':')
+        )
+        .setTitle(
+            approving
+                ? 'Approve Rank Trial'
+                : 'Reject Rank Trial'
+        )
+        .addComponents(
+            new ActionRowBuilder()
+                .addComponents(input)
+        );
+}
 
-    return modal;
-}/**
- * Handle normal production Rank Trial
- * registration.
- *
- * Production registration always obeys
- * the configured Opening and Final
- * Reminder schedule.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleRegister(
-    interaction
+async function replyEmbed(
+    interaction,
+    embed
 ) {
+    await interaction.reply({
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral
+    });
+}
+
+async function replyWarning(
+    interaction,
+    title,
+    description
+) {
+    return replyEmbed(
+        interaction,
+        createWarningEmbed(
+            title,
+            description
+        )
+    );
+}
+
+async function replyError(
+    interaction,
+    title,
+    description
+) {
+    return replyEmbed(
+        interaction,
+        createErrorEmbed(
+            title,
+            description
+        )
+    );
+}
+
+async function replySuccess(
+    interaction,
+    title,
+    description
+) {
+    return replyEmbed(
+        interaction,
+        createSuccessEmbed(
+            title,
+            description
+        )
+    );
+}async function handleRegister(interaction) {
     const previousRank =
         await getCurrentArrancarRank(
             interaction.guildId,
@@ -397,136 +245,63 @@ async function handleRegister(
 
     const result =
         await registerForCurrentRankTrial({
-            guildId:
-                interaction.guildId,
-
-            userId:
-                interaction.user.id,
-
+            guildId: interaction.guildId,
+            userId: interaction.user.id,
             previousRank
         });
 
-    if (
-        result.status ===
-        'upcoming'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚔️ Registration Not Open',
-                    'Rank Trial registration has not opened yet.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'upcoming') {
+        return replyWarning(
+            interaction,
+            '⚔️ Registration Not Open',
+            'Rank Trial registration has not opened yet.'
+        );
     }
 
-    if (
-        result.status ===
-        'closed'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '🔒 Registration Closed',
-                    'Registration for this Rank Trial has already closed.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'closed') {
+        return replyWarning(
+            interaction,
+            '🔒 Registration Closed',
+            'Registration for this Rank Trial has already closed.'
+        );
     }
 
-    if (
-        result.status ===
-        'existing'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Already Registered',
-                    [
-                        'You are already registered for this Rank Trial.',
-                        '',
-                        `🗓️ Trial Cycle: \`${result.schedule.trialKey}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'existing') {
+        return replyWarning(
+            interaction,
+            '⚠️ Already Registered',
+            [
+                'You are already registered for this Rank Trial.',
+                `🗓️ Cycle: \`${result.schedule.trialKey}\``
+            ].join('\n')
+        );
     }
 
     const restored =
-        result.status ===
-        'restored';
+        result.status === 'restored';
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                restored
-                    ? '⚔️ Registration Restored'
-                    : '⚔️ Rank Trial Registered',
-                [
-                    restored
-                        ? 'Your Rank Trial registration has been restored.'
-                        : 'You have successfully registered for the upcoming Rank Trial.',
-                    '',
-                    `🗓️ Trial Cycle: \`${result.schedule.trialKey}\``,
-                    `📖 Current Rank: \`${previousRank ?? 'Unranked'}\``,
-                    '',
-                    '💾 Your registration was saved permanently in PostgreSQL.'
-                ].join('\n')
-            )
-        ],
-
-        flags:
-            MessageFlags.Ephemeral
-    });
+    return replySuccess(
+        interaction,
+        restored
+            ? '⚔️ Registration Restored'
+            : '⚔️ Rank Trial Registered',
+        [
+            restored
+                ? 'Your registration has been restored.'
+                : 'You are registered for the upcoming Rank Trial.',
+            `🗓️ Cycle: \`${result.schedule.trialKey}\``,
+            `📖 Rank: \`${previousRank ?? 'Unranked'}\``
+        ].join('\n')
+    );
 }
 
-/**
- * Handle Administrator-only test
- * registration.
- *
- * This intentionally bypasses the normal
- * registration window so Rank Trials 2.0
- * may be tested before Opening Day.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleTestRegister(
-    interaction
-) {
-    if (
-        !canUseRegistrationTest(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Test Access Denied',
-                    'Only an Administrator may use Rank Trials registration test controls.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+async function handleTestRegister(interaction) {
+    if (!isAdministrator(interaction)) {
+        return replyError(
+            interaction,
+            '❌ Test Access Denied',
+            'Only an Administrator may use Rank Trial test controls.'
+        );
     }
 
     const schedule =
@@ -541,196 +316,88 @@ async function handleTestRegister(
     const result =
         await participantDatabase
             .registerParticipant({
-                guildId:
-                    interaction.guildId,
-
-                trialKey:
-                    schedule.trialKey,
-
-                userId:
-                    interaction.user.id,
-
+                guildId: interaction.guildId,
+                trialKey: schedule.trialKey,
+                userId: interaction.user.id,
                 previousRank
             });
 
-    if (
-        result.status ===
-        'existing'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '🧪 Test Registration Exists',
-                    [
-                        'Your participant record already exists for this Rank Trial.',
-                        '',
-                        `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
-                        `📋 Status: \`${result.participant?.status ?? 'UNKNOWN'}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'existing') {
+        return replyWarning(
+            interaction,
+            '🧪 Test Registration Exists',
+            [
+                'A participant record already exists.',
+                `🗓️ Cycle: \`${schedule.trialKey}\``,
+                `📋 Status: \`${result.participant?.status ?? 'UNKNOWN'}\``
+            ].join('\n')
+        );
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                result.status ===
-                    'restored'
-                    ? '🧪 Test Registration Restored'
-                    : '🧪 Test Registration Created',
-                [
-                    'Rank Trials 2.0 bypass test completed successfully.',
-                    '',
-                    `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
-                    `📖 Current Rank: \`${previousRank ?? 'Unranked'}\``,
-                    `📋 Database Status: \`${result.participant?.status ?? 'REGISTERED'}\``,
-                    '',
-                    '💾 This is a real PostgreSQL participant record.',
-                    'Use **Test Withdraw** next to continue the runtime test.'
-                ].join('\n')
-            )
-        ],
-
-        flags:
-            MessageFlags.Ephemeral
-    });
+    return replySuccess(
+        interaction,
+        result.status === 'restored'
+            ? '🧪 Test Registration Restored'
+            : '🧪 Test Registration Created',
+        [
+            `🗓️ Cycle: \`${schedule.trialKey}\``,
+            `📖 Rank: \`${previousRank ?? 'Unranked'}\``,
+            `📋 Status: \`${result.participant?.status ?? 'REGISTERED'}\``
+        ].join('\n')
+    );
 }
 
-/**
- * Handle normal production Rank Trial
- * withdrawal.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleWithdraw(
-    interaction
-) {
+async function handleWithdraw(interaction) {
     const result =
         await withdrawFromCurrentRankTrial({
-            guildId:
-                interaction.guildId,
-
-            userId:
-                interaction.user.id
+            guildId: interaction.guildId,
+            userId: interaction.user.id
         });
 
-    if (
-        result.status ===
-        'upcoming'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚔️ Registration Not Open',
-                    'Rank Trial registration has not opened yet.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'upcoming') {
+        return replyWarning(
+            interaction,
+            '⚔️ Registration Not Open',
+            'Rank Trial registration has not opened yet.'
+        );
     }
 
-    if (
-        result.status ===
-        'closed'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '🔒 Registration Closed',
-                    'Registration for this Rank Trial has already closed, so withdrawal is no longer available.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'closed') {
+        return replyWarning(
+            interaction,
+            '🔒 Registration Closed',
+            'Withdrawal is no longer available.'
+        );
     }
 
-    if (
-        result.status ===
-        'not_registered'
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Not Registered',
-                    [
-                        'You are not currently registered for this Rank Trial.',
-                        '',
-                        `🗓️ Trial Cycle: \`${result.schedule.trialKey}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (result.status === 'not_registered') {
+        return replyWarning(
+            interaction,
+            '⚠️ Not Registered',
+            [
+                'You are not registered for this Rank Trial.',
+                `🗓️ Cycle: \`${result.schedule.trialKey}\``
+            ].join('\n')
+        );
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                '🚪 Rank Trial Withdrawn',
-                [
-                    'You have withdrawn from the upcoming Rank Trial.',
-                    '',
-                    `🗓️ Trial Cycle: \`${result.schedule.trialKey}\``,
-                    '',
-                    'You may register again while registration remains open.',
-                    '',
-                    '💾 Your withdrawal was saved permanently in PostgreSQL.'
-                ].join('\n')
-            )
-        ],
-
-        flags:
-            MessageFlags.Ephemeral
-    });
+    return replySuccess(
+        interaction,
+        '🚪 Rank Trial Withdrawn',
+        [
+            'You have withdrawn from the upcoming Rank Trial.',
+            `🗓️ Cycle: \`${result.schedule.trialKey}\``
+        ].join('\n')
+    );
 }
 
-/**
- * Handle Administrator-only test
- * withdrawal.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
-async function handleTestWithdraw(
-    interaction
-) {
-    if (
-        !canUseRegistrationTest(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Test Access Denied',
-                    'Only an Administrator may use Rank Trials registration test controls.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+async function handleTestWithdraw(interaction) {
+    if (!isAdministrator(interaction)) {
+        return replyError(
+            interaction,
+            '❌ Test Access Denied',
+            'Only an Administrator may use Rank Trial test controls.'
+        );
     }
 
     const schedule =
@@ -745,7 +412,7 @@ async function handleTestWithdraw(
             );
 
     if (!participant) {
-        const existingParticipant =
+        const current =
             await participantDatabase
                 .getParticipant(
                     interaction.guildId,
@@ -753,310 +420,150 @@ async function handleTestWithdraw(
                     interaction.user.id
                 );
 
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '🧪 Test Withdrawal Unavailable',
-                    [
-                        existingParticipant
-                            ? 'Your participant record cannot currently be withdrawn.'
-                            : 'No participant record exists for this Rank Trial.',
-                        '',
-                        `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
-                        `📋 Current Status: \`${existingParticipant?.status ?? 'NONE'}\``
-                    ].join('\n')
-                )
-            ],
+        return replyWarning(
+            interaction,
+            '🧪 Test Withdrawal Unavailable',
+            [
+                current
+                    ? 'This participant record cannot currently be withdrawn.'
+                    : 'No participant record exists.',
+                `🗓️ Cycle: \`${schedule.trialKey}\``,
+                `📋 Status: \`${current?.status ?? 'NONE'}\``
+            ].join('\n')
+        );
+    }
 
-            flags:
-                MessageFlags.Ephemeral
-        });
+    return replySuccess(
+        interaction,
+        '🧪 Test Withdrawal Completed',
+        [
+            `🗓️ Cycle: \`${schedule.trialKey}\``,
+            `📋 Status: \`${participant.status}\``
+        ].join('\n')
+    );
+}async function validateReviewTarget(
+    interaction,
+    reviewData,
+    action
+) {
+    if (!isAdministrator(interaction)) {
+        await replyError(
+            interaction,
+            '❌ Review Access Denied',
+            `Only an Administrator may ${action} Rank Trial participants.`
+        );
 
+        return null;
+    }
+
+    if (
+        !isCurrentReviewCycle(
+            reviewData.trialKey
+        )
+    ) {
+        await replyWarning(
+            interaction,
+            '⚠️ Stale Review Panel',
+            [
+                'This review panel belongs to a different Rank Trial cycle.',
+                `🗓️ Cycle: \`${reviewData.trialKey}\``,
+                'Open a fresh `/ranktrials review` panel.'
+            ].join('\n')
+        );
+
+        return null;
+    }
+
+    const participant =
+        await participantDatabase
+            .getParticipant(
+                interaction.guildId,
+                reviewData.trialKey,
+                reviewData.userId
+            );
+
+    if (
+        !participant ||
+        ![
+            'REGISTERED',
+            'UNDER_REVIEW'
+        ].includes(participant.status)
+    ) {
+        await replyWarning(
+            interaction,
+            action === 'approve'
+                ? '⚠️ Approval Unavailable'
+                : '⚠️ Rejection Unavailable',
+            [
+                `This participant cannot currently be ${action}d.`,
+                `👤 Member: <@${reviewData.userId}>`,
+                `📋 Status: \`${participant?.status ?? 'NOT_FOUND'}\``
+            ].join('\n')
+        );
+
+        return null;
+    }
+
+    return participant;
+}
+
+async function handleReviewDecisionButton(
+    interaction,
+    reviewData,
+    action
+) {
+    const participant =
+        await validateReviewTarget(
+            interaction,
+            reviewData,
+            action
+        );
+
+    if (!participant) {
         return;
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                '🧪 Test Withdrawal Completed',
-                [
-                    'Rank Trials 2.0 withdrawal test completed successfully.',
-                    '',
-                    `🗓️ Trial Cycle: \`${schedule.trialKey}\``,
-                    `📋 Database Status: \`${participant.status}\``,
-                    '',
-                    '💾 The PostgreSQL participant record was updated successfully.',
-                    'Use **Test Register** again to verify registration restoration.'
-                ].join('\n')
-            )
-        ],
+    await interaction.showModal(
+        buildReviewReasonModal(
+            action,
+            reviewData.trialKey,
+            reviewData.userId
+        )
+    );
+}
 
-        flags:
-            MessageFlags.Ephemeral
-    });
-}/**
- * Handle Staff Review Approve button.
- *
- * This does not approve immediately.
- * It opens a Modal so Staff can provide
- * a real review reason first.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {{
- *     trialKey: string,
- *     userId: string
- * }} reviewData
- * @returns {Promise<void>}
- */
 async function handleReviewApproveButton(
     interaction,
     reviewData
 ) {
-    if (
-        !hasAdministratorPermission(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Review Access Denied',
-                    'Only an Administrator may approve Rank Trial participants.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    if (
-        !isCurrentReviewCycle(
-            reviewData.trialKey
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Stale Review Panel',
-                    [
-                        'This Staff Review panel belongs to an older or different Rank Trial cycle.',
-                        '',
-                        `**Panel Cycle:** \`${reviewData.trialKey}\``,
-                        '',
-                        'Open a fresh `/ranktrials review` panel before continuing.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    const participant =
-        await participantDatabase
-            .getParticipant(
-                interaction.guildId,
-                reviewData.trialKey,
-                reviewData.userId
-            );
-
-    if (
-        !participant ||
-        (
-            participant.status !==
-                'REGISTERED' &&
-            participant.status !==
-                'UNDER_REVIEW'
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Approval Unavailable',
-                    [
-                        'This participant cannot currently be approved.',
-                        '',
-                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                        `**Soul:** <@${reviewData.userId}>`,
-                        `**Current Status:** \`${participant?.status ?? 'NOT_FOUND'}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    const modal =
-        buildReviewReasonModal(
-            'approve',
-            reviewData.trialKey,
-            reviewData.userId
-        );
-
-    await interaction.showModal(
-        modal
+    return handleReviewDecisionButton(
+        interaction,
+        reviewData,
+        'approve'
     );
 }
 
-/**
- * Handle Staff Review Reject button.
- *
- * This opens a reason Modal before the
- * participant is rejected.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {{
- *     trialKey: string,
- *     userId: string
- * }} reviewData
- * @returns {Promise<void>}
- */
 async function handleReviewRejectButton(
     interaction,
     reviewData
 ) {
-    if (
-        !hasAdministratorPermission(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Review Access Denied',
-                    'Only an Administrator may reject Rank Trial participants.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    if (
-        !isCurrentReviewCycle(
-            reviewData.trialKey
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Stale Review Panel',
-                    [
-                        'This Staff Review panel belongs to an older or different Rank Trial cycle.',
-                        '',
-                        `**Panel Cycle:** \`${reviewData.trialKey}\``,
-                        '',
-                        'Open a fresh `/ranktrials review` panel before continuing.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    const participant =
-        await participantDatabase
-            .getParticipant(
-                interaction.guildId,
-                reviewData.trialKey,
-                reviewData.userId
-            );
-
-    if (
-        !participant ||
-        (
-            participant.status !==
-                'REGISTERED' &&
-            participant.status !==
-                'UNDER_REVIEW'
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Rejection Unavailable',
-                    [
-                        'This participant cannot currently be rejected.',
-                        '',
-                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                        `**Soul:** <@${reviewData.userId}>`,
-                        `**Current Status:** \`${participant?.status ?? 'NOT_FOUND'}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    const modal =
-        buildReviewReasonModal(
-            'reject',
-            reviewData.trialKey,
-            reviewData.userId
-        );
-
-    await interaction.showModal(
-        modal
+    return handleReviewDecisionButton(
+        interaction,
+        reviewData,
+        'reject'
     );
 }
 
-/**
- * Reopen one completed Staff Review.
- *
- * APPROVED / REJECTED
- *          ↓
- * UNDER_REVIEW
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {{
- *     trialKey: string,
- *     userId: string
- * }} reviewData
- * @returns {Promise<void>}
- */
 async function handleReviewReopen(
     interaction,
     reviewData
 ) {
-    if (
-        !hasAdministratorPermission(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Review Access Denied',
-                    'Only an Administrator may reopen a Rank Trial review.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (!isAdministrator(interaction)) {
+        return replyError(
+            interaction,
+            '❌ Review Access Denied',
+            'Only an Administrator may reopen a Rank Trial review.'
+        );
     }
 
     if (
@@ -1064,23 +571,14 @@ async function handleReviewReopen(
             reviewData.trialKey
         )
     ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Stale Review Panel',
-                    [
-                        'This Staff Review panel belongs to an older or different Rank Trial cycle.',
-                        '',
-                        `**Panel Cycle:** \`${reviewData.trialKey}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+        return replyWarning(
+            interaction,
+            '⚠️ Stale Review Panel',
+            [
+                'This review panel belongs to a different Rank Trial cycle.',
+                `🗓️ Cycle: \`${reviewData.trialKey}\``
+            ].join('\n')
+        );
     }
 
     const participant =
@@ -1092,7 +590,7 @@ async function handleReviewReopen(
             );
 
     if (!participant) {
-        const currentParticipant =
+        const current =
             await participantDatabase
                 .getParticipant(
                     interaction.guildId,
@@ -1100,83 +598,116 @@ async function handleReviewReopen(
                     reviewData.userId
                 );
 
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Review Cannot Be Reopened',
-                    [
-                        'Umbra could not reopen this Staff Review.',
-                        '',
-                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                        `**Soul:** <@${reviewData.userId}>`,
-                        `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``,
-                        `**Already Promoted:** \`${currentParticipant?.promotedAt ? 'YES' : 'NO'}\``
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+        return replyWarning(
+            interaction,
+            '⚠️ Review Cannot Be Reopened',
+            [
+                'Evelynn could not reopen this Staff Review.',
+                `👤 Member: <@${reviewData.userId}>`,
+                `📋 Status: \`${current?.status ?? 'NOT_FOUND'}\``,
+                `⬆️ Promoted: \`${current?.promotedAt ? 'YES' : 'NO'}\``
+            ].join('\n')
+        );
     }
 
-    await interaction.reply({
-        embeds: [
-            createSuccessEmbed(
-                '🔄 Staff Review Reopened',
-                [
-                    `<@${reviewData.userId}> has been returned to Staff Review.`,
-                    '',
-                    `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                    `**Status:** \`${participant.status}\``,
-                    '',
-                    'Open `/ranktrials review` again to make a new decision.'
-                ].join('\n')
-            )
-        ],
+    return replySuccess(
+        interaction,
+        '🔄 Staff Review Reopened',
+        [
+            `<@${reviewData.userId}> returned to Staff Review.`,
+            `🗓️ Cycle: \`${reviewData.trialKey}\``,
+            `📋 Status: \`${participant.status}\``
+        ].join('\n')
+    );
+}async function applyReviewDecision(
+    interaction,
+    reviewData,
+    reviewReason
+) {
+    const approving =
+        reviewData.action === 'approve';
 
-        flags:
-            MessageFlags.Ephemeral
-    });
-}/**
- * Handle one submitted Staff Review Modal.
- *
- * The submitted reason is stored permanently
- * in PostgreSQL together with reviewer identity
- * and review timestamp.
- *
- * @param {import('discord.js').ModalSubmitInteraction} interaction
- * @param {{
- *     action: 'approve'|'reject',
- *     trialKey: string,
- *     userId: string
- * }} reviewData
- * @returns {Promise<void>}
- */
+    const method =
+        approving
+            ? 'approveParticipant'
+            : 'rejectParticipant';
+
+    const participant =
+        await participantDatabase[method]({
+            guildId: interaction.guildId,
+            trialKey: reviewData.trialKey,
+            userId: reviewData.userId,
+            reviewedBy: interaction.user.id,
+            reviewReason
+        });
+
+    if (!participant) {
+        const current =
+            await participantDatabase
+                .getParticipant(
+                    interaction.guildId,
+                    reviewData.trialKey,
+                    reviewData.userId
+                );
+
+        return replyWarning(
+            interaction,
+            approving
+                ? '⚠️ Approval Unavailable'
+                : '⚠️ Rejection Unavailable',
+            [
+                `Evelynn could not ${reviewData.action} this participant from the current state.`,
+                `👤 Member: <@${reviewData.userId}>`,
+                `📋 Status: \`${current?.status ?? 'NOT_FOUND'}\``
+            ].join('\n')
+        );
+    }
+
+    const details = [
+        `<@${reviewData.userId}> ${
+            approving
+                ? 'passed'
+                : 'did not pass'
+        } Staff Review.`,
+        `🗓️ Cycle: \`${reviewData.trialKey}\``,
+        `📋 Status: \`${participant.status}\``,
+        `👤 Reviewed By: <@${interaction.user.id}>`
+    ];
+
+    if (approving) {
+        details.splice(
+            3,
+            0,
+            `📖 Previous Rank: \`${participant.previousRank ?? 'Unranked'}\``,
+            `⬆️ New Rank: \`${participant.newRank ?? 'Not selected yet'}\``
+        );
+    }
+
+    details.push(
+        '',
+        '**Review Reason**',
+        reviewReason
+    );
+
+    return replySuccess(
+        interaction,
+        approving
+            ? '✅ Participant Approved'
+            : '❌ Participant Rejected',
+        details.join('\n')
+    );
+}
+
 async function handleReviewModalSubmit(
     interaction,
     reviewData
 ) {
-    if (
-        !hasAdministratorPermission(
-            interaction
-        )
-    ) {
-        await interaction.reply({
-            embeds: [
-                createErrorEmbed(
-                    '❌ Review Access Denied',
-                    'Only an Administrator may complete a Rank Trial Staff Review.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (!isAdministrator(interaction)) {
+        return replyError(
+            interaction,
+            '❌ Review Access Denied',
+            'Only an Administrator may complete a Rank Trial Staff Review.'
+        );
     }
 
     if (
@@ -1184,25 +715,15 @@ async function handleReviewModalSubmit(
             reviewData.trialKey
         )
     ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Stale Review Modal',
-                    [
-                        'This Staff Review form belongs to an older or different Rank Trial cycle.',
-                        '',
-                        `**Panel Cycle:** \`${reviewData.trialKey}\``,
-                        '',
-                        'Open a fresh `/ranktrials review` panel before continuing.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+        return replyWarning(
+            interaction,
+            '⚠️ Stale Review Modal',
+            [
+                'This review form belongs to a different Rank Trial cycle.',
+                `🗓️ Cycle: \`${reviewData.trialKey}\``,
+                'Open a fresh `/ranktrials review` panel.'
+            ].join('\n')
+        );
     }
 
     const reviewReason =
@@ -1212,263 +733,80 @@ async function handleReviewModalSubmit(
             )
             .trim();
 
-    if (
-        reviewReason.length <
-        3
-    ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '⚠️ Review Reason Required',
-                    'Please provide a valid Staff Review reason.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+    if (reviewReason.length < 3) {
+        return replyWarning(
+            interaction,
+            '⚠️ Review Reason Required',
+            'Please provide a valid Staff Review reason.'
+        );
     }
 
     if (
-        reviewData.action ===
-        'approve'
+        ![
+            'approve',
+            'reject'
+        ].includes(
+            reviewData.action
+        )
     ) {
-        const participant =
-            await participantDatabase
-                .approveParticipant({
-                    guildId:
-                        interaction.guildId,
-
-                    trialKey:
-                        reviewData.trialKey,
-
-                    userId:
-                        reviewData.userId,
-
-                    reviewedBy:
-                        interaction.user.id,
-
-                    reviewReason
-                });
-
-        if (!participant) {
-            const currentParticipant =
-                await participantDatabase
-                    .getParticipant(
-                        interaction.guildId,
-                        reviewData.trialKey,
-                        reviewData.userId
-                    );
-
-            await interaction.reply({
-                embeds: [
-                    createWarningEmbed(
-                        '⚠️ Approval Unavailable',
-                        [
-                            'Umbra could not approve this participant from the current state.',
-                            '',
-                            `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                            `**Soul:** <@${reviewData.userId}>`,
-                            `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
-                        ].join('\n')
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
-
-            return;
-        }
-
-        await interaction.reply({
-            embeds: [
-                createSuccessEmbed(
-                    '✅ Rank Trial Participant Approved',
-                    [
-                        `<@${reviewData.userId}> has passed Staff Review.`,
-                        '',
-                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                        `**Status:** \`${participant.status}\``,
-                        `**Previous Rank:** \`${participant.previousRank ?? 'Unranked'}\``,
-                        `**New Rank:** \`${participant.newRank ?? 'Not selected yet'}\``,
-                        `**Reviewed By:** <@${interaction.user.id}>`,
-                        '',
-                        '**Review Reason**',
-                        reviewReason,
-                        '',
-                        'The participant is now ready for the promotion decision stage.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+        return replyError(
+            interaction,
+            '❌ Unknown Review Decision',
+            'Evelynn could not identify this Staff Review decision.'
+        );
     }
 
-    if (
-        reviewData.action ===
-        'reject'
-    ) {
-        const participant =
-            await participantDatabase
-                .rejectParticipant({
-                    guildId:
-                        interaction.guildId,
-
-                    trialKey:
-                        reviewData.trialKey,
-
-                    userId:
-                        reviewData.userId,
-
-                    reviewedBy:
-                        interaction.user.id,
-
-                    reviewReason
-                });
-
-        if (!participant) {
-            const currentParticipant =
-                await participantDatabase
-                    .getParticipant(
-                        interaction.guildId,
-                        reviewData.trialKey,
-                        reviewData.userId
-                    );
-
-            await interaction.reply({
-                embeds: [
-                    createWarningEmbed(
-                        '⚠️ Rejection Unavailable',
-                        [
-                            'Umbra could not reject this participant from the current state.',
-                            '',
-                            `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                            `**Soul:** <@${reviewData.userId}>`,
-                            `**Current Status:** \`${currentParticipant?.status ?? 'NOT_FOUND'}\``
-                        ].join('\n')
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
-
-            return;
-        }
-
-        await interaction.reply({
-            embeds: [
-                createSuccessEmbed(
-                    '❌ Rank Trial Participant Rejected',
-                    [
-                        `<@${reviewData.userId}> did not pass Staff Review.`,
-                        '',
-                        `**Trial Cycle:** \`${reviewData.trialKey}\``,
-                        `**Status:** \`${participant.status}\``,
-                        `**Reviewed By:** <@${interaction.user.id}>`,
-                        '',
-                        '**Review Reason**',
-                        reviewReason,
-                        '',
-                        'The decision was saved permanently in PostgreSQL.'
-                    ].join('\n')
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
-    }
-
-    await interaction.reply({
-        embeds: [
-            createErrorEmbed(
-                '❌ Unknown Review Decision',
-                'Umbra could not identify this Staff Review decision.'
-            )
-        ],
-
-        flags:
-            MessageFlags.Ephemeral
-    });
-}
-
-/**
- * Route one Staff Review button.
- *
- * Approve / Reject open a Modal.
- * Reopen executes immediately.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @param {{
- *     action: 'approve'|'reject'|'reopen',
- *     trialKey: string,
- *     userId: string
- * }} reviewData
- * @returns {Promise<void>}
- */
-async function handleStaffReviewButton(
+    return applyReviewDecision(
+        interaction,
+        reviewData,
+        reviewReason
+    );
+}async function handleStaffReviewButton(
     interaction,
     reviewData
 ) {
-    switch (
-        reviewData.action
-    ) {
-        case 'approve':
-            await handleReviewApproveButton(
-                interaction,
-                reviewData
-            );
+    const handlers = {
+        approve:
+            handleReviewApproveButton,
 
-            return;
+        reject:
+            handleReviewRejectButton,
 
-        case 'reject':
-            await handleReviewRejectButton(
-                interaction,
-                reviewData
-            );
+        reopen:
+            handleReviewReopen
+    };
 
-            return;
+    const handler =
+        handlers[reviewData.action];
 
-        case 'reopen':
-            await handleReviewReopen(
-                interaction,
-                reviewData
-            );
-
-            return;
-
-        default:
-            await interaction.reply({
-                embeds: [
-                    createErrorEmbed(
-                        '❌ Unknown Review Action',
-                        'Umbra could not identify this Staff Review action.'
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
+    if (!handler) {
+        return replyError(
+            interaction,
+            '❌ Unknown Review Action',
+            'Evelynn could not identify this Staff Review action.'
+        );
     }
+
+    return handler(
+        interaction,
+        reviewData
+    );
 }
 
-/**
- * Route one Rank Trials button
- * interaction to the correct handler.
- *
- * @param {import('discord.js').ButtonInteraction} interaction
- * @returns {Promise<void>}
- */
+const RANK_TRIAL_BUTTON_HANDLERS = {
+    [RANK_TRIAL_COMPONENT_IDS.register]:
+        handleRegister,
+
+    [RANK_TRIAL_COMPONENT_IDS.withdraw]:
+        handleWithdraw,
+
+    [RANK_TRIAL_COMPONENT_IDS.testRegister]:
+        handleTestRegister,
+
+    [RANK_TRIAL_COMPONENT_IDS.testWithdraw]:
+        handleTestWithdraw
+};
+
 async function handleRankTrialButton(
     interaction
 ) {
@@ -1483,148 +821,100 @@ async function handleRankTrialButton(
             );
 
         if (!reviewData) {
-            await interaction.reply({
-                embeds: [
-                    createErrorEmbed(
-                        '❌ Invalid Review Control',
-                        'Umbra could not validate this Staff Review control.'
-                    )
-                ],
-
-                flags:
-                    MessageFlags.Ephemeral
-            });
-
-            return;
+            return replyError(
+                interaction,
+                '❌ Invalid Review Control',
+                'Evelynn could not validate this Staff Review control.'
+            );
         }
 
-        await handleStaffReviewButton(
+        return handleStaffReviewButton(
             interaction,
             reviewData
         );
-
-        return;
-    }
-
-    if (
-        interaction.customId ===
-        RANK_TRIAL_COMPONENT_IDS.register
-    ) {
-        await handleRegister(
-            interaction
-        );
-
-        return;
-    }
-
-    if (
-        interaction.customId ===
-        RANK_TRIAL_COMPONENT_IDS.withdraw
-    ) {
-        await handleWithdraw(
-            interaction
-        );
-
-        return;
-    }
-
-    if (
-        interaction.customId ===
-        RANK_TRIAL_COMPONENT_IDS.testRegister
-    ) {
-        await handleTestRegister(
-            interaction
-        );
-
-        return;
-    }
-
-    if (
-        interaction.customId ===
-        RANK_TRIAL_COMPONENT_IDS.testWithdraw
-    ) {
-        await handleTestWithdraw(
-            interaction
-        );
-
-        return;
     }
 
     if (
         interaction.customId ===
         RANK_TRIAL_COMPONENT_IDS.closed
     ) {
-        await interaction.reply({
-            embeds: [
-                createWarningEmbed(
-                    '🔒 Registration Closed',
-                    'Rank Trial registration is already closed.'
-                )
-            ],
-
-            flags:
-                MessageFlags.Ephemeral
-        });
-
-        return;
+        return replyWarning(
+            interaction,
+            '🔒 Registration Closed',
+            'Rank Trial registration is already closed.'
+        );
     }
 
-    await interaction.reply({
-        embeds: [
-            createErrorEmbed(
-                '❌ Unknown Rank Trial Action',
-                'Umbra could not identify this Rank Trial action.'
-            )
-        ],
+    const handler =
+        RANK_TRIAL_BUTTON_HANDLERS[
+            interaction.customId
+        ];
 
-        flags:
-            MessageFlags.Ephemeral
-    });
-}module.exports = {
-    name:
-        Events.InteractionCreate,
+    if (!handler) {
+        return replyError(
+            interaction,
+            '❌ Unknown Rank Trial Action',
+            'Evelynn could not identify this Rank Trial action.'
+        );
+    }
 
-    once:
-        false,
-
-    /**
-     * Handle Rank Trials 2.1 interactions.
-     *
-     * Supported interaction types:
-     *
-     * - Registration buttons
-     * - Test registration buttons
-     * - Staff Review buttons
-     * - Staff Review Modal submissions
-     *
-     * @param {import('discord.js').Interaction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(
+    return handler(
         interaction
-    ) {
-        const isRankTrialButton =
+    );
+}
+
+async function sendInteractionError(
+    interaction,
+    embed
+) {
+    if (interaction.deferred) {
+        return interaction
+            .editReply({
+                embeds: [embed],
+                components: []
+            })
+            .catch(() => null);
+    }
+
+    if (interaction.replied) {
+        return interaction
+            .followUp({
+                embeds: [embed],
+                flags: MessageFlags.Ephemeral
+            })
+            .catch(() => null);
+    }
+
+    return interaction
+        .reply({
+            embeds: [embed],
+            flags: MessageFlags.Ephemeral
+        })
+        .catch(() => null);
+}
+
+module.exports = {
+    name: Events.InteractionCreate,
+    once: false,
+
+    async execute(interaction) {
+        const isButton =
             interaction.isButton() &&
             interaction.customId.startsWith(
                 'umbra:ranktrial:'
             );
 
-        const isRankTrialModal =
+        const isModal =
             interaction.isModalSubmit() &&
             interaction.customId.startsWith(
                 `${REVIEW_MODAL_PREFIX}:`
             );
 
-        if (
-            !isRankTrialButton &&
-            !isRankTrialModal
-        ) {
+        if (!isButton && !isModal) {
             return;
         }
 
-        if (
-            !interaction.inGuild()
-        ) {
+        if (!interaction.inGuild()) {
             return;
         }
 
@@ -1633,10 +923,6 @@ async function handleRankTrialButton(
                 interaction.id
             )
         ) {
-            console.warn(
-                `⚠️ Duplicate Rank Trial interaction ignored: ${interaction.id}`
-            );
-
             return;
         }
 
@@ -1645,133 +931,48 @@ async function handleRankTrialButton(
         );
 
         try {
-            /*
-             * Staff Review Modal submission.
-             */
-            if (
-                isRankTrialModal
-            ) {
+            if (isModal) {
                 const reviewData =
                     parseReviewModalCustomId(
                         interaction.customId
                     );
 
                 if (!reviewData) {
-                    await interaction.reply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Invalid Review Form',
-                                'Umbra could not validate this Staff Review form.'
-                            )
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    });
-
-                    return;
+                    return replyError(
+                        interaction,
+                        '❌ Invalid Review Form',
+                        'Evelynn could not validate this Staff Review form.'
+                    );
                 }
 
-                await handleReviewModalSubmit(
+                return handleReviewModalSubmit(
                     interaction,
                     reviewData
                 );
-
-                return;
             }
 
-            /*
-             * Rank Trial button interaction.
-             */
-            await handleRankTrialButton(
+            return handleRankTrialButton(
                 interaction
             );
         } catch (error) {
             console.error(
-                '======================================'
-            );
-
-            console.error(
-                '❌ Umbra Rank Trial interaction error:'
-            );
-
-            console.error(
+                '❌ Evelynn Rank Trial failed:',
                 error
             );
 
-            console.error(
-                '======================================'
-            );
-
-            const errorEmbed =
+            await sendInteractionError(
+                interaction,
                 createErrorEmbed(
                     '❌ Rank Trial Action Failed',
-                    [
-                        'Umbra could not complete this Rank Trial action.',
-                        '',
-                        'Please try again in a moment.'
-                    ].join('\n')
-                );
-
-            if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        embeds:
-                            [errorEmbed],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds:
-                            [errorEmbed],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds:
-                        [errorEmbed],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+                    'Evelynn could not complete this Rank Trial action.'
+                )
+            );
         } finally {
-            /*
-             * Keep interaction IDs locked briefly
-             * so accidental duplicate delivery
-             * cannot repeat the same database action.
-             */
             setTimeout(
-                () => {
+                () =>
                     processingInteractions.delete(
                         interaction.id
-                    );
-                },
+                    ),
                 15_000
             );
         }

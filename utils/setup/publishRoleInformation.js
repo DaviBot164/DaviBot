@@ -11,9 +11,11 @@ const {
 const setupChannels =
     require('../../config/setupChannels');
 
+const ROLE_EMBED_COLOR =
+    '#B026FF';
+
 /**
- * Get and validate the
- * THE Ⅹ SINS information channel.
+ * Get the role information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,7 +23,7 @@ const setupChannels =
 async function getRoleInformationChannel(
     interaction
 ) {
-    const informationChannel =
+    const channel =
         await interaction.guild.channels
             .fetch(
                 setupChannels
@@ -32,8 +34,9 @@ async function getRoleInformationChannel(
             );
 
     if (
-        !informationChannel ||
-        !informationChannel.isTextBased()
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -57,8 +60,8 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Bot Unavailable',
-                    'The bot could not access its server member record.'
+                    '❌ Evelynn Unavailable',
+                    'Evelynn could not access her server member record.'
                 )
             ],
 
@@ -69,13 +72,13 @@ async function getRoleInformationChannel(
         return null;
     }
 
-    const channelPermissions =
-        informationChannel.permissionsFor(
+    const permissions =
+        channel.permissionsFor(
             botMember
         );
 
     if (
-        !channelPermissions?.has([
+        !permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.EmbedLinks
@@ -86,7 +89,7 @@ async function getRoleInformationChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Cannot publish role information in ${informationChannel}.`,
+                        `Evelynn cannot publish role information in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -103,7 +106,7 @@ async function getRoleInformationChannel(
         return null;
     }
 
-    return informationChannel;
+    return channel;
 }
 
 /**
@@ -116,14 +119,34 @@ async function getRoleInformationChannel(
 async function publishRoleInformation(
     interaction
 ) {
-    const informationChannel =
+    const channel =
         await getRoleInformationChannel(
             interaction
         );
 
-    if (!informationChannel) {
+    if (!channel) {
         return;
     }
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const roleEmbed =
         createEmbed({
@@ -138,7 +161,7 @@ async function publishRoleInformation(
                 ].join('\n'),
 
             color:
-                '#5B3A78',
+                ROLE_EMBED_COLOR,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -148,14 +171,7 @@ async function publishRoleInformation(
                     forceStatic:
                         false
                 }) ??
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
+                botAvatar,
 
             fields: [
                 {
@@ -164,17 +180,10 @@ async function publishRoleInformation(
 
                     value:
                         [
-                            '**♛・SOVEREIGN**',
-                            'Highest server authority.',
-                            '',
-                            '**⚜️・HEAD CAPTAIN**',
-                            'Senior leadership.',
-                            '',
-                            '**🛡️・CAPTAIN**',
-                            'Administration and server management.',
-                            '',
-                            '**⚔️・LIEUTENANT**',
-                            'Moderation and member support.',
+                            '**♛・SOVEREIGN** — Highest authority',
+                            '**⚜️・HEAD CAPTAIN** — Senior leadership',
+                            '**🛡️・CAPTAIN** — Administration',
+                            '**⚔️・LIEUTENANT** — Moderation',
                             '',
                             '-# Only Staff roles grant moderation authority.'
                         ].join('\n'),
@@ -208,100 +217,72 @@ async function publishRoleInformation(
 
                     value:
                         [
-                            '**Beyond the Ten.**',
+                            '**The throne above the Ten.**',
                             '',
-                            'Dominion stands outside the standard Sin ranking.',
+                            'A singular position of supreme standing within the hierarchy.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '◆・PROGRESSION',
+
+                    value:
+                        [
+                            '**🕯️・SIN HEIR**',
+                            '**⚔️・SINBOUND**',
+                            '**🗡️・ASCENDANT**',
+                            '**◇・UNRANKED**',
+                            '**⛓️・OATHBOUND**',
+                            '**♜・WARLORD**',
+                            '**🐺・REAVER**',
+                            '**⚔️・VANGUARD**',
+                            '**🛡️・LEGIONARY**',
+                            '**◆・INITIATE**',
                             '',
-                            '-# The Ten are ranked. Dominion is not.'
+                            '-# Progression reflects activity and advancement.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '✦・VERIFICATION',
+
+                    value:
+                        [
+                            '**✦・SWORN** — Verified',
+                            '**◇・UNSWORN** — Awaiting verification'
                         ].join('\n'),
 
                     inline:
                         false
                 }
-            ]
-        });    roleEmbed.addFields(
-        {
-            name:
-                '◆・PROGRESSION',
+            ],
 
-            value:
-                [
-                    '**🕯️・SIN HEIR**',
-                    '**⚔️・SINBOUND**',
-                    '**🗡️・ASCENDANT**',
-                    '**◇・UNRANKED**',
-                    '**⛓️・OATHBOUND**',
-                    '**♜・WARLORD**',
-                    '**🐺・REAVER**',
-                    '**⚔️・VANGUARD**',
-                    '**🛡️・LEGIONARY**',
-                    '**◆・INITIATE**',
-                    '',
-                    '-# Progression reflects activity and advancement, not Staff authority.'
-                ].join('\n'),
+            author: {
+                name:
+                    'Evelynn • THE Ⅹ SINS',
 
-            inline:
-                false
-        },
+                iconURL:
+                    botAvatar
+            },
 
-        {
-            name:
-                '✦・VERIFICATION',
+            footer: {
+                text:
+                    'TTS • Role Hierarchy',
 
-            value:
-                [
-                    '**✦・SWORN**',
-                    'Verified member.',
-                    '',
-                    '**◇・UNSWORN**',
-                    'Awaiting verification.'
-                ].join('\n'),
+                iconURL:
+                    guildIcon
+            }
+        });
 
-            inline:
-                false
-        }
-    );
-
-    roleEmbed.setAuthor({
-        name:
-            'THE Ⅹ SINS',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    roleEmbed.setFooter({
-        text:
-            'TTS • Role Hierarchy',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    roleEmbed.setTimestamp();
-
-    await informationChannel.send({
+    await channel.send({
         embeds: [
             roleEmbed
         ],
@@ -316,7 +297,7 @@ async function publishRoleInformation(
         embeds: [
             createSuccessEmbed(
                 '✅ Role Information Published',
-                `Role information was published in ${informationChannel}.`
+                `Role information was published in ${channel}.`
             )
         ],
 
@@ -325,30 +306,11 @@ async function publishRoleInformation(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        'Ⅹ Role Information Published'
-    );
-
-    console.log(
-        `📍 Channel: ${informationChannel.name}`
-    );
-
-    console.log(
-        `🛡️ Published By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        '======================================'
+        `Ⅹ Role hierarchy published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
+    ROLE_EMBED_COLOR,
     publishRoleInformation
 };

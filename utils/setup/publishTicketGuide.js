@@ -11,9 +11,11 @@ const {
 const TICKET_GUIDE_CHANNEL_ID =
     '1530989678553989261';
 
+const SUPPORT_EMBED_COLOR =
+    '#B026FF';
+
 /**
- * Get and validate the
- * THE Ⅹ SINS support channel.
+ * Get the support channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,7 +23,7 @@ const TICKET_GUIDE_CHANNEL_ID =
 async function getTicketGuideChannel(
     interaction
 ) {
-    const ticketGuideChannel =
+    const channel =
         await interaction.guild.channels
             .fetch(
                 TICKET_GUIDE_CHANNEL_ID
@@ -31,8 +33,9 @@ async function getTicketGuideChannel(
             );
 
     if (
-        !ticketGuideChannel ||
-        !ticketGuideChannel.isTextBased()
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -69,7 +72,7 @@ async function getTicketGuideChannel(
     }
 
     const permissions =
-        ticketGuideChannel.permissionsFor(
+        channel.permissionsFor(
             botMember
         );
 
@@ -85,7 +88,7 @@ async function getTicketGuideChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish support information in ${ticketGuideChannel}.`,
+                        `Evelynn cannot publish support information in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -102,12 +105,12 @@ async function getTicketGuideChannel(
         return null;
     }
 
-    return ticketGuideChannel;
+    return channel;
 }
 
 /**
- * Publish the official
- * THE Ⅹ SINS support guide.
+ * Publish the THE Ⅹ SINS
+ * support guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -115,14 +118,34 @@ async function getTicketGuideChannel(
 async function publishTicketGuide(
     interaction
 ) {
-    const ticketGuideChannel =
+    const channel =
         await getTicketGuideChannel(
             interaction
         );
 
-    if (!ticketGuideChannel) {
+    if (!channel) {
         return;
     }
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const guideEmbed =
         createEmbed({
@@ -130,24 +153,13 @@ async function publishTicketGuide(
                 'Ⅹ・SUPPORT',
 
             description:
-                [
-                    '**Private help when you need it.**',
-                    '',
-                    'Use the Ticket System for matters that require Staff assistance.'
-                ].join('\n'),
+                '**Private help when you need it.**',
 
             color:
-                '#5B3A78',
+                SUPPORT_EMBED_COLOR,
 
             thumbnail:
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
+                botAvatar,
 
             fields: [
                 {
@@ -156,8 +168,6 @@ async function publishTicketGuide(
 
                     value:
                         [
-                            'Open a ticket for:',
-                            '',
                             '• Member reports',
                             '• Moderation appeals',
                             '• Verification issues',
@@ -178,11 +188,8 @@ async function publishTicketGuide(
                         [
                             '• Spam or jokes',
                             '• General conversation',
-                            '• Repeated requests',
                             '• Promotion requests',
-                            '• Questions already answered in the FAQ',
-                            '',
-                            '-# Misuse of the Ticket System may result in moderation.'
+                            '• Questions already answered in the FAQ'
                         ].join('\n'),
 
                     inline:
@@ -195,114 +202,76 @@ async function publishTicketGuide(
 
                     value:
                         [
-                            'Explain what happened and include:',
-                            '',
-                            '• Correct usernames',
-                            '• Relevant details',
-                            '• Screenshots or evidence when available',
+                            'Explain the issue clearly.',
+                            'Include usernames, details and evidence when available.',
                             '',
                             '**Never falsify evidence.**'
                         ].join('\n'),
 
                     inline:
                         false
+                },
+
+                {
+                    name:
+                        '🔒・PRIVACY',
+
+                    value:
+                        [
+                            'Keep ticket discussions private.',
+                            'Never share passwords, login codes or unrelated personal information.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        '⏳・WHAT HAPPENS NEXT?',
+
+                    value:
+                        [
+                            '1. Explain the issue.',
+                            '2. Staff reviews it.',
+                            '3. More evidence may be requested.',
+                            '4. A decision or solution is provided.'
+                        ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅹ・OPEN A TICKET',
+
+                    value:
+                        'Use the **Open Ticket** button and keep only one active ticket unless Staff asks otherwise.',
+
+                    inline:
+                        false
                 }
-            ]
-        });    guideEmbed.addFields(
-        {
-            name:
-                '🔒・PRIVACY & SAFETY',
+            ],
 
-            value:
-                [
-                    'Keep ticket discussions private.',
-                    '',
-                    '• Never share passwords or login codes',
-                    '• Never send malicious files or links',
-                    '• Do not expose private personal information',
-                    '• Share only evidence relevant to the case'
-                ].join('\n'),
+            author: {
+                name:
+                    'Evelynn • THE Ⅹ SINS',
 
-            inline:
-                false
-        },
+                iconURL:
+                    botAvatar
+            },
 
-        {
-            name:
-                '⏳・WHAT HAPPENS NEXT?',
+            footer: {
+                text:
+                    'TTS • Support',
 
-            value:
-                [
-                    'After opening a ticket:',
-                    '',
-                    '1. Explain the issue clearly.',
-                    '2. Staff reviews the information.',
-                    '3. Additional evidence may be requested.',
-                    '4. A decision or solution is provided.',
-                    '',
-                    '-# Response time depends on Staff availability.'
-                ].join('\n'),
+                iconURL:
+                    guildIcon
+            }
+        });
 
-            inline:
-                false
-        },
-
-        {
-            name:
-                'Ⅹ・OPEN A TICKET',
-
-            value:
-                [
-                    'Use the **Open Ticket** button on the support panel.',
-                    '',
-                    'Keep only one active ticket unless Staff asks you to open another.'
-                ].join('\n'),
-
-            inline:
-                false
-        }
-    );
-
-    guideEmbed.setAuthor({
-        name:
-            'Evelynn • THE Ⅹ SINS',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setFooter({
-        text:
-            'TTS • Support',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setTimestamp();
-
-    await ticketGuideChannel.send({
+    await channel.send({
         embeds: [
             guideEmbed
         ],
@@ -317,7 +286,7 @@ async function publishTicketGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Support Guide Published',
-                `The support guide was published in ${ticketGuideChannel}.`
+                `The support guide was published in ${channel}.`
             )
         ],
 
@@ -326,30 +295,12 @@ async function publishTicketGuide(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        'Ⅹ Support Guide Published'
-    );
-
-    console.log(
-        `📍 Channel: ${ticketGuideChannel.name}`
-    );
-
-    console.log(
-        `🛡️ Published By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        '======================================'
+        `Ⅹ Support guide published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
+    TICKET_GUIDE_CHANNEL_ID,
+    SUPPORT_EMBED_COLOR,
     publishTicketGuide
 };

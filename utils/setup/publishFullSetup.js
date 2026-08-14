@@ -28,8 +28,7 @@ const {
 } = require('./publishTicketGuide');
 
 /**
- * Wait briefly between setup publications
- * to keep the process stable.
+ * Wait between publications.
  *
  * @param {number} milliseconds
  * @returns {Promise<void>}
@@ -38,10 +37,13 @@ function wait(
     milliseconds
 ) {
     return new Promise(resolve => {
-        setTimeout(
-            resolve,
-            milliseconds
-        );
+        const timer =
+            setTimeout(
+                resolve,
+                milliseconds
+            );
+
+        timer.unref?.();
     });
 }
 
@@ -61,18 +63,14 @@ async function publishFullSetup(
                 createSuccessEmbed(
                     'Ⅹ Setup Started',
                     [
-                        'Evelynn is preparing the official **THE Ⅹ SINS** setup.',
+                        'Evelynn is publishing the official server information.',
                         '',
-                        'Publishing:',
-                        '',
-                        '✦ **Verification Guide**',
-                        'Ⅹ **Code of Sins**',
-                        '📖 **Sin Codex**',
-                        '♛ **Role Hierarchy**',
-                        '❓ **FAQ**',
-                        '🎫 **Support Guide**',
-                        '',
-                        'Each section will be published in sequence.'
+                        '✦ Verification Guide',
+                        '📜 Code of Sins',
+                        '📖 Sin Codex',
+                        '♛ Role Hierarchy',
+                        '❓ FAQ',
+                        '🎫 Support Guide'
                     ].join('\n')
                 )
             ],
@@ -82,23 +80,7 @@ async function publishFullSetup(
         });
 
         console.log(
-            '======================================'
-        );
-
-        console.log(
-            'Ⅹ THE Ⅹ SINS Full Setup Started'
-        );
-
-        console.log(
-            `🛡️ Started By: ${interaction.user.tag}`
-        );
-
-        console.log(
-            `🏰 Server: ${interaction.guild.name}`
-        );
-
-        console.log(
-            '======================================'
+            `Ⅹ Full setup started by ${interaction.user.tag}.`
         );
 
         await publishVerificationGuide(
@@ -150,16 +132,9 @@ async function publishFullSetup(
                 createSuccessEmbed(
                     '✅ Setup Complete',
                     [
-                        'All **THE Ⅹ SINS** setup sections were published successfully.',
+                        'All setup sections were published successfully.',
                         '',
-                        '✅ Verification Guide',
-                        '✅ Code of Sins',
-                        '✅ Sin Codex',
-                        '✅ Role Hierarchy',
-                        '✅ FAQ',
-                        '✅ Support Guide',
-                        '',
-                        '**The server information system is ready.**'
+                        '**THE Ⅹ SINS information system is ready.**'
                     ].join('\n')
                 )
             ],
@@ -169,30 +144,11 @@ async function publishFullSetup(
         });
 
         console.log(
-            '======================================'
-        );
-
-        console.log(
-            '✅ THE Ⅹ SINS Full Setup Completed'
-        );
-
-        console.log(
-            `🛡️ Completed By: ${interaction.user.tag}`
-        );
-
-        console.log(
-            `🏰 Server: ${interaction.guild.name}`
-        );
-
-        console.log(
-            '======================================'
+            `✅ Full setup completed by ${interaction.user.tag}.`
         );
     } catch (error) {
         console.error(
-            '❌ THE Ⅹ SINS full setup error:'
-        );
-
-        console.error(
+            '❌ Evelynn full setup error:',
             error
         );
 
@@ -204,8 +160,7 @@ async function publishFullSetup(
                         'Evelynn could not complete the full setup.',
                         '',
                         'Some sections may already have been published.',
-                        '',
-                        'Check channel IDs, permissions and Northflank logs.'
+                        'Check channel IDs, permissions and logs.'
                     ].join('\n')
                 )
             ],

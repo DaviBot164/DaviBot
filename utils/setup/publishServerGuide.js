@@ -11,9 +11,11 @@ const {
 const setupChannels =
     require('../../config/setupChannels');
 
+const GUIDE_EMBED_COLOR =
+    '#B026FF';
+
 /**
- * Get and validate the
- * THE Ⅹ SINS information channel.
+ * Get the server guide channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -21,7 +23,7 @@ const setupChannels =
 async function getServerGuideChannel(
     interaction
 ) {
-    const guideChannel =
+    const channel =
         await interaction.guild.channels
             .fetch(
                 setupChannels
@@ -32,8 +34,9 @@ async function getServerGuideChannel(
             );
 
     if (
-        !guideChannel ||
-        !guideChannel.isTextBased()
+        !channel ||
+        !channel.isTextBased() ||
+        channel.isThread()
     ) {
         await interaction.editReply({
             embeds: [
@@ -70,7 +73,7 @@ async function getServerGuideChannel(
     }
 
     const permissions =
-        guideChannel.permissionsFor(
+        channel.permissionsFor(
             botMember
         );
 
@@ -86,7 +89,7 @@ async function getServerGuideChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish the guide in ${guideChannel}.`,
+                        `Evelynn cannot publish the Sin Codex in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -103,7 +106,7 @@ async function getServerGuideChannel(
         return null;
     }
 
-    return guideChannel;
+    return channel;
 }
 
 /**
@@ -116,14 +119,34 @@ async function getServerGuideChannel(
 async function publishServerGuide(
     interaction
 ) {
-    const guideChannel =
+    const channel =
         await getServerGuideChannel(
             interaction
         );
 
-    if (!guideChannel) {
+    if (!channel) {
         return;
     }
+
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                128,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const guideEmbed =
         createEmbed({
@@ -134,11 +157,11 @@ async function publishServerGuide(
                 [
                     '**Your path begins here.**',
                     '',
-                    'Everything you need to enter, progress and take part in **THE Ⅹ SINS**.'
+                    'A quick guide to **THE Ⅹ SINS**.'
                 ].join('\n'),
 
             color:
-                '#5B3A78',
+                GUIDE_EMBED_COLOR,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -148,14 +171,7 @@ async function publishServerGuide(
                     forceStatic:
                         false
                 }) ??
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            512,
-
-                        forceStatic:
-                            false
-                    }),
+                botAvatar,
 
             fields: [
                 {
@@ -163,11 +179,7 @@ async function publishServerGuide(
                         'Ⅰ・READ THE CODE',
 
                     value:
-                        [
-                            'Read the **Code of Sins** before participating.',
-                            '',
-                            'Respect others, play fairly and follow Staff decisions.'
-                        ].join('\n'),
+                        'Read the **Code of Sins** and follow the server rules.',
 
                     inline:
                         false
@@ -179,7 +191,7 @@ async function publishServerGuide(
 
                     value:
                         [
-                            'Verify your Roblox account through **Bloxlink**.',
+                            'Verify through **Bloxlink**.',
                             '',
                             '**◇・UNSWORN** → **✦・SWORN**'
                         ].join('\n'),
@@ -193,110 +205,68 @@ async function publishServerGuide(
                         'Ⅲ・EXPLORE',
 
                     value:
+                        'Chat, find players and take part in community activities.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅳ・PROGRESS',
+
+                    value:
+                        'Earn Levels, Achievements, Titles and progression roles.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅴ・SUPPORT',
+
+                    value:
+                        'Use the Ticket System for reports, appeals or private assistance.',
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅹ・REMEMBER',
+
+                    value:
                         [
-                            'Once verified, the server opens to you.',
-                            '',
-                            'Chat, find players, share content and join community activities.'
+                            'Respect the Code.',
+                            'Earn your place.',
+                            'Make your name known.'
                         ].join('\n'),
 
                     inline:
                         false
                 }
-            ]
-        });    guideEmbed.addFields(
-        {
-            name:
-                'Ⅳ・PROGRESS',
+            ],
 
-            value:
-                [
-                    'Stay active and build your standing within **THE Ⅹ SINS**.',
-                    '',
-                    'Earn levels, achievements, titles and progression roles.',
-                    '',
-                    '-# Rank and Staff authority are separate systems.'
-                ].join('\n'),
+            author: {
+                name:
+                    'Evelynn • THE Ⅹ SINS',
 
-            inline:
-                false
-        },
+                iconURL:
+                    botAvatar
+            },
 
-        {
-            name:
-                'Ⅴ・SEEK SUPPORT',
+            footer: {
+                text:
+                    'TTS • Sin Codex',
 
-            value:
-                [
-                    'Use the Ticket System when private help is needed.',
-                    '',
-                    'Tickets may be used for:',
-                    '• Reports',
-                    '• Appeals',
-                    '• Server issues',
-                    '• Private evidence',
-                    '• Staff assistance'
-                ].join('\n'),
+                iconURL:
+                    guildIcon
+            }
+        });
 
-            inline:
-                false
-        },
-
-        {
-            name:
-                'Ⅹ・REMEMBER',
-
-            value:
-                [
-                    'Respect the Code.',
-                    'Earn your place.',
-                    'Make your name known.'
-                ].join('\n'),
-
-            inline:
-                false
-        }
-    );
-
-    guideEmbed.setAuthor({
-        name:
-            'Evelynn • THE Ⅹ SINS',
-
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        256,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setFooter({
-        text:
-            'TTS • Sin Codex',
-
-        iconURL:
-            interaction.guild.iconURL({
-                size:
-                    128,
-
-                forceStatic:
-                    false
-            }) ??
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
-
-    guideEmbed.setTimestamp();
-
-    await guideChannel.send({
+    await channel.send({
         embeds: [
             guideEmbed
         ],
@@ -311,7 +281,7 @@ async function publishServerGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Sin Codex Published',
-                `The Sin Codex was published in ${guideChannel}.`
+                `The Sin Codex was published in ${channel}.`
             )
         ],
 
@@ -320,30 +290,11 @@ async function publishServerGuide(
     });
 
     console.log(
-        '======================================'
-    );
-
-    console.log(
-        'Ⅹ Sin Codex Published'
-    );
-
-    console.log(
-        `📍 Channel: ${guideChannel.name}`
-    );
-
-    console.log(
-        `🛡️ Published By: ${interaction.user.tag}`
-    );
-
-    console.log(
-        `🏰 Server: ${interaction.guild.name}`
-    );
-
-    console.log(
-        '======================================'
+        `Ⅹ Sin Codex published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
+    GUIDE_EMBED_COLOR,
     publishServerGuide
 };
