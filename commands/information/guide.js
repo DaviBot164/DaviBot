@@ -15,17 +15,39 @@ const {
 const GUIDE_MENU_ID =
     'umbra_guide_category_menu';
 
+const GUIDE_COLOR =
+    '#5B3A78';
+
 const GUIDE_PAGES = {
-    overview: 'guide_overview',
-    moderation: 'guide_moderation',
-    ranks: 'guide_ranks',
-    titles: 'guide_titles',
-    progression: 'guide_progression',
-    server: 'guide_server',
-    support: 'guide_support',
-    events: 'guide_events',
-    administration: 'guide_administration',
-    information: 'guide_information'
+    overview:
+        'guide_overview',
+
+    moderation:
+        'guide_moderation',
+
+    ranks:
+        'guide_ranks',
+
+    titles:
+        'guide_titles',
+
+    progression:
+        'guide_progression',
+
+    server:
+        'guide_server',
+
+    support:
+        'guide_support',
+
+    events:
+        'guide_events',
+
+    administration:
+        'guide_administration',
+
+    information:
+        'guide_information'
 };
 
 const GUIDE_PAGE_ORDER = [
@@ -43,83 +65,134 @@ const GUIDE_PAGE_ORDER = [
 
 const GUIDE_PAGE_DETAILS = {
     [GUIDE_PAGES.overview]: {
-        emoji: 'Ⅹ',
-        label: 'Overview',
+        label:
+            'Overview',
+
+        emoji:
+            'Ⅹ',
+
         description:
-            'Main command and system overview'
+            'Main command and system overview.'
     },
 
     [GUIDE_PAGES.moderation]: {
-        emoji: '🛡️',
-        label: 'Moderation',
+        label:
+            'Moderation',
+
+        emoji:
+            '🛡️',
+
         description:
-            'Warnings, punishments and channel control'
+            'Warnings, punishments and channel control.'
     },
 
     [GUIDE_PAGES.ranks]: {
-        emoji: '⚔️',
-        label: 'Sin Ranks',
+        label:
+            'Sin Ranks',
+
+        emoji:
+            '⚔️',
+
         description:
-            'Sin ranking and competitive records'
+            'Sin ranking and competitive records.'
     },
 
     [GUIDE_PAGES.titles]: {
-        emoji: '♜',
-        label: 'Titles',
+        label:
+            'Titles',
+
+        emoji:
+            '♜',
+
         description:
-            'Title collection and management'
+            'Title collection and management.'
     },
 
     [GUIDE_PAGES.progression]: {
-        emoji: '◆',
-        label: 'Progression',
+        label:
+            'Progression',
+
+        emoji:
+            '◆',
+
         description:
-            'Member progression and profiles'
+            'Levels, profiles and member progression.'
     },
 
     [GUIDE_PAGES.server]: {
-        emoji: 'Ⅹ',
-        label: 'THE Ⅹ SINS',
+        label:
+            'THE Ⅹ SINS',
+
+        emoji:
+            'Ⅹ',
+
         description:
-            'Server information and central records'
+            'Server information and central records.'
     },
 
     [GUIDE_PAGES.support]: {
-        emoji: '🎫',
-        label: 'Support',
+        label:
+            'Support',
+
+        emoji:
+            '🎫',
+
         description:
-            'Tickets and member assistance'
+            'Tickets and member assistance.'
     },
 
     [GUIDE_PAGES.events]: {
-        emoji: '🎉',
-        label: 'Events',
+        label:
+            'Events',
+
+        emoji:
+            '🎉',
+
         description:
-            'Events, giveaways and community activity'
+            'Events, giveaways and community activity.'
     },
 
     [GUIDE_PAGES.administration]: {
-        emoji: '♛',
-        label: 'Administration',
+        label:
+            'Administration',
+
+        emoji:
+            '♛',
+
         description:
-            'Setup and server management'
+            'Setup and server management.'
     },
 
     [GUIDE_PAGES.information]: {
-        emoji: '📖',
-        label: 'Information',
+        label:
+            'Information',
+
+        emoji:
+            '📖',
+
         description:
-            'General commands and utilities'
+            'General commands and utilities.'
     }
 };
 
 const ACCESS = {
-    everyone: 'Everyone',
-    self: 'Personal Use',
-    moderator: '⚔️ Lieutenant or Higher',
-    administrator: '🛡️ Captain or Higher',
-    highCommand: '♛ High Command',
-    owner: '♛ Sovereign Only'
+    everyone:
+        'Everyone',
+
+    self:
+        'Personal Use',
+
+    moderator:
+        'Lieutenant or Higher',
+
+    administrator:
+        'Captain or Higher',
+
+    highCommand:
+        'High Command',
+
+    owner:
+        'Sovereign Only'
 };
 
 const GUIDE_COMMANDS = {
@@ -140,14 +213,14 @@ const GUIDE_COMMANDS = {
     timeout: [
         'moderation',
         '/timeout user duration [reason]',
-        'Temporarily restrict a member from interacting.',
+        'Temporarily restrict a member.',
         'moderator'
     ],
 
     untimeout: [
         'moderation',
         '/untimeout user [reason]',
-        'Remove an active timeout from a member.',
+        'Remove an active timeout.',
         'moderator'
     ],
 
@@ -189,56 +262,56 @@ const GUIDE_COMMANDS = {
     history: [
         'moderation',
         '/history user [limit]',
-        'View a member’s moderation history.',
+        'View moderation history.',
         'moderator'
     ],
 
     clear: [
         'moderation',
         '/clear amount [user]',
-        'Delete multiple messages from a channel.',
+        'Delete multiple messages.',
         'moderator'
     ],
 
     lock: [
         'moderation',
         '/lock [channel] [reason]',
-        'Prevent regular members from sending messages.',
+        'Lock a channel.',
         'moderator'
     ],
 
     unlock: [
         'moderation',
         '/unlock [channel] [reason]',
-        'Restore message access in a locked channel.',
+        'Unlock a channel.',
         'moderator'
     ],
 
     slowmode: [
         'moderation',
         '/slowmode seconds [channel] [reason]',
-        'Set or remove a channel slowmode delay.',
+        'Set or remove channel slowmode.',
         'moderator'
     ],
 
     setrank: [
         'ranks',
         '/setrank user rank reason',
-        'Assign or replace a managed Sin Rank.',
+        'Assign or replace a Sin Rank.',
         'highCommand'
     ],
 
     removerank: [
         'ranks',
         '/removerank user reason',
-        'Remove a member’s current managed Sin Rank.',
+        'Remove a member’s Sin Rank.',
         'highCommand'
     ],
 
     rankhistory: [
         'ranks',
         '/rankhistory [user] [limit]',
-        'View rank assignment and removal history.',
+        'View rank history.',
         'everyone'
     ],
 
@@ -252,14 +325,14 @@ const GUIDE_COMMANDS = {
     titles: [
         'titles',
         '/titles [user]',
-        'View unlocked, active and locked Titles.',
+        'View unlocked and active Titles.',
         'everyone'
     ],
 
     settitle: [
         'titles',
         '/settitle category',
-        'Activate one of your unlocked Titles.',
+        'Activate an unlocked Title.',
         'self'
     ],
 
@@ -273,7 +346,7 @@ const GUIDE_COMMANDS = {
     granttitle: [
         'titles',
         '/granttitle user title reason [activate]',
-        'Grant a Manual or Event Title to a member.',
+        'Grant a Title to a member.',
         'highCommand'
     ],
 
@@ -287,7 +360,7 @@ const GUIDE_COMMANDS = {
     soul: [
         'progression',
         '/soul [user]',
-        'Open the complete progression record for a member.',
+        'Open a member progression record.',
         'everyone'
     ],
 
@@ -322,49 +395,56 @@ const GUIDE_COMMANDS = {
     dashboard: [
         'server',
         '/dashboard',
-        'Open the interactive THE Ⅹ SINS server overview.',
+        'Open the THE Ⅹ SINS server dashboard.',
         'everyone'
     ],
 
     ticketpanel: [
         'support',
         '/ticketpanel',
-        'Publish the interactive support panel.',
+        'Publish the support panel.',
         'administrator'
     ],
 
     ticket: [
         'support',
         '/ticket',
-        'Create or manage a personal support ticket.',
+        'Create a support ticket.',
         'everyone'
     ],
 
     tickets: [
         'support',
         '/tickets',
-        'View support ticket management options.',
+        'Manage active tickets.',
         'moderator'
+    ],
+
+    announce: [
+        'events',
+        '/announce',
+        'Publish an official announcement.',
+        'administrator'
     ],
 
     event: [
         'events',
         '/event',
-        'Create or manage an official server event.',
+        'Create or manage an event.',
         'administrator'
     ],
 
     giveaway: [
         'events',
         '/giveaway',
-        'Create or manage a community giveaway.',
+        'Create or manage a giveaway.',
         'administrator'
     ],
 
     setup: [
         'administration',
         '/setup',
-        'Open Evelynn’s interactive server setup.',
+        'Open the server setup menu.',
         'administrator'
     ],
 
@@ -378,164 +458,270 @@ const GUIDE_COMMANDS = {
     testwelcome: [
         'administration',
         '/testwelcome',
-        'Preview the current Welcome design.',
-        'administrator'
-    ],
-
-    announce: [
-        'administration',
-        '/announce',
-        'Publish an official server announcement.',
+        'Preview the Welcome design.',
         'administrator'
     ],
 
     help: [
         'information',
         '/help',
-        'Open Evelynn’s quick command menu.',
+        'Open the quick command menu.',
         'everyone'
     ],
 
     guide: [
         'information',
         '/guide',
-        'Open this detailed interactive command guide.',
+        'Open this detailed command guide.',
         'everyone'
     ],
 
     ping: [
         'information',
         '/ping',
-        'Check Evelynn’s latency and connection status.',
+        'Check Evelynn latency and status.',
         'everyone'
     ],
 
     avatar: [
         'information',
         '/avatar [user]',
-        'View a user’s Discord avatar.',
+        'View a user avatar.',
         'everyone'
     ],
 
     userinfo: [
         'information',
         '/userinfo [user]',
-        'View detailed Discord member information.',
+        'View detailed member information.',
         'everyone'
     ],
 
     serverinfo: [
         'information',
         '/serverinfo',
-        'View detailed information about THE Ⅹ SINS.',
+        'View server information.',
         'everyone'
     ]
-};
-
-const PAGE_WORKFLOWS = {
-    ranks: [
-        '`/setrank` — assign a Sin Rank',
-        '`/rankhistory` — review rank history',
-        '`/espada` — view the Ten Sins hierarchy'
-    ],
-
-    titles: [
-        '`/titles` — view unlocked Titles',
-        '`/settitle` — activate a Title',
-        '`/soul` — confirm your progression record'
-    ],
-
-    progression: [
-        '`/soul` — open the full progression record',
-        '`/level` — check current level',
-        '`/rankhistory` — review rank history'
-    ],
-
-    support: [
-        '`/ticketpanel` — publish the support panel',
-        '`/ticket` — open a support request',
-        '`/tickets` — manage active tickets'
-    ]
-};function getCategoryCommands(
-    client,
-    category
+};function getBotAvatar(
+    interaction
 ) {
-    return Object.entries(
-        GUIDE_COMMANDS
-    )
-        .filter(
-            ([name, details]) =>
-                details[0] === category &&
-                client.commands.has(name)
+    return interaction.client.user
+        .displayAvatarURL({
+            size:
+                256,
+
+            forceStatic:
+                false
+        });
+}
+
+function getGuildIcon(
+    interaction
+) {
+    return (
+        interaction.guild.iconURL({
+            size:
+                512,
+
+            forceStatic:
+                false
+        }) ??
+        getBotAvatar(
+            interaction
         )
-        .map(
-            ([name, details]) => ({
-                name,
-                syntax: details[1],
-                summary: details[2],
-                access: details[3]
-            })
-        );
-}
-
-function getCategoryName(
-    pageId
-) {
-    const details =
-        GUIDE_PAGE_DETAILS[pageId];
-
-    return details?.label ??
-        'Guide';
-}
-
-function getCategoryFromPage(
-    pageId
-) {
-    return Object.keys(
-        GUIDE_PAGE_DETAILS
-    ).find(
-        key =>
-            GUIDE_PAGE_DETAILS[key] &&
-            pageId === key
     );
 }
 
 function getPageCategory(
     pageId
 ) {
+    return {
+        [GUIDE_PAGES.moderation]:
+            'moderation',
+
+        [GUIDE_PAGES.ranks]:
+            'ranks',
+
+        [GUIDE_PAGES.titles]:
+            'titles',
+
+        [GUIDE_PAGES.progression]:
+            'progression',
+
+        [GUIDE_PAGES.server]:
+            'server',
+
+        [GUIDE_PAGES.support]:
+            'support',
+
+        [GUIDE_PAGES.events]:
+            'events',
+
+        [GUIDE_PAGES.administration]:
+            'administration',
+
+        [GUIDE_PAGES.information]:
+            'information'
+    }[
+        pageId
+    ];
+}
+
+function getPageCommands(
+    client,
+    pageId
+) {
+    const category =
+        getPageCategory(
+            pageId
+        );
+
+    if (!category) {
+        return [];
+    }
+
+    return Object.entries(
+        GUIDE_COMMANDS
+    )
+        .filter(
+            ([, details]) =>
+                details[0] ===
+                category
+        )
+        .filter(
+            ([name]) =>
+                client.commands?.has(
+                    name
+                )
+        )
+        .map(
+            ([name, details]) => ({
+                name,
+                syntax:
+                    details[1],
+                description:
+                    details[2],
+                access:
+                    details[3]
+            })
+        );
+}
+
+function getLoadedCommandCount(
+    client
+) {
     return (
-        {
-            [GUIDE_PAGES.overview]:
-                'overview',
-
-            [GUIDE_PAGES.moderation]:
-                'moderation',
-
-            [GUIDE_PAGES.ranks]:
-                'ranks',
-
-            [GUIDE_PAGES.titles]:
-                'titles',
-
-            [GUIDE_PAGES.progression]:
-                'progression',
-
-            [GUIDE_PAGES.server]:
-                'server',
-
-            [GUIDE_PAGES.support]:
-                'support',
-
-            [GUIDE_PAGES.events]:
-                'events',
-
-            [GUIDE_PAGES.administration]:
-                'administration',
-
-            [GUIDE_PAGES.information]:
-                'information'
-        }[pageId]
+        client.commands?.size ??
+        0
     );
+}
+
+function formatCommand(
+    command
+) {
+    return [
+        `\`${command.syntax}\``,
+
+        command.description,
+
+        `-# Access: ${
+            ACCESS[
+                command.access
+            ] ??
+            ACCESS.everyone
+        }`
+    ].join('\n');
+}
+
+function splitCommandEntries(
+    entries
+) {
+    const chunks = [];
+    let current = [];
+
+    for (
+        const entry of entries
+    ) {
+        const next =
+            current.length
+                ? `${current.join('\n\n')}\n\n${entry}`
+                : entry;
+
+        if (
+            next.length > 900 &&
+            current.length
+        ) {
+            chunks.push(
+                current.join(
+                    '\n\n'
+                )
+            );
+
+            current = [
+                entry
+            ];
+
+            continue;
+        }
+
+        current.push(
+            entry
+        );
+    }
+
+    if (
+        current.length
+    ) {
+        chunks.push(
+            current.join(
+                '\n\n'
+            )
+        );
+    }
+
+    return chunks;
+}
+
+function createGuideEmbed(
+    interaction,
+    title,
+    description
+) {
+    const botAvatar =
+        getBotAvatar(
+            interaction
+        );
+
+    return createEmbed({
+        title,
+
+        description,
+
+        color:
+            GUIDE_COLOR,
+
+        thumbnail:
+            getGuildIcon(
+                interaction
+            ),
+
+        author: {
+            name:
+                'Evelynn • THE Ⅹ SINS',
+
+            iconURL:
+                botAvatar
+        },
+
+        footer: {
+            text:
+                'TTS • Command Guide',
+
+            iconURL:
+                botAvatar
+        }
+    });
 }
 
 function buildGuideMenu(
@@ -550,9 +736,15 @@ function buildGuideMenu(
             .setPlaceholder(
                 'Choose a guide category...'
             )
-            .setMinValues(1)
-            .setMaxValues(1)
-            .setDisabled(disabled)
+            .setMinValues(
+                1
+            )
+            .setMaxValues(
+                1
+            )
+            .setDisabled(
+                disabled
+            )
             .addOptions(
                 GUIDE_PAGE_ORDER.map(
                     pageId => {
@@ -568,9 +760,6 @@ function buildGuideMenu(
                             .setDescription(
                                 page.description
                             )
-                            .setEmoji(
-                                page.emoji
-                            )
                             .setValue(
                                 pageId
                             )
@@ -583,274 +772,229 @@ function buildGuideMenu(
             );
 
     return new ActionRowBuilder()
-        .addComponents(menu);
+        .addComponents(
+            menu
+        );
 }
 
-function buildGuideEmbed(
-    interaction,
-    title,
-    description,
-    fields = []
+function addWorkflow(
+    embed,
+    pageId
 ) {
-    const avatar =
-        interaction.client.user
-            .displayAvatarURL({
-                size: 256,
-                forceStatic: false
-            });
+    const workflows = {
+        [GUIDE_PAGES.ranks]: [
+            '`/setrank` — assign a Sin Rank',
+            '`/rankhistory` — review rank history',
+            '`/espada` — view the Ten Sins hierarchy'
+        ],
 
-    const icon =
-        interaction.guild.iconURL({
-            size: 256,
-            forceStatic: false
-        }) ?? avatar;
+        [GUIDE_PAGES.titles]: [
+            '`/titles` — view unlocked Titles',
+            '`/settitle` — activate a Title',
+            '`/removetitle` — remove your active Title'
+        ],
 
-    return createEmbed({
-        title,
+        [GUIDE_PAGES.progression]: [
+            '`/soul` — open the progression record',
+            '`/level` — check current level',
+            '`/rank` — check current rank'
+        ],
 
-        description,
+        [GUIDE_PAGES.support]: [
+            '`/ticketpanel` — publish the support panel',
+            '`/ticket` — open a support request',
+            '`/tickets` — manage active tickets'
+        ]
+    };
 
-        color:
-            '#5B3A78',
-
-        thumbnail:
-            icon,
-
-        author: {
-            name:
-                'Evelynn • THE Ⅹ SINS',
-
-            iconURL:
-                avatar
-        },
-
-        fields,
-
-        footer: {
-            text:
-                'TTS • Command Guide'
-        }
-    });
-}
-
-function formatCommand(
-    command
-) {
-    return [
-        `### ${command.syntax}`,
-
-        command.summary,
-
-        `-# Access: ${
-            ACCESS[
-                command.access
-            ] ??
-            ACCESS.everyone
-        }`
-    ].join('\n');
-}
-
-function buildCommandFields(
-    commands
-) {
-    if (!commands.length) {
-        return [
-            {
-                name:
-                    'No Commands Available',
-
-                value:
-                    'No registered commands are available in this category.',
-
-                inline: false
-            }
+    const workflow =
+        workflows[
+            pageId
         ];
+
+    if (
+        !workflow
+    ) {
+        return;
     }
 
-    const fields = [];
-    let current = [];
+    embed.addFields({
+        name:
+            'Ⅹ・RECOMMENDED FLOW',
 
-    for (const command of commands) {
-        const block =
-            formatCommand(
-                command
-            );
+        value:
+            workflow.join('\n'),
 
-        const length =
-            current.join('\n\n')
-                .length +
-            block.length;
-
-        if (
-            length > 1000 &&
-            current.length
-        ) {
-            fields.push({
-                name:
-                    fields.length
-                        ? 'Commands'
-                        : 'Commands',
-
-                value:
-                    current.join(
-                        '\n\n'
-                    ),
-
-                inline: false
-            });
-
-            current = [];
-        }
-
-        current.push(block);
-    }
-
-    if (current.length) {
-        fields.push({
-            name:
-                fields.length
-                    ? 'Commands'
-                    : 'Commands',
-
-            value:
-                current.join(
-                    '\n\n'
-                ),
-
-            inline: false
-        });
-    }
-
-    return fields;
-}
-
-function buildOverviewPage(
+        inline:
+            false
+    });
+}function buildOverviewPage(
     interaction
 ) {
-    const commands =
-        Object.values(
-            GUIDE_COMMANDS
-        )
-            .filter(
-                details =>
+    const embed =
+        createGuideEmbed(
+            interaction,
+
+            'Ⅹ・COMMAND GUIDE',
+
+            [
+                `Welcome, ${interaction.user}.`,
+                '',
+                'Explore THE Ⅹ SINS commands using the menu below.',
+                '',
+                `**Loaded Commands:** \`${getLoadedCommandCount(
                     interaction.client
-                        .commands
-                        .has(
-                            Object.keys(
-                                GUIDE_COMMANDS
-                            ).find(
-                                name =>
-                                    GUIDE_COMMANDS[
-                                        name
-                                    ] === details
-                            )
-                        )
+                )}\``,
+                '',
+                'Only commands currently loaded by Evelynn are shown.'
+            ].join('\n')
+        );
+
+    const categoryFields =
+        GUIDE_PAGE_ORDER
+            .filter(
+                pageId =>
+                    pageId !==
+                    GUIDE_PAGES.overview
+            )
+            .map(
+                pageId => {
+                    const page =
+                        GUIDE_PAGE_DETAILS[
+                            pageId
+                        ];
+
+                    const count =
+                        getPageCommands(
+                            interaction.client,
+                            pageId
+                        ).length;
+
+                    return {
+                        name:
+                            `${page.emoji}・${page.label.toUpperCase()}`,
+
+                        value:
+                            `\`${count}\` commands`,
+
+                        inline:
+                            true
+                    };
+                }
             );
 
-    const loaded =
-        interaction.client.commands.size;
+    embed.addFields(
+        ...categoryFields
+    );
 
-    const documented =
-        Object.keys(
-            GUIDE_COMMANDS
-        ).filter(
-            name =>
-                interaction.client.commands
-                    .has(name)
-        ).length;
+    embed.addFields({
+        name:
+            'Ⅹ・QUICK ACCESS',
 
-    return buildGuideEmbed(
-        interaction,
-
-        'Ⅹ・Command Guide',
-
-        [
-            'Welcome to the THE Ⅹ SINS Command Guide.',
-            '',
-            'Use the menu below to explore commands by category.',
-            '',
-            `**Loaded Commands:** \`${loaded}\``,
-            `**Documented Commands:** \`${documented}\``,
-            '',
-            'Only commands currently loaded by Evelynn are displayed.'
+        value: [
+            '`/help` — quick command menu',
+            '`/guide` — detailed documentation',
+            '`/dashboard` — server overview',
+            '`/soul` — progression record'
         ].join('\n'),
 
-        [
-            {
-                name:
-                    '🧭 Quick Access',
+        inline:
+            false
+    });
 
-                value: [
-                    '`/help` — quick command menu',
-                    '`/dashboard` — server overview',
-                    '`/profile` — member profile',
-                    '`/soul` — progression archive'
-                ].join('\n'),
-
-                inline: false
-            }
-        ]
-    );
+    return embed;
 }
 
 function buildCategoryPage(
     interaction,
     pageId
 ) {
-    const category =
-        getPageCategory(
-            pageId
-        );
-
-    const commands =
-        getCategoryCommands(
-            interaction.client,
-            category
-        );
-
     const page =
         GUIDE_PAGE_DETAILS[
             pageId
         ];
 
-    const fields =
-        buildCommandFields(
-            commands
+    if (!page) {
+        return buildOverviewPage(
+            interaction
         );
-
-    const workflow =
-        PAGE_WORKFLOWS[
-            category
-        ];
-
-    if (workflow) {
-        fields.push({
-            name:
-                '🧭 Recommended Flow',
-
-            value:
-                workflow.join('\n'),
-
-            inline: false
-        });
     }
 
-    return buildGuideEmbed(
-        interaction,
+    const commands =
+        getPageCommands(
+            interaction.client,
+            pageId
+        );
 
-        `${page.emoji}・${page.label}`,
+    const embed =
+        createGuideEmbed(
+            interaction,
 
-        [
-            page.description,
-            '',
-            `**Available Commands:** \`${commands.length}\``
-        ].join('\n'),
+            `${page.emoji}・${page.label.toUpperCase()}`,
 
-        fields
+            [
+                page.description,
+                '',
+                `**Available Commands:** \`${commands.length}\``
+            ].join('\n')
+        );
+
+    addWorkflow(
+        embed,
+        pageId
     );
+
+    if (
+        !commands.length
+    ) {
+        embed.addFields({
+            name:
+                '◇・NO COMMANDS',
+
+            value:
+                'No commands from this category are currently loaded.',
+
+            inline:
+                false
+        });
+
+        return embed;
+    }
+
+    const entries =
+        commands.map(
+            formatCommand
+        );
+
+    const chunks =
+        splitCommandEntries(
+            entries
+        );
+
+    chunks.forEach(
+        (
+            chunk,
+            index
+        ) => {
+            embed.addFields({
+                name:
+                    index === 0
+                        ? 'Ⅹ・COMMANDS'
+                        : 'Ⅹ・COMMANDS — CONTINUED',
+
+                value:
+                    chunk,
+
+                inline:
+                    false
+            });
+        }
+    );
+
+    return embed;
 }
 
-function buildPage(
+function buildGuidePage(
     interaction,
     pageId
 ) {
@@ -863,11 +1007,23 @@ function buildPage(
         );
     }
 
-    return buildCategoryPage(
-        interaction,
-        pageId
+    if (
+        GUIDE_PAGE_ORDER.includes(
+            pageId
+        )
+    ) {
+        return buildCategoryPage(
+            interaction,
+            pageId
+        );
+    }
+
+    return buildOverviewPage(
+        interaction
     );
-}module.exports = {
+}
+
+module.exports = {
     category:
         'information',
 
@@ -877,7 +1033,7 @@ function buildPage(
                 'guide'
             )
             .setDescription(
-                'Open the interactive command guide.'
+                'Open Evelynn’s interactive command guide.'
             )
             .setDMPermission(
                 false
@@ -890,7 +1046,7 @@ function buildPage(
             if (
                 !interaction.inGuild()
             ) {
-                return interaction.reply({
+                await interaction.reply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
@@ -901,6 +1057,8 @@ function buildPage(
                     flags:
                         MessageFlags.Ephemeral
                 });
+
+                return;
             }
 
             await interaction.deferReply({
@@ -914,7 +1072,7 @@ function buildPage(
             const message =
                 await interaction.editReply({
                     embeds: [
-                        buildPage(
+                        buildGuidePage(
                             interaction,
                             selectedPage
                         )
@@ -942,58 +1100,62 @@ function buildPage(
             collector.on(
                 'collect',
                 async menuInteraction => {
-                    if (
-                        menuInteraction.user.id !==
-                        interaction.user.id
-                    ) {
-                        return menuInteraction.reply({
-                            embeds: [
-                                createErrorEmbed(
-                                    '❌ Private Guide',
-                                    'Only the member who opened this Guide can control it.'
-                                )
-                            ],
-
-                            flags:
-                                MessageFlags.Ephemeral
-                        });
-                    }
-
-                    if (
-                        menuInteraction.customId !==
-                        GUIDE_MENU_ID
-                    ) {
-                        return;
-                    }
-
-                    const page =
-                        menuInteraction.values[0];
-
-                    if (
-                        !GUIDE_PAGE_ORDER.includes(
-                            page
-                        )
-                    ) {
-                        return menuInteraction.reply({
-                            embeds: [
-                                createErrorEmbed(
-                                    '❌ Unknown Guide Page',
-                                    'Evelynn could not recognize the selected category.'
-                                )
-                            ],
-
-                            flags:
-                                MessageFlags.Ephemeral
-                        });
-                    }
-
                     try {
+                        if (
+                            menuInteraction.user.id !==
+                            interaction.user.id
+                        ) {
+                            await menuInteraction.reply({
+                                embeds: [
+                                    createErrorEmbed(
+                                        '❌ Private Guide',
+                                        'Only the member who opened this Guide can control it.'
+                                    )
+                                ],
+
+                                flags:
+                                    MessageFlags.Ephemeral
+                            });
+
+                            return;
+                        }
+
+                        if (
+                            menuInteraction.customId !==
+                            GUIDE_MENU_ID
+                        ) {
+                            return;
+                        }
+
+                        const requestedPage =
+                            menuInteraction.values[0];
+
+                        if (
+                            !GUIDE_PAGE_ORDER.includes(
+                                requestedPage
+                            )
+                        ) {
+                            await menuInteraction.reply({
+                                embeds: [
+                                    createErrorEmbed(
+                                        '❌ Unknown Guide Page',
+                                        'Evelynn could not recognize the selected category.'
+                                    )
+                                ],
+
+                                flags:
+                                    MessageFlags.Ephemeral
+                            });
+
+                            return;
+                        }
+
                         selectedPage =
-                            page;
+                            requestedPage;
 
                         await menuInteraction.update({
                             embeds: [
-                                buildPage(
+                                buildGuidePage(
                                     interaction,
                                     selectedPage
                                 )
@@ -1007,7 +1169,7 @@ function buildPage(
                         });
                     } catch (error) {
                         console.error(
-                            '❌ Evelynn Guide navigation error:',
+                            '❌ Evelynn /guide navigation error:',
                             error
                         );
 
@@ -1049,11 +1211,11 @@ function buildPage(
             );
         } catch (error) {
             console.error(
-                '❌ Evelynn /guide error:',
+                '❌ Evelynn /guide command error:',
                 error
             );
 
-            const embed =
+            const errorEmbed =
                 createErrorEmbed(
                     '❌ Guide Unavailable',
                     'Evelynn could not open the Command Guide.'
@@ -1065,8 +1227,12 @@ function buildPage(
             ) {
                 await interaction
                     .editReply({
-                        embeds: [embed],
-                        components: []
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        components:
+                            []
                     })
                     .catch(
                         () => null
@@ -1077,7 +1243,10 @@ function buildPage(
 
             await interaction
                 .reply({
-                    embeds: [embed],
+                    embeds: [
+                        errorEmbed
+                    ],
+
                     flags:
                         MessageFlags.Ephemeral
                 })
