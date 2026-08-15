@@ -2174,7 +2174,7 @@ module.exports = {
     data:
         new SlashCommandBuilder()
             .setName(
-                'lasnoches'
+                'dashboard'
             )
             .setDescription(
                 'Open the interactive Kingdom Dashboard of Las Noches.'
@@ -2184,7 +2184,7 @@ module.exports = {
             ),
 
     /**
-     * Execute the /lasnoches command.
+     * Execute the /dashboard command.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -2404,7 +2404,7 @@ module.exports = {
                         });
                     } catch (menuError) {
                         console.error(
-                            '❌ Umbra /lasnoches navigation error:',
+                            '❌ Umbra /dashboard navigation error:',
                             menuError
                         );
 
@@ -2414,7 +2414,7 @@ module.exports = {
                                 [
                                     'Umbra could not open the selected Kingdom record.',
                                     '',
-                                    'Please try opening `/lasnoches` again.'
+                                    'Please try opening `/dashboard` again.'
                                 ].join('\n')
                             );
 
@@ -2487,7 +2487,7 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /lasnoches command error:',
+                '❌ Umbra /dashboard command error:',
                 error
             );
 
