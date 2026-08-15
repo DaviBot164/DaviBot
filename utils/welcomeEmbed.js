@@ -9,7 +9,7 @@ const WELCOME_BANNER_NAME =
     'welcome-banner.png';
 
 const WELCOME_EMBED_COLOR =
-    '#B026FF';
+    '#C8A45D';
 
 /**
  * Create the THE Ⅹ SINS
