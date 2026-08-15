@@ -2267,7 +2267,7 @@ module.exports = {
                     ],
 
                     components: [
-                        createKingdomMenu(
+                        createDashboardMenu(
                             selectedPage
                         )
                     ],
@@ -2397,7 +2397,7 @@ module.exports = {
                             ],
 
                             components: [
-                                createKingdomMenu(
+                                createDashboardMenu(
                                     selectedPage
                                 )
                             ]
@@ -2474,7 +2474,7 @@ module.exports = {
                     await interaction
                         .editReply({
                             components: [
-                                createKingdomMenu(
+                                createDashboardMenu(
                                     selectedPage,
                                     true
                                 )
