@@ -1,9 +1,9 @@
 /**
  * ======================================================
- * Umbra Automatic Rank Trials Configuration
+ * Evelynn Automatic Rank Trials Configuration
  * ======================================================
  *
- * Controls the monthly Las Noches Rank Trials,
+ * Controls the monthly Ten Sins Rank Trials,
  * announcements and Discord Scheduled Event.
  *
  * Publication and Event history are stored
@@ -111,7 +111,7 @@ module.exports = {
          * inside Discord.
          */
         location:
-            'Las Noches Arena • Battle Room',
+            'Ten Sins Arena • Battle Room',
 
         /**
          * Event name format.
@@ -125,7 +125,7 @@ module.exports = {
          * Event description limit safeguard.
          *
          * Discord currently allows longer text,
-         * but Umbra keeps it compact.
+         * but Evelynn keeps it compact.
          */
         descriptionMaxLength:
             900,
@@ -138,19 +138,17 @@ module.exports = {
             true,
 
         /**
-         * When true, Umbra updates an existing
+         * When true, Evelynn updates an existing
          * Scheduled Event if its configured
          * name, times, location or description
          * no longer match.
          */
         updateExistingEvent:
             true
-    },
-
-    /**
+    },    /**
      * Announcement schedule.
      *
-     * All offsets are relative to battle start.
+     * All times are based on battle start.
      */
     announcements: {
         /**
@@ -215,7 +213,7 @@ module.exports = {
         },
 
         /**
-         * Published when battles begin.
+         * Published when the Trials begin.
          */
         battleStart: {
             enabled:
@@ -235,7 +233,7 @@ module.exports = {
         },
 
         /**
-         * Published one day after Rank Trials.
+         * Published one day after the Trials.
          */
         closing: {
             enabled:
@@ -260,25 +258,23 @@ module.exports = {
      */
     evaluationCriteria: [
         'Combat performance',
-        'Loyalty to Las Noches',
+        'Loyalty to THE Ⅹ SINS',
         'Behavior and discipline',
         'Server activity',
         'Contribution to the community',
         'Leadership trust'
-    ],
-
-    /**
+    ],    /**
      * Core branding.
      */
     branding: {
         authorName:
-            'Umbra • Guardian of Las Noches',
+            'Evelynn • THE Ⅹ SINS',
 
         authorityName:
-            '🌙 Las Noches Authority',
+            '♛ THE Ⅹ SINS Authority',
 
         footerText:
-            'Umbra • Monthly Rank Trials',
+            'Evelynn • Monthly Rank Trials',
 
         defaultEmoji:
             '⚔️'
@@ -310,7 +306,7 @@ module.exports = {
     /**
      * PostgreSQL Scheduled Event states.
      *
-     * These values will be stored permanently.
+     * These values are stored permanently.
      */
     eventStatuses: {
         scheduled:

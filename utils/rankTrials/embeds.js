@@ -89,11 +89,11 @@ function buildOpeningEmbed(
 
         description:
             [
-                'The gates of Las Noches have opened.',
+                'The gates of THE Ⅹ SINS are now open.',
                 '',
                 'Registration for this month\'s Rank Trials is now available.',
                 '',
-                'Only those worthy of greater power should step forward.'
+                'Those seeking greater power may step forward.'
             ].join('\n'),
 
         fields: [
@@ -112,7 +112,7 @@ function buildOpeningEmbed(
             },
             {
                 name:
-                    '⚖ Promotion Evaluation',
+                    '⚔️ Promotion Evaluation',
 
                 value:
                     buildCriteriaList(),
@@ -122,13 +122,13 @@ function buildOpeningEmbed(
             },
             {
                 name:
-                    '🌙 Important',
+                    '✦ Important',
 
                 value:
                     [
                         'Winning battles alone does **not** guarantee promotion.',
                         '',
-                        'Las Noches Leadership makes the final decision.'
+                        'THE Ⅹ SINS Leadership makes the final decision.'
                     ].join('\n'),
 
                 inline:
@@ -136,9 +136,7 @@ function buildOpeningEmbed(
             }
         ]
     });
-}
-
-/**
+}/**
  * Registration reminder.
  *
  * @param {Object} schedule
@@ -155,13 +153,13 @@ function buildRegistrationReminderEmbed(
             [
                 'There is still time to prepare.',
                 '',
-                'If you wish to challenge for a higher Arrancar Rank, make sure you are ready.'
+                'If you wish to challenge for a higher Sin Rank, make sure you are ready.'
             ].join('\n'),
 
         fields: [
             {
                 name:
-                    '⚔ Battle Date',
+                    '⚔️ Battle Date',
 
                 value:
                     toDiscordTimestamp(
@@ -187,7 +185,7 @@ function buildFinalReminderEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '🌙 Final Reminder',
+            '✦ Final Reminder',
 
         description:
             [
@@ -196,13 +194,13 @@ function buildFinalReminderEmbed(
                 'Prepare your spirit.',
                 'Sharpen your blade.',
                 '',
-                'Las Noches is watching.'
+                'THE Ⅹ SINS is watching.'
             ].join('\n'),
 
         fields: [
             {
                 name:
-                    '⚔ Battle Begins',
+                    '⚔️ Battle Begins',
 
                 value:
                     toDiscordTimestamp(
@@ -228,7 +226,7 @@ function buildBattleStartEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '🏆 Rank Trials Have Begun',
+            '⚔️ Rank Trials Have Begun',
 
         description:
             [
@@ -237,13 +235,13 @@ function buildBattleStartEmbed(
                 'Fight with honor.',
                 'Fight with discipline.',
                 '',
-                'May only the strongest Souls rise.'
+                'May only the strongest rise.'
             ].join('\n'),
 
         fields: [
             {
                 name:
-                    '⚖ Final Evaluation',
+                    '⚔️ Final Evaluation',
 
                 value:
                     buildCriteriaList(),
@@ -263,7 +261,7 @@ function buildBattleStartEmbed(
 function buildClosingEmbed() {
     return createRankTrialEmbed({
         title:
-            '🌙 Rank Trials Concluded',
+            '✦ Rank Trials Concluded',
 
         description:
             [

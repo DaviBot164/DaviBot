@@ -179,7 +179,7 @@ function buildRankTrialEventDescription(
             '',
             'The Monthly Rank Trials are now open.',
             '',
-            'If you wish to earn a higher Arrancar Rank, this is your opportunity to prove yourself.',
+            'If you wish to earn a higher Sin Rank, this is your opportunity to prove yourself.',
             '',
             'Promotion is based on:',
             '',
@@ -191,7 +191,7 @@ function buildRankTrialEventDescription(
             '',
             'Winning battles alone does not guarantee a promotion.',
             '',
-            'The final decision will always be made by the Las Noches Leadership.',
+            'The final decision will always be made by THE Ⅹ SINS Leadership.',
             '',
             'Good luck to everyone participating.'
         ].join('\n');
@@ -315,13 +315,13 @@ function buildExpectedRankTrialEvent(
 }
 
 /**
- * Check whether Umbra may create and manage
+ * Check whether Evelynn may create and manage
  * Discord Scheduled Events.
  *
  * Administrator automatically passes.
  *
- * CreateEvents allows Umbra to create and
- * manage Events created by Umbra.
+ * CreateEvents allows Evelynn to create and
+ * manage Events created by Evelynn.
  *
  * ManageEvents allows broader Event control.
  *
@@ -425,7 +425,7 @@ function buildDiscordEventCreateOptions(
         },
 
         reason:
-            `Umbra Monthly Rank Trials Event Manager • ${expectedEvent.trialKey}`
+            `Evelynn Monthly Rank Trials Event Manager • ${expectedEvent.trialKey}`
     };
 }
 
@@ -509,7 +509,7 @@ function getDiscordEventLocation(
 
 /**
  * Check whether a Discord Event already
- * matches Umbra's expected configuration.
+ * matches Evelynn's expected configuration.
  *
  * @param {import('discord.js').GuildScheduledEvent} discordEvent
  * @param {Object} expectedEvent
@@ -552,7 +552,7 @@ function discordEventMatchesExpected(
 
 /**
  * Convert a Discord Scheduled Event status
- * into Umbra's PostgreSQL status.
+ * into Evelynn's PostgreSQL status.
  *
  * @param {GuildScheduledEventStatus} discordStatus
  * @returns {'SCHEDULED'|'ACTIVE'|'COMPLETED'|'CANCELLED'}
@@ -636,7 +636,7 @@ async function createRankTrialScheduledEvent(
                 'failed',
 
             reason:
-                'Umbra requires Create Events or Manage Events permission.'
+                'Evelynn requires Create Events or Manage Events permission.'
         };
     }
 
@@ -692,7 +692,7 @@ async function createRankTrialScheduledEvent(
      * A deleted PostgreSQL record remains
      * reserved for the same monthly cycle.
      *
-     * Umbra creates a new Discord Event and
+     * Evelynn creates a new Discord Event and
      * attaches its ID to the existing record.
      */
     if (
@@ -794,9 +794,7 @@ async function createRankTrialScheduledEvent(
                 concurrentRecord ??
                 undefined
         };
-    }
-
-    try {
+    }    try {
         const createdDiscordEvent =
             await guild.scheduledEvents
                 .create(
@@ -897,7 +895,9 @@ async function createRankTrialScheduledEvent(
                     )
         };
     }
-}/**
+}
+
+/**
  * Build the options accepted by
  * GuildScheduledEventManager#edit.
  *
@@ -926,7 +926,7 @@ function buildDiscordEventEditOptions(
         },
 
         reason:
-            `Umbra Monthly Rank Trials synchronization • ${expectedEvent.trialKey}`
+            `Evelynn Monthly Rank Trials synchronization • ${expectedEvent.trialKey}`
     };
 }
 
@@ -935,7 +935,7 @@ function buildDiscordEventEditOptions(
  * Scheduled Event.
  *
  * Completed and cancelled Events cannot
- * return to the Scheduled state, so Umbra
+ * return to the Scheduled state, so Evelynn
  * does not attempt to edit them.
  *
  * @param {import('discord.js').Guild} guild
@@ -1028,9 +1028,7 @@ async function saveDiscordEventState(
                     discordEvent.status
                 )
         });
-}
-
-/**
+}/**
  * Synchronize the monthly Rank Trial Event
  * between PostgreSQL and Discord.
  *
@@ -1093,7 +1091,7 @@ async function synchronizeRankTrialScheduledEvent(
                 'failed',
 
             reason:
-                'Umbra requires Create Events or Manage Events permission.'
+                'Evelynn requires Create Events or Manage Events permission.'
         };
     }
 
@@ -1309,7 +1307,9 @@ async function synchronizeRankTrialScheduledEvent(
                     )
         };
     }
-}/**
+}
+
+/**
  * Fetch the members who selected Interested
  * on a Discord Scheduled Event.
  *
@@ -1408,6 +1408,7 @@ async function getRankTrialScheduledEventState(
     return {
         record,
         discordEvent,
+
         interestedCount:
             Number(
                 discordEvent.userCount ?? 0
@@ -1498,7 +1499,8 @@ async function synchronizeRankTrialEventsForGuilds(
         if (!guild) {
             results.push({
                 guildId,
-                status: 'failed',
+                status:
+                    'failed',
                 reason:
                     'Guild could not be fetched.'
             });
@@ -1513,9 +1515,15 @@ async function synchronizeRankTrialEventsForGuilds(
             );
 
         results.push({
-            guildId: guild.id,
-            status: result.status,
-            reason: result.reason,
+            guildId:
+                guild.id,
+
+            status:
+                result.status,
+
+            reason:
+                result.reason,
+
             discordEventId:
                 result.discordEvent?.id
         });
