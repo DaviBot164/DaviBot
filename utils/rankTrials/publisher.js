@@ -210,7 +210,9 @@ function shouldSynchronizeScheduledEvent(
             ?.createWithOpeningAnnouncement ===
             true
     );
-}/**
+}
+
+/**
  * Create or synchronize the Discord Scheduled
  * Event after the Opening Announcement.
  *
@@ -377,9 +379,7 @@ async function synchronizeScheduledEventAfterPublication(
                     )
         };
     }
-}
-
-/**
+}/**
  * Publish one monthly Rank Trial announcement.
  *
  * PostgreSQL reservation happens before the
@@ -534,7 +534,9 @@ async function publishRankTrialAnnouncement(
             reason:
                 'Publication already exists in PostgreSQL.'
         };
-    }    try {
+    }
+
+    try {
         const embed =
             buildPublicationEmbed(
                 publication.key,
@@ -768,86 +770,289 @@ async function publishRankTrialAnnouncement(
         };
     }
 }/**
- * Publish one announcement in every active
- * configured Las Noches guild.
+ * Republish one already-published monthly
+ * Rank Trial announcement.
+ *
+ * This function intentionally does NOT create
+ * or modify a PostgreSQL publication record.
+ *
+ * It is intended for administrator-controlled
+ * manual recovery or re-publication only.
+ *
+ * The normal automatic publication system remains
+ * protected by its existing PostgreSQL reservation.
  *
  * @param {import('discord.js').Client<true>} client
+ * @param {import('discord.js').Guild} guild
  * @param {Object} schedule
- * @param {Object} publication
- * @param {string[]} guildIds
- * @returns {Promise<Array<{
- *     guildId: string,
- *     status: string,
+ * @param {{
+ *     key: string,
+ *     type: string,
+ *     scheduledFor: Date,
+ *     mentionEveryone: boolean
+ * }} publication
+ * @returns {Promise<{
+ *     status: 'republished'|'failed',
  *     messageId?: string,
- *     reason?: string,
- *     scheduledEvent?: Object
- * }>>}
+ *     reason?: string
+ * }>}
  */
-async function publishRankTrialToGuilds(
+async function republishRankTrialAnnouncement(
     client,
+    guild,
     schedule,
-    publication,
-    guildIds
+    publication
 ) {
-    const results =
-        [];
+    const publicationLabel =
+        getPublicationLabel(
+            publication.key
+        );
 
-    for (
-        const guildId of
-        guildIds
-    ) {
-        const guild =
-            client.guilds.cache.get(
-                guildId
-            ) ??
-            await client.guilds
-                .fetch(
-                    guildId
-                )
-                .catch(
-                    () => null
-                );
+    const channel =
+        await fetchRankTrialChannel(
+            guild
+        );
 
-        if (!guild) {
-            results.push({
-                guildId,
+    if (!channel) {
+        console.error(
+            '======================================'
+        );
 
-                status:
-                    'failed',
+        console.error(
+            '❌ Rank Trials channel was not found.'
+        );
 
-                reason:
-                    'Guild could not be fetched.'
-            });
+        console.error(
+            `📍 Configured Channel ID: ${rankTrialConfig.channelId}`
+        );
 
-            continue;
-        }
+        console.error(
+            `🏰 Server: ${guild.name}`
+        );
 
-        const result =
-            await publishRankTrialAnnouncement(
-                client,
-                guild,
-                schedule,
-                publication
-            );
+        console.error(
+            '======================================'
+        );
 
-        results.push({
-            guildId:
-                guild.id,
+        return {
+            status:
+                'failed',
 
-            ...result
-        });
+            reason:
+                'Rank Trials channel was not found.'
+        };
     }
 
-    return results;
-}
+    if (
+        !hasRequiredPermissions(
+            guild,
+            channel,
+            publication.mentionEveryone
+        )
+    ) {
+        console.error(
+            '======================================'
+        );
 
-module.exports = {
+        console.error(
+            '❌ Umbra is missing Rank Trials channel permissions.'
+        );
+
+        console.error(
+            `📍 Channel: ${channel.name}`
+        );
+
+        console.error(
+            `📣 Mention Everyone Required: ${publication.mentionEveryone}`
+        );
+
+        console.error(
+            `🏰 Server: ${guild.name}`
+        );
+
+        console.error(
+            '======================================'
+        );
+
+        return {
+            status:
+                'failed',
+
+            reason:
+                'Umbra is missing required channel permissions.'
+        };
+    }
+
+    try {
+        const embed =
+            buildPublicationEmbed(
+                publication.key,
+                schedule
+            );
+
+        embed.setAuthor({
+            name:
+                rankTrialConfig
+                    .branding
+                    .authorName,
+
+            iconURL:
+                client.user.displayAvatarURL({
+                    size:
+                        256,
+
+                    forceStatic:
+                        false
+                })
+        });
+
+        const guildIcon =
+            guild.iconURL({
+                size:
+                    128,
+
+                forceStatic:
+                    false
+            });
+
+        embed.setFooter({
+            text:
+                rankTrialConfig
+                    .branding
+                    .footerText,
+
+            iconURL:
+                guildIcon ??
+                client.user.displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
+        });
+
+        const components =
+            buildRankTrialPublicationComponents(
+                publication.key
+            );
+
+        const sentMessage =
+            await channel.send({
+                content:
+                    publication.mentionEveryone
+                        ? '@everyone'
+                        : undefined,
+
+                embeds:
+                    [embed],
+
+                components,
+
+                allowedMentions: {
+                    parse:
+                        publication.mentionEveryone
+                            ? ['everyone']
+                            : []
+                }
+            });
+
+        console.log(
+            '======================================'
+        );
+
+        console.log(
+            '🔁 Rank Trial Announcement Republished'
+        );
+
+        console.log(
+            `📖 Type: ${publicationLabel}`
+        );
+
+        console.log(
+            `🗓️ Trial: ${schedule.trialKey}`
+        );
+
+        console.log(
+            `📍 Channel: ${channel.name}`
+        );
+
+        console.log(
+            `💬 Message ID: ${sentMessage.id}`
+        );
+
+        console.log(
+            `🏰 Server: ${guild.name}`
+        );
+
+        console.log(
+            `📣 Mention Everyone: ${publication.mentionEveryone}`
+        );
+
+        console.log(
+            `🧩 Components: ${components.length}`
+        );
+
+        console.log(
+            '💾 Existing PostgreSQL publication history was preserved.'
+        );
+
+        console.log(
+            '======================================'
+        );
+
+        return {
+            status:
+                'republished',
+
+            messageId:
+                sentMessage.id
+        };
+    } catch (error) {
+        console.error(
+            '======================================'
+        );
+
+        console.error(
+            '❌ Rank Trial announcement republish failed.'
+        );
+
+        console.error(
+            `📖 Type: ${publicationLabel}`
+        );
+
+        console.error(
+            `🗓️ Trial: ${schedule.trialKey}`
+        );
+
+        console.error(
+            `🏰 Server: ${guild.name}`
+        );
+
+        console.error(
+            error
+        );
+
+        console.error(
+            '======================================'
+        );
+
+        return {
+            status:
+                'failed',
+
+            reason:
+                error instanceof Error
+                    ? error.message
+                    : String(
+                        error
+                    )
+        };
+    }
+}module.exports = {
     buildPublicationEmbed,
-    fetchRankTrialChannel,
-    hasRequiredPermissions,
     getPublicationLabel,
-    shouldSynchronizeScheduledEvent,
-    synchronizeScheduledEventAfterPublication,
     publishRankTrialAnnouncement,
+    republishRankTrialAnnouncement,
     publishRankTrialToGuilds
 };

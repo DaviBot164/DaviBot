@@ -19,6 +19,9 @@ const {
     kingdom: kingdomDatabase
 } = require('../../database');
 
+const rankConfig =
+    require('../../config/ranks');
+
 const KINGDOM_MENU_ID =
     'umbra_lasnoches_dashboard_menu';
 
@@ -107,19 +110,15 @@ const STAFF_ROLES = [
     '⚔️ Lieutenant'
 ];
 
-const ESPADA_ROLES = [
-    '👑 Espada 0',
-    'Ⅰ Espada',
-    'Ⅱ Espada',
-    'Ⅲ Espada',
-    'Ⅳ Espada',
-    'Ⅴ Espada',
-    'Ⅵ Espada',
-    'Ⅶ Espada',
-    'Ⅷ Espada',
-    'Ⅸ Espada',
-    'Ⅹ Espada'
-];
+const SIN_RANK_ROLES =
+    Object.values(
+        rankConfig.hierarchy
+    )
+        .map(
+            rank =>
+                rank.name
+        )
+        .filter(Boolean);
 
 const HOLLOW_EVOLUTION_ROLES = [
     '👁️ Hollow',
@@ -128,13 +127,6 @@ const HOLLOW_EVOLUTION_ROLES = [
     '🐺 Adjuchas',
     '👑 Vasto Lorde',
     '⚔️ Arrancar'
-];
-
-const ARRANCAR_HIERARCHY_ROLES = [
-    '🌘 Privaron Espada',
-    '⚔️ Fracción',
-    '🦴 Numeros',
-    '⚪ Unranked Arrancar'
 ];
 
 const TITLE_RARITY_ORDER = [
@@ -336,7 +328,9 @@ function formatMemberMention(
         )?.toString() ??
         `<@${userId}>`
     );
-}function splitRecords(
+}
+
+function splitRecords(
     records,
     maxLength = 1000
 ) {
@@ -521,7 +515,7 @@ function getRoleMembers(
     };
 }
 
-function getEspadaStatus(guild) {
+function getSinRankStatus(guild) {
     let occupied = 0;
     let missing = 0;
     let conflicts = 0;
@@ -529,7 +523,7 @@ function getEspadaStatus(guild) {
     const holders =
         new Set();
 
-    for (const roleName of ESPADA_ROLES) {
+    for (const roleName of SIN_RANK_ROLES) {
         const role =
             findGuildRole(
                 guild,
@@ -567,7 +561,7 @@ function getEspadaStatus(guild) {
         vacant:
             Math.max(
                 0,
-                ESPADA_ROLES.length -
+                SIN_RANK_ROLES.length -
                 occupied -
                 missing
             ),
@@ -628,7 +622,9 @@ function buildRaritySummary(
             );
         })
         .join('\n');
-}function buildOverviewPage(context) {
+}
+
+function buildOverviewPage(context) {
     const {
         interaction,
         kingdomStatistics
@@ -674,7 +670,7 @@ function buildRaritySummary(
         );
 
     const rankStatus =
-        getEspadaStatus(
+        getSinRankStatus(
             guild
         );
 
@@ -701,7 +697,7 @@ function buildRaritySummary(
     const rankCoverage =
         calculatePercentage(
             rankStatus.occupied,
-            ESPADA_ROLES.length
+            SIN_RANK_ROLES.length
         );
 
     const databaseCoverage =
@@ -816,7 +812,7 @@ function buildRaritySummary(
                 `**Occupied:** \`${formatNumber(
                     rankStatus.occupied
                 )} / ${formatNumber(
-                    ESPADA_ROLES.length
+                    SIN_RANK_ROLES.length
                 )}\``,
                 `**Vacant:** \`${formatNumber(
                     rankStatus.vacant
@@ -940,9 +936,7 @@ function buildRaritySummary(
     });
 
     return embed;
-}
-
-function buildHighCommandPage(context) {
+}function buildHighCommandPage(context) {
     const { interaction } =
         context;
 
@@ -1106,7 +1100,9 @@ function buildHighCommandPage(context) {
     );
 
     return embed;
-}function buildPopulationPage(context) {
+}
+
+function buildPopulationPage(context) {
     const {
         interaction,
         kingdomStatistics
@@ -1133,16 +1129,10 @@ function buildHighCommandPage(context) {
             HOLLOW_EVOLUTION_ROLES
         );
 
-    const hierarchy =
+    const sinRanks =
         getRoleMembers(
             guild,
-            ARRANCAR_HIERARCHY_ROLES
-        );
-
-    const espada =
-        getRoleMembers(
-            guild,
-            ESPADA_ROLES
+            SIN_RANK_ROLES
         );
 
     const progression =
@@ -1163,7 +1153,7 @@ function buildHighCommandPage(context) {
                 '👥 TTS Population',
 
             description:
-                'Member structure, evolution stages and rank hierarchy.',
+                'Member structure, evolution stages and THE Ⅹ SINS rank hierarchy.',
 
             color:
                 embedConfig.colors.support
@@ -1212,20 +1202,10 @@ function buildHighCommandPage(context) {
 
         {
             name:
-                '⚔️ Arrancar Hierarchy',
+                '⚔️ Sin Ranks',
 
             value:
-                hierarchy.lines.join('\n'),
-
-            inline: true
-        },
-
-        {
-            name:
-                '👑 Sin Rank Roles',
-
-            value:
-                espada.lines.join('\n'),
+                sinRanks.lines.join('\n'),
 
             inline: true
         },
@@ -1238,11 +1218,8 @@ function buildHighCommandPage(context) {
                 `**Evolution Holders:** \`${formatNumber(
                     evolution.uniqueMemberIds.size
                 )}\``,
-                `**Hierarchy Holders:** \`${formatNumber(
-                    hierarchy.uniqueMemberIds.size
-                )}\``,
                 `**Rank Holders:** \`${formatNumber(
-                    espada.uniqueMemberIds.size
+                    sinRanks.uniqueMemberIds.size
                 )}\``,
                 `**High Command:** \`${formatNumber(
                     countHighCommandMembers(
@@ -1253,11 +1230,8 @@ function buildHighCommandPage(context) {
                 `**Missing Evolution Roles:** \`${formatNumber(
                     evolution.missingRoles
                 )}\``,
-                `**Missing Hierarchy Roles:** \`${formatNumber(
-                    hierarchy.missingRoles
-                )}\``,
                 `**Missing Rank Roles:** \`${formatNumber(
-                    espada.missingRoles
+                    sinRanks.missingRoles
                 )}\``
             ].join('\n'),
 
@@ -1271,7 +1245,7 @@ function buildHighCommandPage(context) {
             value: [
                 'Members may appear in more than one role group.',
                 '',
-                'Evolution roles represent progression stages, while hierarchy roles represent manually assigned standing.',
+                'Evolution roles represent progression stages, while Sin Ranks represent manually assigned standing.',
                 '',
                 '-# Role-group totals should not be added together as unique members.'
             ].join('\n'),
@@ -1545,70 +1519,7 @@ function buildProgressionPage(context) {
     );
 
     return embed;
-}function formatRankPosition(
-    guild,
-    roleName
-) {
-    const role =
-        findGuildRole(
-            guild,
-            roleName
-        );
-
-    if (!role) {
-        return [
-            `### ${roleName}`,
-            '⚠️ **Role Missing**',
-            '-# The configured role could not be found.'
-        ].join('\n');
-    }
-
-    const members =
-        getHumanRoleMembers(
-            role
-        );
-
-    if (!members.length) {
-        return [
-            `### ${roleName}`,
-            '🌑 **Vacant**',
-            '-# No member currently holds this position.'
-        ].join('\n');
-    }
-
-    if (members.length > 1) {
-        return [
-            `### ${roleName}`,
-            `⚠️ **Conflict: ${formatNumber(
-                members.length
-            )} holders**`,
-            '',
-            formatMemberList(
-                members,
-                'Vacant',
-                5
-            ),
-            '',
-            '-# Only one member should hold each official rank.'
-        ].join('\n');
-    }
-
-    const member =
-        members[0];
-
-    return [
-        `### ${roleName}`,
-        `${member}`,
-        `**Username:** ${member.user.tag}`,
-        `**User ID:** \`${member.id}\``,
-        `**Joined:** ${formatDiscordDate(
-            member.joinedAt,
-            'D'
-        )}`
-    ].join('\n');
-}
-
-function buildRankPage(context) {
+}function buildSinRankPage(context) {
     const {
         interaction,
         kingdomStatistics
@@ -1618,22 +1529,8 @@ function buildRankPage(context) {
         interaction.guild;
 
     const status =
-        getEspadaStatus(
+        getSinRankStatus(
             guild
-        );
-
-    const ranks =
-        kingdomStatistics?.ranks ??
-        {};
-
-    const rankHistory =
-        kingdomStatistics?.rankHistory ??
-        {};
-
-    const occupancy =
-        calculatePercentage(
-            status.occupied,
-            ESPADA_ROLES.length
         );
 
     const embed =
@@ -1641,113 +1538,125 @@ function buildRankPage(context) {
             interaction,
 
             title:
-                '⚔️ Sin Rank Status',
+                '⚔️ THE Ⅹ SINS — Sin Ranks',
 
             description:
-                'Current rank occupancy, hierarchy and assignment status.',
+                'Current manually assigned Sin Rank hierarchy.',
 
             color:
                 embedConfig.colors.rank
         });
 
-    embed.addFields({
-        name:
-            '📊 Rank Overview',
+    const rankRecords =
+        kingdomStatistics?.recentRanks ??
+        [];
 
-        value: [
-            `\`${createProgressBar(
-                occupancy,
-                16
-            )}\` **${occupancy}% occupied**`,
-            '',
-            `**Occupied:** \`${formatNumber(
-                status.occupied
-            )} / ${formatNumber(
-                ESPADA_ROLES.length
-            )}\``,
-            `**Vacant:** \`${formatNumber(
-                status.vacant
-            )}\``,
-            `**Unique Holders:** \`${formatNumber(
-                status.uniqueHolders
-            )}\``,
-            `**Missing Roles:** \`${formatNumber(
-                status.missing
-            )}\``,
-            `**Conflicts:** \`${formatNumber(
-                status.conflicts
-            )}\``
-        ].join('\n'),
-
-        inline: false
-    });
-
-    if (kingdomStatistics) {
-        embed.addFields(
-            {
-                name:
-                    '📜 Rank Records',
-
-                value: [
-                    `**Active Ranked Members:** \`${formatNumber(
-                        ranks.activeRankedSouls
-                    )}\``,
-                    `**Rank Assignments:** \`${formatNumber(
-                        ranks.totalAssignments
-                    )}\``,
-                    `**Promotions:** \`${formatNumber(
-                        rankHistory.promotions
-                    )}\``,
-                    `**Demotions:** \`${formatNumber(
-                        rankHistory.demotions
-                    )}\``
-                ].join('\n'),
-
-                inline: true
-            },
-
-            {
-                name:
-                    '⚠️ Integrity',
-
-                value: [
-                    `**Missing Roles:** \`${formatNumber(
-                        status.missing
-                    )}\``,
-                    `**Multiple Holders:** \`${formatNumber(
-                        status.conflicts
-                    )}\``
-                ].join('\n'),
-
-                inline: true
-            }
-        );
-    }
-
-    const positionRecords =
-        splitRecords(
-            ESPADA_ROLES.map(
-                roleName =>
-                    formatRankPosition(
-                        guild,
-                        roleName
-                    )
-            ),
-            900
-        );
+    const rankFields =
+        [];
 
     for (
-        const [index, record]
-        of positionRecords.entries()
+        const rank
+        of Object.values(
+            rankConfig.hierarchy
+        )
     ) {
+        const role =
+            findGuildRole(
+                guild,
+                rank.name
+            );
+
+        const members =
+            getHumanRoleMembers(
+                role
+            );
+
+        rankFields.push({
+            name:
+                rank.name,
+
+            value: [
+                role
+                    ? `**Holders:** \`${formatNumber(
+                        members.length
+                    )}\``
+                    : '**Status:** `Role Missing`',
+
+                role && members.length
+                    ? formatMemberList(
+                        members,
+                        'Vacant',
+                        8
+                    )
+                    : role
+                        ? 'Vacant'
+                        : '⚠️ Role ID/name is not available in Discord.'
+            ].join('\n'),
+
+            inline: false
+        });
+    }
+
+    embed.addFields(
+        {
+            name:
+                '📊 Rank Overview',
+
+            value: [
+                `**Configured Ranks:** \`${formatNumber(
+                    Object.keys(
+                        rankConfig.hierarchy
+                    ).length
+                )}\``,
+                `**Occupied:** \`${formatNumber(
+                    status.occupied
+                )}\``,
+                `**Vacant:** \`${formatNumber(
+                    status.vacant
+                )}\``,
+                `**Missing Roles:** \`${formatNumber(
+                    status.missing
+                )}\``,
+                `**Unique Holders:** \`${formatNumber(
+                    status.uniqueHolders
+                )}\``,
+                `**Conflicts:** \`${formatNumber(
+                    status.conflicts
+                )}\``
+            ].join('\n'),
+
+            inline: false
+        },
+
+        ...rankFields
+    );
+
+    if (rankRecords.length) {
         embed.addFields({
             name:
-                index === 0
-                    ? '👑 Rank Positions'
-                    : `👑 Rank Positions ${index + 1}`,
+                '📜 Recent Rank Activity',
 
             value:
-                record,
+                rankRecords
+                    .slice(0, 5)
+                    .map(
+                        record => [
+                            `${formatMemberMention(
+                                guild,
+                                record.userId
+                            )}`,
+                            `**${record.rankName ?? record.rank ?? 'Unknown Rank'}**`,
+                            record.assignedAt
+                                ? formatDiscordDate(
+                                    record.assignedAt,
+                                    'R'
+                                )
+                                : ''
+                        ]
+                            .filter(Boolean)
+                            .join(' • ')
+                    )
+                    .join('\n'),
 
             inline: false
         });
@@ -1755,149 +1664,38 @@ function buildRankPage(context) {
 
     embed.addFields({
         name:
-            '🧭 Related Commands',
+            '📖 Rank Rules',
 
         value: [
-            '`/rank` — view a member rank',
-            '`/setrank` — assign a rank',
-            '`/removerank` — remove a rank',
-            '`/rankhistory` — view rank history'
+            'Sin Ranks are manually assigned through the rank management system.',
+            'A member should hold only the rank intended for their current standing.',
+            '',
+            '-# Rank definitions are loaded from `config/ranks.js`.'
         ].join('\n'),
 
         inline: false
     });
 
     return embed;
-}function formatRecentAchievement(
-    guild,
-    achievement
-) {
-    return [
-        `${achievement.icon || '🏆'} **${
-            achievement.name ||
-            'Unknown Achievement'
-        }**`,
-
-        `**Member:** ${formatMemberMention(
-            guild,
-            achievement.userId
-        )}`,
-
-        `**Category:** ${
-            achievement.category ||
-            'Unknown'
-        }`,
-
-        `**Unlocked:** ${
-            formatDiscordDate(
-                achievement.unlockedAt,
-                'R'
-            )
-        }`,
-
-        achievement.description
-            ? `-# ${achievement.description}`
-            : null
-    ]
-        .filter(Boolean)
-        .join('\n');
 }
 
-function formatRecentTitle(
-    guild,
-    title
-) {
-    return [
-        `🏷️ **${
-            title.displayName ||
-            title.name ||
-            'Unknown Title'
-        }**`,
-
-        `**Member:** ${formatMemberMention(
-            guild,
-            title.userId
-        )}`,
-
-        `**Rarity:** ${
-            title.rarity ||
-            'Unknown'
-        }`,
-
-        `**Category:** ${
-            title.category ||
-            'Unknown'
-        }`,
-
-        `**Unlocked:** ${
-            formatDiscordDate(
-                title.unlockedAt,
-                'R'
-            )
-        }`,
-
-        title.isActive
-            ? '👑 **Currently Active**'
-            : null,
-
-        title.description
-            ? `-# ${title.description}`
-            : null
-    ]
-        .filter(Boolean)
-        .join('\n');
-}
-
-function addRecordFields(
-    embed,
-    records,
-    {
-        title,
-        emptyText
-    }
-) {
-    if (!records.length) {
-        embed.addFields({
-            name: title,
-            value: emptyText,
-            inline: false
-        });
-
-        return;
-    }
-
-    const chunks =
-        splitRecords(
-            records
-        );
-
-    chunks.forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
-                name:
-                    index === 0
-                        ? title
-                        : `${title} — Continued`,
-
-                value:
-                    chunk,
-
-                inline: false
-            });
-        }
-    );
-}
-
-function buildChroniclesPage(
-    context
-) {
+function buildChroniclesPage(context) {
     const {
         interaction,
         kingdomStatistics
     } = context;
+
+    const achievements =
+        kingdomStatistics?.achievements ??
+        {};
+
+    const titles =
+        kingdomStatistics?.titles ??
+        {};
+
+    const rarityStatistics =
+        titles.rarityStatistics ??
+        {};
 
     const embed =
         createDashboardEmbed({
@@ -1907,75 +1705,11 @@ function buildChroniclesPage(
                 '🏆 TTS Chronicles',
 
             description:
-                'Achievements and Titles earned across THE Ⅹ SINS.',
+                'Achievements and Chronicle Titles earned throughout THE Ⅹ SINS.',
 
             color:
-                embedConfig.colors.title
+                embedConfig.colors.gold
         });
-
-    if (!kingdomStatistics) {
-        embed.addFields({
-            name:
-                '⚠️ Chronicle Core Unavailable',
-
-            value: [
-                'Achievement and Title statistics could not be loaded.',
-                '',
-                '-# Verify the PostgreSQL connection and database module.'
-            ].join('\n'),
-
-            inline: false
-        });
-
-        return embed;
-    }
-
-    const achievements =
-        kingdomStatistics.achievements ??
-        {};
-
-    const titles =
-        kingdomStatistics.titles ??
-        {};
-
-    const titleRarities =
-        kingdomStatistics.titleRarities ??
-        {};
-
-    const recentAchievements =
-        Array.isArray(
-            kingdomStatistics
-                .recentAchievements
-        )
-            ? kingdomStatistics
-                .recentAchievements
-            : [];
-
-    const recentTitles =
-        Array.isArray(
-            kingdomStatistics
-                .recentTitles
-        )
-            ? kingdomStatistics
-                .recentTitles
-            : [];
-
-    const registeredMembers =
-        kingdomStatistics
-            .progression
-            ?.registeredSouls ?? 0;
-
-    const achievementParticipation =
-        calculatePercentage(
-            achievements.soulsWithAchievements,
-            registeredMembers
-        );
-
-    const titleParticipation =
-        calculatePercentage(
-            titles.soulsWithTitles,
-            registeredMembers
-        );
 
     embed.addFields(
         {
@@ -1983,250 +1717,139 @@ function buildChroniclesPage(
                 '🏆 Achievements',
 
             value: [
-                `**Available:** \`${formatNumber(
-                    achievements.availableAchievements
+                `**Definitions:** \`${formatNumber(
+                    achievements.totalDefinitions
                 )}\``,
-
                 `**Total Unlocks:** \`${formatNumber(
                     achievements.totalUnlocks
                 )}\``,
-
-                `**Members with Achievements:** \`${formatNumber(
-                    achievements.soulsWithAchievements
+                `**Unique Holders:** \`${formatNumber(
+                    achievements.uniqueHolders
                 )}\``,
-
-                '',
-
-                `\`${createProgressBar(
-                    achievementParticipation,
-                    12
-                )}\` **${achievementParticipation}% participation**`,
-
-                '',
-
-                `**First Unlock:** ${
-                    formatDiscordDate(
-                        achievements.firstUnlockAt,
-                        'D'
-                    )
-                }`,
-
-                `**Latest Unlock:** ${
-                    formatDiscordDate(
-                        achievements.latestUnlockAt,
-                        'R'
-                    )
-                }`
+                `**Average / Member:** \`${formatDecimal(
+                    achievements.averagePerMember,
+                    2
+                )}\``,
+                `**Latest Unlock:** ${formatDiscordDate(
+                    achievements.latestUnlockAt,
+                    'R'
+                )}`
             ].join('\n'),
 
-            inline: true
+            inline: false
         },
 
         {
             name:
-                '🏷️ Chronicle Titles',
+                '📜 Chronicle Titles',
 
             value: [
-                `**Available:** \`${formatNumber(
-                    titles.availableTitles
+                `**Definitions:** \`${formatNumber(
+                    titles.totalDefinitions
                 )}\``,
-
                 `**Total Unlocks:** \`${formatNumber(
                     titles.totalUnlocks
                 )}\``,
-
-                `**Members with Titles:** \`${formatNumber(
-                    titles.soulsWithTitles
+                `**Unique Holders:** \`${formatNumber(
+                    titles.uniqueHolders
                 )}\``,
-
                 `**Active Titles:** \`${formatNumber(
                     titles.activeTitles
                 )}\``,
-
-                `**Legendary / Mythic:** \`${formatNumber(
-                    titles.rareUnlocks
-                )}\``,
-
-                '',
-
-                `\`${createProgressBar(
-                    titleParticipation,
-                    12
-                )}\` **${titleParticipation}% participation**`
+                `**Average / Member:** \`${formatDecimal(
+                    titles.averagePerMember,
+                    2
+                )}\``
             ].join('\n'),
 
-            inline: true
+            inline: false
         },
 
         {
             name:
-                '🌟 Title Rarity',
+                '🎨 Title Rarity',
 
             value:
                 buildRaritySummary(
-                    titleRarities
+                    rarityStatistics
                 ),
 
             inline: false
         }
     );
 
-    addRecordFields(
-        embed,
+    if (
+        achievements.recent &&
+        achievements.recent.length
+    ) {
+        embed.addFields({
+            name:
+                '🏅 Recent Achievements',
 
-        recentAchievements.map(
-            achievement =>
-                formatRecentAchievement(
-                    interaction.guild,
-                    achievement
-                )
-        ),
+            value:
+                achievements.recent
+                    .slice(0, 8)
+                    .map(
+                        achievement => [
+                            formatMemberMention(
+                                interaction.guild,
+                                achievement.userId
+                            ),
+                            `**${achievement.name ?? 'Achievement'}**`,
+                            achievement.unlockedAt
+                                ? formatDiscordDate(
+                                    achievement.unlockedAt,
+                                    'R'
+                                )
+                                : ''
+                        ]
+                            .filter(Boolean)
+                            .join(' • ')
+                    )
+                    .join('\n'),
 
-        {
-            title:
-                '📖 Recent Achievement Unlocks',
+            inline: false
+        });
+    }
 
-            emptyText:
-                '🌑 No recent Achievement unlocks are recorded.'
-        }
-    );
+    if (
+        titles.recent &&
+        titles.recent.length
+    ) {
+        embed.addFields({
+            name:
+                '📜 Recent Titles',
 
-    addRecordFields(
-        embed,
+            value:
+                titles.recent
+                    .slice(0, 8)
+                    .map(
+                        title => [
+                            formatMemberMention(
+                                interaction.guild,
+                                title.userId
+                            ),
+                            `**${title.name ?? 'Title'}**`,
+                            title.unlockedAt
+                                ? formatDiscordDate(
+                                    title.unlockedAt,
+                                    'R'
+                                )
+                                : ''
+                        ]
+                            .filter(Boolean)
+                            .join(' • ')
+                    )
+                    .join('\n'),
 
-        recentTitles.map(
-            title =>
-                formatRecentTitle(
-                    interaction.guild,
-                    title
-                )
-        ),
-
-        {
-            title:
-                '🏷️ Recent Title Unlocks',
-
-            emptyText:
-                '🌑 No recent Title unlocks are recorded.'
-        }
-    );
-
-    embed.addFields({
-        name:
-            '🧭 Related Commands',
-
-        value: [
-            '`/titles` — view Chronicle Titles',
-            '`/leaderboard` — view progression rankings',
-            '`/level` — view progression',
-            '`/rank` — view current rank'
-        ].join('\n'),
-
-        inline: false
-    });
+            inline: false
+        });
+    }
 
     return embed;
-}function formatRecentRankAction(
-    guild,
-    record
-) {
-    const isRemoval =
-        record.action === 'REMOVE';
-
-    return [
-        `### ${
-            isRemoval
-                ? '🌑 Rank Revocation'
-                : '⚔️ Rank Assignment'
-        }`,
-
-        `**Member:** ${formatMemberMention(
-            guild,
-            record.userId
-        )}`,
-
-        `**Previous:** ${
-            record.oldRank ||
-            'None'
-        }`,
-
-        `**New:** ${
-            record.newRank ||
-            'No active Rank'
-        }`,
-
-        record.moderatorId
-            ? `**Staff:** ${formatMemberMention(
-                guild,
-                record.moderatorId
-            )}`
-            : '**Staff:** Not recorded',
-
-        `**Reason:** ${
-            record.reason ||
-            'No reason recorded.'
-        }`,
-
-        `**Recorded:** ${
-            formatDiscordDate(
-                record.createdAt,
-                'R'
-            )
-        }`
-    ].join('\n');
 }
 
-function getActivityTotal(
-    activity
-) {
-    return Object.values(
-        activity ?? {}
-    ).reduce(
-        (
-            total,
-            value
-        ) =>
-            total +
-            (
-                Number(value) || 0
-            ),
-        0
-    );
-}
-
-function buildActivityWindow(
-    activity
-) {
-    return [
-        `⭐ **Progression:** \`${formatNumber(
-            activity.progressionUpdates
-        )}\``,
-
-        `🏆 **Achievements:** \`${formatNumber(
-            activity.achievementUnlocks
-        )}\``,
-
-        `🏷️ **Titles:** \`${formatNumber(
-            activity.titleUnlocks
-        )}\``,
-
-        `⚔️ **Rank Actions:** \`${formatNumber(
-            activity.rankActions
-        )}\``,
-
-        '',
-
-        `**Total:** \`${formatNumber(
-            getActivityTotal(
-                activity
-            )
-        )}\``
-    ].join('\n');
-}
-
-function buildActivityPage(
-    context
-) {
+function buildActivityPage(context) {
     const {
         interaction,
         kingdomStatistics
@@ -2240,250 +1863,308 @@ function buildActivityPage(
                 '📊 TTS Activity',
 
             description:
-                'Recent progression, Achievement, Title and rank activity.',
+                'Recent progression, achievement, title and rank activity.',
 
             color:
-                embedConfig.colors.success
+                embedConfig.colors.primary
         });
 
-    if (!kingdomStatistics) {
-        embed.addFields({
-            name:
-                '⚠️ Activity Core Unavailable',
+    const recentLevels =
+        kingdomStatistics?.recentLevels ??
+        [];
 
-            value: [
-                'Recent activity could not be loaded.',
-                '',
-                '-# Check the PostgreSQL connection and runtime logs.'
-            ].join('\n'),
+    const recentAchievements =
+        kingdomStatistics?.recentAchievements ??
+        [];
 
-            inline: false
-        });
-
-        return embed;
-    }
-
-    const activity =
-        kingdomStatistics.activity ??
-        {};
-
-    const last24Hours =
-        activity.last24Hours ??
-        {};
-
-    const last7Days =
-        activity.last7Days ??
-        {};
+    const recentTitles =
+        kingdomStatistics?.recentTitles ??
+        [];
 
     const recentRanks =
-        Array.isArray(
-            kingdomStatistics.recentRanks
-        )
-            ? kingdomStatistics.recentRanks
-            : [];
+        kingdomStatistics?.recentRanks ??
+        [];
 
-    const total24 =
-        getActivityTotal(
-            last24Hours
+    const activityLines = [];
+
+    for (
+        const record
+        of recentLevels.slice(0, 5)
+    ) {
+        activityLines.push(
+            `⭐ ${formatMemberMention(
+                interaction.guild,
+                record.userId
+            )} reached **Level ${formatNumber(
+                record.level
+            )}** ${formatDiscordDate(
+                record.createdAt ??
+                record.updatedAt,
+                'R'
+            )}`
         );
+    }
 
-    const total7 =
-        getActivityTotal(
-            last7Days
+    if (!activityLines.length) {
+        activityLines.push(
+            'No recent level activity recorded.'
         );
-
-    embed.addFields(
-        {
-            name:
-                '🕒 Last 24 Hours',
-
-            value:
-                buildActivityWindow(
-                    last24Hours
-                ),
-
-            inline: true
-        },
-
-        {
-            name:
-                '📅 Last 7 Days',
-
-            value:
-                buildActivityWindow(
-                    last7Days
-                ),
-
-            inline: true
-        },
-
-        {
-            name:
-                '📈 Activity Summary',
-
-            value: [
-                total24 > 0
-                    ? '🟢 Activity recorded during the last 24 hours.'
-                    : '🌑 No new activity recorded during the last 24 hours.',
-
-                '',
-
-                `**24h:** \`${formatNumber(
-                    total24
-                )}\``,
-
-                `**7d:** \`${formatNumber(
-                    total7
-                )}\``,
-
-                `**Generated:** ${
-                    formatDiscordDate(
-                        kingdomStatistics.generatedAt,
-                        'R'
-                    )
-                }`
-            ].join('\n'),
-
-            inline: false
-        }
-    );
-
-    addRecordFields(
-        embed,
-
-        recentRanks.map(
-            record =>
-                formatRecentRankAction(
-                    interaction.guild,
-                    record
-                )
-        ),
-
-        {
-            title:
-                '📜 Recent Rank Actions',
-
-            emptyText:
-                [
-                    '🌑 No recent rank actions are recorded.',
-                    '',
-                    '-# Future assignments, changes and revocations will appear here.'
-                ].join('\n')
-        }
-    );
+    }
 
     embed.addFields({
         name:
-            '🧭 Detailed Records',
+            '⭐ Recent Levels',
 
-        value: [
-            '`/leaderboard` — progression standings',
-            '`/rankhistory` — complete rank history',
-            '`/titles` — Title collection',
-            '`/soul` — personal progression archive'
-        ].join('\n'),
+        value:
+            activityLines.join('\n'),
+
+        inline: false
+    });
+
+    const achievementLines =
+        recentAchievements
+            .slice(0, 5)
+            .map(
+                record =>
+                    `🏆 ${formatMemberMention(
+                        interaction.guild,
+                        record.userId
+                    )} unlocked **${
+                        record.name ??
+                        'Achievement'
+                    }** ${record.unlockedAt
+                        ? formatDiscordDate(
+                            record.unlockedAt,
+                            'R'
+                        )
+                        : ''
+                    }`
+            );
+
+    embed.addFields({
+        name:
+            '🏆 Recent Achievements',
+
+        value:
+            achievementLines.length
+                ? achievementLines.join('\n')
+                : 'No recent achievement activity recorded.',
+
+        inline: false
+    });
+
+    const titleLines =
+        recentTitles
+            .slice(0, 5)
+            .map(
+                record =>
+                    `📜 ${formatMemberMention(
+                        interaction.guild,
+                        record.userId
+                    )} unlocked **${
+                        record.name ??
+                        'Title'
+                    }** ${record.unlockedAt
+                        ? formatDiscordDate(
+                            record.unlockedAt,
+                            'R'
+                        )
+                        : ''
+                    }`
+            );
+
+    embed.addFields({
+        name:
+            '📜 Recent Titles',
+
+        value:
+            titleLines.length
+                ? titleLines.join('\n')
+                : 'No recent title activity recorded.',
+
+        inline: false
+    });
+
+    const rankLines =
+        recentRanks
+            .slice(0, 5)
+            .map(
+                record =>
+                    `⚔️ ${formatMemberMention(
+                        interaction.guild,
+                        record.userId
+                    )} received **${
+                        record.rankName ??
+                        record.rank ??
+                        'Sin Rank'
+                    }** ${record.assignedAt
+                        ? formatDiscordDate(
+                            record.assignedAt,
+                            'R'
+                        )
+                        : ''
+                    }`
+            );
+
+    embed.addFields({
+        name:
+            '⚔️ Recent Sin Ranks',
+
+        value:
+            rankLines.length
+                ? rankLines.join('\n')
+                : 'No recent rank activity recorded.',
 
         inline: false
     });
 
     return embed;
-}function buildDashboardPage(
+}
+
+async function loadDashboardContext(
+    interaction
+) {
+    let kingdomStatistics =
+        null;
+
+    try {
+        kingdomStatistics =
+            await kingdomDatabase
+                .getKingdomStatistics(
+                    interaction.guild.id
+                );
+    } catch (error) {
+        console.error(
+            '[Dashboard] Failed to load kingdom statistics:',
+            error
+        );
+    }
+
+    return {
+        interaction,
+        kingdomStatistics
+    };
+}
+
+async function renderDashboardPage(
+    interaction,
+    pageId
+) {
+    const context =
+        await loadDashboardContext(
+            interaction
+        );
+
+    let embed;
+
+    switch (pageId) {
+        case KINGDOM_PAGES.overview:
+            embed =
+                buildOverviewPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.command:
+            embed =
+                buildHighCommandPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.population:
+            embed =
+                buildPopulationPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.progression:
+            embed =
+                buildProgressionPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.espada:
+            embed =
+                buildSinRankPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.chronicles:
+            embed =
+                buildChroniclesPage(
+                    context
+                );
+            break;
+
+        case KINGDOM_PAGES.activity:
+            embed =
+                buildActivityPage(
+                    context
+                );
+            break;
+
+        default:
+            embed =
+                buildOverviewPage(
+                    context
+                );
+            break;
+    }
+
+    return {
+        embed,
+
+        components: [
+            createDashboardMenu(
+                pageId
+            )
+        ]
+    };
+}async function buildKingdomPage(
     context,
     selectedPage
 ) {
-    const builders = {
-        [KINGDOM_PAGES.overview]:
-            buildOverviewPage,
-
-        [KINGDOM_PAGES.command]:
-            buildHighCommandPage,
-
-        [KINGDOM_PAGES.population]:
-            buildPopulationPage,
-
-        [KINGDOM_PAGES.progression]:
-            buildProgressionPage,
-
-        [KINGDOM_PAGES.espada]:
-            buildRankPage,
-
-        [KINGDOM_PAGES.chronicles]:
-            buildChroniclesPage,
-
-        [KINGDOM_PAGES.activity]:
-            buildActivityPage
-    };
-
-    return (
-        builders[selectedPage] ??
-        buildOverviewPage
-    )(context);
-}
-
-async function loadDashboardData(
-    guild
-) {
-    await guild.members
-        .fetch()
-        .catch(
-            () => null
-        );
-
-    return kingdomDatabase
-        .getKingdomStatistics(
-            guild.id,
-            {
-                leaderboardLimit: 5,
-                recentAchievementLimit: 5,
-                recentTitleLimit: 5,
-                recentRankLimit: 5
-            }
-        )
-        .catch(error => {
-            console.error(
-                '⚠️ Evelynn Dashboard data load failed:',
-                error
+    switch (selectedPage) {
+        case KINGDOM_PAGES.command:
+            return buildHighCommandPage(
+                context
             );
 
-            return null;
-        });
-}
+        case KINGDOM_PAGES.population:
+            return buildPopulationPage(
+                context
+            );
 
-async function sendDashboardError(
-    interaction,
-    title,
-    description
-) {
-    const embed =
-        createErrorEmbed(
-            title,
-            description
-        );
+        case KINGDOM_PAGES.progression:
+            return buildProgressionPage(
+                context
+            );
 
-    if (
-        interaction.deferred
-    ) {
-        return interaction.editReply({
-            embeds: [embed],
-            components: []
-        });
+        case KINGDOM_PAGES.espada:
+            return buildSinRankPage(
+                context
+            );
+
+        case KINGDOM_PAGES.chronicles:
+            return buildChroniclesPage(
+                context
+            );
+
+        case KINGDOM_PAGES.activity:
+            return buildActivityPage(
+                context
+            );
+
+        case KINGDOM_PAGES.overview:
+        default:
+            return buildOverviewPage(
+                context
+            );
     }
-
-    if (
-        interaction.replied
-    ) {
-        return interaction.followUp({
-            embeds: [embed],
-            flags:
-                MessageFlags.Ephemeral
-        });
-    }
-
-    return interaction.reply({
-        embeds: [embed],
-        flags:
-            MessageFlags.Ephemeral
-    });
 }
 
 module.exports = {
@@ -2493,15 +2174,21 @@ module.exports = {
     data:
         new SlashCommandBuilder()
             .setName(
-                'dashboard'
+                'lasnoches'
             )
             .setDescription(
-                'Open the TTS server dashboard.'
+                'Open the interactive Kingdom Dashboard of Las Noches.'
             )
             .setDMPermission(
                 false
             ),
 
+    /**
+     * Execute the /lasnoches command.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(
         interaction
     ) {
@@ -2509,39 +2196,78 @@ module.exports = {
             if (
                 !interaction.inGuild()
             ) {
-                return sendDashboardError(
-                    interaction,
-                    '❌ Server Only Command',
-                    'The Dashboard can only be opened inside THE Ⅹ SINS.'
-                );
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Las Noches Only Command',
+                            'The Kingdom Dashboard can only be opened inside Las Noches.'
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
             }
 
             await interaction.deferReply();
 
-            let kingdomStatistics =
-                await loadDashboardData(
-                    interaction.guild
+            await interaction.guild.members
+                .fetch()
+                .catch(
+                    () => null
                 );
+
+            let kingdomStatistics =
+                await kingdomDatabase
+                    .getKingdomStatistics(
+                        interaction.guild.id,
+                        {
+                            leaderboardLimit:
+                                5,
+
+                            recentAchievementLimit:
+                                5,
+
+                            recentTitleLimit:
+                                5,
+
+                            recentRankLimit:
+                                5
+                        }
+                    )
+                    .catch(error => {
+                        console.error(
+                            '⚠️ Umbra could not load Kingdom statistics:',
+                            error
+                        );
+
+                        return null;
+                    });
+
+            let context = {
+                interaction,
+                kingdomStatistics
+            };
 
             let selectedPage =
                 KINGDOM_PAGES.overview;
 
-            const getContext = () => ({
-                interaction,
-                kingdomStatistics
-            });
+            const initialEmbed =
+                await buildKingdomPage(
+                    context,
+                    selectedPage
+                );
 
-            const message =
+            const replyMessage =
                 await interaction.editReply({
                     embeds: [
-                        buildDashboardPage(
-                            getContext(),
-                            selectedPage
-                        )
+                        initialEmbed
                     ],
 
                     components: [
-                        createDashboardMenu(
+                        createKingdomMenu(
                             selectedPage
                         )
                     ],
@@ -2551,13 +2277,14 @@ module.exports = {
                 });
 
             const collector =
-                message.createMessageComponentCollector({
-                    componentType:
-                        ComponentType.StringSelect,
+                replyMessage
+                    .createMessageComponentCollector({
+                        componentType:
+                            ComponentType.StringSelect,
 
-                    time:
-                        10 * 60 * 1000
-                });
+                        time:
+                            10 * 60 * 1000
+                    });
 
             collector.on(
                 'collect',
@@ -2567,17 +2294,19 @@ module.exports = {
                             menuInteraction.user.id !==
                             interaction.user.id
                         ) {
-                            return menuInteraction.reply({
+                            await menuInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
-                                        '❌ Private Dashboard',
-                                        'Only the member who opened this Dashboard can control it.'
+                                        '❌ Private Kingdom Dashboard',
+                                        'Only the Soul who opened this Kingdom Dashboard may control its navigation.'
                                     )
                                 ],
 
                                 flags:
                                     MessageFlags.Ephemeral
                             });
+
+                            return;
                         }
 
                         if (
@@ -2587,66 +2316,116 @@ module.exports = {
                             return;
                         }
 
-                        const page =
+                        const requestedPage =
                             menuInteraction.values[0];
 
                         if (
                             !KINGDOM_PAGE_ORDER.includes(
-                                page
+                                requestedPage
                             )
                         ) {
-                            return menuInteraction.reply({
+                            await menuInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
-                                        '❌ Unknown Dashboard Page',
-                                        'Evelynn could not recognize the selected Dashboard page.'
+                                        '❌ Unknown Kingdom Record',
+                                        'Umbra could not recognize the selected Kingdom Dashboard page.'
                                     )
                                 ],
 
                                 flags:
                                     MessageFlags.Ephemeral
                             });
+
+                            return;
                         }
 
                         selectedPage =
-                            page;
+                            requestedPage;
+
+                        /*
+                         * Refresh Discord members and
+                         * PostgreSQL Kingdom statistics
+                         * before every page transition.
+                         */
+                        await interaction.guild.members
+                            .fetch()
+                            .catch(
+                                () => null
+                            );
 
                         kingdomStatistics =
-                            await loadDashboardData(
-                                interaction.guild
+                            await kingdomDatabase
+                                .getKingdomStatistics(
+                                    interaction.guild.id,
+                                    {
+                                        leaderboardLimit:
+                                            5,
+
+                                        recentAchievementLimit:
+                                            5,
+
+                                        recentTitleLimit:
+                                            5,
+
+                                        recentRankLimit:
+                                            5
+                                    }
+                                )
+                                .catch(error => {
+                                    console.error(
+                                        '⚠️ Umbra Kingdom live refresh failed:',
+                                        error
+                                    );
+
+                                    return null;
+                                });
+
+                        context = {
+                            interaction,
+                            kingdomStatistics
+                        };
+
+                        const updatedEmbed =
+                            await buildKingdomPage(
+                                context,
+                                selectedPage
                             );
 
                         await menuInteraction.update({
                             embeds: [
-                                buildDashboardPage(
-                                    getContext(),
-                                    selectedPage
-                                )
+                                updatedEmbed
                             ],
 
                             components: [
-                                createDashboardMenu(
+                                createKingdomMenu(
                                     selectedPage
                                 )
                             ]
                         });
-                    } catch (error) {
+                    } catch (menuError) {
                         console.error(
-                            '❌ Evelynn Dashboard navigation error:',
-                            error
+                            '❌ Umbra /lasnoches navigation error:',
+                            menuError
                         );
 
+                        const navigationErrorEmbed =
+                            createErrorEmbed(
+                                '❌ Kingdom Navigation Failed',
+                                [
+                                    'Umbra could not open the selected Kingdom record.',
+                                    '',
+                                    'Please try opening `/lasnoches` again.'
+                                ].join('\n')
+                            );
+
                         if (
-                            menuInteraction.replied ||
-                            menuInteraction.deferred
+                            menuInteraction.deferred ||
+                            menuInteraction.replied
                         ) {
-                            return menuInteraction
+                            await menuInteraction
                                 .followUp({
                                     embeds: [
-                                        createErrorEmbed(
-                                            '❌ Dashboard Navigation Failed',
-                                            'Evelynn could not open the selected Dashboard page.'
-                                        )
+                                        navigationErrorEmbed
                                     ],
 
                                     flags:
@@ -2655,15 +2434,14 @@ module.exports = {
                                 .catch(
                                     () => null
                                 );
+
+                            return;
                         }
 
                         await menuInteraction
                             .reply({
                                 embeds: [
-                                    createErrorEmbed(
-                                        '❌ Dashboard Navigation Failed',
-                                        'Evelynn could not open the selected Dashboard page.'
-                                    )
+                                    navigationErrorEmbed
                                 ],
 
                                 flags:
@@ -2678,11 +2456,25 @@ module.exports = {
 
             collector.on(
                 'end',
-                async () => {
+                async (
+                    collected,
+                    reason
+                ) => {
+                    if (
+                        reason ===
+                            'messageDelete' ||
+                        reason ===
+                            'channelDelete' ||
+                        reason ===
+                            'guildDelete'
+                    ) {
+                        return;
+                    }
+
                     await interaction
                         .editReply({
                             components: [
-                                createDashboardMenu(
+                                createKingdomMenu(
                                     selectedPage,
                                     true
                                 )
@@ -2695,21 +2487,70 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Evelynn /dashboard error:',
+                '❌ Umbra /lasnoches command error:',
                 error
             );
 
-            await sendDashboardError(
-                interaction,
-                '❌ Dashboard Unavailable',
-                'Evelynn could not open the TTS Dashboard.'
-            ).catch(
-                responseError =>
-                    console.error(
-                        '❌ Dashboard error response failed:',
-                        responseError
-                    )
-            );
+            const errorEmbed =
+                createErrorEmbed(
+                    '❌ Kingdom Dashboard Unavailable',
+                    [
+                        'Umbra could not open the central Kingdom Dashboard of Las Noches.',
+                        '',
+                        'Please verify the PostgreSQL connection, configured hierarchy roles and Northflank logs.'
+                    ].join('\n')
+                );
+
+            if (
+                interaction.deferred
+            ) {
+                await interaction
+                    .editReply({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        components:
+                            []
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            if (
+                interaction.replied
+            ) {
+                await interaction
+                    .followUp({
+                        embeds: [
+                            errorEmbed
+                        ],
+
+                        flags:
+                            MessageFlags.Ephemeral
+                    })
+                    .catch(
+                        () => null
+                    );
+
+                return;
+            }
+
+            await interaction
+                .reply({
+                    embeds: [
+                        errorEmbed
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(
+                    () => null
+                );
         }
     }
 };
