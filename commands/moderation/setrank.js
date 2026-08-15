@@ -29,95 +29,43 @@ const {
 } = require('../../utils/kingdomFeed');
 
 /**
- * Return every configured Arrancar Rank.
+ * Return all assignable Sin ranks.
  *
- * @returns {Array<{
- *     key: string,
- *     id: string,
- *     name: string
- * }>}
+ * Dominion is a special position and is not
+ * assignable through /setrank.
+ *
+ * Unranked is handled by /removerank.
+ *
+ * @returns {Array<{key: string, id: string, name: string}>}
  */
-function getConfiguredRanks() {
+function getAssignableRanks() {
     return Object.entries(
         rankConfig.hierarchy
-    ).map(
-        ([
-            key,
-            rank
-        ]) => ({
-            key,
-            id:
-                rank.id,
-            name:
-                rank.name
-        })
-    );
-}
-
-/**
- * Return every configured Arrancar
- * Rank Role ID.
- *
- * @returns {string[]}
- */
-function getConfiguredRankRoleIds() {
-    return getConfiguredRanks()
+    )
+        .filter(
+            ([key]) =>
+                key !== 'dominion' &&
+                key !== 'unranked'
+        )
         .map(
-            rank =>
-                rank.id
+            ([key, rank]) => ({
+                key,
+                id:
+                    rank.id,
+                name:
+                    rank.name
+            })
         );
 }
 
 /**
- * Find one configured Rank by its
- * stable command key.
- *
- * @param {string} rankKey
- * @returns {{
- *     key: string,
- *     id: string,
- *     name: string
- * }|null}
- */
-function getConfiguredRank(
-    rankKey
-) {
-    const rank =
-        rankConfig.hierarchy[
-            rankKey
-        ];
-
-    if (
-        !rank ||
-        !rank.id ||
-        !rank.name
-    ) {
-        return null;
-    }
-
-    return {
-        key:
-            rankKey,
-
-        id:
-            rank.id,
-
-        name:
-            rank.name
-    };
-}
-
-/**
- * Check whether the command executor
- * belongs to the Las Noches High Command.
- *
- * The guild owner and members with
- * Administrator always bypass Role checks.
+ * Check whether a member can manage
+ * the THE Ⅹ SINS rank system.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
  */
-function canManageArrancarRanks(
+function canManageRanks(
     member
 ) {
     if (!member) {
@@ -139,12 +87,9 @@ function canManageArrancarRanks(
         return true;
     }
 
-    const highCommandRoleIds =
-        Object.values(
-            rankConfig.highCommand
-        );
-
-    return highCommandRoleIds.some(
+    return Object.values(
+        rankConfig.highCommand
+    ).some(
         roleId =>
             member.roles.cache.has(
                 roleId
@@ -153,71 +98,76 @@ function canManageArrancarRanks(
 }
 
 /**
- * Find a Discord Role using its
- * configured immutable Role ID.
+ * Find a configured rank role.
  *
  * @param {import('discord.js').Guild} guild
  * @param {string} roleId
  * @returns {import('discord.js').Role|null}
  */
-function findGuildRoleById(
+function getRankRole(
     guild,
     roleId
 ) {
     return (
         guild.roles.cache.get(
             roleId
-        ) ||
+        ) ??
         null
     );
 }
 
 /**
- * Get every manually managed Arrancar
- * Rank Role currently held by a member.
+ * Get all current Sin roles held by
+ * a member.
  *
  * @param {import('discord.js').GuildMember} member
- * @returns {import('discord.js').Collection<string, import('discord.js').Role>}
+ * @returns {import('discord.js').Collection}
  */
 function getMemberRankRoles(
     member
 ) {
-    const rankRoleIds =
+    const rankIds =
         new Set(
-            getConfiguredRankRoleIds()
+            Object.values(
+                rankConfig.hierarchy
+            )
+                .filter(
+                    rank =>
+                        rank.id
+                )
+                .map(
+                    rank =>
+                        rank.id
+                )
         );
 
     return member.roles.cache
         .filter(
             role =>
-                rankRoleIds.has(
+                rankIds.has(
                     role.id
                 )
         )
         .sort(
-            (
-                firstRole,
-                secondRole
-            ) =>
-                secondRole.position -
-                firstRole.position
+            (a, b) =>
+                b.position -
+                a.position
         );
 }
 
 /**
- * Find the official Hall of Honor
- * using its immutable Channel ID.
+ * Find the official Rank announcement
+ * channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
  */
-function findPromotionChannel(
+function getRankChannel(
     guild
 ) {
     const channel =
         guild.channels.cache.get(
-            rankConfig
-                .channels
+            rankConfig.channels
                 .hallOfHonor
         );
 
@@ -233,57 +183,22 @@ function findPromotionChannel(
 }
 
 /**
- * Find a safe channel for a special
- * Chronicle Title unlock notification.
+ * Format newly unlocked Titles.
  *
- * Priority:
- * 1. Hall of Honor
- * 2. Current command channel
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {import('discord.js').GuildTextBasedChannel|null}
- */
-function findTitleNotificationChannel(
-    interaction
-) {
-    const promotionChannel =
-        findPromotionChannel(
-            interaction.guild
-        );
-
-    if (promotionChannel) {
-        return promotionChannel;
-    }
-
-    if (
-        interaction.channel &&
-        interaction.channel.isTextBased()
-    ) {
-        return interaction.channel;
-    }
-
-    return null;
-}
-
-/**
- * Format newly unlocked Chronicle Titles.
- *
- * @param {Object[]} unlockedTitles
+ * @param {Object[]} titles
  * @returns {string|null}
  */
 function formatUnlockedTitles(
-    unlockedTitles
+    titles
 ) {
     if (
-        !Array.isArray(
-            unlockedTitles
-        ) ||
-        unlockedTitles.length === 0
+        !Array.isArray(titles) ||
+        !titles.length
     ) {
         return null;
     }
 
-    return unlockedTitles
+    return titles
         .map(
             title =>
                 `• ${title.displayName}`
@@ -292,17 +207,9 @@ function formatUnlockedTitles(
 }
 
 /**
- * Create the official Las Noches
- * Arrancar Rank proclamation.
+ * Build the official Sin promotion embed.
  *
  * @param {Object} options
- * @param {import('discord.js').GuildMember} options.member
- * @param {import('discord.js').User} options.moderator
- * @param {string|null} options.oldRank
- * @param {string} options.newRank
- * @param {string} options.reason
- * @param {number|string|null} options.historyId
- * @param {Object[]} options.unlockedTitles
  * @returns {import('discord.js').EmbedBuilder}
  */
 function createPromotionEmbed({
@@ -314,20 +221,15 @@ function createPromotionEmbed({
     historyId,
     unlockedTitles = []
 }) {
-    const promotedAt =
+    const timestamp =
         Math.floor(
-            Date.now() /
-            1_000
+            Date.now() / 1000
         );
 
-    const previousRankDisplay =
-        oldRank ||
-        'No previous Rank';
-
-    const historyDisplay =
-        historyId
-            ? `#${historyId}`
-            : 'Pending Archive';
+    const titleText =
+        formatUnlockedTitles(
+            unlockedTitles
+        );
 
     const fields = [
         {
@@ -335,36 +237,38 @@ function createPromotionEmbed({
                 '🌙 Soul',
 
             value:
-                `${member}\n` +
-                `\`${member.id}\``,
+                `${member}\n\`${member.id}\``,
 
             inline:
                 true
         },
+
         {
             name:
                 '👑 High Command',
 
             value:
-                `${moderator}\n` +
-                `\`${moderator.id}\``,
+                `${moderator}\n\`${moderator.id}\``,
 
             inline:
                 true
         },
+
         {
             name:
                 '📜 Previous Rank',
 
             value:
-                previousRankDisplay,
+                oldRank ||
+                'No previous Rank',
 
             inline:
                 true
         },
+
         {
             name:
-                '⚔️ New Arrancar Rank',
+                '⚔️ New Sin Rank',
 
             value:
                 newRank,
@@ -372,27 +276,31 @@ function createPromotionEmbed({
             inline:
                 true
         },
+
         {
             name:
                 '🆔 Hierarchy Record',
 
             value:
-                `\`${historyDisplay}\``,
+                historyId
+                    ? `\`#${historyId}\``
+                    : 'Pending Archive',
 
             inline:
                 true
         },
+
         {
             name:
                 '🕒 Proclaimed At',
 
             value:
-                `<t:${promotedAt}:F>\n` +
-                `(<t:${promotedAt}:R>)`,
+                `<t:${timestamp}:F>\n(<t:${timestamp}:R>)`,
 
             inline:
                 true
         },
+
         {
             name:
                 '📖 Reason',
@@ -405,19 +313,14 @@ function createPromotionEmbed({
         }
     ];
 
-    const unlockedTitleDisplay =
-        formatUnlockedTitles(
-            unlockedTitles
-        );
-
-    if (unlockedTitleDisplay) {
+    if (titleText) {
         fields.push({
             name:
                 '🏷️ New Chronicle Titles',
 
             value:
                 [
-                    unlockedTitleDisplay,
+                    titleText,
                     '',
                     '-# These Titles are now available through `/settitle`.'
                 ].join('\n'),
@@ -429,15 +332,19 @@ function createPromotionEmbed({
 
     return createEmbed({
         title:
-            '🏅 Arrancar Rank Proclamation',
+            '⚔️ Sin Rank Proclamation',
 
         description:
             [
-                `${member} has received a new position within the hierarchy of Las Noches.`,
+                `${member} has received a new position within THE Ⅹ SINS.`,
+
                 '',
+
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+
                 '',
-                '*Umbra has preserved this proclamation within the eternal Soul Archives.*'
+
+                '*Evelynn has preserved this proclamation within the Soul Archives.*'
             ].join('\n'),
 
         color:
@@ -456,7 +363,7 @@ function createPromotionEmbed({
 
         footer: {
             text:
-                '🌙 Umbra • Guardian of Las Noches'
+                'THE Ⅹ SINS • Rank Archive'
         }
     });
 }module.exports = {
@@ -469,159 +376,71 @@ function createPromotionEmbed({
                 'setrank'
             )
             .setDescription(
-                'Assign an official Arrancar Rank to a Soul.'
+                'Assign an official Sin Rank to a Soul.'
             )
 
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'user'
-                    )
-                    .setDescription(
-                        'Select the Soul receiving the Rank'
-                    )
-                    .setRequired(
-                        true
-                    )
+            .addUserOption(
+                option =>
+                    option
+                        .setName(
+                            'user'
+                        )
+                        .setDescription(
+                            'Select the Soul receiving the Rank.'
+                        )
+                        .setRequired(
+                            true
+                        )
             )
 
-            .addStringOption(option =>
-                option
-                    .setName(
-                        'rank'
-                    )
-                    .setDescription(
-                        'Select the new Arrancar Rank'
-                    )
-                    .setRequired(
-                        true
-                    )
-                    .addChoices(
-                        {
-                            name:
-                                '👑 Espada 0',
+            .addStringOption(
+                option => {
+                    option
+                        .setName(
+                            'rank'
+                        )
+                        .setDescription(
+                            'Select the Sin Rank to assign.'
+                        )
+                        .setRequired(
+                            true
+                        );
 
-                            value:
-                                'espada0'
-                        },
-                        {
-                            name:
-                                'Ⅰ Espada',
+                    option.addChoices(
+                        ...getAssignableRanks()
+                            .map(
+                                rank => ({
+                                    name:
+                                        rank.name,
 
-                            value:
-                                'espada1'
-                        },
-                        {
-                            name:
-                                'Ⅱ Espada',
+                                    value:
+                                        rank.key
+                                })
+                            )
+                    );
 
-                            value:
-                                'espada2'
-                        },
-                        {
-                            name:
-                                'Ⅲ Espada',
-
-                            value:
-                                'espada3'
-                        },
-                        {
-                            name:
-                                'Ⅳ Espada',
-
-                            value:
-                                'espada4'
-                        },
-                        {
-                            name:
-                                'Ⅴ Espada',
-
-                            value:
-                                'espada5'
-                        },
-                        {
-                            name:
-                                'Ⅵ Espada',
-
-                            value:
-                                'espada6'
-                        },
-                        {
-                            name:
-                                'Ⅶ Espada',
-
-                            value:
-                                'espada7'
-                        },
-                        {
-                            name:
-                                'Ⅷ Espada',
-
-                            value:
-                                'espada8'
-                        },
-                        {
-                            name:
-                                'Ⅸ Espada',
-
-                            value:
-                                'espada9'
-                        },
-                        {
-                            name:
-                                'Ⅹ Espada',
-
-                            value:
-                                'espada10'
-                        },
-                        {
-                            name:
-                                '🌘 Privaron Espada',
-
-                            value:
-                                'privaron'
-                        },
-                        {
-                            name:
-                                '⚔️ Fracción',
-
-                            value:
-                                'fraccion'
-                        },
-                        {
-                            name:
-                                '🦴 Numeros',
-
-                            value:
-                                'numeros'
-                        },
-                        {
-                            name:
-                                '⚪ Unranked Arrancar',
-
-                            value:
-                                'unranked'
-                        }
-                    )
+                    return option;
+                }
             )
 
-            .addStringOption(option =>
-                option
-                    .setName(
-                        'reason'
-                    )
-                    .setDescription(
-                        'Reason for this promotion or Rank change'
-                    )
-                    .setMinLength(
-                        2
-                    )
-                    .setMaxLength(
-                        500
-                    )
-                    .setRequired(
-                        true
-                    )
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'reason'
+                        )
+                        .setDescription(
+                            'Reason for this Rank change.'
+                        )
+                        .setMinLength(
+                            2
+                        )
+                        .setMaxLength(
+                            500
+                        )
+                        .setRequired(
+                            true
+                        )
             )
 
             .setDefaultMemberPermissions(
@@ -633,7 +452,7 @@ function createPromotionEmbed({
             ),
 
     /**
-     * Execute the /setrank command.
+     * Execute /setrank.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -648,8 +467,8 @@ function createPromotionEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ Server Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -664,7 +483,7 @@ function createPromotionEmbed({
                 interaction.member;
 
             if (
-                !canManageArrancarRanks(
+                !canManageRanks(
                     executor
                 )
             ) {
@@ -672,8 +491,9 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ High Command Required',
+
                             [
-                                'Only the Las Noches High Command may assign Arrancar Ranks.',
+                                'Only THE Ⅹ SINS High Command may assign Sin Ranks.',
                                 '',
                                 'Required standing:',
                                 '• 👑 Ruler of Las Noches',
@@ -712,7 +532,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
+                            'The selected Soul is not currently inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -730,7 +550,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Invalid Soul',
-                            'Arrancar Ranks cannot be assigned to Discord bots.'
+                            'Sin Ranks cannot be assigned to Discord bots.'
                         )
                     ],
 
@@ -751,7 +571,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Protected Soul',
-                            'Only the server owner may change the owner’s Arrancar Rank.'
+                            'Only the server owner may change the owner’s Sin Rank.'
                         )
                     ],
 
@@ -763,16 +583,18 @@ function createPromotionEmbed({
             }
 
             const configuredRank =
-                getConfiguredRank(
+                rankConfig.hierarchy[
                     rankKey
-                );
+                ];
 
-            if (!configuredRank) {
+            if (
+                !configuredRank
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Invalid Arrancar Rank',
-                            'The selected Rank is not configured inside Umbra’s hierarchy.'
+                            '❌ Invalid Sin Rank',
+                            'The selected Rank is not configured inside THE Ⅹ SINS hierarchy.'
                         )
                     ],
 
@@ -794,11 +616,12 @@ function createPromotionEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Invalid Rank Archive',
+                            '❌ Rank Archive Error',
+
                             [
-                                `The configured Rank **${rankName}** is not recognized by the PostgreSQL hierarchy.`,
+                                `The configured Rank **${rankName}** is not recognized by the Rank database.`,
                                 '',
-                                'Check `config/ranks.js` and `database/ranks.js` before trying again.'
+                                'Check `config/ranks.js` and `database/ranks.js`.'
                             ].join('\n')
                         )
                     ],
@@ -811,22 +634,25 @@ function createPromotionEmbed({
             }
 
             const selectedRole =
-                findGuildRoleById(
+                getRankRole(
                     interaction.guild,
                     configuredRank.id
                 );
 
-            if (!selectedRole) {
+            if (
+                !selectedRole
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Rank Role Missing',
+
                             [
-                                `Umbra could not find the configured Discord role for **${rankName}**.`,
+                                `Umbra could not find the configured role for **${rankName}**.`,
                                 '',
-                                `Configured Role ID: \`${configuredRank.id}\``,
+                                `Role ID: \`${configuredRank.id}\``,
                                 '',
-                                'Confirm that the role still exists and that its ID is correct inside `config/ranks.js`.'
+                                'Check that the role still exists and that `config/ranks.js` contains the correct ID.'
                             ].join('\n')
                         )
                     ],
@@ -836,64 +662,29 @@ function createPromotionEmbed({
                 });
 
                 return;
-            }
+            }            const currentRank =
+                await rankDatabase.getCurrentRank(
+                    interaction.guild.id,
+                    member.id
+                );
 
-            const botMember =
-                interaction.guild.members.me;
-
-            if (!botMember) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }
+            const oldRank =
+                currentRank?.rank_name ??
+                null;
 
             if (
-                !botMember.permissions.has(
-                    PermissionFlagsBits.ManageRoles
-                )
+                oldRank ===
+                rankName
             ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Manage Roles Required',
-                            'Umbra requires the **Manage Roles** permission to assign Arrancar Ranks.'
-                        )
-                    ],
+                            '⚠️ Rank Already Assigned',
 
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }
-
-            if (
-                selectedRole.managed ||
-                !selectedRole.editable ||
-                selectedRole.position >=
-                    botMember.roles.highest.position
-            ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Rank Hierarchy Error',
                             [
-                                `Umbra cannot assign ${selectedRole}.`,
+                                `${member} already holds **${rankName}**.`,
                                 '',
-                                'Confirm that:',
-                                '• Umbra is above this Rank role',
-                                '• The role is not controlled by another integration',
-                                '• Umbra has **Manage Roles**'
+                                'No changes were made.'
                             ].join('\n')
                         )
                     ],
@@ -910,57 +701,27 @@ function createPromotionEmbed({
                     member
                 );
 
-            const unmanageableCurrentRole =
+            const roleToRemove =
                 currentRankRoles.find(
                     role =>
-                        role.managed ||
-                        !role.editable ||
-                        role.position >=
-                            botMember.roles.highest.position
+                        role.id !==
+                        configuredRank.id
                 );
 
-            if (unmanageableCurrentRole) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Existing Rank Hierarchy Error',
-                            [
-                                `Umbra cannot remove the current Rank role ${unmanageableCurrentRole}.`,
-                                '',
-                                'Move Umbra above every manually assignable Arrancar Rank and try again.'
-                            ].join('\n')
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }            const databaseRank =
-                await rankDatabase
-                    .getCurrentRank(
-                        interaction.guild.id,
-                        member.id
-                    );
-
-            const oldRankDisplay =
-                databaseRank?.rank_name ||
-                currentRankRoles.first()?.name ||
-                null;
-
             if (
-                databaseRank?.rank_name ===
-                    rankName &&
-                member.roles.cache.has(
-                    selectedRole.id
-                )
+                roleToRemove &&
+                !roleToRemove.editable
             ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Rank Already Assigned',
-                            `${member} already holds the Arrancar Rank **${rankName}**.`
+                            '❌ Role Hierarchy Error',
+
+                            [
+                                `Evelynn cannot manage the current Rank role **${roleToRemove.name}**.`,
+                                '',
+                                'Move Evelynn’s highest role above the Sin Rank roles and try again.'
+                            ].join('\n')
                         )
                     ],
 
@@ -971,54 +732,135 @@ function createPromotionEmbed({
                 return;
             }
 
-            await interaction.deferReply();
+            if (
+                !selectedRole.editable
+            ) {
+                await interaction.reply({
+                    embeds: [
+                        createErrorEmbed(
+                            '❌ Role Hierarchy Error',
+
+                            [
+                                `Evelynn cannot manage **${selectedRole.name}**.`,
+                                '',
+                                'Move Evelynn’s highest role above the Sin Rank roles and try again.'
+                            ].join('\n')
+                        )
+                    ],
+
+                    flags:
+                        MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            /*
+             * Save the database state first.
+             *
+             * The database remains the source of
+             * truth for Rank history.
+             */
+            const savedRank =
+                await rankDatabase.setRank({
+                    guildId:
+                        interaction.guild.id,
+
+                    userId:
+                        member.id,
+
+                    moderatorId:
+                        interaction.user.id,
+
+                    rankName,
+
+                    reason
+                });
 
             try {
                 if (
-                    currentRankRoles.size >
-                    0
+                    roleToRemove
                 ) {
                     await member.roles.remove(
-                        currentRankRoles,
-                        `Arrancar Rank updated by ${interaction.user.tag}: ${reason}`
+                        roleToRemove,
+                        `Sin Rank replaced by ${rankName}`
                     );
                 }
 
                 await member.roles.add(
                     selectedRole,
-                    `Arrancar Rank assigned by ${interaction.user.tag}: ${reason}`
+                    `Sin Rank assigned: ${rankName}`
                 );
             } catch (roleError) {
                 console.error(
-                    '❌ Umbra could not update Arrancar Rank roles:',
+                    '❌ Sin Rank role update failed:',
                     roleError
                 );
 
-                if (
-                    currentRankRoles.size >
-                    0
+                /*
+                 * Restore the previous database state
+                 * when Discord role assignment fails.
+                 */
+                try {
+                    if (
+                        oldRank
+                    ) {
+                        await rankDatabase.setRank({
+                            guildId:
+                                interaction.guild.id,
+
+                            userId:
+                                member.id,
+
+                            moderatorId:
+                                interaction.user.id,
+
+                            rankName:
+                                oldRank,
+
+                            reason:
+                                'Rollback after Discord role update failure.'
+                        });
+                    } else {
+                        await rankDatabase.removeRank({
+                            guildId:
+                                interaction.guild.id,
+
+                            userId:
+                                member.id,
+
+                            moderatorId:
+                                interaction.user.id,
+
+                            reason:
+                                'Rollback after Discord role update failure.'
+                        });
+                    }
+                } catch (
+                    rollbackError
                 ) {
-                    await member.roles
-                        .add(
-                            currentRankRoles,
-                            'Rank assignment failed; restoring previous roles.'
-                        )
-                        .catch(
-                            () => null
-                        );
+                    console.error(
+                        '❌ Sin Rank database rollback failed:',
+                        rollbackError
+                    );
                 }
 
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
                             '❌ Rank Assignment Failed',
+
                             [
-                                'Umbra could not update the selected Soul’s Discord roles.',
+                                'Evelynn could not update the Discord Rank role.',
                                 '',
-                                'Verify the following:',
-                                '• Umbra has **Manage Roles**',
-                                '• Umbra is above every Arrancar Rank role',
-                                '• The selected role is not controlled by another integration'
+                                'The database state was restored where possible.',
+                                '',
+                                'Please check the role hierarchy and try again.'
                             ].join('\n')
                         )
                     ]
@@ -1027,92 +869,28 @@ function createPromotionEmbed({
                 return;
             }
 
-            let rankRecord;
+            /*
+             * Check whether the new Rank unlocked
+             * any Chronicle Titles.
+             */
+            let unlockedTitles = [];
 
             try {
-                rankRecord =
-                    await rankDatabase.setRank({
-                        guildId:
-                            interaction.guild.id,
-
-                        userId:
-                            member.id,
-
-                        moderatorId:
-                            interaction.user.id,
-
-                        rankName,
-
-                        reason
-                    });
-            } catch (databaseError) {
-                console.error(
-                    '❌ Umbra could not save the Arrancar Rank:',
-                    databaseError
-                );
-
-                await member.roles
-                    .remove(
-                        selectedRole,
-                        'Rank database save failed; restoring previous roles.'
-                    )
-                    .catch(
-                        () => null
-                    );
-
-                if (
-                    currentRankRoles.size >
-                    0
-                ) {
-                    await member.roles
-                        .add(
-                            currentRankRoles,
-                            'Rank database save failed; restoring previous roles.'
-                        )
-                        .catch(
-                            () => null
-                        );
-                }
-
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Rank Archive Failed',
-                            [
-                                'Umbra could not save this Rank change inside PostgreSQL.',
-                                '',
-                                'The previous Discord Rank was restored where possible.',
-                                '',
-                                'Inspect the Northflank database logs before trying again.'
-                            ].join('\n')
-                        )
-                    ]
-                });
-
-                return;
-            }
-
-            let unlockedTitles =
-                [];
-
-            try {
-                const titleResult =
+                unlockedTitles =
                     await checkMemberTitles(
-                        member
-                    );
+                        member,
+                        {
+                            source:
+                                'rank',
 
-                if (
-                    titleResult &&
-                    Array.isArray(
-                        titleResult.newlyUnlocked
-                    )
-                ) {
-                    unlockedTitles =
-                        titleResult.newlyUnlocked;
-                }
-            } catch (titleError) {
+                            rankName
+                        }
+                    ) ?? [];
+            } catch (
+                titleError
+            ) {
                 console.error(
-                    '⚠️ Umbra Title unlock failed after Rank promotion:',
+                    '⚠️ Rank Title check failed:',
                     titleError
                 );
             }
@@ -1122,10 +900,9 @@ function createPromotionEmbed({
                     member,
 
                     moderator:
-                        interaction.user,
+                        interaction.member,
 
-                    oldRank:
-                        oldRankDisplay,
+                    oldRank,
 
                     newRank:
                         rankName,
@@ -1133,207 +910,115 @@ function createPromotionEmbed({
                     reason,
 
                     historyId:
-                        rankRecord?.history_id ??
-                        null,
+                        savedRank.history_id,
 
                     unlockedTitles
                 });
 
-            await interaction.editReply({
+            /*
+             * Publish the official Rank Feed.
+             */
+            try {
+                await sendRankFeed(
+                    interaction.guild,
+                    promotionEmbed
+                );
+            } catch (
+                feedError
+            ) {
+                console.error(
+                    '⚠️ Rank Feed publication failed:',
+                    feedError
+                );
+            }
+
+            /*
+             * Publish newly unlocked Titles.
+             */
+            if (
+                unlockedTitles.length
+            ) {
+                try {
+                    await sendTitleFeed(
+                        interaction.guild,
+                        unlockedTitles,
+                        member
+                    );
+                } catch (
+                    titleFeedError
+                ) {
+                    console.error(
+                        '⚠️ Title Feed publication failed:',
+                        titleFeedError
+                    );
+                }
+            }
+
+            /*
+             * Send direct Title notifications.
+             */
+            if (
+                unlockedTitles.length
+            ) {
+                try {
+                    await sendTitleUnlockNotification(
+                        member,
+                        unlockedTitles
+                    );
+                } catch (
+                    notificationError
+                ) {
+                    console.error(
+                        '⚠️ Title notification failed:',
+                        notificationError
+                    );
+                }
+            }            await interaction.editReply({
                 embeds: [
                     promotionEmbed
                 ]
             });
 
-            const promotionChannel =
-                findPromotionChannel(
-                    interaction.guild
-                );
-
-            if (
-                promotionChannel &&
-                promotionChannel.id !==
-                    interaction.channelId
-            ) {
-                await promotionChannel
-                    .send({
-                        content:
-                            `${member}`,
-
-                        embeds: [
-                            promotionEmbed
-                        ],
-
-                        allowedMentions: {
-                            users: [
-                                member.id
-                            ]
-                        }
-                    })
-                    .catch(error => {
-                        console.error(
-                            '⚠️ Umbra could not publish the promotion announcement:',
-                            error
-                        );
-                    });
-            }
-
-            await sendRankFeed({
-                member,
-
-                moderator:
-                    interaction.user,
-
-                oldRank:
-                    oldRankDisplay,
-
-                newRank:
+            console.log(
+                [
+                    '⚔️ Sin Rank assigned:',
+                    member.user.tag,
+                    '→',
                     rankName,
-
-                reason,
-
-                historyId:
-                    rankRecord?.history_id ??
-                    null,
-
-                revoked:
-                    false
-            }).catch(error => {
-                console.error(
-                    '⚠️ Umbra could not publish the Rank Kingdom Feed:',
-                    error
-                );
-            });            if (
-                unlockedTitles.length >
-                0
-            ) {
-                const titleChannel =
-                    findTitleNotificationChannel(
-                        interaction
-                    );
-
-                if (
-                    titleChannel
-                ) {
-                    await sendTitleUnlockNotification({
-                        member,
-
-                        channel:
-                            titleChannel,
-
-                        titles:
-                            unlockedTitles,
-
-                        source:
-                            'Arrancar Rank Promotion'
-                    }).catch(error => {
-                        console.error(
-                            '⚠️ Umbra could not publish the Title notification:',
-                            error
-                        );
-                    });
-                }
-
-                await sendTitleFeed({
-                    member,
-
-                    titles:
-                        unlockedTitles,
-
-                    source:
-                        'Arrancar Rank Promotion'
-                }).catch(error => {
-                    console.error(
-                        '⚠️ Umbra could not publish the Title Kingdom Feed:',
-                        error
-                    );
-                });
-            }
-
-            console.log(
-                '======================================'
-            );
-
-            console.log(
-                '👑 Arrancar Rank Assigned'
-            );
-
-            console.log(
-                `🌙 Soul: ${member.user.tag}`
-            );
-
-            console.log(
-                `📜 Previous Rank: ${oldRankDisplay || 'None'}`
-            );
-
-            console.log(
-                `⚔️ New Rank: ${rankName}`
-            );
-
-            console.log(
-                `🆔 Rank Role ID: ${selectedRole.id}`
-            );
-
-            console.log(
-                `👑 High Command: ${interaction.user.tag}`
-            );
-
-            console.log(
-                `🆔 History Record: ${rankRecord?.history_id ?? 'Unknown'}`
-            );
-
-            console.log(
-                `🏷️ Chronicle Titles: ${unlockedTitles.length}`
-            );
-
-            console.log(
-                '======================================'
+                    `by ${interaction.user.tag}`
+                ].join(' ')
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /setrank command failed:',
+                '❌ Evelynn /setrank command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Arrancar Rank Assignment Failed',
+                    '❌ Rank Assignment Failed',
+
                     [
-                        'Umbra could not complete the requested Arrancar Rank assignment.',
+                        'Evelynn could not complete the Sin Rank assignment.',
                         '',
-                        'No further changes were applied.',
+                        'No further changes were made.',
                         '',
-                        'Inspect the Northflank logs for additional details.'
+                        'Check the Rank configuration, database connection and Discord role hierarchy.'
                     ].join('\n')
                 );
 
             if (
-                interaction.deferred
+                interaction.deferred ||
+                interaction.replied
             ) {
                 await interaction
                     .editReply({
                         embeds: [
                             errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
                         ],
 
-                        flags:
-                            MessageFlags.Ephemeral
+                        components:
+                            []
                     })
                     .catch(
                         () => null

@@ -12,12 +12,18 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+/**
+ * Internal Guide menu ID.
+ *
+ * Keep stable because interaction
+ * routing may depend on it.
+ */
 const GUIDE_MENU_ID =
     'umbra_guide_category_menu';
 
-const GUIDE_COLOR =
-    '#5B3A78';
-
+/**
+ * Guide page identifiers.
+ */
 const GUIDE_PAGES = {
     overview:
         'guide_overview',
@@ -50,6 +56,9 @@ const GUIDE_PAGES = {
         'guide_information'
 };
 
+/**
+ * Guide category order.
+ */
 const GUIDE_PAGE_ORDER = [
     GUIDE_PAGES.overview,
     GUIDE_PAGES.moderation,
@@ -63,119 +72,125 @@ const GUIDE_PAGE_ORDER = [
     GUIDE_PAGES.information
 ];
 
+/**
+ * Guide category display.
+ */
 const GUIDE_PAGE_DETAILS = {
     [GUIDE_PAGES.overview]: {
+        emoji:
+            'Ⅹ',
+
         label:
             'Overview',
 
-        emoji:
-            'Ⅹ',
-
         description:
-            'Main command and system overview.'
+            'Main command and system overview'
     },
 
     [GUIDE_PAGES.moderation]: {
-        label:
-            'Moderation',
-
         emoji:
             '🛡️',
 
+        label:
+            'Moderation',
+
         description:
-            'Warnings, punishments and channel control.'
+            'Warnings, punishments and channel control'
     },
 
     [GUIDE_PAGES.ranks]: {
-        label:
-            'Sin Ranks',
-
         emoji:
             '⚔️',
 
-        description:
-            'Sin ranking and competitive records.'
-    },
-
-    [GUIDE_PAGES.titles]: {
-        label:
-            'Titles',
-
-        emoji:
-            '♜',
-
-        description:
-            'Title collection and management.'
-    },
-
-    [GUIDE_PAGES.progression]: {
-        label:
-            'Progression',
-
-        emoji:
-            '◆',
-
-        description:
-            'Levels, profiles and member progression.'
-    },
-
-    [GUIDE_PAGES.server]: {
         label:
             'THE Ⅹ SINS',
 
+        description:
+            'The official Sin hierarchy, rank statuses and combat standing.'
+    },
+
+    [GUIDE_PAGES.titles]: {
+        emoji:
+            '♜',
+
+        label:
+            'Titles',
+
+        description:
+            'Title collection and management'
+    },
+
+    [GUIDE_PAGES.progression]: {
+        emoji:
+            '◆',
+
+        label:
+            'Progression',
+
+        description:
+            'Member progression and profiles'
+    },
+
+    [GUIDE_PAGES.server]: {
         emoji:
             'Ⅹ',
 
+        label:
+            'THE Ⅹ SINS',
+
         description:
-            'Server information and central records.'
+            'Server information and central records'
     },
 
     [GUIDE_PAGES.support]: {
-        label:
-            'Support',
-
         emoji:
             '🎫',
 
+        label:
+            'Support',
+
         description:
-            'Tickets and member assistance.'
+            'Tickets and member assistance'
     },
 
     [GUIDE_PAGES.events]: {
-        label:
-            'Events',
-
         emoji:
             '🎉',
 
+        label:
+            'Events',
+
         description:
-            'Events, giveaways and community activity.'
+            'Events, giveaways and community activity'
     },
 
     [GUIDE_PAGES.administration]: {
-        label:
-            'Administration',
-
         emoji:
             '♛',
 
+        label:
+            'Administration',
+
         description:
-            'Setup and server management.'
+            'Setup and server management'
     },
 
     [GUIDE_PAGES.information]: {
-        label:
-            'Information',
-
         emoji:
             '📖',
 
+        label:
+            'Information',
+
         description:
-            'General commands and utilities.'
+            'General commands and utilities'
     }
 };
 
-const ACCESS = {
+/**
+ * Command access levels.
+ */
+const ACCESS_LEVELS = {
     everyone:
         'Everyone',
 
@@ -183,327 +198,694 @@ const ACCESS = {
         'Personal Use',
 
     moderator:
-        'Lieutenant or Higher',
+        '⚔️ Lieutenant or Higher',
 
     administrator:
-        'Captain or Higher',
+        '🛡️ Captain or Higher',
 
     highCommand:
-        'High Command',
+        '♛ High Command',
 
     owner:
-        'Sovereign Only'
+        '♛ Sovereign Only'
 };
 
+/**
+ * Command documentation used
+ * by Evelynn's Guide.
+ *
+ * Commands that are not currently loaded
+ * are automatically hidden.
+ */
 const GUIDE_COMMANDS = {
-    ban: [
-        'moderation',
-        '/ban user [reason] [delete_messages]',
-        'Ban a member from the server.',
-        'administrator'
-    ],
+    /*
+     * ======================================================
+     * Moderation
+     * ======================================================
+     */
+    ban: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    kick: [
-        'moderation',
-        '/kick user [reason]',
-        'Remove a member without permanently banning them.',
-        'moderator'
-    ],
+        syntax:
+            '/ban user [reason] [delete_messages]',
 
-    timeout: [
-        'moderation',
-        '/timeout user duration [reason]',
-        'Temporarily restrict a member.',
-        'moderator'
-    ],
+        summary:
+            'Ban a member from the server.',
 
-    untimeout: [
-        'moderation',
-        '/untimeout user [reason]',
-        'Remove an active timeout.',
-        'moderator'
-    ],
+        access:
+            ACCESS_LEVELS.administrator
+    },
 
-    warn: [
-        'moderation',
-        '/warn user reason',
-        'Record an official warning.',
-        'moderator'
-    ],
+    kick: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    warnings: [
-        'moderation',
-        '/warnings user',
-        'View warnings recorded against a member.',
-        'moderator'
-    ],
+        syntax:
+            '/kick user [reason]',
 
-    unwarn: [
-        'moderation',
-        '/unwarn warning_id [reason]',
-        'Remove one warning record.',
-        'moderator'
-    ],
+        summary:
+            'Remove a member without permanently banning them.',
 
-    clearwarnings: [
-        'moderation',
-        '/clearwarnings user [reason]',
-        'Remove all warnings from a member.',
-        'administrator'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    cases: [
-        'moderation',
-        '/cases [user] [limit]',
-        'View moderation and AutoMod cases.',
-        'moderator'
-    ],
+    timeout: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    history: [
-        'moderation',
-        '/history user [limit]',
-        'View moderation history.',
-        'moderator'
-    ],
+        syntax:
+            '/timeout user duration [reason]',
 
-    clear: [
-        'moderation',
-        '/clear amount [user]',
-        'Delete multiple messages.',
-        'moderator'
-    ],
+        summary:
+            'Temporarily restrict a member from interacting.',
 
-    lock: [
-        'moderation',
-        '/lock [channel] [reason]',
-        'Lock a channel.',
-        'moderator'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    unlock: [
-        'moderation',
-        '/unlock [channel] [reason]',
-        'Unlock a channel.',
-        'moderator'
-    ],
+    untimeout: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    slowmode: [
-        'moderation',
-        '/slowmode seconds [channel] [reason]',
-        'Set or remove channel slowmode.',
-        'moderator'
-    ],
+        syntax:
+            '/untimeout user [reason]',
 
-    setrank: [
-        'ranks',
-        '/setrank user rank reason',
-        'Assign or replace a Sin Rank.',
-        'highCommand'
-    ],
+        summary:
+            'Remove an active timeout from a member.',
 
-    removerank: [
-        'ranks',
-        '/removerank user reason',
-        'Remove a member’s Sin Rank.',
-        'highCommand'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    rankhistory: [
-        'ranks',
-        '/rankhistory [user] [limit]',
-        'View rank history.',
-        'everyone'
-    ],
+    warn: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    espada: [
-        'ranks',
-        '/espada',
-        'View the current Ten Sins hierarchy.',
-        'everyone'
-    ],
+        syntax:
+            '/warn user reason',
 
-    titles: [
-        'titles',
-        '/titles [user]',
-        'View unlocked and active Titles.',
-        'everyone'
-    ],
+        summary:
+            'Record an official warning.',
 
-    settitle: [
-        'titles',
-        '/settitle category',
-        'Activate an unlocked Title.',
-        'self'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    removetitle: [
-        'titles',
-        '/removetitle',
-        'Remove your active Title.',
-        'self'
-    ],
+    warnings: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    granttitle: [
-        'titles',
-        '/granttitle user title reason [activate]',
-        'Grant a Title to a member.',
-        'highCommand'
-    ],
+        syntax:
+            '/warnings user',
 
-    revoketitle: [
-        'titles',
-        '/revoketitle user title reason',
-        'Revoke a manually granted Title.',
-        'highCommand'
-    ],
+        summary:
+            'View warnings recorded against a member.',
 
-    soul: [
-        'progression',
-        '/soul [user]',
-        'Open a member progression record.',
-        'everyone'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    profile: [
-        'progression',
-        '/profile [user]',
-        'View a compact member profile.',
-        'everyone'
-    ],
+    unwarn: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    level: [
-        'progression',
-        '/level [user]',
-        'View current level and progression.',
-        'everyone'
-    ],
+        syntax:
+            '/unwarn warning_id [reason]',
 
-    rank: [
-        'progression',
-        '/rank [user]',
-        'View current rank information.',
-        'everyone'
-    ],
+        summary:
+            'Remove one warning record.',
 
-    leaderboard: [
-        'progression',
-        '/leaderboard',
-        'View progression leaderboards.',
-        'everyone'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    dashboard: [
-        'server',
-        '/dashboard',
-        'Open the THE Ⅹ SINS server dashboard.',
-        'everyone'
-    ],
+    clearwarnings: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    ticketpanel: [
-        'support',
-        '/ticketpanel',
-        'Publish the support panel.',
-        'administrator'
-    ],
+        syntax:
+            '/clearwarnings user [reason]',
 
-    ticket: [
-        'support',
-        '/ticket',
-        'Create a support ticket.',
-        'everyone'
-    ],
+        summary:
+            'Remove all warnings from a member.',
 
-    tickets: [
-        'support',
-        '/tickets',
-        'Manage active tickets.',
-        'moderator'
-    ],
+        access:
+            ACCESS_LEVELS.administrator
+    },
 
-    announce: [
-        'events',
-        '/announce',
-        'Publish an official announcement.',
-        'administrator'
-    ],
+    cases: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    event: [
-        'events',
-        '/event',
-        'Create or manage an event.',
-        'administrator'
-    ],
+        syntax:
+            '/cases [user] [limit]',
 
-    giveaway: [
-        'events',
-        '/giveaway',
-        'Create or manage a giveaway.',
-        'administrator'
-    ],
+        summary:
+            'View moderation and AutoMod cases.',
 
-    setup: [
-        'administration',
-        '/setup',
-        'Open the server setup menu.',
-        'administrator'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    setuprules: [
-        'administration',
-        '/setuprules',
-        'Publish or refresh the Code of Sins.',
-        'administrator'
-    ],
+    history: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    testwelcome: [
-        'administration',
-        '/testwelcome',
-        'Preview the Welcome design.',
-        'administrator'
-    ],
+        syntax:
+            '/history user [limit]',
 
-    help: [
-        'information',
-        '/help',
-        'Open the quick command menu.',
-        'everyone'
-    ],
+        summary:
+            'View a member’s moderation history.',
 
-    guide: [
-        'information',
-        '/guide',
-        'Open this detailed command guide.',
-        'everyone'
-    ],
+        access:
+            ACCESS_LEVELS.moderator
+    },
 
-    ping: [
-        'information',
-        '/ping',
-        'Check Evelynn latency and status.',
-        'everyone'
-    ],
+    clear: {
+        page:
+            GUIDE_PAGES.moderation,
 
-    avatar: [
-        'information',
-        '/avatar [user]',
-        'View a user avatar.',
-        'everyone'
-    ],
+        syntax:
+            '/clear amount [user]',
 
-    userinfo: [
-        'information',
-        '/userinfo [user]',
-        'View detailed member information.',
-        'everyone'
-    ],
+        summary:
+            'Delete multiple messages from a channel.',
 
-    serverinfo: [
-        'information',
-        '/serverinfo',
-        'View server information.',
-        'everyone'
-    ]
-};function getBotAvatar(
+        access:
+            ACCESS_LEVELS.moderator
+    },
+
+    lock: {
+        page:
+            GUIDE_PAGES.moderation,
+
+        syntax:
+            '/lock [channel] [reason]',
+
+        summary:
+            'Prevent regular members from sending messages.',
+
+        access:
+            ACCESS_LEVELS.moderator
+    },
+
+    unlock: {
+        page:
+            GUIDE_PAGES.moderation,
+
+        syntax:
+            '/unlock [channel] [reason]',
+
+        summary:
+            'Restore message access in a locked channel.',
+
+        access:
+            ACCESS_LEVELS.moderator
+    },
+
+    slowmode: {
+        page:
+            GUIDE_PAGES.moderation,
+
+        syntax:
+            '/slowmode seconds [channel] [reason]',
+
+        summary:
+            'Set or remove a channel slowmode delay.',
+
+        access:
+            ACCESS_LEVELS.moderator
+    },
+
+    /*
+     * ======================================================
+     * THE Ⅹ SINS Rank System
+     * ======================================================
+     */    setrank: {
+        page:
+            GUIDE_PAGES.ranks,
+
+        syntax:
+            '/setrank user rank reason',
+
+        summary:
+            'Assign or replace a member’s Sin rank.',
+
+        access:
+            ACCESS_LEVELS.highCommand
+    },
+
+    removerank: {
+        page:
+            GUIDE_PAGES.ranks,
+
+        syntax:
+            '/removerank user reason',
+
+        summary:
+            'Remove a member’s current Sin rank.',
+
+        access:
+            ACCESS_LEVELS.highCommand
+    },
+
+    rankhistory: {
+        page:
+            GUIDE_PAGES.ranks,
+
+        syntax:
+            '/rankhistory [user] [limit]',
+
+        summary:
+            'View previous Sin rank assignments and removals.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    espada: {
+        page:
+            GUIDE_PAGES.ranks,
+
+        syntax:
+            '/espada',
+
+        summary:
+            'View the current THE Ⅹ SINS rank hierarchy.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    /*
+     * ======================================================
+     * Titles
+     * ======================================================
+     */
+    titles: {
+        page:
+            GUIDE_PAGES.titles,
+
+        syntax:
+            '/titles [user]',
+
+        summary:
+            'View unlocked and active Chronicle Titles.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    settitle: {
+        page:
+            GUIDE_PAGES.titles,
+
+        syntax:
+            '/settitle category',
+
+        summary:
+            'Activate an unlocked Chronicle Title.',
+
+        access:
+            ACCESS_LEVELS.self
+    },
+
+    removetitle: {
+        page:
+            GUIDE_PAGES.titles,
+
+        syntax:
+            '/removetitle',
+
+        summary:
+            'Remove your active Chronicle Title.',
+
+        access:
+            ACCESS_LEVELS.self
+    },
+
+    granttitle: {
+        page:
+            GUIDE_PAGES.titles,
+
+        syntax:
+            '/granttitle user title reason [activate]',
+
+        summary:
+            'Grant a Chronicle Title to a member.',
+
+        access:
+            ACCESS_LEVELS.highCommand
+    },
+
+    revoketitle: {
+        page:
+            GUIDE_PAGES.titles,
+
+        syntax:
+            '/revoketitle user title reason',
+
+        summary:
+            'Revoke a manually granted Chronicle Title.',
+
+        access:
+            ACCESS_LEVELS.highCommand
+    },
+
+    /*
+     * ======================================================
+     * Progression
+     * ======================================================
+     */
+    soul: {
+        page:
+            GUIDE_PAGES.progression,
+
+        syntax:
+            '/soul [user]',
+
+        summary:
+            'Open a member’s Soul progression record.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    profile: {
+        page:
+            GUIDE_PAGES.progression,
+
+        syntax:
+            '/profile [user]',
+
+        summary:
+            'View a compact member profile.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    level: {
+        page:
+            GUIDE_PAGES.progression,
+
+        syntax:
+            '/level [user]',
+
+        summary:
+            'View current level and progression.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    rank: {
+        page:
+            GUIDE_PAGES.progression,
+
+        syntax:
+            '/rank [user]',
+
+        summary:
+            'View current rank information.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    leaderboard: {
+        page:
+            GUIDE_PAGES.progression,
+
+        syntax:
+            '/leaderboard',
+
+        summary:
+            'View progression leaderboards.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    /*
+     * ======================================================
+     * THE Ⅹ SINS Dashboard
+     * ======================================================
+     */
+    dashboard: {
+        page:
+            GUIDE_PAGES.server,
+
+        syntax:
+            '/dashboard',
+
+        summary:
+            'Open the central THE Ⅹ SINS server dashboard.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    /*
+     * ======================================================
+     * Support
+     * ======================================================
+     */
+    ticketpanel: {
+        page:
+            GUIDE_PAGES.support,
+
+        syntax:
+            '/ticketpanel',
+
+        summary:
+            'Publish the official support panel.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    ticket: {
+        page:
+            GUIDE_PAGES.support,
+
+        syntax:
+            '/ticket',
+
+        summary:
+            'Create a private support request.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    tickets: {
+        page:
+            GUIDE_PAGES.support,
+
+        syntax:
+            '/tickets',
+
+        summary:
+            'Manage active support tickets.',
+
+        access:
+            ACCESS_LEVELS.moderator
+    },
+
+    /*
+     * ======================================================
+     * Events
+     * ======================================================
+     */
+    announce: {
+        page:
+            GUIDE_PAGES.events,
+
+        syntax:
+            '/announce',
+
+        summary:
+            'Publish an official THE Ⅹ SINS announcement.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    event: {
+        page:
+            GUIDE_PAGES.events,
+
+        syntax:
+            '/event',
+
+        summary:
+            'Create and manage server events.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    giveaway: {
+        page:
+            GUIDE_PAGES.events,
+
+        syntax:
+            '/giveaway',
+
+        summary:
+            'Create and manage community giveaways.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    /*
+     * ======================================================
+     * Administration
+     * ======================================================
+     */
+    setup: {
+        page:
+            GUIDE_PAGES.administration,
+
+        syntax:
+            '/setup',
+
+        summary:
+            'Open the server setup menu.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    setuprules: {
+        page:
+            GUIDE_PAGES.administration,
+
+        syntax:
+            '/setuprules',
+
+        summary:
+            'Publish or refresh the Code of Sins.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    testwelcome: {
+        page:
+            GUIDE_PAGES.administration,
+
+        syntax:
+            '/testwelcome',
+
+        summary:
+            'Preview the Welcome design.',
+
+        access:
+            ACCESS_LEVELS.administrator
+    },
+
+    /*
+     * ======================================================
+     * Information
+     * ======================================================
+     */
+    help: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/help',
+
+        summary:
+            'Open the quick command menu.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    guide: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/guide',
+
+        summary:
+            'Open this detailed command guide.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    ping: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/ping',
+
+        summary:
+            'Check Evelynn latency and system status.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    avatar: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/avatar [user]',
+
+        summary:
+            'View a member avatar.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    userinfo: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/userinfo [user]',
+
+        summary:
+            'View detailed member information.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    },
+
+    serverinfo: {
+        page:
+            GUIDE_PAGES.information,
+
+        syntax:
+            '/serverinfo',
+
+        summary:
+            'View THE Ⅹ SINS server information.',
+
+        access:
+            ACCESS_LEVELS.everyone
+    }
+};
+
+/**
+ * Return the bot avatar.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {string}
+ */
+function getBotAvatar(
     interaction
 ) {
     return interaction.client.user
@@ -516,6 +898,12 @@ const GUIDE_COMMANDS = {
         });
 }
 
+/**
+ * Return the server icon or bot avatar.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {string}
+ */
 function getGuildIcon(
     interaction
 ) {
@@ -533,61 +921,27 @@ function getGuildIcon(
     );
 }
 
-function getPageCategory(
-    pageId
-) {
-    return {
-        [GUIDE_PAGES.moderation]:
-            'moderation',
-
-        [GUIDE_PAGES.ranks]:
-            'ranks',
-
-        [GUIDE_PAGES.titles]:
-            'titles',
-
-        [GUIDE_PAGES.progression]:
-            'progression',
-
-        [GUIDE_PAGES.server]:
-            'server',
-
-        [GUIDE_PAGES.support]:
-            'support',
-
-        [GUIDE_PAGES.events]:
-            'events',
-
-        [GUIDE_PAGES.administration]:
-            'administration',
-
-        [GUIDE_PAGES.information]:
-            'information'
-    }[
-        pageId
-    ];
-}
-
+/**
+ * Get commands belonging to a Guide page.
+ *
+ * Only commands currently loaded by the client
+ * are returned.
+ *
+ * @param {import('discord.js').Client} client
+ * @param {string} pageId
+ * @returns {Array}
+ */
 function getPageCommands(
     client,
     pageId
 ) {
-    const category =
-        getPageCategory(
-            pageId
-        );
-
-    if (!category) {
-        return [];
-    }
-
     return Object.entries(
         GUIDE_COMMANDS
     )
         .filter(
-            ([, details]) =>
-                details[0] ===
-                category
+            ([, command]) =>
+                command.page ===
+                pageId
         )
         .filter(
             ([name]) =>
@@ -596,18 +950,19 @@ function getPageCommands(
                 )
         )
         .map(
-            ([name, details]) => ({
+            ([name, command]) => ({
                 name,
-                syntax:
-                    details[1],
-                description:
-                    details[2],
-                access:
-                    details[3]
+                ...command
             })
         );
 }
 
+/**
+ * Count loaded slash commands.
+ *
+ * @param {import('discord.js').Client} client
+ * @returns {number}
+ */
 function getLoadedCommandCount(
     client
 ) {
@@ -615,29 +970,315 @@ function getLoadedCommandCount(
         client.commands?.size ??
         0
     );
+}/**
+ * Official THE Ⅹ SINS hierarchy.
+ *
+ * These names are displayed as Guide
+ * documentation and must remain aligned
+ * with the current server rank system.
+ */
+const SIN_RANKS = [
+    {
+        name:
+            'SIN OF PRIDE',
+
+        emoji:
+            '👑',
+
+        description:
+            'The highest recognized Sin of the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF WRATH',
+
+        emoji:
+            '💧',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF ENVY',
+
+        emoji:
+            '🐍',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF GREED',
+
+        emoji:
+            '💰',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF LUST',
+
+        emoji:
+            '🖤',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF GLUTTONY',
+
+        emoji:
+            '🍷',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF SLOTH',
+
+        emoji:
+            '💤',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF RUIN',
+
+        emoji:
+            '☠️',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF HERESY',
+
+        emoji:
+            '⚜️',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    },
+
+    {
+        name:
+            'SIN OF VENGEANCE',
+
+        emoji:
+            '⚔️',
+
+        description:
+            'A recognized Sin within the main hierarchy.'
+    }
+];
+
+/**
+ * Additional recognized rank statuses.
+ */
+const SIN_STATUSES = [
+    {
+        name:
+            'SIN HEIR',
+
+        emoji:
+            '👑',
+
+        description:
+            'A designated heir associated with Sin authority.'
+    },
+
+    {
+        name:
+            'SINBOUND',
+
+        emoji:
+            '⚔️',
+
+        description:
+            'A member bound to the Sin hierarchy.'
+    },
+
+    {
+        name:
+            'ASCENDANT',
+
+        emoji:
+            '🗡️',
+
+        description:
+            'An advancing member recognized as ascending through the hierarchy.'
+    },
+
+    {
+        name:
+            'UNRANKED',
+
+        emoji:
+            '◇',
+
+        description:
+            'A member without an assigned Sin rank.'
+    }
+];
+
+/**
+ * Special hierarchy position.
+ */
+const SPECIAL_SIN_POSITION = {
+    name:
+        'SIN OF DOMINION',
+
+    emoji:
+        '👑',
+
+    description:
+        'A special position above the standard Sin hierarchy.'
+};
+
+/**
+ * Build the official Sin hierarchy text.
+ *
+ * @returns {string}
+ */
+function buildSinHierarchyText() {
+    const mainRanks =
+        SIN_RANKS
+            .map(
+                (rank, index) =>
+                    `${index + 1}. ${rank.emoji} **${rank.name}**`
+            )
+            .join('\n');
+
+    const statuses =
+        SIN_STATUSES
+            .map(
+                status =>
+                    `${status.emoji} **${status.name}** — ${status.description}`
+            )
+            .join('\n');
+
+    return [
+        `**${SPECIAL_SIN_POSITION.emoji} ${SPECIAL_SIN_POSITION.name}**`,
+        `-# ${SPECIAL_SIN_POSITION.description}`,
+        '',
+        '**THE Ⅹ SINS**',
+        mainRanks,
+        '',
+        '**OTHER STATUSES**',
+        statuses
+    ].join('\n');
 }
 
+/**
+ * Build the recommended Rank workflow.
+ *
+ * @returns {string}
+ */
+function buildRankWorkflow() {
+    return [
+        '`/rank` — check a member’s current rank',
+        '`/setrank` — assign or replace a Sin rank',
+        '`/removerank` — remove a Sin rank',
+        '`/rankhistory` — review previous rank changes'
+    ].join('\n');
+}
+
+/**
+ * Build the Guide embed.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} title
+ * @param {string} description
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function createGuideEmbed(
+    interaction,
+    title,
+    description
+) {
+    const botAvatar =
+        getBotAvatar(
+            interaction
+        );
+
+    return createEmbed({
+        title,
+
+        description,
+
+        color:
+            '#5B3A78',
+
+        thumbnail:
+            getGuildIcon(
+                interaction
+            ),
+
+        author: {
+            name:
+                'Evelynn • THE Ⅹ SINS',
+
+            iconURL:
+                botAvatar
+        },
+
+        footer: {
+            text:
+                'THE Ⅹ SINS • Command Guide',
+
+            iconURL:
+                botAvatar
+        }
+    });
+}
+
+/**
+ * Format one documented command.
+ *
+ * @param {Object} command
+ * @returns {string}
+ */
 function formatCommand(
     command
 ) {
     return [
         `\`${command.syntax}\``,
 
-        command.description,
+        command.summary,
 
-        `-# Access: ${
-            ACCESS[
-                command.access
-            ] ??
-            ACCESS.everyone
-        }`
+        `-# Access: ${command.access}`
     ].join('\n');
 }
 
+/**
+ * Split command entries so embeds
+ * remain safely below Discord field limits.
+ *
+ * @param {string[]} entries
+ * @returns {string[]}
+ */
 function splitCommandEntries(
     entries
 ) {
     const chunks = [];
+
     let current = [];
 
     for (
@@ -645,7 +1286,10 @@ function splitCommandEntries(
     ) {
         const next =
             current.length
-                ? `${current.join('\n\n')}\n\n${entry}`
+                ? [
+                    ...current,
+                    entry
+                ].join('\n\n')
                 : entry;
 
         if (
@@ -681,49 +1325,20 @@ function splitCommandEntries(
     }
 
     return chunks;
-}
-
-function createGuideEmbed(
-    interaction,
-    title,
-    description
-) {
-    const botAvatar =
-        getBotAvatar(
-            interaction
-        );
-
-    return createEmbed({
-        title,
-
-        description,
-
-        color:
-            GUIDE_COLOR,
-
-        thumbnail:
-            getGuildIcon(
-                interaction
-            ),
-
-        author: {
-            name:
-                'Evelynn • THE Ⅹ SINS',
-
-            iconURL:
-                botAvatar
-        },
-
-        footer: {
-            text:
-                'TTS • Command Guide',
-
-            iconURL:
-                botAvatar
-        }
-    });
-}
-
+}/**
+ * Build the Guide dropdown.
+ *
+ * IMPORTANT:
+ * No option emoji is used here.
+ *
+ * Discord previously rejected several
+ * Unicode emojis inside StringSelectMenu
+ * options with COMPONENT_INVALID_EMOJI.
+ *
+ * @param {string} selectedPage
+ * @param {boolean} disabled
+ * @returns {ActionRowBuilder}
+ */
 function buildGuideMenu(
     selectedPage,
     disabled = false
@@ -777,58 +1392,13 @@ function buildGuideMenu(
         );
 }
 
-function addWorkflow(
-    embed,
-    pageId
-) {
-    const workflows = {
-        [GUIDE_PAGES.ranks]: [
-            '`/setrank` — assign a Sin Rank',
-            '`/rankhistory` — review rank history',
-            '`/espada` — view the Ten Sins hierarchy'
-        ],
-
-        [GUIDE_PAGES.titles]: [
-            '`/titles` — view unlocked Titles',
-            '`/settitle` — activate a Title',
-            '`/removetitle` — remove your active Title'
-        ],
-
-        [GUIDE_PAGES.progression]: [
-            '`/soul` — open the progression record',
-            '`/level` — check current level',
-            '`/rank` — check current rank'
-        ],
-
-        [GUIDE_PAGES.support]: [
-            '`/ticketpanel` — publish the support panel',
-            '`/ticket` — open a support request',
-            '`/tickets` — manage active tickets'
-        ]
-    };
-
-    const workflow =
-        workflows[
-            pageId
-        ];
-
-    if (
-        !workflow
-    ) {
-        return;
-    }
-
-    embed.addFields({
-        name:
-            'Ⅹ・RECOMMENDED FLOW',
-
-        value:
-            workflow.join('\n'),
-
-        inline:
-            false
-    });
-}function buildOverviewPage(
+/**
+ * Build the main Guide overview.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildOverviewPage(
     interaction
 ) {
     const embed =
@@ -846,7 +1416,7 @@ function addWorkflow(
                     interaction.client
                 )}\``,
                 '',
-                'Only commands currently loaded by Evelynn are shown.'
+                'Only commands currently loaded by Evelynn are displayed.'
             ].join('\n')
         );
 
@@ -864,7 +1434,7 @@ function addWorkflow(
                             pageId
                         ];
 
-                    const count =
+                    const commandCount =
                         getPageCommands(
                             interaction.client,
                             pageId
@@ -875,7 +1445,7 @@ function addWorkflow(
                             `${page.emoji}・${page.label.toUpperCase()}`,
 
                         value:
-                            `\`${count}\` commands`,
+                            `\`${commandCount}\` loaded commands`,
 
                         inline:
                             true
@@ -894,7 +1464,7 @@ function addWorkflow(
         value: [
             '`/help` — quick command menu',
             '`/guide` — detailed documentation',
-            '`/dashboard` — server overview',
+            '`/dashboard` — central server dashboard',
             '`/soul` — progression record'
         ].join('\n'),
 
@@ -905,6 +1475,62 @@ function addWorkflow(
     return embed;
 }
 
+/**
+ * Build the official THE Ⅹ SINS Rank page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildRankPage(
+    interaction
+) {
+    const embed =
+        createGuideEmbed(
+            interaction,
+
+            '⚔️・THE Ⅹ SINS',
+
+            [
+                'The official Sin hierarchy and recognized rank statuses.',
+                '',
+                buildSinHierarchyText()
+            ].join('\n')
+        );
+
+    embed.addFields({
+        name:
+            '⚔️・RANK MANAGEMENT',
+
+        value:
+            buildRankWorkflow(),
+
+        inline:
+            false
+    });
+
+    embed.addFields({
+        name:
+            '◇・RANK RECORDS',
+
+        value: [
+            '`/rank` — view current rank information',
+            '`/rankhistory` — review previous rank changes'
+        ].join('\n'),
+
+        inline:
+            false
+    });
+
+    return embed;
+}
+
+/**
+ * Build a normal category page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} pageId
+ * @returns {import('discord.js').EmbedBuilder}
+ */
 function buildCategoryPage(
     interaction,
     pageId
@@ -938,11 +1564,6 @@ function buildCategoryPage(
                 `**Available Commands:** \`${commands.length}\``
             ].join('\n')
         );
-
-    addWorkflow(
-        embed,
-        pageId
-    );
 
     if (
         !commands.length
@@ -994,6 +1615,13 @@ function buildCategoryPage(
     return embed;
 }
 
+/**
+ * Build the requested Guide page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} pageId
+ * @returns {import('discord.js').EmbedBuilder}
+ */
 function buildGuidePage(
     interaction,
     pageId
@@ -1008,22 +1636,19 @@ function buildGuidePage(
     }
 
     if (
-        GUIDE_PAGE_ORDER.includes(
-            pageId
-        )
+        pageId ===
+        GUIDE_PAGES.ranks
     ) {
-        return buildCategoryPage(
-            interaction,
-            pageId
+        return buildRankPage(
+            interaction
         );
     }
 
-    return buildOverviewPage(
-        interaction
+    return buildCategoryPage(
+        interaction,
+        pageId
     );
-}
-
-module.exports = {
+}module.exports = {
     category:
         'information',
 
@@ -1039,6 +1664,12 @@ module.exports = {
                 false
             ),
 
+    /**
+     * Execute /guide.
+     *
+     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @returns {Promise<void>}
+     */
     async execute(
         interaction
     ) {

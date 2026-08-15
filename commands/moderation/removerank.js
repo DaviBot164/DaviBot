@@ -20,58 +20,13 @@ const {
 } = require('../../utils/kingdomFeed');
 
 /**
- * Return every configured Arrancar Rank.
- *
- * @returns {Array<{
- *     key: string,
- *     id: string,
- *     name: string
- * }>}
- */
-function getConfiguredRanks() {
-    return Object.entries(
-        rankConfig.hierarchy
-    ).map(
-        ([
-            key,
-            rank
-        ]) => ({
-            key,
-
-            id:
-                rank.id,
-
-            name:
-                rank.name
-        })
-    );
-}
-
-/**
- * Return every configured Arrancar
- * Rank Role ID.
- *
- * @returns {string[]}
- */
-function getConfiguredRankRoleIds() {
-    return getConfiguredRanks()
-        .map(
-            rank =>
-                rank.id
-        );
-}
-
-/**
- * Check whether a member may manage
- * manually assigned Arrancar Ranks.
- *
- * The server owner and members with
- * Administrator bypass Role checks.
+ * Check whether a member can manage
+ * THE Ⅹ SINS Rank system.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
  */
-function canManageArrancarRanks(
+function canManageRanks(
     member
 ) {
     if (!member) {
@@ -93,12 +48,9 @@ function canManageArrancarRanks(
         return true;
     }
 
-    const highCommandRoleIds =
-        Object.values(
-            rankConfig.highCommand
-        );
-
-    return highCommandRoleIds.some(
+    return Object.values(
+        rankConfig.highCommand
+    ).some(
         roleId =>
             member.roles.cache.has(
                 roleId
@@ -107,100 +59,107 @@ function canManageArrancarRanks(
 }
 
 /**
- * Get every manually managed Arrancar
- * Rank Role currently held by a member.
+ * Get all configured Sin Rank roles.
+ *
+ * Dominion is included here because it is a
+ * managed hierarchy role and must be removed
+ * if a member somehow holds it.
+ *
+ * @returns {string[]}
+ */
+function getRankRoleIds() {
+    return Object.values(
+        rankConfig.hierarchy
+    )
+        .map(
+            rank =>
+                rank.id
+        )
+        .filter(Boolean);
+}
+
+/**
+ * Get every configured Rank role currently
+ * held by a member.
  *
  * @param {import('discord.js').GuildMember} member
- * @returns {import('discord.js').Collection<string, import('discord.js').Role>}
+ * @returns {import('discord.js').Collection}
  */
 function getMemberRankRoles(
     member
 ) {
-    const rankRoleIds =
+    const rankIds =
         new Set(
-            getConfiguredRankRoleIds()
+            getRankRoleIds()
         );
 
     return member.roles.cache
         .filter(
             role =>
-                rankRoleIds.has(
+                rankIds.has(
                     role.id
                 )
-        )
-        .sort(
-            (
-                firstRole,
-                secondRole
-            ) =>
-                secondRole.position -
-                firstRole.position
         );
 }
 
 /**
- * Find one configured Rank using
- * its immutable Discord Role ID.
+ * Find a configured Rank by Discord role ID.
  *
  * @param {string} roleId
- * @returns {{
- *     key: string,
- *     id: string,
- *     name: string
- * }|null}
+ * @returns {Object|null}
  */
-function getConfiguredRankByRoleId(
+function getRankByRoleId(
     roleId
 ) {
     return (
-        getConfiguredRanks()
-            .find(
-                rank =>
-                    rank.id ===
-                    roleId
-            ) ||
+        Object.values(
+            rankConfig.hierarchy
+        ).find(
+            rank =>
+                rank.id ===
+                roleId
+        ) ??
         null
     );
 }
 
 /**
- * Find the official Hall of Honor
- * using its immutable Channel ID.
+ * Get the best display name for the
+ * Rank being removed.
  *
- * @param {import('discord.js').Guild} guild
- * @returns {import('discord.js').GuildTextBasedChannel|null}
+ * @param {Object|null} databaseRank
+ * @param {import('discord.js').Collection} roles
+ * @returns {string}
  */
-function findPromotionChannel(
-    guild
+function getRemovedRankName(
+    databaseRank,
+    roles
 ) {
-    const channel =
-        guild.channels.cache.get(
-            rankConfig
-                .channels
-                .hallOfHonor
-        );
-
     if (
-        !channel ||
-        !channel.isTextBased() ||
-        channel.isThread()
+        databaseRank?.rank_name
     ) {
-        return null;
+        return databaseRank.rank_name;
     }
 
-    return channel;
+    const role =
+        roles.first();
+
+    if (!role) {
+        return 'Unknown Sin Rank';
+    }
+
+    return (
+        getRankByRoleId(
+            role.id
+        )?.name ??
+        role.name
+    );
 }
 
 /**
- * Create the official Rank removal
- * announcement Embed.
+ * Build the official Rank removal embed.
  *
  * @param {Object} options
- * @param {import('discord.js').GuildMember} options.member
- * @param {import('discord.js').User} options.moderator
- * @param {string} options.removedRank
- * @param {string} options.reason
- * @param {number|string|null} options.historyId
  * @returns {import('discord.js').EmbedBuilder}
  */
 function createRankRemovalEmbed({
@@ -210,28 +169,22 @@ function createRankRemovalEmbed({
     reason,
     historyId
 }) {
-    const removedAt =
+    const timestamp =
         Math.floor(
-            Date.now() /
-            1_000
+            Date.now() / 1000
         );
-
-    const historyDisplay =
-        historyId
-            ? `#${historyId}`
-            : 'Pending Archive';
 
     return createEmbed({
         title:
-            '🌑 Arrancar Rank Revoked',
+            '⚔️ Sin Rank Removed',
 
         description:
             [
-                `${member} no longer holds a manually assigned position within the Arrancar hierarchy of Las Noches.`,
+                `${member} no longer holds a manually assigned Sin Rank.`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Umbra has preserved this decision within the eternal Soul Archives.*'
+                '*Evelynn has preserved this decision within the Soul Archives.*'
             ].join('\n'),
 
         color:
@@ -252,26 +205,26 @@ function createRankRemovalEmbed({
                     '🌙 Soul',
 
                 value:
-                    `${member}\n` +
-                    `\`${member.id}\``,
+                    `${member}\n\`${member.id}\``,
 
                 inline:
                     true
             },
+
             {
                 name:
                     '👑 High Command',
 
                 value:
-                    `${moderator}\n` +
-                    `\`${moderator.id}\``,
+                    `${moderator}\n\`${moderator.id}\``,
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '📜 Revoked Rank',
+                    '📜 Removed Rank',
 
                 value:
                     removedRank,
@@ -279,37 +232,44 @@ function createRankRemovalEmbed({
                 inline:
                     true
             },
+
             {
                 name:
-                    '⚪ Current Rank',
+                    '◇ Current Status',
 
                 value:
-                    'No manually assigned Arrancar Rank',
+                    rankConfig.hierarchy
+                        .unranked
+                        .name,
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '🆔 Hierarchy Record',
+                    '🆔 Archive Record',
 
                 value:
-                    `\`${historyDisplay}\``,
+                    historyId
+                        ? `\`#${historyId}\``
+                        : 'Archived',
 
                 inline:
                     true
             },
+
             {
                 name:
-                    '🕒 Revoked At',
+                    '🕒 Removed At',
 
                 value:
-                    `<t:${removedAt}:F>\n` +
-                    `(<t:${removedAt}:R>)`,
+                    `<t:${timestamp}:F>\n(<t:${timestamp}:R>)`,
 
                 inline:
                     true
             },
+
             {
                 name:
                     '📖 Reason',
@@ -324,7 +284,7 @@ function createRankRemovalEmbed({
 
         footer: {
             text:
-                '🌙 Umbra • Guardian of Las Noches'
+                'THE Ⅹ SINS • Rank Archive'
         }
     });
 }module.exports = {
@@ -337,39 +297,41 @@ function createRankRemovalEmbed({
                 'removerank'
             )
             .setDescription(
-                'Remove a Soul’s manually assigned Arrancar Rank.'
+                'Remove a Soul’s assigned Sin Rank.'
             )
 
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'user'
-                    )
-                    .setDescription(
-                        'Select the Soul whose Rank should be removed'
-                    )
-                    .setRequired(
-                        true
-                    )
+            .addUserOption(
+                option =>
+                    option
+                        .setName(
+                            'user'
+                        )
+                        .setDescription(
+                            'Select the Soul whose Rank should be removed.'
+                        )
+                        .setRequired(
+                            true
+                        )
             )
 
-            .addStringOption(option =>
-                option
-                    .setName(
-                        'reason'
-                    )
-                    .setDescription(
-                        'Reason for removing this Arrancar Rank'
-                    )
-                    .setMinLength(
-                        2
-                    )
-                    .setMaxLength(
-                        500
-                    )
-                    .setRequired(
-                        true
-                    )
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'reason'
+                        )
+                        .setDescription(
+                            'Reason for removing the Sin Rank.'
+                        )
+                        .setMinLength(
+                            2
+                        )
+                        .setMaxLength(
+                            500
+                        )
+                        .setRequired(
+                            true
+                        )
             )
 
             .setDefaultMemberPermissions(
@@ -381,7 +343,7 @@ function createRankRemovalEmbed({
             ),
 
     /**
-     * Execute the /removerank command.
+     * Execute /removerank.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -396,8 +358,8 @@ function createRankRemovalEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ Server Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -412,7 +374,7 @@ function createRankRemovalEmbed({
                 interaction.member;
 
             if (
-                !canManageArrancarRanks(
+                !canManageRanks(
                     executor
                 )
             ) {
@@ -420,11 +382,12 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ High Command Required',
+
                             [
-                                'Only the Las Noches High Command may remove Arrancar Ranks.',
+                                'Only THE Ⅹ SINS High Command may remove Sin Ranks.',
                                 '',
                                 'Required standing:',
-                                '• 👑 Ruler of Las Noches',
+                                '• 👑 Ruler',
                                 '• ⚜️ Head Captain',
                                 '• 🛡️ Captain'
                             ].join('\n')
@@ -454,7 +417,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
+                            'The selected Soul is not currently inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -472,7 +435,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Invalid Soul',
-                            'Arrancar Ranks cannot be removed from Discord bots.'
+                            'Sin Ranks cannot be removed from Discord bots.'
                         )
                     ],
 
@@ -493,7 +456,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Protected Soul',
-                            'Only the server owner may change the owner’s Arrancar Rank.'
+                            'Only the server owner may change the owner’s Sin Rank.'
                         )
                     ],
 
@@ -511,8 +474,8 @@ function createRankRemovalEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
+                            '❌ Evelynn Unavailable',
+                            'Evelynn could not access its server member information.'
                         )
                     ],
 
@@ -532,7 +495,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Manage Roles Required',
-                            'Umbra requires the **Manage Roles** permission to remove Arrancar Ranks.'
+                            'Evelynn needs **Manage Roles** to remove Sin Rank roles.'
                         )
                     ],
 
@@ -549,11 +512,10 @@ function createRankRemovalEmbed({
                 );
 
             const databaseRank =
-                await rankDatabase
-                    .getCurrentRank(
-                        interaction.guild.id,
-                        member.id
-                    );
+                await rankDatabase.getCurrentRank(
+                    interaction.guild.id,
+                    member.id
+                );
 
             if (
                 currentRankRoles.size ===
@@ -564,7 +526,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ No Rank Assigned',
-                            `${member} does not currently hold a manually assigned Arrancar Rank.`
+                            `${member} does not currently have an assigned Sin Rank.`
                         )
                     ],
 
@@ -581,7 +543,9 @@ function createRankRemovalEmbed({
                         role.managed ||
                         !role.editable ||
                         role.position >=
-                            botMember.roles.highest.position
+                            botMember.roles
+                                .highest
+                                .position
                 );
 
             if (
@@ -591,13 +555,11 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Rank Hierarchy Error',
+
                             [
-                                `Umbra cannot remove ${unmanageableRole}.`,
+                                `Evelynn cannot remove ${unmanageableRole}.`,
                                 '',
-                                'Confirm that:',
-                                '• Umbra is above this Arrancar Rank role',
-                                '• The role is not controlled by another integration',
-                                '• Umbra has **Manage Roles**'
+                                'Make sure Evelynn is above the Sin Rank roles and has **Manage Roles**.'
                             ].join('\n')
                         )
                     ],
@@ -609,34 +571,27 @@ function createRankRemovalEmbed({
                 return;
             }
 
-            const configuredRoleRank =
-                currentRankRoles.first()
-                    ? getConfiguredRankByRoleId(
-                        currentRankRoles
-                            .first()
-                            .id
-                    )
-                    : null;
+            const removedRank =
+                getRemovedRankName(
+                    databaseRank,
+                    currentRankRoles
+                );
 
-            const removedRankDisplay =
-                databaseRank?.rank_name ||
-                configuredRoleRank?.name ||
-                currentRankRoles.first()?.name ||
-                'Unknown Arrancar Rank';
-
-            await interaction.deferReply();            try {
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });            try {
                 if (
-                    currentRankRoles.size >
-                    0
+                    currentRankRoles.size
                 ) {
                     await member.roles.remove(
                         currentRankRoles,
-                        `Arrancar Rank removed by ${interaction.user.tag}: ${reason}`
+                        `Sin Rank removed by ${interaction.user.tag}: ${reason}`
                     );
                 }
             } catch (roleError) {
                 console.error(
-                    '❌ Umbra could not remove the Arrancar Rank roles:',
+                    '❌ Sin Rank role removal failed:',
                     roleError
                 );
 
@@ -644,13 +599,11 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Rank Removal Failed',
+
                             [
-                                'Umbra could not remove the selected Soul’s Arrancar Rank role.',
+                                'Evelynn could not remove the Discord Sin Rank role.',
                                 '',
-                                'Verify the following:',
-                                '• Umbra has **Manage Roles**',
-                                '• Umbra is above all Arrancar Rank roles',
-                                '• The Rank role is not controlled by another integration'
+                                'Check **Manage Roles** and make sure Evelynn is above the Sin Rank roles.'
                             ].join('\n')
                         )
                     ]
@@ -677,28 +630,28 @@ function createRankRemovalEmbed({
                     });
             } catch (databaseError) {
                 console.error(
-                    '❌ Umbra could not save the Rank removal:',
+                    '❌ Sin Rank archive failed:',
                     databaseError
                 );
 
                 /*
-                 * PostgreSQL failed after the
-                 * Discord Rank roles were removed.
-                 *
-                 * Restore the previous roles
-                 * wherever possible.
+                 * Restore the previous Discord roles
+                 * if PostgreSQL failed after removal.
                  */
                 if (
-                    currentRankRoles.size >
-                    0
+                    currentRankRoles.size
                 ) {
                     await member.roles
                         .add(
                             currentRankRoles,
-                            'Rank database removal failed; restoring previous roles.'
+                            'Sin Rank archive failed; restoring previous role.'
                         )
                         .catch(
-                            () => null
+                            restoreError =>
+                                console.error(
+                                    '❌ Sin Rank role restoration failed:',
+                                    restoreError
+                                )
                         );
                 }
 
@@ -706,12 +659,13 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Rank Archive Failed',
+
                             [
-                                'Umbra could not save this Rank removal inside PostgreSQL.',
+                                'Evelynn could not save the Rank removal in PostgreSQL.',
                                 '',
                                 'The previous Discord Rank was restored where possible.',
                                 '',
-                                'Check the Northflank database logs before trying again.'
+                                'Check the database logs before trying again.'
                             ].join('\n')
                         )
                     ]
@@ -721,25 +675,17 @@ function createRankRemovalEmbed({
             }
 
             /*
-             * If Discord contained a Rank role
-             * but PostgreSQL had no active record,
-             * removeRank() may return null.
-             *
-             * The Discord cleanup is still treated
-             * as a successful Rank removal.
+             * The Discord role was removed successfully.
+             * PostgreSQL may return null when a role existed
+             * in Discord but no active database record existed.
              */
             const historyId =
                 removedRecord?.history_id ??
                 null;
 
-            const archivedRemovedRank =
-                removedRecord
-                    ?.removed_rank_name ||
-                null;
-
-            const finalRemovedRankDisplay =
-                archivedRemovedRank ||
-                removedRankDisplay;
+            const finalRemovedRank =
+                removedRecord?.removed_rank_name ??
+                removedRank;
 
             const removalEmbed =
                 createRankRemovalEmbed({
@@ -749,7 +695,7 @@ function createRankRemovalEmbed({
                         interaction.user,
 
                     removedRank:
-                        finalRemovedRankDisplay,
+                        finalRemovedRank,
 
                     reason,
 
@@ -762,134 +708,77 @@ function createRankRemovalEmbed({
                 ]
             });
 
-            const promotionChannel =
-                findPromotionChannel(
-                    interaction.guild
+            /*
+             * Publish the official Rank Feed.
+             *
+             * A failed feed must not turn a successful
+             * Rank removal into a failed command.
+             */
+            try {
+                await sendRankFeed({
+                    member,
+
+                    moderator:
+                        interaction.user,
+
+                    oldRank:
+                        finalRemovedRank,
+
+                    newRank:
+                        null,
+
+                    reason,
+
+                    historyId,
+
+                    revoked:
+                        true
+                });
+            } catch (feedError) {
+                console.error(
+                    '⚠️ Sin Rank Feed publication failed:',
+                    feedError
                 );
-
-            if (
-                promotionChannel &&
-                promotionChannel.id !==
-                    interaction.channelId
-            ) {
-                await promotionChannel
-                    .send({
-                        content:
-                            `${member}`,
-
-                        embeds: [
-                            removalEmbed
-                        ],
-
-                        allowedMentions: {
-                            users: [
-                                member.id
-                            ]
-                        }
-                    })
-                    .catch(error => {
-                        console.error(
-                            '⚠️ Umbra could not publish the Rank removal announcement:',
-                            error
-                        );
-                    });
             }
 
-            await sendRankFeed({
-                member,
-
-                moderator:
-                    interaction.user,
-
-                oldRank:
-                    finalRemovedRankDisplay,
-
-                newRank:
-                    null,
-
-                reason,
-
-                historyId,
-
-                revoked:
-                    true
-            }).catch(error => {
-                console.error(
-                    '⚠️ Umbra could not publish the Rank Kingdom Feed:',
-                    error
-                );
-            });            console.log(
-                '======================================'
-            );
-
             console.log(
-                '🌑 Arrancar Rank Revoked'
-            );
-
-            console.log(
-                `🌙 Soul: ${member.user.tag}`
-            );
-
-            console.log(
-                `📜 Removed Rank: ${finalRemovedRankDisplay}`
-            );
-
-            console.log(
-                `👑 High Command: ${interaction.user.tag}`
-            );
-
-            console.log(
-                `🆔 History Record: ${historyId ?? 'Unknown'}`
-            );
-
-            console.log(
-                '======================================'
+                [
+                    '⚔️ Sin Rank removed:',
+                    member.user.tag,
+                    '→',
+                    finalRemovedRank,
+                    `by ${interaction.user.tag}`
+                ].join(' ')
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /removerank command failed:',
+                '❌ Evelynn /removerank command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Arrancar Rank Removal Failed',
+                    '❌ Rank Removal Failed',
+
                     [
-                        'Umbra could not complete the requested Arrancar Rank removal.',
+                        'Evelynn could not complete the Sin Rank removal.',
                         '',
-                        'No additional changes were applied.',
-                        '',
-                        'Inspect the Northflank logs for more information.'
+                        'Check the Rank configuration, database connection and Discord role hierarchy.'
                     ].join('\n')
                 );
 
             if (
-                interaction.deferred
+                interaction.deferred ||
+                interaction.replied
             ) {
                 await interaction
                     .editReply({
                         embeds: [
                             errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
                         ],
 
-                        flags:
-                            MessageFlags.Ephemeral
+                        components:
+                            []
                     })
                     .catch(
                         () => null

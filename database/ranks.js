@@ -2,33 +2,42 @@ const {
     query
 } = require('./connection');
 
-/**
- * Every manually assignable Arrancar Rank.
- *
- * The order goes from the highest rank
- * to the lowest rank.
- */
-const ARRANCAR_RANKS = [
-    '👑 Espada 0',
-    'Ⅰ Espada',
-    'Ⅱ Espada',
-    'Ⅲ Espada',
-    'Ⅳ Espada',
-    'Ⅴ Espada',
-    'Ⅵ Espada',
-    'Ⅶ Espada',
-    'Ⅷ Espada',
-    'Ⅸ Espada',
-    'Ⅹ Espada',
-    '🌘 Privaron Espada',
-    '⚔️ Fracción',
-    '🦴 Numeros',
-    '⚪ Unranked Arrancar'
-];
+const rankConfig =
+    require('../config/ranks');
 
 /**
- * Validate a manually assignable
- * Arrancar Rank name.
+ * Official THE Ⅹ SINS ranks.
+ *
+ * Rank IDs and names are taken from
+ * the central rank configuration.
+ */
+const SIN_RANKS =
+    Object.values(
+        rankConfig.hierarchy
+    ).map(
+        rank => rank.name
+    );
+
+/**
+ * Compatibility alias.
+ *
+ * Some existing systems still import
+ * ARRANCAR_RANKS. Keep the export alive
+ * while the internal terminology is updated.
+ */
+const ARRANCAR_RANKS =
+    SIN_RANKS;
+
+/**
+ * Check whether a rank is currently
+ * assignable through the rank system.
+ *
+ * Dominion is intentionally excluded from
+ * normal member rank assignment because
+ * it is a special hierarchy position.
+ *
+ * Unranked is also excluded because removing
+ * a rank already represents Unranked state.
  *
  * @param {string} rankName
  * @returns {boolean}
@@ -36,14 +45,20 @@ const ARRANCAR_RANKS = [
 function isValidRank(
     rankName
 ) {
-    return ARRANCAR_RANKS.includes(
+    return SIN_RANKS.includes(
         rankName
-    );
-}
-
-/**
+    ) &&
+        rankName !==
+            rankConfig.hierarchy
+                .dominion
+                .name &&
+        rankName !==
+            rankConfig.hierarchy
+                .unranked
+                .name;
+}/**
  * Get the current manually assigned
- * Arrancar Rank of a Soul.
+ * Sin Rank of a Soul.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -75,15 +90,19 @@ async function getCurrentRank(
             ]
         );
 
-    return result.rows[0] || null;
+    return (
+        result.rows[0] ||
+        null
+    );
 }
 
 /**
- * Assign or replace a Soul's current
- * manually managed Arrancar Rank.
+ * Assign or replace a Soul's
+ * current Sin Rank.
  *
- * The current rank and history record
- * are written in one PostgreSQL query.
+ * The existing PostgreSQL structure is
+ * intentionally preserved for compatibility
+ * with current rank history.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -106,7 +125,7 @@ async function setRank({
         )
     ) {
         throw new Error(
-            `Invalid Arrancar Rank: ${rankName}`
+            `Invalid Sin Rank: ${rankName}`
         );
     }
 
@@ -254,19 +273,15 @@ async function setRank({
         result.rows.length === 0
     ) {
         throw new Error(
-            'The Arrancar Rank could not be saved.'
+            'The Sin Rank could not be saved.'
         );
     }
 
     return result.rows[0];
-}
-
-/**
- * Remove a Soul's manually assigned
- * Arrancar Rank.
+}/**
+ * Remove the current Sin Rank.
  *
- * A removal history record is created
- * only if the Soul currently has a rank.
+ * The removed rank is preserved in history.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -281,119 +296,98 @@ async function removeRank({
     moderatorId,
     reason
 }) {
+    const currentRank =
+        await getCurrentRank(
+            guildId,
+            userId
+        );
+
+    if (!currentRank) {
+        return null;
+    }
+
     const safeReason =
         reason ||
         'No reason was provided.';
 
-    const result =
-        await query(
-            `
-                WITH removed_rank AS (
-                    DELETE FROM arrancar_ranks
-                    WHERE guild_id = $1
-                      AND user_id = $2
+    await query(
+        `
+            INSERT INTO arrancar_rank_history (
+                guild_id,
+                user_id,
+                moderator_id,
+                action,
+                old_rank,
+                new_rank,
+                reason,
+                created_at
+            )
+            VALUES (
+                $1,
+                $2,
+                $3,
+                'REMOVE',
+                $4,
+                NULL,
+                $5,
+                NOW()
+            );
+        `,
+        [
+            guildId,
+            userId,
+            moderatorId,
+            currentRank.rank_name,
+            safeReason
+        ]
+    );
 
-                    RETURNING
-                        guild_id,
-                        user_id,
-                        rank_name,
-                        assigned_by,
-                        reason,
-                        assigned_at,
-                        updated_at
-                ),
+    await query(
+        `
+            DELETE FROM arrancar_ranks
+            WHERE guild_id = $1
+              AND user_id = $2;
+        `,
+        [
+            guildId,
+            userId
+        ]
+    );
 
-                history_record AS (
-                    INSERT INTO arrancar_rank_history (
-                        guild_id,
-                        user_id,
-                        moderator_id,
-                        action,
-                        old_rank,
-                        new_rank,
-                        reason,
-                        created_at
-                    )
+    return {
+        ...currentRank,
 
-                    SELECT
-                        removed_rank.guild_id,
-                        removed_rank.user_id,
-                        $3,
-                        'REMOVE',
-                        removed_rank.rank_name,
-                        NULL,
-                        $4,
-                        NOW()
+        previousRank:
+            currentRank.rank_name,
 
-                    FROM removed_rank
+        newRank:
+            null,
 
-                    RETURNING
-                        id,
-                        guild_id,
-                        user_id,
-                        moderator_id,
-                        action,
-                        old_rank,
-                        new_rank,
-                        reason,
-                        created_at
-                )
-
-                SELECT
-                    removed_rank.guild_id,
-                    removed_rank.user_id,
-                    removed_rank.rank_name
-                        AS removed_rank_name,
-
-                    removed_rank.assigned_by,
-                    removed_rank.reason
-                        AS previous_reason,
-
-                    removed_rank.assigned_at,
-                    removed_rank.updated_at,
-
-                    history_record.id
-                        AS history_id,
-
-                    history_record.created_at
-                        AS history_created_at
-
-                FROM removed_rank
-
-                INNER JOIN history_record
-                    ON TRUE;
-            `,
-            [
-                guildId,
-                userId,
-                moderatorId,
-                safeReason
-            ]
-        );
-
-    return result.rows[0] || null;
+        reason:
+            safeReason
+    };
 }
 
 /**
- * Get a Soul's Arrancar Rank history.
+ * Get rank history for a Soul.
  *
  * @param {string} guildId
  * @param {string} userId
  * @param {number} limit
- * @returns {Promise<Object[]>}
+ * @returns {Promise<Array>}
  */
 async function getRankHistory(
     guildId,
     userId,
-    limit = 10
+    limit = 25
 ) {
     const safeLimit =
         Math.min(
-            25,
             Math.max(
-                1,
-                Number(limit) || 10
-            )
+                Number(limit) || 25,
+                1
+            ),
+            100
         );
 
     const result =
@@ -412,8 +406,7 @@ async function getRankHistory(
                 FROM arrancar_rank_history
                 WHERE guild_id = $1
                   AND user_id = $2
-                ORDER BY created_at DESC,
-                         id DESC
+                ORDER BY created_at DESC
                 LIMIT $3;
             `,
             [
@@ -427,119 +420,85 @@ async function getRankHistory(
 }
 
 /**
- * Count all Arrancar Rank changes
- * recorded for a Soul.
+ * Get all current Sin Ranks in a server.
  *
  * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<number>}
+ * @returns {Promise<Array>}
  */
-async function countRankHistory(
-    guildId,
-    userId
+async function getGuildRanks(
+    guildId
 ) {
     const result =
         await query(
             `
                 SELECT
-                    COUNT(*)::INTEGER
-                        AS total
-                FROM arrancar_rank_history
+                    guild_id,
+                    user_id,
+                    rank_name,
+                    assigned_by,
+                    reason,
+                    assigned_at,
+                    updated_at
+                FROM arrancar_ranks
                 WHERE guild_id = $1
-                  AND user_id = $2;
+                ORDER BY
+                    updated_at DESC;
             `,
             [
-                guildId,
-                userId
+                guildId
             ]
         );
 
-    return Number(
-        result.rows[0]?.total || 0
-    );
+    return result.rows;
 }
 
 /**
- * Get a single Arrancar Rank history
- * record by its database ID.
+ * Find members currently holding
+ * a specific Sin Rank.
  *
  * @param {string} guildId
- * @param {number|string} historyId
- * @returns {Promise<Object|null>}
+ * @param {string} rankName
+ * @returns {Promise<Array>}
  */
-async function getHistoryRecord(
+async function getUsersByRank(
     guildId,
-    historyId
+    rankName
 ) {
+    if (
+        !isValidRank(
+            rankName
+        )
+    ) {
+        return [];
+    }
+
     const result =
         await query(
             `
                 SELECT
-                    id,
                     guild_id,
                     user_id,
-                    moderator_id,
-                    action,
-                    old_rank,
-                    new_rank,
+                    rank_name,
+                    assigned_by,
                     reason,
-                    created_at
-                FROM arrancar_rank_history
+                    assigned_at,
+                    updated_at
+                FROM arrancar_ranks
                 WHERE guild_id = $1
-                  AND id = $2
-                LIMIT 1;
+                  AND rank_name = $2
+                ORDER BY updated_at DESC;
             `,
             [
                 guildId,
-                historyId
+                rankName
             ]
         );
 
-    return result.rows[0] || null;
-}
-
-/**
- * Get the most recent Arrancar Rank
- * history record of a Soul.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-async function getLatestRankHistory(
-    guildId,
-    userId
-) {
-    const result =
-        await query(
-            `
-                SELECT
-                    id,
-                    guild_id,
-                    user_id,
-                    moderator_id,
-                    action,
-                    old_rank,
-                    new_rank,
-                    reason,
-                    created_at
-                FROM arrancar_rank_history
-                WHERE guild_id = $1
-                  AND user_id = $2
-                ORDER BY created_at DESC,
-                         id DESC
-                LIMIT 1;
-            `,
-            [
-                guildId,
-                userId
-            ]
-        );
-
-    return result.rows[0] || null;
+    return result.rows;
 }
 
 module.exports = {
+    SIN_RANKS,
     ARRANCAR_RANKS,
 
     isValidRank,
@@ -547,9 +506,7 @@ module.exports = {
     getCurrentRank,
     setRank,
     removeRank,
-
     getRankHistory,
-    countRankHistory,
-    getHistoryRecord,
-    getLatestRankHistory
+    getGuildRanks,
+    getUsersByRank
 };

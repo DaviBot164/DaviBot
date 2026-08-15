@@ -1,10 +1,10 @@
 const {
     SlashCommandBuilder,
+    PermissionFlagsBits,
     MessageFlags,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder,
-    ComponentType
+    StringSelectMenuOptionBuilder
 } = require('discord.js');
 
 const {
@@ -12,412 +12,333 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-const embedConfig =
-    require('../../config/embed');
-
 const rankDatabase =
     require('../../database/ranks');
 
-/**
- * Rank History navigation menu ID.
- */
-const RANK_HISTORY_MENU_ID =
-    'umbra_rank_history_page_menu';
+const rankConfig =
+    require('../../config/ranks');
 
-/**
- * Rank History page identifiers.
- */
-const RANK_HISTORY_PAGES = {
+const HISTORY_MENU_ID =
+    'umbra_rankhistory_menu';
+
+const HISTORY_PAGES = {
     overview:
-        'rank_history_overview',
-
-    timeline:
-        'rank_history_timeline',
+        'overview',
 
     promotions:
-        'rank_history_promotions',
+        'promotions',
 
-    demotions:
-        'rank_history_demotions',
+    removals:
+        'removals',
 
-    revocations:
-        'rank_history_revocations',
-
-    statistics:
-        'rank_history_statistics'
+    complete:
+        'complete'
 };
 
-/**
- * Rank History page order.
- */
-const RANK_HISTORY_PAGE_ORDER = [
-    RANK_HISTORY_PAGES.overview,
-    RANK_HISTORY_PAGES.timeline,
-    RANK_HISTORY_PAGES.promotions,
-    RANK_HISTORY_PAGES.demotions,
-    RANK_HISTORY_PAGES.revocations,
-    RANK_HISTORY_PAGES.statistics
+const HISTORY_PAGE_ORDER = [
+    HISTORY_PAGES.overview,
+    HISTORY_PAGES.promotions,
+    HISTORY_PAGES.removals,
+    HISTORY_PAGES.complete
 ];
 
-/**
- * Rank History page display details.
- */
-const RANK_HISTORY_PAGE_DETAILS = {
-    [RANK_HISTORY_PAGES.overview]: {
-        emoji:
-            '📖',
-
+const HISTORY_PAGE_DETAILS = {
+    [HISTORY_PAGES.overview]: {
         label:
-            'Career Overview',
+            'Overview',
 
-        description:
-            'Current Rank and career summary'
-    },
-
-    [RANK_HISTORY_PAGES.timeline]: {
         emoji:
             '📜',
 
-        label:
-            'Full Timeline',
-
         description:
-            'Every recorded Rank change'
+            'View the Soul’s current Rank and recent history.'
     },
 
-    [RANK_HISTORY_PAGES.promotions]: {
-        emoji:
-            '⬆️',
-
+    [HISTORY_PAGES.promotions]: {
         label:
             'Promotions',
 
+        emoji:
+            '⬆️',
+
         description:
-            'Upward movement through the hierarchy'
+            'View previous Sin Rank assignments.'
     },
 
-    [RANK_HISTORY_PAGES.demotions]: {
+    [HISTORY_PAGES.removals]: {
+        label:
+            'Removals',
+
         emoji:
             '⬇️',
 
-        label:
-            'Demotions',
-
         description:
-            'Downward movement through the hierarchy'
+            'View previous Sin Rank removals.'
     },
 
-    [RANK_HISTORY_PAGES.revocations]: {
-        emoji:
-            '🌑',
-
+    [HISTORY_PAGES.complete]: {
         label:
-            'Revocations',
+            'Complete Archive',
+
+        emoji:
+            '🗃️',
 
         description:
-            'Removed Arrancar Rank records'
-    },
-
-    [RANK_HISTORY_PAGES.statistics]: {
-        emoji:
-            '📊',
-
-        label:
-            'Career Statistics',
-
-        description:
-            'Highest Rank and hierarchy totals'
+            'View the complete Sin Rank history archive.'
     }
 };
 
 /**
- * Official manually assignable Arrancar
- * Ranks ordered from highest to lowest.
- */
-const ARRANCAR_RANK_ORDER = [
-    '👑 Espada 0',
-    'Ⅰ Espada',
-    'Ⅱ Espada',
-    'Ⅲ Espada',
-    'Ⅳ Espada',
-    'Ⅴ Espada',
-    'Ⅵ Espada',
-    'Ⅶ Espada',
-    'Ⅷ Espada',
-    'Ⅸ Espada',
-    'Ⅹ Espada',
-    '🌘 Privaron Espada',
-    '⚔️ Fracción',
-    '🦴 Numeros',
-    '⚪ Unranked Arrancar'
-];
-
-/**
- * Format a number using readable
- * thousands separators.
+ * Format a Discord timestamp safely.
  *
- * @param {number|string|null|undefined} value
- * @returns {string}
- */
-function formatNumber(
-    value
-) {
-    const numericValue =
-        Number(
-            value
-        );
-
-    if (
-        !Number.isFinite(
-            numericValue
-        )
-    ) {
-        return '0';
-    }
-
-    return numericValue.toLocaleString(
-        'en-US'
-    );
-}
-
-/**
- * Format a Discord timestamp.
- *
- * @param {Date|string|number|null|undefined} value
+ * @param {string|Date|null} value
  * @param {string} style
  * @returns {string}
  */
-function formatDiscordDate(
+function formatTimestamp(
     value,
-    style = 'F'
+    style = 'R'
 ) {
     if (!value) {
-        return 'Not recorded';
+        return 'Unknown date';
     }
 
     const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
+        new Date(value);
 
     if (
         Number.isNaN(
             date.getTime()
         )
     ) {
-        return 'Not recorded';
+        return 'Unknown date';
     }
 
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1000
-        );
-
-    return `<t:${unixTimestamp}:${style}>`;
+    return `<t:${Math.floor(
+        date.getTime() / 1000
+    )}:${style}>`;
 }
 
 /**
- * Calculate complete days elapsed
- * since one date.
+ * Shorten text for embeds.
  *
- * @param {Date|string|number|null|undefined} value
- * @returns {number}
+ * @param {unknown} value
+ * @param {number} limit
+ * @returns {string}
  */
-function calculateDaysSince(
-    value
+function shorten(
+    value,
+    limit = 180
 ) {
     if (!value) {
-        return 0;
+        return 'No information recorded.';
     }
 
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
+    const text =
+        String(value)
+            .replace(
+                /\s+/g,
+                ' '
+            )
+            .replace(
+                /`/g,
+                'ˋ'
+            )
+            .trim();
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return 0;
+    return text.length <= limit
+        ? text
+        : `${text.slice(
+            0,
+            limit - 3
+        )}...`;
+}
+
+/**
+ * Get a configured Sin Rank by name.
+ *
+ * @param {string|null} name
+ * @returns {Object|null}
+ */
+function getConfiguredRank(
+    name
+) {
+    if (!name) {
+        return null;
     }
 
-    return Math.max(
-        0,
-        Math.floor(
-            (
-                Date.now() -
-                date.getTime()
-            ) /
-            86_400_000
-        )
+    return (
+        Object.values(
+            rankConfig.hierarchy
+        ).find(
+            rank =>
+                rank.name === name
+        ) ??
+        null
     );
 }
 
 /**
- * Return the hierarchy index of one Rank.
+ * Format a Rank name.
  *
- * Lower indexes represent stronger Ranks.
+ * Historical values that no longer
+ * exist in the current configuration
+ * are preserved.
  *
- * @param {string|null|undefined} rankName
- * @returns {number}
+ * @param {string|null} rankName
+ * @returns {string}
  */
-function getRankIndex(
+function formatRank(
     rankName
 ) {
-    const index =
-        ARRANCAR_RANK_ORDER.indexOf(
-            rankName
-        );
+    if (!rankName) {
+        return rankConfig
+            .hierarchy
+            .unranked
+            .name;
+    }
 
-    return index ===
-        -1
-        ? ARRANCAR_RANK_ORDER.length
-        : index;
+    return (
+        getConfiguredRank(
+            rankName
+        )?.name ??
+        rankName
+    );
 }
 
 /**
- * Determine the type of one Rank
- * history record.
+ * Classify one Rank History record.
  *
- * @param {Object} entry
- * @returns {'PROMOTION'|'DEMOTION'|'REVOCATION'|'ASSIGNMENT'|'CHANGE'}
+ * @param {Object} record
+ * @returns {'promotion'|'removal'|'other'}
  */
-function classifyRankHistoryEntry(
-    entry
+function classifyHistory(
+    record
+) {
+    const action =
+        String(
+            record?.action ??
+            ''
+        ).toUpperCase();
+
+    if (
+        action === 'REMOVE' ||
+        action === 'REMOVED' ||
+        action === 'DEMOTION' ||
+        action === 'REVOKE'
+    ) {
+        return 'removal';
+    }
+
+    if (
+        action === 'SET' ||
+        action === 'ASSIGN' ||
+        action === 'PROMOTION'
+    ) {
+        return 'promotion';
+    }
+
+    if (
+        record?.new_rank &&
+        !record?.old_rank
+    ) {
+        return 'promotion';
+    }
+
+    if (
+        !record?.new_rank &&
+        record?.old_rank
+    ) {
+        return 'removal';
+    }
+
+    return 'other';
+}
+
+/**
+ * Filter Rank History records by page.
+ *
+ * @param {Array<Object>} records
+ * @param {string} page
+ * @returns {Array<Object>}
+ */
+function filterHistory(
+    records,
+    page
 ) {
     if (
-        entry?.action ===
-            'REMOVE' ||
-        !entry?.new_rank
+        page ===
+        HISTORY_PAGES.promotions
     ) {
-        return 'REVOCATION';
-    }
-
-    if (
-        !entry?.old_rank
-    ) {
-        return 'ASSIGNMENT';
-    }
-
-    const oldIndex =
-        getRankIndex(
-            entry.old_rank
+        return records.filter(
+            record =>
+                classifyHistory(
+                    record
+                ) === 'promotion'
         );
+    }
 
-    const newIndex =
-        getRankIndex(
-            entry.new_rank
+    if (
+        page ===
+        HISTORY_PAGES.removals
+    ) {
+        return records.filter(
+            record =>
+                classifyHistory(
+                    record
+                ) === 'removal'
         );
-
-    if (
-        newIndex <
-        oldIndex
-    ) {
-        return 'PROMOTION';
     }
 
-    if (
-        newIndex >
-        oldIndex
-    ) {
-        return 'DEMOTION';
-    }
-
-    return 'CHANGE';
-}
-
-/**
- * Return visual information for one
- * Rank history record type.
+    return records;
+}/**
+ * Get visual details for one Rank History entry.
  *
- * @param {string} type
+ * @param {'promotion'|'removal'|'other'} type
  * @returns {{
  *     emoji: string,
- *     label: string,
- *     color: string
+ *     label: string
  * }}
  */
 function getHistoryTypeDetails(
     type
 ) {
-    switch (
-        type
-    ) {
-        case 'PROMOTION':
+    switch (type) {
+        case 'promotion':
             return {
                 emoji:
                     '⬆️',
 
                 label:
-                    'Promotion',
-
-                color:
-                    embedConfig.colors.success
+                    'Rank Assigned'
             };
 
-        case 'DEMOTION':
+        case 'removal':
             return {
                 emoji:
-                    '⬇️',
+                    '◇',
 
                 label:
-                    'Demotion',
-
-                color:
-                    embedConfig.colors.warning
-            };
-
-        case 'REVOCATION':
-            return {
-                emoji:
-                    '🌑',
-
-                label:
-                    'Rank Revocation',
-
-                color:
-                    embedConfig.colors.moderation
-            };
-
-        case 'ASSIGNMENT':
-            return {
-                emoji:
-                    '🏅',
-
-                label:
-                    'Initial Assignment',
-
-                color:
-                    embedConfig.colors.rank
+                    'Rank Removed'
             };
 
         default:
             return {
                 emoji:
-                    '⚔️',
+                    '◆',
 
                 label:
-                    'Rank Change',
-
-                color:
-                    embedConfig.colors.rank
+                    'Rank Change'
             };
     }
 }
 
 /**
- * Create the interactive Rank History menu.
+ * Create the Rank History navigation menu.
  *
  * @param {string} selectedPage
  * @param {boolean} disabled
- * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
+ * @returns {ActionRowBuilder}
  */
 function createRankHistoryMenu(
     selectedPage,
@@ -426,10 +347,10 @@ function createRankHistoryMenu(
     const menu =
         new StringSelectMenuBuilder()
             .setCustomId(
-                RANK_HISTORY_MENU_ID
+                HISTORY_MENU_ID
             )
             .setPlaceholder(
-                'Select a hierarchy archive'
+                'Choose an archive section...'
             )
             .setMinValues(
                 1
@@ -443,10 +364,10 @@ function createRankHistoryMenu(
 
     for (
         const pageId
-        of RANK_HISTORY_PAGE_ORDER
+        of HISTORY_PAGE_ORDER
     ) {
         const details =
-            RANK_HISTORY_PAGE_DETAILS[
+            HISTORY_PAGE_DETAILS[
                 pageId
             ];
 
@@ -465,8 +386,8 @@ function createRankHistoryMenu(
                     pageId
                 )
                 .setDefault(
-                    selectedPage ===
-                    pageId
+                    pageId ===
+                    selectedPage
                 )
         );
     }
@@ -478,7 +399,7 @@ function createRankHistoryMenu(
 }
 
 /**
- * Create the shared Rank History Embed.
+ * Create the shared Rank History embed.
  *
  * @param {Object} options
  * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
@@ -494,13 +415,10 @@ function createRankHistoryEmbed({
     title,
     description,
     color =
-        embedConfig.colors.rank
+        '#B026FF'
 }) {
-    const avatarURL =
+    const avatar =
         member.user.displayAvatarURL({
-            extension:
-                'png',
-
             size:
                 1024,
 
@@ -508,55 +426,57 @@ function createRankHistoryEmbed({
                 false
         });
 
+    const botAvatar =
+        interaction.client.user
+            .displayAvatarURL({
+                size:
+                    256,
+
+                forceStatic:
+                    false
+            });
+
     return createEmbed({
         title,
 
         description:
             [
                 description,
+
                 '',
-                embedConfig
-                    .branding
-                    .divider,
+
+                '━━━━━━━━━━━━━━━━━━━━',
+
                 '',
-                '*Every promotion, demotion and revocation is preserved permanently within the hierarchy archives.*'
+
+                '-# THE Ⅹ SINS • Rank Archive'
             ].join('\n'),
 
         color,
 
         thumbnail:
-            avatarURL,
+            avatar,
 
         author: {
             name:
-                `${member.displayName} • Arrancar Career Archive`,
+                `${member.displayName} • Rank History`,
 
             iconURL:
-                avatarURL
+                avatar
         },
 
         footer: {
             text:
-                `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+                `THE Ⅹ SINS • Opened by ${interaction.user.username}`,
 
             iconURL:
-                interaction.client.user
-                    .displayAvatarURL({
-                        extension:
-                            'png',
-
-                        size:
-                            128,
-
-                        forceStatic:
-                            false
-                    })
+                botAvatar
         }
     });
 }
 
 /**
- * Format one Rank history record.
+ * Format one Rank History record.
  *
  * @param {Object} entry
  * @param {number} position
@@ -567,7 +487,7 @@ function formatHistoryEntry(
     position
 ) {
     const type =
-        classifyRankHistoryEntry(
+        classifyHistory(
             entry
         );
 
@@ -577,42 +497,56 @@ function formatHistoryEntry(
         );
 
     const oldRank =
-        entry?.old_rank ||
-        'No previous Rank';
+        formatRank(
+            entry?.old_rank
+        );
 
     const newRank =
-        entry?.new_rank ||
-        'No active Rank';
+        formatRank(
+            entry?.new_rank
+        );
 
     const moderator =
         entry?.moderator_id
             ? `<@${entry.moderator_id}>`
-            : 'Unknown High Command';
+            : 'Unknown';
 
     const reason =
-        entry?.reason ||
-        'No reason was recorded.';
+        shorten(
+            entry?.reason,
+            160
+        );
+
+    const rankChange =
+        entry?.old_rank ||
+        entry?.new_rank
+            ? `${oldRank} → ${newRank}`
+            : newRank;
 
     return [
         `### ${position}. ${details.emoji} ${details.label}`,
-        `**Hierarchy:** ${oldRank} → ${newRank}`,
+
+        `**Rank:** ${rankChange}`,
+
         `**High Command:** ${moderator}`,
+
         `**Reason:** ${reason}`,
-        `**Recorded:** ${formatDiscordDate(entry?.created_at, 'F')}`,
-        `-# ${formatDiscordDate(entry?.created_at, 'R')}`,
+
+        `**Recorded:** ${formatTimestamp(
+            entry?.created_at
+        )}`,
+
         entry?.id
-            ? `-# Archive Record: #${entry.id}`
+            ? `-# Archive Record #${entry.id}`
             : null
     ]
-        .filter(
-            Boolean
-        )
+        .filter(Boolean)
         .join('\n');
 }
 
 /**
- * Split formatted Rank records into
- * safe Discord Embed field values.
+ * Split formatted history records into
+ * Discord-safe field values.
  *
  * @param {string[]} records
  * @param {number} maxLength
@@ -620,91 +554,86 @@ function formatHistoryEntry(
  */
 function splitHistoryRecords(
     records,
-    maxLength = 1_000
+    maxLength = 1000
 ) {
     const chunks = [];
 
-    let currentChunk =
+    let current =
         '';
 
     for (
         const record
         of records
     ) {
-        const separator =
-            currentChunk
-                ? '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
-                : '';
-
-        const nextChunk =
-            `${currentChunk}${separator}${record}`;
+        const next =
+            current
+                ? `${current}\n\n${record}`
+                : record;
 
         if (
-            nextChunk.length >
+            next.length >
             maxLength
         ) {
-            if (currentChunk) {
+            if (current) {
                 chunks.push(
-                    currentChunk
+                    current
                 );
             }
 
-            currentChunk =
+            current =
                 record;
-        } else {
-            currentChunk =
-                nextChunk;
+
+            continue;
         }
+
+        current =
+            next;
     }
 
-    if (currentChunk) {
+    if (current) {
         chunks.push(
-            currentChunk
+            current
         );
     }
 
     return chunks;
-}
-
-/**
- * Filter Rank history records by
- * one classified action type.
+}/**
+ * Count history records of one type.
  *
  * @param {Object[]} history
- * @param {string} type
- * @returns {Object[]}
+ * @param {'promotion'|'removal'} type
+ * @returns {number}
  */
-function filterHistoryByType(
+function countHistoryType(
     history,
     type
 ) {
     return history.filter(
         entry =>
-            classifyRankHistoryEntry(
+            classifyHistory(
                 entry
-            ) ===
-            type
-    );
+            ) === type
+    ).length;
 }
 
 /**
- * Find the highest Rank ever recorded.
+ * Find the highest configured Rank
+ * ever recorded for a Soul.
  *
  * @param {Object[]} history
  * @param {Object|null} currentRank
  * @returns {string|null}
  */
-function findHighestRankEver(
+function findHighestRank(
     history,
     currentRank
 ) {
-    const rankNames =
-        [];
+    const names = [];
 
     if (
         currentRank?.rank_name
     ) {
-        rankNames.push(
+        names.push(
             currentRank.rank_name
         );
     }
@@ -716,7 +645,7 @@ function findHighestRankEver(
         if (
             entry?.old_rank
         ) {
-            rankNames.push(
+            names.push(
                 entry.old_rank
             );
         }
@@ -724,289 +653,50 @@ function findHighestRankEver(
         if (
             entry?.new_rank
         ) {
-            rankNames.push(
+            names.push(
                 entry.new_rank
             );
         }
     }
 
-    if (
-        rankNames.length ===
-        0
-    ) {
-        return null;
-    }
-
-    return [...new Set(
-        rankNames
-    )].sort(
-        (
-            firstRank,
-            secondRank
-        ) =>
-            getRankIndex(
-                firstRank
-            ) -
-            getRankIndex(
-                secondRank
+    const configured =
+        names
+            .map(
+                name =>
+                    getConfiguredRank(
+                        name
+                    )
             )
-    )[0];
-}
+            .filter(Boolean);
 
-/**
- * Find the first known Rank record.
- *
- * @param {Object[]} history
- * @returns {Object|null}
- */
-function findFirstCareerRecord(
-    history
-) {
     if (
-        !Array.isArray(
-            history
-        ) ||
-        history.length ===
-            0
+        !configured.length
     ) {
-        return null;
+        return names[0] ?? null;
     }
 
-    return [...history]
+    return configured
         .sort(
             (
-                firstEntry,
-                secondEntry
+                first,
+                second
             ) =>
-                new Date(
-                    firstEntry.created_at ||
-                    0
-                ).getTime() -
-                new Date(
-                    secondEntry.created_at ||
-                    0
-                ).getTime()
-        )[0] ||
-        null;
-}
-
-/**
- * Find the most recent Rank record.
- *
- * @param {Object[]} history
- * @returns {Object|null}
- */
-function findLatestCareerRecord(
-    history
-) {
-    if (
-        !Array.isArray(
-            history
-        ) ||
-        history.length ===
-            0
-    ) {
-        return null;
-    }
-
-    return [...history]
-        .sort(
-            (
-                firstEntry,
-                secondEntry
-            ) =>
-                new Date(
-                    secondEntry.created_at ||
-                    0
-                ).getTime() -
-                new Date(
-                    firstEntry.created_at ||
-                    0
-                ).getTime()
-        )[0] ||
-        null;
-}/**
- * Count hierarchy records by type.
- *
- * @param {Object[]} history
- * @param {string} type
- * @returns {number}
- */
-function countHistoryType(
-    history,
-    type
-) {
-    return filterHistoryByType(
-        history,
-        type
-    ).length;
-}
-
-/**
- * Calculate how many days the Soul has
- * held the current active Rank.
- *
- * @param {Object|null} currentRank
- * @returns {number}
- */
-function calculateCurrentReignDays(
-    currentRank
-) {
-    if (
-        !currentRank?.assigned_at
-    ) {
-        return 0;
-    }
-
-    return calculateDaysSince(
-        currentRank.assigned_at
-    );
-}
-
-/**
- * Determine whether a Rank belongs
- * to the official Espada thrones.
- *
- * @param {string|null|undefined} rankName
- * @returns {boolean}
- */
-function isEspadaRank(
-    rankName
-) {
-    return [
-        '👑 Espada 0',
-        'Ⅰ Espada',
-        'Ⅱ Espada',
-        'Ⅲ Espada',
-        'Ⅳ Espada',
-        'Ⅴ Espada',
-        'Ⅵ Espada',
-        'Ⅶ Espada',
-        'Ⅷ Espada',
-        'Ⅸ Espada',
-        'Ⅹ Espada'
-    ].includes(
-        rankName
-    );
-}
-
-/**
- * Build a filtered history page.
- *
- * @param {Object} context
- * @param {Object[]} records
- * @param {string} title
- * @param {string} description
- * @param {string} emptyTitle
- * @param {string} emptyDescription
- * @param {string} color
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildFilteredHistoryPage({
-    context,
-    records,
-    title,
-    description,
-    emptyTitle,
-    emptyDescription,
-    color
-}) {
-    const {
-        interaction,
-        member
-    } =
-        context;
-
-    const embed =
-        createRankHistoryEmbed({
-            interaction,
-            member,
-            title,
-            description,
-            color
-        });
-
-    embed.addFields({
-        name:
-            '📊 Archive Status',
-
-        value:
-            [
-                `**Matching Records:** \`${formatNumber(records.length)}\``,
-                `**Complete Career Records:** \`${formatNumber(context.totalHistoryCount)}\``,
-                '',
-                '-# Records are ordered from newest to oldest.'
-            ].join('\n'),
-
-        inline:
-            false
-    });
-
-    if (
-        records.length ===
-        0
-    ) {
-        embed.addFields({
-            name:
-                emptyTitle,
-
-            value:
-                [
-                    emptyDescription,
-                    '',
-                    '-# Future hierarchy changes will appear here automatically.'
-                ].join('\n'),
-
-            inline:
-                false
-        });
-
-        return embed;
-    }
-
-    const formattedRecords =
-        records.map(
-            (
-                entry,
-                index
-            ) =>
-                formatHistoryEntry(
-                    entry,
-                    index + 1
+                Object.keys(
+                    rankConfig.hierarchy
+                ).indexOf(
+                    first.key
+                ) -
+                Object.keys(
+                    rankConfig.hierarchy
+                ).indexOf(
+                    second.key
                 )
-        );
-
-    const chunks =
-        splitHistoryRecords(
-            formattedRecords
-        );
-
-    chunks.forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
-                name:
-                    index ===
-                    0
-                        ? '📜 Recorded Hierarchy Changes'
-                        : '📜 Recorded Hierarchy Changes — Continued',
-
-                value:
-                    chunk,
-
-                inline:
-                    false
-            });
-        }
-    );
-
-    return embed;
+        )[0]
+        ?.name ?? null;
 }
 
 /**
- * Build the Arrancar Career Overview.
+ * Build the overview page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
@@ -1020,186 +710,151 @@ function buildOverviewPage(
         currentRank,
         history,
         totalHistoryCount
-    } =
-        context;
+    } = context;
 
-    const currentRankDisplay =
-        currentRank?.rank_name ||
-        '⚪ No manually assigned Arrancar Rank';
+    const currentRankName =
+        currentRank?.rank_name ??
+        rankConfig
+            .hierarchy
+            .unranked
+            .name;
+
+    const promotions =
+        countHistoryType(
+            history,
+            'promotion'
+        );
+
+    const removals =
+        countHistoryType(
+            history,
+            'removal'
+        );
 
     const highestRank =
-        findHighestRankEver(
+        findHighestRank(
             history,
             currentRank
-        ) ||
-        'No Rank recorded';
-
-    const firstRecord =
-        findFirstCareerRecord(
-            history
-        );
-
-    const latestRecord =
-        findLatestCareerRecord(
-            history
-        );
-
-    const currentReignDays =
-        calculateCurrentReignDays(
-            currentRank
-        );
-
-    const promotionCount =
-        countHistoryType(
-            history,
-            'PROMOTION'
-        );
-
-    const demotionCount =
-        countHistoryType(
-            history,
-            'DEMOTION'
-        );
-
-    const revocationCount =
-        countHistoryType(
-            history,
-            'REVOCATION'
-        );
-
-    const assignmentCount =
-        countHistoryType(
-            history,
-            'ASSIGNMENT'
-        );
+        ) ??
+        rankConfig
+            .hierarchy
+            .unranked
+            .name;
 
     const embed =
         createRankHistoryEmbed({
             interaction,
+
             member,
 
             title:
-                `📖 ${member.user.username}'s Arrancar Career`,
+                '📖 Rank Career',
 
             description:
-                `Umbra has opened the complete hierarchy career archive of ${member}.`,
+                `${member} • complete Sin Rank archive.`,
 
             color:
-                embedConfig.colors.rank
+                '#B026FF'
         });
 
     embed.addFields(
         {
             name:
-                '⚔️ Current Arrancar Rank',
+                '⚔️ Current Rank',
 
             value:
-                [
-                    `## ${currentRankDisplay}`,
-                    '',
-                    currentRank
-                        ? `**Assigned By:** ${currentRank.assigned_by ? `<@${currentRank.assigned_by}>` : 'Not recorded'}`
-                        : '**Assigned By:** Not recorded',
-                    currentRank
-                        ? `**Assigned:** ${formatDiscordDate(currentRank.assigned_at, 'F')}`
-                        : '**Assigned:** Not recorded',
-                    currentRank
-                        ? `**Current Reign:** \`${formatNumber(currentReignDays)} days\``
-                        : '**Current Reign:** No active reign',
-                    '',
-                    `-# ${currentRank?.reason || 'No active Rank assignment is recorded.'}`
-                ].join('\n'),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '🏆 Highest Rank Achieved',
-
-            value:
-                [
-                    `**${highestRank}**`,
-                    '',
-                    isEspadaRank(
-                        highestRank
-                    )
-                        ? '👑 This Soul has reached an official Espada throne.'
-                        : '-# Highest position found within the available hierarchy archive.'
-                ].join('\n'),
-
-            inline:
-                false
-        },
-        {
-            name:
-                '📊 Career Summary',
-
-            value:
-                [
-                    `**Total Records:** \`${formatNumber(totalHistoryCount)}\``,
-                    `**Promotions:** \`${formatNumber(promotionCount)}\``,
-                    `**Demotions:** \`${formatNumber(demotionCount)}\``,
-                    `**Revocations:** \`${formatNumber(revocationCount)}\``,
-                    `**Initial Assignments:** \`${formatNumber(assignmentCount)}\``
-                ].join('\n'),
+                `## ${formatRank(
+                    currentRankName
+                )}`,
 
             inline:
                 true
         },
+
         {
             name:
-                '📅 Career Timeline',
+                '♛ Highest Rank',
 
             value:
-                [
-                    `**First Record:** ${firstRecord ? formatDiscordDate(firstRecord.created_at, 'D') : 'Not recorded'}`,
-                    `**Latest Record:** ${latestRecord ? formatDiscordDate(latestRecord.created_at, 'R') : 'Not recorded'}`,
-                    `**Career Age:** \`${firstRecord ? formatNumber(calculateDaysSince(firstRecord.created_at)) : '0'} days\``
-                ].join('\n'),
+                `**${formatRank(
+                    highestRank
+                )}**`,
 
             inline:
                 true
         },
+
         {
             name:
-                '🧭 Recommended Workflow',
+                '📊 Archive',
 
             value:
                 [
-                    '`/rankhistory` — inspect this complete career archive',
-                    '`/espada` — view the current throne hierarchy',
-                    '`/soul` — open the full Soul Record',
-                    '',
-                    '-# High Command may use `/setrank` and `/removerank` to update the hierarchy.'
+                    `**Total:** \`${totalHistoryCount}\``,
+
+                    `**Promotions:** \`${promotions}\``,
+
+                    `**Removals:** \`${removals}\``
                 ].join('\n'),
 
             inline:
-                false
+                true
         }
     );
 
-    if (latestRecord) {
-        const latestType =
-            classifyRankHistoryEntry(
-                latestRecord
-            );
+    if (
+        currentRank?.assigned_at
+    ) {
+        embed.addFields({
+            name:
+                '🕒 Current Rank Since',
 
-        const latestDetails =
+            value:
+                formatTimestamp(
+                    currentRank.assigned_at,
+                    'D'
+                ),
+
+            inline:
+                false
+        });
+    }
+
+    if (
+        history.length
+    ) {
+        const latest =
+            history[0];
+
+        const details =
             getHistoryTypeDetails(
-                latestType
+                classifyHistory(
+                    latest
+                )
             );
 
         embed.addFields({
             name:
-                '📜 Latest Hierarchy Record',
+                '📜 Latest Record',
 
             value:
                 [
-                    `${latestDetails.emoji} **${latestDetails.label}**`,
-                    `**Hierarchy:** ${latestRecord.old_rank || 'No previous Rank'} → ${latestRecord.new_rank || 'No active Rank'}`,
-                    `**Recorded:** ${formatDiscordDate(latestRecord.created_at, 'F')}`,
-                    `-# ${latestRecord.reason || 'No reason was recorded.'}`
+                    `${details.emoji} **${details.label}**`,
+
+                    `**Rank:** ${formatRank(
+                        latest?.old_rank
+                    )} → ${formatRank(
+                        latest?.new_rank
+                    )}`,
+
+                    `**Recorded:** ${formatTimestamp(
+                        latest?.created_at
+                    )}`,
+
+                    `**Reason:** ${shorten(
+                        latest?.reason,
+                        180
+                    )}`
                 ].join('\n'),
 
             inline:
@@ -1211,50 +866,55 @@ function buildOverviewPage(
 }
 
 /**
- * Build the complete Rank timeline.
+ * Build a filtered history page.
  *
  * @param {Object} context
+ * @param {'promotion'|'removal'} type
+ * @param {string} title
+ * @param {string} description
  * @returns {import('discord.js').EmbedBuilder}
  */
-function buildTimelinePage(
-    context
+function buildFilteredPage(
+    context,
+    type,
+    title,
+    description
 ) {
-    const {
-        interaction,
-        member,
-        history,
-        totalHistoryCount
-    } =
-        context;
+    const records =
+        filterHistory(
+            context.history,
+            type === 'promotion'
+                ? HISTORY_PAGES.promotions
+                : HISTORY_PAGES.removals
+        );
 
     const embed =
         createRankHistoryEmbed({
-            interaction,
-            member,
+            interaction:
+                context.interaction,
 
-            title:
-                '📜 Complete Hierarchy Timeline',
+            member:
+                context.member,
 
-            description:
-                `${member}'s promotion, demotion, assignment and revocation timeline.`,
+            title,
+
+            description,
 
             color:
-                embedConfig.colors.archive
+                type === 'promotion'
+                    ? '#57F287'
+                    : '#ED4245'
         });
 
     embed.addFields({
         name:
-            '📊 Timeline Status',
+            '📊 Archive',
 
         value:
             [
-                `**Total Career Records:** \`${formatNumber(totalHistoryCount)}\``,
-                `**Records Loaded:** \`${formatNumber(history.length)}\``,
-                '',
-                history.length <
-                    totalHistoryCount
-                    ? '-# Only the newest records allowed by the command limit are currently displayed.'
-                    : '-# The complete available hierarchy timeline is displayed below.'
+                `**Matching Records:** \`${records.length}\``,
+
+                `**Total Records:** \`${context.totalHistoryCount}\``
             ].join('\n'),
 
         inline:
@@ -1262,19 +922,16 @@ function buildTimelinePage(
     });
 
     if (
-        history.length ===
-        0
+        !records.length
     ) {
         embed.addFields({
             name:
-                '🌑 Empty Career Archive',
+                '◇ No Records',
 
             value:
-                [
-                    'No Arrancar Rank changes have been recorded for this Soul.',
-                    '',
-                    '-# The timeline will begin after the first Rank assignment.'
-                ].join('\n'),
+                type === 'promotion'
+                    ? 'No previous Sin Rank assignments have been recorded.'
+                    : 'No previous Sin Rank removals have been recorded.',
 
             inline:
                 false
@@ -1283,24 +940,8 @@ function buildTimelinePage(
         return embed;
     }
 
-    const chronologicalHistory =
-        [...history].sort(
-            (
-                firstEntry,
-                secondEntry
-            ) =>
-                new Date(
-                    secondEntry.created_at ||
-                    0
-                ).getTime() -
-                new Date(
-                    firstEntry.created_at ||
-                    0
-                ).getTime()
-        );
-
-    const formattedRecords =
-        chronologicalHistory.map(
+    const formatted =
+        records.map(
             (
                 entry,
                 index
@@ -1311,22 +952,18 @@ function buildTimelinePage(
                 )
         );
 
-    const chunks =
-        splitHistoryRecords(
-            formattedRecords
-        );
-
-    chunks.forEach(
+    splitHistoryRecords(
+        formatted
+    ).forEach(
         (
             chunk,
             index
         ) => {
             embed.addFields({
                 name:
-                    index ===
-                    0
-                        ? '⚔️ Career Timeline'
-                        : '⚔️ Career Timeline — Continued',
+                    index === 0
+                        ? '📜 Recorded Changes'
+                        : '📜 Recorded Changes — Continued',
 
                 value:
                     chunk,
@@ -1341,374 +978,102 @@ function buildTimelinePage(
 }
 
 /**
- * Build the Promotions page.
- *
- * Initial assignments are included because
- * they represent entry into the hierarchy.
+ * Build the complete archive page.
  *
  * @param {Object} context
  * @returns {import('discord.js').EmbedBuilder}
  */
-function buildPromotionsPage(
-    context
-) {
-    const promotions =
-        context.history.filter(
-            entry => {
-                const type =
-                    classifyRankHistoryEntry(
-                        entry
-                    );
-
-                return (
-                    type ===
-                        'PROMOTION' ||
-                    type ===
-                        'ASSIGNMENT'
-                );
-            }
-        );
-
-    return buildFilteredHistoryPage({
-        context,
-        records:
-            promotions,
-
-        title:
-            '⬆️ Arrancar Promotions',
-
-        description:
-            `${context.member}'s upward progression and entry records within the Las Noches hierarchy.`,
-
-        emptyTitle:
-            '🌑 No Promotions Recorded',
-
-        emptyDescription:
-            'This Soul has no promotion or initial Rank assignment records.',
-
-        color:
-            embedConfig.colors.success
-    });
-}
-
-/**
- * Build the Demotions page.
- *
- * @param {Object} context
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildDemotionsPage(
-    context
-) {
-    const demotions =
-        filterHistoryByType(
-            context.history,
-            'DEMOTION'
-        );
-
-    return buildFilteredHistoryPage({
-        context,
-        records:
-            demotions,
-
-        title:
-            '⬇️ Arrancar Demotions',
-
-        description:
-            `${context.member}'s recorded downward movements within the hierarchy.`,
-
-        emptyTitle:
-            '✅ No Demotions Recorded',
-
-        emptyDescription:
-            'This Soul has no recorded Arrancar Rank demotions.',
-
-        color:
-            embedConfig.colors.warning
-    });
-}
-
-/**
- * Build the Rank Revocations page.
- *
- * @param {Object} context
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildRevocationsPage(
-    context
-) {
-    const revocations =
-        filterHistoryByType(
-            context.history,
-            'REVOCATION'
-        );
-
-    return buildFilteredHistoryPage({
-        context,
-        records:
-            revocations,
-
-        title:
-            '🌑 Arrancar Rank Revocations',
-
-        description:
-            `${context.member}'s records of removed or revoked hierarchy positions.`,
-
-        emptyTitle:
-            '✅ No Revocations Recorded',
-
-        emptyDescription:
-            'This Soul has no recorded Arrancar Rank revocations.',
-
-        color:
-            embedConfig.colors.moderation
-    });
-}
-
-/**
- * Build Career Statistics.
- *
- * @param {Object} context
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildStatisticsPage(
+function buildCompletePage(
     context
 ) {
     const {
         interaction,
         member,
-        currentRank,
         history,
         totalHistoryCount
-    } =
-        context;
-
-    const promotions =
-        countHistoryType(
-            history,
-            'PROMOTION'
-        );
-
-    const assignments =
-        countHistoryType(
-            history,
-            'ASSIGNMENT'
-        );
-
-    const demotions =
-        countHistoryType(
-            history,
-            'DEMOTION'
-        );
-
-    const revocations =
-        countHistoryType(
-            history,
-            'REVOCATION'
-        );
-
-    const changes =
-        countHistoryType(
-            history,
-            'CHANGE'
-        );
-
-    const highestRank =
-        findHighestRankEver(
-            history,
-            currentRank
-        ) ||
-        'No Rank recorded';
-
-    const firstRecord =
-        findFirstCareerRecord(
-            history
-        );
-
-    const latestRecord =
-        findLatestCareerRecord(
-            history
-        );
-
-    const uniqueRanks =
-        new Set();
-
-    for (
-        const entry
-        of history
-    ) {
-        if (
-            entry.old_rank
-        ) {
-            uniqueRanks.add(
-                entry.old_rank
-            );
-        }
-
-        if (
-            entry.new_rank
-        ) {
-            uniqueRanks.add(
-                entry.new_rank
-            );
-        }
-    }
-
-    if (
-        currentRank?.rank_name
-    ) {
-        uniqueRanks.add(
-            currentRank.rank_name
-        );
-    }
-
-    const positiveMovement =
-        promotions +
-        assignments;
-
-    const negativeMovement =
-        demotions +
-        revocations;
-
-    const stabilityScore =
-        totalHistoryCount >
-        0
-            ? Math.max(
-                0,
-                Math.min(
-                    100,
-                    Math.round(
-                        (
-                            positiveMovement /
-                            Math.max(
-                                1,
-                                positiveMovement +
-                                negativeMovement
-                            )
-                        ) *
-                        100
-                    )
-                )
-            )
-            : 0;
+    } = context;
 
     const embed =
         createRankHistoryEmbed({
             interaction,
+
             member,
 
             title:
-                '📊 Arrancar Career Statistics',
+                '🗃️ Complete Archive',
 
             description:
-                `Umbra has calculated ${member}'s complete hierarchy career statistics.`,
+                `${member} • complete recorded Rank history.`,
 
             color:
-                embedConfig.colors.rank
+                '#B026FF'
         });
 
-    embed.addFields(
-        {
-            name:
-                '👑 Career Position',
+    embed.addFields({
+        name:
+            '📊 Archive Status',
 
-            value:
-                [
-                    `**Current Rank:** ${currentRank?.rank_name || 'No active Rank'}`,
-                    `**Highest Rank Ever:** ${highestRank}`,
-                    `**Unique Ranks Held:** \`${formatNumber(uniqueRanks.size)}\``,
-                    `**Current Reign:** \`${formatNumber(calculateCurrentReignDays(currentRank))} days\``
-                ].join('\n'),
+        value:
+            [
+                `**Loaded:** \`${history.length}\``,
 
-            inline:
-                false
-        },
-        {
-            name:
-                '📚 Record Totals',
+                `**Total:** \`${totalHistoryCount}\``
+            ].join('\n'),
 
-            value:
-                [
-                    `**Complete Records:** \`${formatNumber(totalHistoryCount)}\``,
-                    `**Records Loaded:** \`${formatNumber(history.length)}\``,
-                    `**Promotions:** \`${formatNumber(promotions)}\``,
-                    `**Initial Assignments:** \`${formatNumber(assignments)}\``,
-                    `**Demotions:** \`${formatNumber(demotions)}\``,
-                    `**Revocations:** \`${formatNumber(revocations)}\``,
-                    `**Other Changes:** \`${formatNumber(changes)}\``
-                ].join('\n'),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '📅 Career Duration',
-
-            value:
-                [
-                    `**First Record:** ${firstRecord ? formatDiscordDate(firstRecord.created_at, 'D') : 'Not recorded'}`,
-                    `**Latest Record:** ${latestRecord ? formatDiscordDate(latestRecord.created_at, 'R') : 'Not recorded'}`,
-                    `**Recorded Career:** \`${firstRecord ? formatNumber(calculateDaysSince(firstRecord.created_at)) : '0'} days\``
-                ].join('\n'),
-
-            inline:
-                true
-        },
-        {
-            name:
-                '⚔️ Career Momentum',
-
-            value:
-                [
-                    `**Stability Score:** \`${stabilityScore}%\``,
-                    '',
-                    `⬆️ **Positive Movements:** \`${formatNumber(positiveMovement)}\``,
-                    `⬇️ **Negative Movements:** \`${formatNumber(negativeMovement)}\``,
-                    '',
-                    '-# This visual score compares promotions and assignments against demotions and revocations.'
-                ].join('\n'),
-
-            inline:
-                false
-        }
-    );
+        inline:
+            false
+    });
 
     if (
-        uniqueRanks.size >
-        0
+        !history.length
     ) {
-        const orderedRanks =
-            [...uniqueRanks]
-                .sort(
-                    (
-                        firstRank,
-                        secondRank
-                    ) =>
-                        getRankIndex(
-                            firstRank
-                        ) -
-                        getRankIndex(
-                            secondRank
-                        )
-                );
-
         embed.addFields({
             name:
-                '📜 Ranks Held During Career',
+                '◇ Empty Archive',
 
             value:
-                orderedRanks
-                    .map(
-                        rank =>
-                            `• ${rank}`
-                    )
-                    .join('\n'),
+                'No Rank history has been recorded for this Soul.',
 
             inline:
                 false
         });
+
+        return embed;
     }
+
+    const records =
+        history.map(
+            (
+                entry,
+                index
+            ) =>
+                formatHistoryEntry(
+                    entry,
+                    index + 1
+                )
+        );
+
+    splitHistoryRecords(
+        records
+    ).forEach(
+        (
+            chunk,
+            index
+        ) => {
+            embed.addFields({
+                name:
+                    index === 0
+                        ? '📜 Rank Records'
+                        : '📜 Rank Records — Continued',
+
+                value:
+                    chunk,
+
+                inline:
+                    false
+            });
+        }
+    );
 
     return embed;
 }
@@ -1717,48 +1082,175 @@ function buildStatisticsPage(
  * Build the requested Rank History page.
  *
  * @param {Object} context
- * @param {string} selectedPage
+ * @param {string} page
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildRankHistoryPage(
     context,
-    selectedPage
+    page
 ) {
-    switch (
-        selectedPage
-    ) {
-        case RANK_HISTORY_PAGES.timeline:
-            return buildTimelinePage(
+    switch (page) {
+        case HISTORY_PAGES.promotions:
+            return buildFilteredPage(
+                context,
+                'promotion',
+                '⬆️ Promotions',
+                `${context.member} • previous Sin Rank assignments.`
+            );
+
+        case HISTORY_PAGES.removals:
+            return buildFilteredPage(
+                context,
+                'removal',
+                '◇ Rank Removals',
+                `${context.member} • previous Sin Rank removals.`
+            );
+
+        case HISTORY_PAGES.complete:
+            return buildCompletePage(
                 context
             );
 
-        case RANK_HISTORY_PAGES.promotions:
-            return buildPromotionsPage(
-                context
-            );
-
-        case RANK_HISTORY_PAGES.demotions:
-            return buildDemotionsPage(
-                context
-            );
-
-        case RANK_HISTORY_PAGES.revocations:
-            return buildRevocationsPage(
-                context
-            );
-
-        case RANK_HISTORY_PAGES.statistics:
-            return buildStatisticsPage(
-                context
-            );
-
-        case RANK_HISTORY_PAGES.overview:
+        case HISTORY_PAGES.overview:
         default:
             return buildOverviewPage(
                 context
             );
     }
-}module.exports = {
+}/**
+ * Resolve the requested Soul.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {Promise<import('discord.js').GuildMember|null>}
+ */
+async function resolveMember(
+    interaction
+) {
+    const user =
+        interaction.options.getUser(
+            'user'
+        );
+
+    if (!user) {
+        return interaction.member;
+    }
+
+    return (
+        interaction.guild.members
+            .cache.get(
+                user.id
+            ) ??
+        await interaction.guild.members
+            .fetch(
+                user.id
+            )
+            .catch(
+                () => null
+            )
+    );
+}
+
+/**
+ * Check whether the requester may inspect
+ * another Soul's Rank History.
+ *
+ * Members may always inspect their own
+ * archive. High Command may inspect others.
+ *
+ * @param {import('discord.js').GuildMember} requester
+ * @param {import('discord.js').GuildMember} target
+ * @returns {boolean}
+ */
+function canViewHistory(
+    requester,
+    target
+) {
+    if (
+        requester.id ===
+        target.id
+    ) {
+        return true;
+    }
+
+    if (
+        requester.permissions.has(
+            PermissionFlagsBits.Administrator
+        )
+    ) {
+        return true;
+    }
+
+    return Object.values(
+        rankConfig.highCommand
+    ).some(
+        roleId =>
+            requester.roles.cache.has(
+                roleId
+            )
+    );
+}
+
+/**
+ * Load the Rank History data.
+ *
+ * @param {import('discord.js').Guild} guild
+ * @param {string} userId
+ * @param {number} limit
+ * @returns {Promise<{
+ *     currentRank: Object|null,
+ *     history: Object[],
+ *     totalHistoryCount: number
+ * }>}
+ */
+async function loadRankHistory(
+    guild,
+    userId,
+    limit
+) {
+    const currentRank =
+        await rankDatabase.getCurrentRank(
+            guild.id,
+            userId
+        );
+
+    const history =
+        await rankDatabase.getRankHistory(
+            guild.id,
+            userId,
+            limit
+        );
+
+    let totalHistoryCount =
+        history.length;
+
+    if (
+        typeof rankDatabase
+            .countRankHistory ===
+        'function'
+    ) {
+        totalHistoryCount =
+            await rankDatabase.countRankHistory(
+                guild.id,
+                userId
+            );
+    }
+
+    return {
+        currentRank,
+
+        history:
+            Array.isArray(history)
+                ? history
+                : [],
+
+        totalHistoryCount:
+            Number(
+                totalHistoryCount
+            ) || 0
+    };
+}
+
+module.exports = {
     category:
         'information',
 
@@ -1768,39 +1260,41 @@ function buildRankHistoryPage(
                 'rankhistory'
             )
             .setDescription(
-                'Open an interactive Arrancar career archive.'
+                'View a Soul’s complete Sin Rank history.'
             )
 
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'user'
-                    )
-                    .setDescription(
-                        'Select the Soul whose Arrancar career you want to inspect'
-                    )
-                    .setRequired(
-                        false
-                    )
+            .addUserOption(
+                option =>
+                    option
+                        .setName(
+                            'user'
+                        )
+                        .setDescription(
+                            'Soul whose Rank history you want to inspect.'
+                        )
+                        .setRequired(
+                            false
+                        )
             )
 
-            .addIntegerOption(option =>
-                option
-                    .setName(
-                        'limit'
-                    )
-                    .setDescription(
-                        'Number of hierarchy records to load'
-                    )
-                    .setMinValue(
-                        1
-                    )
-                    .setMaxValue(
-                        25
-                    )
-                    .setRequired(
-                        false
-                    )
+            .addIntegerOption(
+                option =>
+                    option
+                        .setName(
+                            'limit'
+                        )
+                        .setDescription(
+                            'Maximum number of records to load.'
+                        )
+                        .setMinValue(
+                            5
+                        )
+                        .setMaxValue(
+                            50
+                        )
+                        .setRequired(
+                            false
+                        )
             )
 
             .setDMPermission(
@@ -1808,7 +1302,7 @@ function buildRankHistoryPage(
             ),
 
     /**
-     * Execute the /rankhistory command.
+     * Execute /rankhistory.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -1817,14 +1311,18 @@ function buildRankHistoryPage(
         interaction
     ) {
         try {
-            if (
-                !interaction.inGuild()
-            ) {
+            const member =
+                await resolveMember(
+                    interaction
+                );
+
+            if (!member) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'Arrancar career archives can only be opened inside Las Noches.'
+                            '❌ Soul Not Found',
+
+                            'The selected Soul could not be found in THE Ⅹ SINS.'
                         )
                     ],
 
@@ -1835,137 +1333,114 @@ function buildRankHistoryPage(
                 return;
             }
 
-            await interaction.deferReply();
-
-            const selectedUser =
-                interaction.options.getUser(
-                    'user'
-                ) ??
-                interaction.user;
-
-            const limit =
-                interaction.options.getInteger(
-                    'limit'
-                ) ??
-                25;
-
-            const member =
-                await interaction.guild.members
-                    .fetch(
-                        selectedUser.id
-                    )
-                    .catch(
-                        () => null
-                    );
-
-            if (!member) {
-                await interaction.editReply({
+            if (
+                !canViewHistory(
+                    interaction.member,
+                    member
+                )
+            ) {
+                await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
+                            '❌ Archive Access Denied',
+
+                            [
+                                'You may only inspect your own Rank history.',
+                                '',
+                                'High Command may inspect another Soul’s archive.'
+                            ].join('\n')
                         )
                     ],
 
-                    components:
-                        []
+                    flags:
+                        MessageFlags.Ephemeral
                 });
 
                 return;
             }
 
-            let [
-                currentRank,
-                history,
-                totalHistoryCount
-            ] =
-                await Promise.all([
-                    rankDatabase
-                        .getCurrentRank(
-                            interaction.guild.id,
-                            member.id
-                        ),
+            const limit =
+                interaction.options
+                    .getInteger(
+                        'limit'
+                    ) ??
+                25;
 
-                    rankDatabase
-                        .getRankHistory(
-                            interaction.guild.id,
-                            member.id,
-                            limit
-                        ),
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
 
-                    rankDatabase
-                        .countRankHistory(
-                            interaction.guild.id,
-                            member.id
-                        )
-                ]);
+            const rankData =
+                await loadRankHistory(
+                    interaction.guild,
+                    member.id,
+                    limit
+                );
 
-            let context = {
+            const context = {
                 interaction,
+
                 member,
-                currentRank,
+
+                currentRank:
+                    rankData.currentRank,
 
                 history:
-                    Array.isArray(
-                        history
-                    )
-                        ? history
-                        : [],
+                    rankData.history,
 
                 totalHistoryCount:
-                    Number(
-                        totalHistoryCount || 0
-                    )
+                    rankData.totalHistoryCount
             };
 
             let selectedPage =
-                RANK_HISTORY_PAGES.overview;
+                HISTORY_PAGES.overview;
 
-            const initialEmbed =
-                buildRankHistoryPage(
-                    context,
-                    selectedPage
-                );
+            await interaction.editReply({
+                embeds: [
+                    buildRankHistoryPage(
+                        context,
+                        selectedPage
+                    )
+                ],
 
-            const replyMessage =
-                await interaction.editReply({
-                    embeds: [
-                        initialEmbed
-                    ],
+                components: [
+                    createRankHistoryMenu(
+                        selectedPage
+                    )
+                ]
+            });
 
-                    components: [
-                        createRankHistoryMenu(
-                            selectedPage
-                        )
-                    ],
-
-                    fetchReply:
-                        true
-                });
+            const message =
+                await interaction.fetchReply();
 
             const collector =
-                replyMessage
-                    .createMessageComponentCollector({
-                        componentType:
-                            ComponentType.StringSelect,
+                message.createMessageComponentCollector({
+                    filter:
+                        componentInteraction =>
+                            componentInteraction
+                                .customId ===
+                                HISTORY_MENU_ID,
 
-                        time:
-                            10 * 60 * 1000
-                    });
+                    time:
+                        10 * 60 * 1000
+                });
 
             collector.on(
                 'collect',
-                async menuInteraction => {
+                async componentInteraction => {
                     try {
                         if (
-                            menuInteraction.user.id !==
+                            componentInteraction
+                                .user.id !==
                             interaction.user.id
                         ) {
-                            await menuInteraction.reply({
+                            await componentInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
-                                        '❌ Private Career Archive',
-                                        'Only the Soul who opened this Arrancar career archive may control its navigation.'
+                                        '❌ Private Archive',
+
+                                        'Only the Soul who opened this archive may use its navigation.'
                                     )
                                 ],
 
@@ -1976,26 +1451,21 @@ function buildRankHistoryPage(
                             return;
                         }
 
-                        if (
-                            menuInteraction.customId !==
-                            RANK_HISTORY_MENU_ID
-                        ) {
-                            return;
-                        }
-
                         const requestedPage =
-                            menuInteraction.values[0];
+                            componentInteraction
+                                .values[0];
 
                         if (
-                            !RANK_HISTORY_PAGE_ORDER.includes(
+                            !HISTORY_PAGE_ORDER.includes(
                                 requestedPage
                             )
                         ) {
-                            await menuInteraction.reply({
+                            await componentInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
-                                        '❌ Unknown Career Archive',
-                                        'Umbra could not recognize the selected hierarchy page.'
+                                        '❌ Invalid Archive Page',
+
+                                        'Evelynn could not recognize that archive section.'
                                     )
                                 ],
 
@@ -2009,67 +1479,34 @@ function buildRankHistoryPage(
                         selectedPage =
                             requestedPage;
 
-                        /*
-                         * Reload hierarchy data before
-                         * every page transition.
-                         *
-                         * Promotions, demotions and
-                         * revocations appear without
-                         * reopening /rankhistory.
-                         */
-                        [
-                            currentRank,
-                            history,
-                            totalHistoryCount
-                        ] =
-                            await Promise.all([
-                                rankDatabase
-                                    .getCurrentRank(
-                                        interaction.guild.id,
-                                        member.id
-                                    ),
-
-                                rankDatabase
-                                    .getRankHistory(
-                                        interaction.guild.id,
-                                        member.id,
-                                        limit
-                                    ),
-
-                                rankDatabase
-                                    .countRankHistory(
-                                        interaction.guild.id,
-                                        member.id
-                                    )
-                            ]);
-
-                        context = {
-                            interaction,
-                            member,
-                            currentRank,
-
-                            history:
-                                Array.isArray(
-                                    history
-                                )
-                                    ? history
-                                    : [],
-
-                            totalHistoryCount:
-                                Number(
-                                    totalHistoryCount || 0
-                                )
-                        };
-
-                        const updatedEmbed =
-                            buildRankHistoryPage(
-                                context,
-                                selectedPage
+                        const freshData =
+                            await loadRankHistory(
+                                interaction.guild,
+                                member.id,
+                                limit
                             );
 
-                        await menuInteraction.update({
+                        const freshContext = {
+                            interaction,
+
+                            member,
+
+                            currentRank:
+                                freshData.currentRank,
+
+                            history:
+                                freshData.history,
+
+                            totalHistoryCount:
+                                freshData.totalHistoryCount
+                        };
+
+                        await componentInteraction.update({
                             embeds: [
-                                updatedEmbed
+                                buildRankHistoryPage(
+                                    freshContext,
+                                    selectedPage
+                                )
                             ],
 
                             components: [
@@ -2078,30 +1515,28 @@ function buildRankHistoryPage(
                                 )
                             ]
                         });
-                    } catch (menuError) {
+                    } catch (
+                        navigationError
+                    ) {
                         console.error(
-                            '❌ Umbra /rankhistory navigation error:',
-                            menuError
+                            '❌ Evelynn /rankhistory navigation error:',
+                            navigationError
                         );
 
-                        const navigationErrorEmbed =
-                            createErrorEmbed(
-                                '❌ Career Navigation Failed',
-                                [
-                                    'Umbra could not open the selected hierarchy archive.',
-                                    '',
-                                    'Please try opening `/rankhistory` again.'
-                                ].join('\n')
-                            );
-
                         if (
-                            menuInteraction.deferred ||
-                            menuInteraction.replied
+                            componentInteraction
+                                .deferred ||
+                            componentInteraction
+                                .replied
                         ) {
-                            await menuInteraction
+                            await componentInteraction
                                 .followUp({
                                     embeds: [
-                                        navigationErrorEmbed
+                                        createErrorEmbed(
+                                            '❌ Navigation Failed',
+
+                                            'Evelynn could not open that archive section.'
+                                        )
                                     ],
 
                                     flags:
@@ -2114,10 +1549,14 @@ function buildRankHistoryPage(
                             return;
                         }
 
-                        await menuInteraction
+                        await componentInteraction
                             .reply({
                                 embeds: [
-                                    navigationErrorEmbed
+                                    createErrorEmbed(
+                                        '❌ Navigation Failed',
+
+                                        'Evelynn could not open that archive section.'
+                                    )
                                 ],
 
                                 flags:
@@ -2132,21 +1571,7 @@ function buildRankHistoryPage(
 
             collector.on(
                 'end',
-                async (
-                    collected,
-                    reason
-                ) => {
-                    if (
-                        reason ===
-                            'messageDelete' ||
-                        reason ===
-                            'channelDelete' ||
-                        reason ===
-                            'guildDelete'
-                    ) {
-                        return;
-                    }
-
+                async () => {
                     await interaction
                         .editReply({
                             components: [
@@ -2163,22 +1588,24 @@ function buildRankHistoryPage(
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /rankhistory command error:',
+                '❌ Evelynn /rankhistory command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Arrancar Career Archive Unavailable',
+                    '❌ Rank History Failed',
+
                     [
-                        'Umbra could not open the requested Arrancar career archive.',
+                        'Evelynn could not load the Rank Archive.',
                         '',
-                        'Please verify that PostgreSQL is connected and inspect the Northflank logs if the problem continues.'
+                        'Check the Rank database and try again.'
                     ].join('\n')
                 );
 
             if (
-                interaction.deferred
+                interaction.deferred ||
+                interaction.replied
             ) {
                 await interaction
                     .editReply({
@@ -2188,25 +1615,6 @@ function buildRankHistoryPage(
 
                         components:
                             []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null
