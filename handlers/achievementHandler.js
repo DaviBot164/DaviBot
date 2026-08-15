@@ -14,7 +14,31 @@ const {
 const kingdomFeedConfig =
     require('../config/kingdomFeed');
 
-/*
+/**
+ * Achievement → Discord Role mapping.
+ *
+ * Internal Achievement IDs remain
+ * unchanged for database compatibility.
+ */
+const ACHIEVEMENT_ROLE_IDS =
+    Object.freeze({
+        first_words:
+            '1531402234913620039',
+
+        awakened_soul:
+            '1531402597993414849',
+
+        rising_soul:
+            '1531402543173730425',
+
+        crimson_soul:
+            '1531402484923502794',
+
+        eternal_soul:
+            '1531402379973365970'
+    });
+
+/**
  * Achievements checked whenever
  * a valid server message is created.
  *
@@ -46,6 +70,7 @@ const MESSAGE_ACHIEVEMENT_RULES = [
             );
         }
     },
+
     {
         achievementId:
             'awakened_soul',
@@ -69,6 +94,7 @@ const MESSAGE_ACHIEVEMENT_RULES = [
             );
         }
     },
+
     {
         achievementId:
             'rising_soul',
@@ -92,6 +118,7 @@ const MESSAGE_ACHIEVEMENT_RULES = [
             );
         }
     },
+
     {
         achievementId:
             'crimson_soul',
@@ -115,6 +142,7 @@ const MESSAGE_ACHIEVEMENT_RULES = [
             );
         }
     },
+
     {
         achievementId:
             'eternal_soul',
@@ -140,8 +168,8 @@ const MESSAGE_ACHIEVEMENT_RULES = [
     }
 ];
 
-/*
- * TTS neon Achievement palette.
+/**
+ * TTS Achievement palette.
  */
 const ACHIEVEMENT_CATEGORY_COLORS = {
     Activity:
@@ -184,9 +212,6 @@ function getAchievementColor(
 /**
  * Return the optional message
  * associated with an Achievement.
- *
- * Preserved because other systems
- * may still use this helper.
  *
  * @param {string} achievementId
  * @returns {string}
@@ -275,6 +300,115 @@ function createAchievementEmbed(
                 })
         );
 }/**
+ * Safely assign the Discord Role associated
+ * with an unlocked Achievement.
+ *
+ * Missing roles or insufficient permissions
+ * must never break the Achievement system.
+ *
+ * @param {import('discord.js').GuildMember|null} member
+ * @param {string} achievementId
+ * @returns {Promise<boolean>}
+ */
+async function assignAchievementRole(
+    member,
+    achievementId
+) {
+    if (
+        !member ||
+        !achievementId
+    ) {
+        return false;
+    }
+
+    const roleId =
+        ACHIEVEMENT_ROLE_IDS[
+            achievementId
+        ];
+
+    if (!roleId) {
+        return false;
+    }
+
+    const role =
+        member.guild.roles.cache.get(
+            roleId
+        );
+
+    if (!role) {
+        console.warn(
+            `⚠️ Achievement Role not found: ${roleId} (${achievementId})`
+        );
+
+        return false;
+    }
+
+    const botMember =
+        member.guild.members.me;
+
+    if (
+        !botMember
+    ) {
+        console.warn(
+            `⚠️ Evelynn bot member unavailable while assigning Achievement Role: ${achievementId}`
+        );
+
+        return false;
+    }
+
+    if (
+        !botMember.permissions.has(
+            PermissionFlagsBits.ManageRoles
+        )
+    ) {
+        console.warn(
+            `⚠️ Evelynn lacks Manage Roles for Achievement Role: ${role.name}`
+        );
+
+        return false;
+    }
+
+    if (
+        role.position >=
+        botMember.roles.highest.position
+    ) {
+        console.warn(
+            `⚠️ Achievement Role is higher than Evelynn's highest role: ${role.name}`
+        );
+
+        return false;
+    }
+
+    if (
+        member.roles.cache.has(
+            role.id
+        )
+    ) {
+        return true;
+    }
+
+    try {
+        await member.roles.add(
+            role,
+            `Achievement unlocked: ${achievementId}`
+        );
+
+        console.log(
+            `🏆 Achievement Role assigned: ${role.name} → ${member.user.tag}`
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            `❌ Achievement Role assignment failed: ${achievementId} for ${member.user.tag}:`,
+            error
+        );
+
+        return false;
+    }
+}
+
+/**
  * Find the configured Achievement
  * notification channel.
  *
@@ -301,7 +435,7 @@ function findAchievementNotificationChannel(
     const configuredChannelId =
         String(
             kingdomFeedConfig.channelId ||
-                ''
+            ''
         ).trim();
 
     if (
@@ -324,7 +458,7 @@ function findAchievementNotificationChannel(
     const configuredChannelName =
         String(
             kingdomFeedConfig.channelName ||
-                ''
+            ''
         ).trim();
 
     if (
@@ -461,9 +595,7 @@ async function sendAchievementNotification(
 
         return null;
     }
-}
-
-/**
+}/**
  * Load the latest Level record
  * for a member.
  *
@@ -490,7 +622,9 @@ async function getMessageLevelRecord(
 
         return null;
     }
-}/**
+}
+
+/**
  * Check every Achievement that may be
  * unlocked through message activity.
  *
@@ -575,6 +709,19 @@ async function checkMessageAchievements(
                 `🏆 Achievement unlocked: ${result.achievement.name} by ${message.author.tag}`
             );
 
+            /*
+             * Assign the corresponding
+             * Achievement Role.
+             *
+             * Failure here must never
+             * prevent the Achievement
+             * notification.
+             */
+            await assignAchievementRole(
+                message.member,
+                rule.achievementId
+            );
+
             await sendAchievementNotification(
                 message,
                 result.achievement
@@ -595,18 +742,21 @@ async function checkMessageAchievements(
  * using existing Level data.
  *
  * This helper unlocks Achievements only.
- * Notification routing is handled elsewhere.
+ * Role assignment is handled here as part
+ * of the same successful unlock flow.
  *
  * @param {Object} options
  * @param {string} options.guildId
  * @param {string} options.userId
  * @param {number} options.level
+ * @param {import('discord.js').GuildMember|null} options.member
  * @returns {Promise<Object[]>}
  */
 async function checkLevelAchievements({
     guildId,
     userId,
-    level
+    level,
+    member = null
 }) {
     if (
         !guildId
@@ -688,11 +838,26 @@ async function checkLevelAchievements({
                     );
 
             if (
-                result?.unlocked &&
-                result.achievement
+                !result?.unlocked ||
+                !result.achievement
             ) {
-                unlockedAchievements.push(
-                    result.achievement
+                continue;
+            }
+
+            unlockedAchievements.push(
+                result.achievement
+            );
+
+            /*
+             * Assign the corresponding
+             * Achievement Role.
+             */
+            if (
+                member
+            ) {
+                await assignAchievementRole(
+                    member,
+                    rule.achievementId
                 );
             }
         } catch (error) {
@@ -704,24 +869,32 @@ async function checkLevelAchievements({
     }
 
     return unlockedAchievements;
-}
-
-module.exports = {
+}module.exports = {
     MESSAGE_ACHIEVEMENT_RULES,
 
+    ACHIEVEMENT_ROLE_IDS,
+
     ACHIEVEMENT_CATEGORY_COLORS,
+
     DEFAULT_ACHIEVEMENT_COLOR,
 
     getAchievementColor,
+
     getAchievementMessage,
+
     createAchievementEmbed,
 
+    assignAchievementRole,
+
     findAchievementNotificationChannel,
+
     canSendAchievementNotification,
+
     sendAchievementNotification,
 
     getMessageLevelRecord,
 
     checkMessageAchievements,
+
     checkLevelAchievements
 };
