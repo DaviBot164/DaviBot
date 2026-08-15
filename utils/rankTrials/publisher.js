@@ -432,11 +432,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Rank Trials channel was not found.'
-        );
-
-        console.error(
-            `📍 Configured Channel ID: ${rankTrialConfig.channelId}`
+            `❌ Configured Channel ID: ${rankTrialConfig.channelId}`
         );
 
         console.error(
@@ -468,11 +464,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Umbra is missing Rank Trials channel permissions.'
-        );
-
-        console.error(
-            `📍 Channel: ${channel.name}`
+            `❌ Channel: ${channel.name}`
         );
 
         console.error(
@@ -649,7 +641,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.log(
-            `📍 Channel: ${channel.name}`
+            `📢 Channel: ${channel.name}`
         );
 
         console.log(
@@ -720,10 +712,7 @@ async function publishRankTrialAnnouncement(
             .catch(
                 releaseError => {
                     console.error(
-                        '❌ Failed to release Rank Trial publication reservation:'
-                    );
-
-                    console.error(
+                        '⚠️ Failed to release Rank Trial publication reservation:',
                         releaseError
                     );
                 }
@@ -734,11 +723,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Automatic Rank Trial publication failed.'
-        );
-
-        console.error(
-            `📖 Type: ${publicationLabel}`
+            `❌ Rank Trial publication failed: ${publicationLabel}`
         );
 
         console.error(
@@ -819,11 +804,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Rank Trials channel was not found.'
-        );
-
-        console.error(
-            `📍 Configured Channel ID: ${rankTrialConfig.channelId}`
+            `❌ Configured Channel ID: ${rankTrialConfig.channelId}`
         );
 
         console.error(
@@ -855,11 +836,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Umbra is missing Rank Trials channel permissions.'
-        );
-
-        console.error(
-            `📍 Channel: ${channel.name}`
+            `📢 Channel: ${channel.name}`
         );
 
         console.error(
@@ -962,7 +939,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.log(
-            '🔁 Rank Trial Announcement Republished'
+            '🔄 Rank Trial Announcement Republished'
         );
 
         console.log(
@@ -974,7 +951,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.log(
-            `📍 Channel: ${channel.name}`
+            `📢 Channel: ${channel.name}`
         );
 
         console.log(
@@ -1018,10 +995,6 @@ async function republishRankTrialAnnouncement(
         );
 
         console.error(
-            `📖 Type: ${publicationLabel}`
-        );
-
-        console.error(
             `🗓️ Trial: ${schedule.trialKey}`
         );
 
@@ -1049,9 +1022,87 @@ async function republishRankTrialAnnouncement(
                     )
         };
     }
+}
+
+/**
+ * Publish one announcement in every active
+ * configured Las Noches guild.
+ *
+ * @param {import('discord.js').Client<true>} client
+ * @param {Object} schedule
+ * @param {Object} publication
+ * @param {string[]} guildIds
+ * @returns {Promise<Array<{
+ *     guildId: string,
+ *     status: string,
+ *     messageId?: string,
+ *     reason?: string,
+ *     scheduledEvent?: Object
+ * }>>}
+ */
+async function publishRankTrialToGuilds(
+    client,
+    schedule,
+    publication,
+    guildIds
+) {
+    const results =
+        [];
+
+    for (
+        const guildId of
+        guildIds
+    ) {
+        const guild =
+            client.guilds.cache.get(
+                guildId
+            ) ??
+            await client.guilds
+                .fetch(
+                    guildId
+                )
+                .catch(
+                    () => null
+                );
+
+        if (!guild) {
+            results.push({
+                guildId,
+
+                status:
+                    'failed',
+
+                reason:
+                    'Guild could not be fetched.'
+            });
+
+            continue;
+        }
+
+        const result =
+            await publishRankTrialAnnouncement(
+                client,
+                guild,
+                schedule,
+                publication
+            );
+
+        results.push({
+            guildId:
+                guild.id,
+
+            ...result
+        });
+    }
+
+    return results;
 }module.exports = {
     buildPublicationEmbed,
+    fetchRankTrialChannel,
+    hasRequiredPermissions,
     getPublicationLabel,
+    shouldSynchronizeScheduledEvent,
+    synchronizeScheduledEventAfterPublication,
     publishRankTrialAnnouncement,
     republishRankTrialAnnouncement,
     publishRankTrialToGuilds
