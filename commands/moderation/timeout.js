@@ -158,7 +158,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of Las Noches.'
+                            'This Soul is not currently a member of THE Ⅹ SINS.'
                         )
                     ],
 
@@ -179,8 +179,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Moderate Members** permission to apply a timeout.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Moderate Members** permission to apply a timeout.'
                         )
                     ],
 
@@ -220,7 +220,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Timeout Failed',
-                            'Umbra cannot timeout this Soul. Check its permissions and role position.'
+                            'Evelynn cannot timeout this Soul. Check its permissions and role position.'
                         )
                     ],
 
@@ -306,10 +306,10 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 Las Noches Status',
+                        '🌙 THE Ⅹ SINS Status',
 
                     value:
-                        'This Soul has temporarily lost the ability to communicate within Las Noches.',
+                        'This Soul has temporarily lost the ability to communicate within THE Ⅹ SINS.',
 
                     inline:
                         false
@@ -361,10 +361,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
-                            'This Soul has temporarily lost the ability to communicate within Las Noches.',
+                            'This Soul has temporarily lost the ability to communicate within THE Ⅹ SINS.',
 
                         inline:
                             false
@@ -383,7 +383,7 @@ module.exports = {
                     '❌ Timeout Failed',
 
                 description:
-                    'Umbra encountered an unexpected error while trying to timeout this Soul.'
+                    'Evelynn encountered an unexpected error while trying to timeout this Soul.'
             });
         }
     }

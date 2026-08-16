@@ -1,7 +1,7 @@
 {
-  "name": "Umbra",
+  "name": "evelynn",
   "version": "1.0.0",
-  "description": "Professional Discord Moderation Bot",
+  "description": "Evelynn — the official Discord bot of THE Ⅹ SINS",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -12,7 +12,8 @@
     "discord-bot",
     "discord.js",
     "moderation",
-    "Umbra"
+    "evelynn",
+    "the-x-sins"
   ],
   "author": "Daviti",
   "license": "ISC",

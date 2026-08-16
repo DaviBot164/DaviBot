@@ -38,8 +38,8 @@ const KINGDOM_PAGES = {
     progression:
         'lasnoches_dashboard_progression',
 
-    espada:
-        'lasnoches_dashboard_espada',
+    ranks:
+        'tts_dashboard_ranks',
 
     chronicles:
         'lasnoches_dashboard_chronicles',
@@ -82,7 +82,7 @@ const KINGDOM_PAGE_DETAILS = {
             'Levels, XP and activity statistics'
     },
 
-    [KINGDOM_PAGES.espada]: {
+    [KINGDOM_PAGES.ranks]: {
         emoji: '⚔️',
         label: 'Sin Ranks',
         description:
@@ -126,7 +126,6 @@ const HOLLOW_EVOLUTION_ROLES = [
     '⚪ Gillian',
     '🐺 Adjuchas',
     '👑 Vasto Lorde',
-    '⚔️ Arrancar'
 ];
 
 const TITLE_RARITY_ORDER = [
@@ -2086,7 +2085,7 @@ async function renderDashboardPage(
                 );
             break;
 
-        case KINGDOM_PAGES.espada:
+        case KINGDOM_PAGES.ranks:
             embed =
                 buildSinRankPage(
                     context
@@ -2144,7 +2143,7 @@ async function renderDashboardPage(
                 context
             );
 
-        case KINGDOM_PAGES.espada:
+        case KINGDOM_PAGES.ranks:
             return buildSinRankPage(
                 context
             );
@@ -2177,7 +2176,7 @@ module.exports = {
                 'dashboard'
             )
             .setDescription(
-                'Open the interactive Kingdom Dashboard of Las Noches.'
+                'Open the interactive Kingdom Dashboard of THE \u2169 SINS.'
             )
             .setDMPermission(
                 false
@@ -2199,8 +2198,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'The Kingdom Dashboard can only be opened inside Las Noches.'
+                            '❌ THE \u2169 SINS Only Command',
+                            'The Kingdom Dashboard can only be opened inside THE \u2169 SINS.'
                         )
                     ],
 
@@ -2239,7 +2238,7 @@ module.exports = {
                     )
                     .catch(error => {
                         console.error(
-                            '⚠️ Umbra could not load Kingdom statistics:',
+                            '⚠️ Evelynn could not load Kingdom statistics:',
                             error
                         );
 
@@ -2328,7 +2327,7 @@ module.exports = {
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Unknown Kingdom Record',
-                                        'Umbra could not recognize the selected Kingdom Dashboard page.'
+                                        'Evelynn could not recognize the selected Kingdom Dashboard page.'
                                     )
                                 ],
 
@@ -2373,7 +2372,7 @@ module.exports = {
                                 )
                                 .catch(error => {
                                     console.error(
-                                        '⚠️ Umbra Kingdom live refresh failed:',
+                                        '⚠️ Evelynn Kingdom live refresh failed:',
                                         error
                                     );
 
@@ -2404,7 +2403,7 @@ module.exports = {
                         });
                     } catch (menuError) {
                         console.error(
-                            '❌ Umbra /dashboard navigation error:',
+                            '❌ Evelynn /dashboard navigation error:',
                             menuError
                         );
 
@@ -2412,7 +2411,7 @@ module.exports = {
                             createErrorEmbed(
                                 '❌ Kingdom Navigation Failed',
                                 [
-                                    'Umbra could not open the selected Kingdom record.',
+                                    'Evelynn could not open the selected Kingdom record.',
                                     '',
                                     'Please try opening `/dashboard` again.'
                                 ].join('\n')
@@ -2487,7 +2486,7 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /dashboard command error:',
+                '❌ Evelynn /dashboard command error:',
                 error
             );
 
@@ -2495,7 +2494,7 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Kingdom Dashboard Unavailable',
                     [
-                        'Umbra could not open the central Kingdom Dashboard of Las Noches.',
+                        'Evelynn could not open the central Kingdom Dashboard of THE \u2169 SINS.',
                         '',
                         'Please verify the PostgreSQL connection, configured hierarchy roles and Northflank logs.'
                     ].join('\n')

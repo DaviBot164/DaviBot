@@ -16,7 +16,7 @@ const {
 async function initializeRankTrialEventSchema() {
     /*
      * ======================================================
-     * Umbra Rank Trials Discord Event Manager
+     * Evelynn Rank Trials Discord Event Manager
      * ======================================================
      *
      * Stores one Discord Scheduled Event for

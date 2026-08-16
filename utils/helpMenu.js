@@ -88,7 +88,7 @@ const HELP_CATEGORIES = [
             'The Ten Sins ranking system.',
 
         commands: [
-            'espada',
+            'sins',
             'rankhistory',
             'setrank',
             'removerank'

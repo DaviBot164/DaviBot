@@ -13,7 +13,7 @@ const {
 } = require('../../database/connection');
 
 /**
- * Umbra process boot timestamp.
+ * Evelynn process boot timestamp.
  *
  * This remains fixed until the current
  * Node.js process is restarted.
@@ -52,7 +52,7 @@ function toSafeNumber(
 
 /**
  * Return all Guild IDs currently
- * connected to Umbra.
+ * connected to Evelynn.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {string[]}
@@ -67,7 +67,7 @@ function getConnectedGuildIds(
 
 /**
  * Count records created today across
- * Umbra's currently connected servers.
+ * Evelynn's currently connected servers.
  *
  * @param {string} tableName
  * @param {string[]} guildIds
@@ -153,7 +153,7 @@ async function countActiveRecords(
 
 /**
  * Count all cached Discord channels
- * across Umbra's connected servers.
+ * across Evelynn's connected servers.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {number}
@@ -175,7 +175,7 @@ function countChannels(
 
 /**
  * Count all cached Discord roles
- * across Umbra's connected servers.
+ * across Evelynn's connected servers.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {number}
@@ -197,7 +197,7 @@ function countRoles(
 
 /**
  * Count all known members across
- * Umbra's connected servers.
+ * Evelynn's connected servers.
  *
  * @param {import('discord.js').Client<true>} client
  * @returns {number}
@@ -309,7 +309,7 @@ async function collectDatabaseStatistics(
                 'rejected'
             ) {
                 console.warn(
-                    '⚠️ Umbra Terminal statistics query failed:'
+                    '⚠️ Evelynn Terminal statistics query failed:'
                 );
 
                 console.warn(
@@ -341,7 +341,7 @@ async function collectDatabaseStatistics(
             )
     };
 }/**
- * Collect one complete Umbra
+ * Collect one complete Evelynn
  * statistics snapshot.
  *
  * @param {import('discord.js').Client<true>} client
@@ -522,7 +522,7 @@ function createStatisticsFields(
         },
         {
             name:
-                '⚙️ Umbra Runtime',
+                '⚙️ Evelynn Runtime',
 
             value:
                 [

@@ -3,7 +3,7 @@ const {
 } = require('./terminalLogger');
 
 /**
- * Publish a critical Umbra alert.
+ * Publish a critical Evelynn alert.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} options

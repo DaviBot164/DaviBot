@@ -3,10 +3,10 @@ const {
 } = require('./connection');
 
 /**
- * Umbra's built-in Achievement definitions.
+ * Built-in Achievement definitions.
  *
- * These are not Discord roles.
- * They exist only inside Umbra's Soul system.
+ * Internal IDs remain stable
+ * for database compatibility.
  */
 const ACHIEVEMENT_DEFINITIONS = [
     {
@@ -14,10 +14,10 @@ const ACHIEVEMENT_DEFINITIONS = [
             'first_words',
 
         name:
-            'First Words',
+            'SIN AWAKENED',
 
         description:
-            'Send the first recorded message inside the Realm.',
+            'Send your first recorded message inside THE Ⅹ SINS.',
 
         icon:
             '🌑',
@@ -25,15 +25,16 @@ const ACHIEVEMENT_DEFINITIONS = [
         category:
             'Activity'
     },
+
     {
         id:
             'awakened_soul',
 
         name:
-            'Awakened Soul',
+            'SINBOUND',
 
         description:
-            'Reach Level 5.',
+            'Reach Level 5 and begin your ascent.',
 
         icon:
             '🌒',
@@ -41,15 +42,16 @@ const ACHIEVEMENT_DEFINITIONS = [
         category:
             'Progression'
     },
+
     {
         id:
             'rising_soul',
 
         name:
-            'Rising Soul',
+            'SIN ASCENDANT',
 
         description:
-            'Reach Level 10.',
+            'Reach Level 10 and rise beyond the awakened.',
 
         icon:
             '⭐',
@@ -57,15 +59,16 @@ const ACHIEVEMENT_DEFINITIONS = [
         category:
             'Progression'
     },
+
     {
         id:
             'crimson_soul',
 
         name:
-            'Crimson Soul',
+            'SIN SOVEREIGN',
 
         description:
-            'Reach Level 25.',
+            'Reach Level 25 and establish your authority.',
 
         icon:
             '🌔',
@@ -73,15 +76,16 @@ const ACHIEVEMENT_DEFINITIONS = [
         category:
             'Progression'
     },
+
     {
         id:
             'eternal_soul',
 
         name:
-            'Eternal Soul',
+            'ETERNAL SIN',
 
         description:
-            'Reach Level 50.',
+            'Reach Level 50 and become an eternal presence.',
 
         icon:
             '🌕',
@@ -93,7 +97,7 @@ const ACHIEVEMENT_DEFINITIONS = [
 
 /**
  * Convert a PostgreSQL Achievement row
- * into Umbra's Achievement structure.
+ * into the internal Achievement structure.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -132,7 +136,7 @@ function mapAchievementRow(
 
 /**
  * Convert an unlocked Achievement row
- * into a Soul Achievement structure.
+ * into a Soul Achievement object.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -179,8 +183,7 @@ function mapSoulAchievementRow(
  * Create or update every built-in
  * Achievement definition.
  *
- * This function is safe to run whenever
- * Umbra starts.
+ * Safe to run on every startup.
  *
  * @returns {Promise<number>}
  */
@@ -231,10 +234,10 @@ async function initializeAchievements() {
         );
     }
 
-    return ACHIEVEMENT_DEFINITIONS.length;
-}
-
-/**
+    return (
+        ACHIEVEMENT_DEFINITIONS.length
+    );
+}/**
  * Get one Achievement definition.
  *
  * @param {string} achievementId
@@ -461,9 +464,7 @@ async function unlockAchievement(
                     )
             }
     };
-}
-
-/**
+}/**
  * Get every Achievement unlocked
  * by one Soul.
  *
@@ -578,7 +579,7 @@ async function getRecentSoulAchievements(
 }
 
 /**
- * Count the Achievements unlocked
+ * Count Achievements unlocked
  * by one Soul.
  *
  * @param {string} guildId
@@ -594,7 +595,9 @@ async function countSoulAchievements(
             `
                 SELECT COUNT(*)::INTEGER
                     AS achievement_count
+
                 FROM soul_achievements
+
                 WHERE guild_id = $1
                   AND user_id = $2;
             `,
@@ -613,9 +616,6 @@ async function countSoulAchievements(
 /**
  * Remove one Achievement from a Soul.
  *
- * Intended for future Administrator
- * management commands.
- *
  * @param {string} guildId
  * @param {string} userId
  * @param {string} achievementId
@@ -630,9 +630,11 @@ async function removeSoulAchievement(
         await query(
             `
                 DELETE FROM soul_achievements
+
                 WHERE guild_id = $1
                   AND user_id = $2
                   AND achievement_id = $3
+
                 RETURNING achievement_id;
             `,
             [
@@ -652,8 +654,6 @@ async function removeSoulAchievement(
  * Remove every unlocked Achievement
  * from one Soul.
  *
- * Achievement definitions remain intact.
- *
  * @param {string} guildId
  * @param {string} userId
  * @returns {Promise<number>}
@@ -666,8 +666,10 @@ async function resetSoulAchievements(
         await query(
             `
                 DELETE FROM soul_achievements
+
                 WHERE guild_id = $1
                   AND user_id = $2
+
                 RETURNING achievement_id;
             `,
             [

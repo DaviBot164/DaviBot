@@ -28,7 +28,7 @@ module.exports = {
     },
 
     /**
-     * Umbra Profanity Shield.
+     * Evelynn Profanity Shield.
      */
     badWords: {
         enabled: true,
@@ -191,7 +191,7 @@ module.exports = {
     },
 
     /**
-     * Umbra Raid Shield.
+     * Evelynn Raid Shield.
      */
     antiRaid: {
         enabled: true,
@@ -206,7 +206,7 @@ module.exports = {
     },
 
     /**
-     * Umbra Scam Shield.
+     * Evelynn Scam Shield.
      */
     scamProtection: {
         enabled: true,

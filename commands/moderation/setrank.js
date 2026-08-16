@@ -496,7 +496,7 @@ function createPromotionEmbed({
                                 'Only THE Ⅹ SINS High Command may assign Sin Ranks.',
                                 '',
                                 'Required standing:',
-                                '• 👑 Ruler of Las Noches',
+                                '• 👑 Ruler of THE Ⅹ SINS',
                                 '• ⚜️ Head Captain',
                                 '• 🛡️ Captain'
                             ].join('\n')
@@ -648,7 +648,7 @@ function createPromotionEmbed({
                             '❌ Rank Role Missing',
 
                             [
-                                `Umbra could not find the configured role for **${rankName}**.`,
+                                `Evelynn could not find the configured role for **${rankName}**.`,
                                 '',
                                 `Role ID: \`${configuredRank.id}\``,
                                 '',

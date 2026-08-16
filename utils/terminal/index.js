@@ -42,8 +42,8 @@ const {
     getActiveIncidentKeys,
     clearAllActiveIncidents,
 
-    getUmbraServices,
-    getUmbraService,
+    getEvelynnServices,
+    getEvelynnService,
 
     initializeTerminalServices,
     stopTerminalServices
@@ -71,7 +71,7 @@ const {
 } = require('./terminalDashboard');
 
 /**
- * Umbra Core Terminal public API.
+ * Evelynn Core Terminal public API.
  *
  * Other systems should import Terminal
  * functionality through this file instead
@@ -176,7 +176,7 @@ module.exports = {
         logIncident,
 
     /**
-     * Umbra Black Box Incident Engine.
+     * Evelynn Black Box Incident Engine.
      */
     blackBox: {
         /**
@@ -224,10 +224,10 @@ module.exports = {
                 markServiceStopped,
 
             getDefinitions:
-                getUmbraServices,
+                getEvelynnServices,
 
             getDefinition:
-                getUmbraService
+                getEvelynnService
         },
 
         /**

@@ -82,7 +82,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Sacred Laws Channel Missing',
-                            'Umbra could not find the configured Sacred Laws channel.'
+                            'Evelynn could not find the configured Sacred Laws channel.'
                         )
                     ]
                 });
@@ -97,8 +97,8 @@ module.exports = {
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its server member information.'
+                            '❌ Evelynn Unavailable',
+                            'Evelynn could not access its server member information.'
                         )
                     ]
                 });
@@ -121,8 +121,8 @@ module.exports = {
                 await interaction.editReply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permissions',
-                            'Umbra requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Sacred Laws channel.'
+                            '❌ Missing Evelynn Permissions',
+                            'Evelynn requires **View Channel**, **Send Messages**, and **Embed Links** permissions in the Sacred Laws channel.'
                         )
                     ]
                 });
@@ -233,7 +233,7 @@ module.exports = {
 
                             value:
                                 [
-                                    'Use Umbra’s ticket system only when support is genuinely needed.',
+                                    'Use Evelynn’s ticket system only when support is genuinely needed.',
                                     '',
                                     '• Do not create fake tickets',
                                     '• Do not troll the support team',
@@ -301,7 +301,7 @@ module.exports = {
 
             rulesEmbed.setAuthor({
                 name:
-                    'Umbra • Guardian of Crimson Eclipse',
+                    'Evelynn • Guardian of Crimson Eclipse',
 
                 iconURL:
                     interaction.client.user.displayAvatarURL({
@@ -340,7 +340,7 @@ module.exports = {
                 embeds: [
                     createSuccessEmbed(
                         '✅ Sacred Laws Published',
-                        `Umbra successfully published the Sacred Laws in ${rulesChannel}.`
+                        `Evelynn successfully published the Sacred Laws in ${rulesChannel}.`
                     )
                 ]
             });
@@ -370,7 +370,7 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Umbra setup rules command error:'
+                '❌ Evelynn setup rules command error:'
             );
 
             console.error(error);
@@ -378,7 +378,7 @@ module.exports = {
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Sacred Laws Failed',
-                    'Umbra could not publish the Sacred Laws. Please verify the channel ID and bot permissions.'
+                    'Evelynn could not publish the Sacred Laws. Please verify the channel ID and bot permissions.'
                 );
 
             if (interaction.deferred) {

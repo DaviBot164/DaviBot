@@ -65,7 +65,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Overview',
 
         description:
-            'View every Las Noches champion'
+            'View every THE Ⅹ SINS champion'
     },
 
     [LEADERBOARD_PAGES.levels]: {
@@ -98,7 +98,7 @@ const LEADERBOARD_PAGE_DETAILS = {
             'Message Activity',
 
         description:
-            'Most active members of Las Noches'
+            'Most active members of THE Ⅹ SINS'
     },
 
     [LEADERBOARD_PAGES.achievements]: {
@@ -301,7 +301,7 @@ function createLeaderboardMenu(
                 LEADERBOARD_MENU_ID
             )
             .setPlaceholder(
-                'Choose a Las Noches ranking...'
+                'Choose a THE Ⅹ SINS ranking...'
             )
             .setMinValues(
                 1
@@ -428,7 +428,7 @@ function createLeaderboardEmbed({
                     `Page ${getPageNumber(
                         pageId
                     )} / ${LEADERBOARD_PAGE_ORDER.length}` +
-                    ' • Umbra • Guardian of Las Noches'
+                    ' • Evelynn • Guardian of THE Ⅹ SINS'
                 ),
 
             iconURL:
@@ -646,7 +646,7 @@ function formatPersonalPosition(
         return [
             '🌑 You are not currently ranked.',
             '',
-            '-# Continue progressing through Las Noches to enter this leaderboard.'
+            '-# Continue progressing through THE Ⅹ SINS to enter this leaderboard.'
         ].join(
             '\n'
         );
@@ -1146,7 +1146,7 @@ function addRankingFields(
 
             value:
                 [
-                    'No current Las Noches members are recorded in this ranking.',
+                    'No current THE Ⅹ SINS members are recorded in this ranking.',
                     '',
                     '-# This ranking will update when qualifying data becomes available.'
                 ].join(
@@ -1229,11 +1229,11 @@ function buildOverviewPage(
                 LEADERBOARD_PAGES.overview,
 
             title:
-                '🏆 Las Noches Leaderboards',
+                '🏆 THE Ⅹ SINS Leaderboards',
 
             description:
                 [
-                    'The strongest and most accomplished members of Las Noches.',
+                    'The strongest and most accomplished members of THE Ⅹ SINS.',
                     '',
                     'Choose a ranking category from the menu below.'
                 ].join(
@@ -1614,7 +1614,7 @@ function buildMessagePage(
                 '💬 Message Activity Leaderboard',
 
             description:
-                'The most active recorded members of Las Noches.',
+                'The most active recorded members of THE Ⅹ SINS.',
 
             color:
                 embedConfig.colors.support
@@ -1949,7 +1949,7 @@ function buildLeaderboardPage(
                 'leaderboard'
             )
             .setDescription(
-                'Open the interactive Soul rankings of Las Noches.'
+                'Open the interactive Soul rankings of THE Ⅹ SINS.'
             )
             .setDMPermission(
                 false
@@ -1971,8 +1971,8 @@ function buildLeaderboardPage(
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'Soul leaderboards can only be opened inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'Soul leaderboards can only be opened inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -2070,7 +2070,7 @@ function buildLeaderboardPage(
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Unknown Ranking',
-                                        'Umbra could not recognize the selected leaderboard category.'
+                                        'Evelynn could not recognize the selected leaderboard category.'
                                     )
                                 ],
 
@@ -2122,14 +2122,14 @@ function buildLeaderboardPage(
                         });
                     } catch (menuError) {
                         console.error(
-                            '❌ Umbra /leaderboard navigation error:',
+                            '❌ Evelynn /leaderboard navigation error:',
                             menuError
                         );
 
                         const navigationErrorEmbed =
                             createErrorEmbed(
                                 '❌ Leaderboard Navigation Failed',
-                                'Umbra could not open the selected ranking. Please reopen `/leaderboard` and try again.'
+                                'Evelynn could not open the selected ranking. Please reopen `/leaderboard` and try again.'
                             );
 
                         if (
@@ -2219,7 +2219,7 @@ function buildLeaderboardPage(
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /leaderboard command error:',
+                '❌ Evelynn /leaderboard command error:',
                 error
             );
 
@@ -2227,7 +2227,7 @@ function buildLeaderboardPage(
                 createErrorEmbed(
                     '❌ Soul Rankings Unavailable',
                     [
-                        'Umbra could not open the Las Noches leaderboards.',
+                        'Evelynn could not open the THE Ⅹ SINS leaderboards.',
                         '',
                         'Check the PostgreSQL connection and Northflank logs if the problem continues.'
                     ].join(

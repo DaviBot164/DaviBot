@@ -24,7 +24,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unlock')
         .setDescription(
-            'Unlock the current channel for Las Noches.'
+            'Unlock the current channel for THE Ⅹ SINS.'
         )
 
         .addStringOption(option =>
@@ -55,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -112,8 +112,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its Las Noches member information.'
+                            '❌ Evelynn Unavailable',
+                            'Evelynn could not access its THE Ⅹ SINS member information.'
                         )
                     ],
 
@@ -137,8 +137,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Manage Roles** permission in this channel.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Manage Roles** permission in this channel.'
                         )
                     ],
 
@@ -209,7 +209,7 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌙 Las Noches Status',
+                    '🌙 THE Ⅹ SINS Status',
 
                 value:
                     orderStatus,
@@ -241,7 +241,7 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
                             orderStatus,
@@ -263,7 +263,7 @@ module.exports = {
                     '❌ Channel Unseal Failed',
 
                 description:
-                    'Umbra could not unlock this channel. Check its permissions and Northflank logs.'
+                    'Evelynn could not unlock this channel. Check its permissions and Northflank logs.'
             });
         }
     }

@@ -284,7 +284,7 @@ module.exports = {
                         option
                             .setName('role')
                             .setDescription(
-                                'The role Umbra will grant'
+                                'The role Evelynn will grant'
                             )
                             .setRequired(true)
                     )
@@ -761,7 +761,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Missing Permission',
-                                'Umbra requires the **Manage Roles** permission to grant Level rewards.'
+                                'Evelynn requires the **Manage Roles** permission to grant Level rewards.'
                             )
                         ]
                     });
@@ -778,9 +778,9 @@ module.exports = {
                             createErrorEmbed(
                                 '❌ Role Hierarchy Error',
                                 [
-                                    `Umbra cannot manage ${rewardRole}.`,
+                                    `Evelynn cannot manage ${rewardRole}.`,
                                     '',
-                                    'Move the **Umbra** role above this reward role in the server role list.'
+                                    'Move the **Evelynn** role above this reward role in the server role list.'
                                 ].join('\n')
                             )
                         ]
@@ -1019,13 +1019,13 @@ module.exports = {
                 embeds: [
                     createErrorEmbed(
                         '❌ Unknown Level Action',
-                        'Umbra does not recognize this Level administration action.'
+                        'Evelynn does not recognize this Level administration action.'
                     )
                 ]
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /level command error:'
+                '❌ Evelynn /level command error:'
             );
 
             console.error(error);
@@ -1034,9 +1034,9 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Level Administration Failed',
                     [
-                        'Umbra could not complete this Level System action.',
+                        'Evelynn could not complete this Level System action.',
                         '',
-                        'Please check the PostgreSQL connection and Umbra permissions.'
+                        'Please check the PostgreSQL connection and Evelynn permissions.'
                     ].join('\n')
                 );
 

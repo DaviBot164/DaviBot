@@ -152,7 +152,7 @@ function calculateLevelProgress(
 
 /**
  * Convert a PostgreSQL Level row
- * into Umbra's Level data structure.
+ * into Evelynn's Level data structure.
  *
  * @param {Object|null} row
  * @returns {Object|null}

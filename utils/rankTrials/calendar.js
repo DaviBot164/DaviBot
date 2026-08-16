@@ -356,7 +356,7 @@ function getLastWeekdayOfMonth(
     }
 
     throw new Error(
-        'Umbra could not calculate the final Rank Trial weekday.'
+        'Evelynn could not calculate the final Rank Trial weekday.'
     );
 }
 
@@ -644,7 +644,7 @@ function buildMonthlyRankTrialSchedule(
 
 /**
  * Return the current year and month inside
- * the configured Las Noches timezone.
+ * the configured THE Ⅹ SINS timezone.
  *
  * @param {Date} now
  * @returns {{

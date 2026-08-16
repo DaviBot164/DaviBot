@@ -114,7 +114,7 @@ async function initializeDatabase() {
         );
 
         /*
-         * Initialize Umbra's primary schema.
+         * Initialize Evelynn's primary schema.
          */
         await initializeSchema();
 
@@ -161,7 +161,7 @@ async function initializeDatabase() {
         );
 
         console.log(
-            '✅ Arrancar Rank database initialized.'
+            '✅ Sin Rank database initialized.'
         );
 
         console.log(

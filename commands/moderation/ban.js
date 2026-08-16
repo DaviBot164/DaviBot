@@ -145,8 +145,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Ban Members** permission to carry out this action.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Ban Members** permission to carry out this action.'
                         )
                     ],
 
@@ -184,7 +184,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Ban Failed',
-                            'Umbra cannot ban itself.'
+                            'Evelynn cannot ban itself.'
                         )
                     ],
 
@@ -203,7 +203,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Ban Failed',
-                            'The Ruler of Las Noches cannot be banned.'
+                            'The Ruler of THE Ⅹ SINS cannot be banned.'
                         )
                     ],
 
@@ -246,7 +246,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Ban Failed',
-                                'Umbra cannot ban this Soul. Check its permissions and role position.'
+                                'Evelynn cannot ban this Soul. Check its permissions and role position.'
                             )
                         ],
 
@@ -340,10 +340,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
-                            'This Soul has been banished from Las Noches.',
+                            'This Soul has been banished from THE Ⅹ SINS.',
 
                         inline:
                             false
@@ -362,7 +362,7 @@ module.exports = {
                     '❌ Ban Failed',
 
                 description:
-                    'Umbra encountered an unexpected error while trying to ban this Soul.'
+                    'Evelynn encountered an unexpected error while trying to ban this Soul.'
             });
         }
     }

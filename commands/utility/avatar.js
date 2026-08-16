@@ -17,7 +17,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('avatar')
         .setDescription(
-            'View the avatar of a Las Noches member.'
+            'View the avatar of a THE Ⅹ SINS member.'
         )
 
         .addUserOption(option =>
@@ -43,8 +43,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -85,7 +85,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of Las Noches.'
+                            'This user is not currently a member of THE Ⅹ SINS.'
                         )
                     ]
                 });
@@ -121,7 +121,7 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🖼️ Las Noches Avatar',
+                        '🖼️ THE Ⅹ SINS Avatar',
 
                     description:
                         `Avatar record for ${user}.`,
@@ -166,7 +166,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+                    `Evelynn • Guardian of THE Ⅹ SINS • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
@@ -230,14 +230,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Umbra /avatar:',
+                '❌ Error executing Evelynn /avatar:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Avatar Unavailable',
-                    'Umbra could not retrieve this Las Noches avatar.'
+                    'Evelynn could not retrieve this THE Ⅹ SINS avatar.'
                 );
 
             if (interaction.deferred) {

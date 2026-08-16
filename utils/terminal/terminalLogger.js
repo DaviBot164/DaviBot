@@ -4,7 +4,7 @@ const {
 } = require('discord.js');
 
 /**
- * Official Umbra Terminal channel.
+ * Official Evelynn Terminal channel.
  */
 const TERMINAL_CHANNEL_ID =
     '1530901956342710302';
@@ -138,7 +138,7 @@ function formatUptime(
 }
 
 /**
- * Find and validate the Umbra
+ * Find and validate the Evelynn
  * Terminal channel.
  *
  * @param {import('discord.js').Client} client
@@ -169,7 +169,7 @@ async function getTerminalChannel(
         channel.isThread()
     ) {
         console.warn(
-            `⚠️ Umbra Terminal channel ID "${TERMINAL_CHANNEL_ID}" was not found or is not a valid text channel.`
+            `⚠️ Evelynn Terminal channel ID "${TERMINAL_CHANNEL_ID}" was not found or is not a valid text channel.`
         );
 
         return null;
@@ -180,7 +180,7 @@ async function getTerminalChannel(
 
     if (!botMember) {
         console.warn(
-            '⚠️ Umbra could not access its GuildMember record for the Terminal channel.'
+            '⚠️ Evelynn could not access its GuildMember record for the Terminal channel.'
         );
 
         return null;
@@ -199,7 +199,7 @@ async function getTerminalChannel(
         ])
     ) {
         console.warn(
-            '⚠️ Umbra is missing Terminal channel permissions: View Channel, Send Messages or Embed Links.'
+            '⚠️ Evelynn is missing Terminal channel permissions: View Channel, Send Messages or Embed Links.'
         );
 
         return null;
@@ -209,7 +209,7 @@ async function getTerminalChannel(
 }
 
 /**
- * Build one Umbra Terminal Embed.
+ * Build one Evelynn Terminal Embed.
  *
  * @param {Object} options
  * @param {'info'|'success'|'warning'|'error'} options.level
@@ -253,7 +253,7 @@ function buildTerminalEmbed({
             )
             .setAuthor({
                 name:
-                    'Umbra Core Terminal',
+                    'Evelynn Core Terminal',
 
                 iconURL:
                     client.user
@@ -302,7 +302,7 @@ function buildTerminalEmbed({
             )
             .setFooter({
                 text:
-                    'Umbra • Guardian of Las Noches'
+                    'Evelynn • Guardian of THE Ⅹ SINS'
             })
             .setTimestamp();
 
@@ -323,7 +323,7 @@ function buildTerminalEmbed({
 
 /**
  * Publish one event inside
- * Umbra Core Terminal.
+ * Evelynn Core Terminal.
  *
  * This function never throws into the
  * calling system. Terminal failures are
@@ -359,7 +359,7 @@ async function logTerminal(
             !client.isReady()
         ) {
             console.warn(
-                '⚠️ Umbra Terminal log skipped because the Discord client is not ready.'
+                '⚠️ Evelynn Terminal log skipped because the Discord client is not ready.'
             );
 
             return false;
@@ -373,7 +373,7 @@ async function logTerminal(
                 0
         ) {
             console.warn(
-                '⚠️ Umbra Terminal log skipped because no title was provided.'
+                '⚠️ Evelynn Terminal log skipped because no title was provided.'
             );
 
             return false;
@@ -387,7 +387,7 @@ async function logTerminal(
                 0
         ) {
             console.warn(
-                '⚠️ Umbra Terminal log skipped because no message was provided.'
+                '⚠️ Evelynn Terminal log skipped because no message was provided.'
             );
 
             return false;
@@ -431,7 +431,7 @@ async function logTerminal(
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra Terminal logger failed:'
+            '❌ Evelynn Terminal logger failed:'
         );
 
         console.error(

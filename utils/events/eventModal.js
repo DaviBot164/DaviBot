@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 
 /**
- * Build the Las Noches Event creation modal.
+ * Build the THE Ⅹ SINS Event creation modal.
  *
  * @param {string} userId
  * @returns {ModalBuilder}
@@ -32,7 +32,7 @@ function buildEventModal(
                 'Event Title'
             )
             .setPlaceholder(
-                'Example: Las Noches PvP Tournament'
+                'Example: THE Ⅹ SINS PvP Tournament'
             )
             .setStyle(
                 TextInputStyle.Short
@@ -104,7 +104,7 @@ function buildEventModal(
                 'Event Reward'
             )
             .setPlaceholder(
-                'Example: Las Noches Champion role'
+                'Example: THE Ⅹ SINS Champion role'
             )
             .setStyle(
                 TextInputStyle.Short

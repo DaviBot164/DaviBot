@@ -15,18 +15,9 @@ const SIN_RANKS =
     Object.values(
         rankConfig.hierarchy
     ).map(
-        rank => rank.name
+        rank =>
+            rank.name
     );
-
-/**
- * Compatibility alias.
- *
- * Some existing systems still import
- * ARRANCAR_RANKS. Keep the export alive
- * while the internal terminology is updated.
- */
-const ARRANCAR_RANKS =
-    SIN_RANKS;
 
 /**
  * Check whether a rank is currently
@@ -45,9 +36,10 @@ const ARRANCAR_RANKS =
 function isValidRank(
     rankName
 ) {
-    return SIN_RANKS.includes(
-        rankName
-    ) &&
+    return (
+        SIN_RANKS.includes(
+            rankName
+        ) &&
         rankName !==
             rankConfig.hierarchy
                 .dominion
@@ -55,8 +47,11 @@ function isValidRank(
         rankName !==
             rankConfig.hierarchy
                 .unranked
-                .name;
-}/**
+                .name
+    );
+}
+
+/**
  * Get the current manually assigned
  * Sin Rank of a Soul.
  *
@@ -79,7 +74,7 @@ async function getCurrentRank(
                     reason,
                     assigned_at,
                     updated_at
-                FROM arrancar_ranks
+                FROM sin_ranks
                 WHERE guild_id = $1
                   AND user_id = $2
                 LIMIT 1;
@@ -99,10 +94,6 @@ async function getCurrentRank(
 /**
  * Assign or replace a Soul's
  * current Sin Rank.
- *
- * The existing PostgreSQL structure is
- * intentionally preserved for compatibility
- * with current rank history.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -139,13 +130,13 @@ async function setRank({
                 WITH previous_rank AS (
                     SELECT
                         rank_name
-                    FROM arrancar_ranks
+                    FROM sin_ranks
                     WHERE guild_id = $1
                       AND user_id = $2
                 ),
 
                 updated_rank AS (
-                    INSERT INTO arrancar_ranks (
+                    INSERT INTO sin_ranks (
                         guild_id,
                         user_id,
                         rank_name,
@@ -193,10 +184,8 @@ async function setRank({
                         reason,
                         assigned_at,
                         updated_at
-                ),
-
-                history_record AS (
-                    INSERT INTO arrancar_rank_history (
+                ),                history_record AS (
+                    INSERT INTO sin_rank_history (
                         guild_id,
                         user_id,
                         moderator_id,
@@ -270,7 +259,8 @@ async function setRank({
         );
 
     if (
-        result.rows.length === 0
+        result.rows.length ===
+        0
     ) {
         throw new Error(
             'The Sin Rank could not be saved.'
@@ -278,7 +268,9 @@ async function setRank({
     }
 
     return result.rows[0];
-}/**
+}
+
+/**
  * Remove the current Sin Rank.
  *
  * The removed rank is preserved in history.
@@ -312,7 +304,7 @@ async function removeRank({
 
     await query(
         `
-            INSERT INTO arrancar_rank_history (
+            INSERT INTO sin_rank_history (
                 guild_id,
                 user_id,
                 moderator_id,
@@ -344,7 +336,7 @@ async function removeRank({
 
     await query(
         `
-            DELETE FROM arrancar_ranks
+            DELETE FROM sin_ranks
             WHERE guild_id = $1
               AND user_id = $2;
         `,
@@ -366,9 +358,7 @@ async function removeRank({
         reason:
             safeReason
     };
-}
-
-/**
+}/**
  * Get rank history for a Soul.
  *
  * @param {string} guildId
@@ -403,7 +393,7 @@ async function getRankHistory(
                     new_rank,
                     reason,
                     created_at
-                FROM arrancar_rank_history
+                FROM sin_rank_history
                 WHERE guild_id = $1
                   AND user_id = $2
                 ORDER BY created_at DESC
@@ -439,7 +429,7 @@ async function getGuildRanks(
                     reason,
                     assigned_at,
                     updated_at
-                FROM arrancar_ranks
+                FROM sin_ranks
                 WHERE guild_id = $1
                 ORDER BY
                     updated_at DESC;
@@ -483,7 +473,7 @@ async function getUsersByRank(
                     reason,
                     assigned_at,
                     updated_at
-                FROM arrancar_ranks
+                FROM sin_ranks
                 WHERE guild_id = $1
                   AND rank_name = $2
                 ORDER BY updated_at DESC;
@@ -495,11 +485,8 @@ async function getUsersByRank(
         );
 
     return result.rows;
-}
-
-module.exports = {
+}module.exports = {
     SIN_RANKS,
-    ARRANCAR_RANKS,
 
     isValidRank,
 

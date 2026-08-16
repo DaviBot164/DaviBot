@@ -117,8 +117,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Kick Members** permission to carry out this action.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Kick Members** permission to carry out this action.'
                         )
                     ],
 
@@ -158,7 +158,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Removal Failed',
-                            'Umbra cannot remove this Soul. Check its permissions and role position.'
+                            'Evelynn cannot remove this Soul. Check its permissions and role position.'
                         )
                     ],
 
@@ -197,7 +197,7 @@ module.exports = {
                     '🌑 Order Status',
 
                 value:
-                    'The Soul has been removed from Las Noches.',
+                    'The Soul has been removed from THE Ⅹ SINS.',
 
                 inline:
                     false
@@ -230,7 +230,7 @@ module.exports = {
                             '🌑 Order Status',
 
                         value:
-                            'The Soul was removed from Las Noches.',
+                            'The Soul was removed from THE Ⅹ SINS.',
 
                         inline:
                             false
@@ -249,7 +249,7 @@ module.exports = {
                     '❌ Removal Failed',
 
                 description:
-                    'Umbra encountered an unexpected error while trying to remove this Soul.'
+                    'Evelynn encountered an unexpected error while trying to remove this Soul.'
             });
         }
     }

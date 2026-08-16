@@ -102,7 +102,7 @@ async function fetchRankTrialChannel(
 }
 
 /**
- * Check whether Umbra has all required
+ * Check whether Evelynn has all required
  * permissions in the Rank Trials channel.
  *
  * @param {import('discord.js').Guild} guild
@@ -484,7 +484,7 @@ async function publishRankTrialAnnouncement(
                 'failed',
 
             reason:
-                'Umbra is missing required channel permissions.'
+                'Evelynn is missing required channel permissions.'
         };
     }
 
@@ -856,7 +856,7 @@ async function republishRankTrialAnnouncement(
                 'failed',
 
             reason:
-                'Umbra is missing required channel permissions.'
+                'Evelynn is missing required channel permissions.'
         };
     }
 
@@ -1026,7 +1026,7 @@ async function republishRankTrialAnnouncement(
 
 /**
  * Publish one announcement in every active
- * configured Las Noches guild.
+ * configured THE Ⅹ SINS guild.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} schedule

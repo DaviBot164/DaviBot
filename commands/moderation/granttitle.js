@@ -24,13 +24,13 @@ const {
 } = require('../../utils/titleNotifications');
 
 /**
- * Las Noches High Command roles allowed
+ * THE Ⅹ SINS High Command roles allowed
  * to grant Manual and Event Titles.
  *
  * Lieutenants are intentionally excluded.
  */
 const TITLE_MANAGER_ROLES = [
-    '👑 Ruler of Las Noches',
+    '👑 Ruler of THE Ⅹ SINS',
     '⚜️ Head Captain',
     '🛡️ Captain'
 ];
@@ -54,7 +54,7 @@ const TITLE_GRANT_COLOR =
  *
  * Automatic Titles such as Level,
  * Achievement, Evolution, Staff and
- * Arrancar Rank cannot be granted here.
+ * Sin Rank cannot be granted here.
  */
 const GRANTABLE_UNLOCK_TYPES = [
     TITLE_UNLOCK_TYPES.MANUAL,
@@ -96,7 +96,7 @@ const GRANTABLE_TITLE_CHOICES =
 
 /**
  * Check whether the command executor
- * belongs to the Las Noches High Command.
+ * belongs to the THE Ⅹ SINS High Command.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -153,7 +153,7 @@ function findGrantableTitle(
 
 /**
  * Find the official Title announcement
- * channel inside Las Noches.
+ * channel inside THE Ⅹ SINS.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -294,11 +294,11 @@ function createTitleGrantEmbed({
 
         description:
             [
-                `${member} has received a special designation from the High Command of Las Noches.`,
+                `${member} has received a special designation from the High Command of THE Ⅹ SINS.`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Umbra has permanently preserved this proclamation within the Soul Archives.*'
+                '*Evelynn has permanently preserved this proclamation within the Soul Archives.*'
             ].join('\n'),
 
         color:
@@ -408,7 +408,7 @@ function createTitleGrantEmbed({
 
         footer: {
             text:
-                '🌙 Umbra • Guardian of Las Noches'
+                '🌙 Evelynn • Guardian of THE Ⅹ SINS'
         }
     });
 }
@@ -509,8 +509,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -534,10 +534,10 @@ module.exports = {
                         createErrorEmbed(
                             '❌ High Command Required',
                             [
-                                'Only the Las Noches High Command may grant special Chronicle Titles.',
+                                'Only the THE Ⅹ SINS High Command may grant special Chronicle Titles.',
                                 '',
                                 'Required standing:',
-                                '• 👑 Ruler of Las Noches',
+                                '• 👑 Ruler of THE Ⅹ SINS',
                                 '• ⚜️ Head Captain',
                                 '• 🛡️ Captain'
                             ].join('\n')
@@ -579,7 +579,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
+                            'The selected Soul is not currently inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -726,7 +726,7 @@ module.exports = {
                         });
             } catch (databaseError) {
                 console.error(
-                    '❌ Umbra could not grant the Chronicle Title:',
+                    '❌ Evelynn could not grant the Chronicle Title:',
                     databaseError
                 );
 
@@ -735,7 +735,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Title Archive Failed',
                             [
-                                'Umbra could not save this Chronicle Title inside PostgreSQL.',
+                                'Evelynn could not save this Chronicle Title inside PostgreSQL.',
                                 '',
                                 'Please inspect the Northflank database logs before trying again.'
                             ].join('\n')
@@ -753,7 +753,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Title Grant Failed',
-                            'Umbra could not create the requested Chronicle Title record.'
+                            'Evelynn could not create the requested Chronicle Title record.'
                         )
                     ]
                 });
@@ -814,7 +814,7 @@ module.exports = {
                     })
                     .catch(error => {
                         console.error(
-                            '⚠️ Umbra could not publish the Title proclamation:',
+                            '⚠️ Evelynn could not publish the Title proclamation:',
                             error
                         );
                     });
@@ -847,17 +847,17 @@ module.exports = {
                     source:
                         titleDefinition.unlock.type ===
                             TITLE_UNLOCK_TYPES.EVENT
-                            ? 'Official Las Noches Event'
-                            : 'Las Noches High Command'
+                            ? 'Official THE Ⅹ SINS Event'
+                            : 'THE Ⅹ SINS High Command'
                 });
             } else {
                 console.warn(
-                    `⚠️ Umbra could not find a Title notification channel for ${member.user.tag}.`
+                    `⚠️ Evelynn could not find a Title notification channel for ${member.user.tag}.`
                 );
             }
         } catch (error) {
             console.error(
-                '❌ Umbra /granttitle command error:',
+                '❌ Evelynn /granttitle command error:',
                 error
             );
 
@@ -865,7 +865,7 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Chronicle Title Grant Failed',
                     [
-                        'Umbra could not complete this special Title proclamation.',
+                        'Evelynn could not complete this special Title proclamation.',
                         '',
                         'Please inspect the PostgreSQL connection and Northflank logs before trying again.'
                     ].join('\n')

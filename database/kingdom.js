@@ -5,6 +5,9 @@ const {
 const leaderboardDatabase =
     require('./leaderboards');
 
+const rankConfig =
+    require('../config/ranks');
+
 /**
  * Normalize a database query limit.
  *
@@ -142,7 +145,7 @@ function mapRecentTitleRow(
 }
 
 /**
- * Map a recent Arrancar Rank history row.
+ * Map a recent Sin Rank history row.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -273,9 +276,7 @@ async function getProgressionStatistics(
             [
                 guildId
             ]
-        );
-
-    const row =
+        );    const row =
         result.rows[0] ||
         {};
 
@@ -493,7 +494,7 @@ async function getTitleStatistics(
 
                         WHERE guild_id = $1
                           AND is_active = TRUE
-                    ) AS active_titles,
+                    ) AS active_title_selections,
 
                     (
                         SELECT
@@ -506,11 +507,9 @@ async function getTitleStatistics(
                                 soul_titles.title_id
 
                         WHERE soul_titles.guild_id = $1
-                          AND title_definitions.rarity IN (
-                              'Legendary',
-                              'Mythic'
-                          )
-                    ) AS rare_unlocks,
+                          AND title_definitions.rarity =
+                                'Legendary'
+                    ) AS legendary_unlocks,
 
                     (
                         SELECT
@@ -555,14 +554,14 @@ async function getTitleStatistics(
                 row.souls_with_titles || 0
             ),
 
-        activeTitles:
+        activeTitleSelections:
             Number(
-                row.active_titles || 0
+                row.active_title_selections || 0
             ),
 
-        rareUnlocks:
+        legendaryUnlocks:
             Number(
-                row.rare_unlocks || 0
+                row.legendary_unlocks || 0
             ),
 
         firstUnlockAt:
@@ -579,9 +578,7 @@ async function getTitleStatistics(
                 )
                 : null
     };
-}
-
-/**
+}/**
  * Get Chronicle Title rarity distribution.
  *
  * @param {string} guildId
@@ -713,7 +710,7 @@ async function getTitleRarityStatistics(
 }
 
 /**
- * Get active Arrancar Rank statistics.
+ * Get active Sin Rank statistics.
  *
  * @param {string} guildId
  * @returns {Promise<Object>}
@@ -725,116 +722,125 @@ async function getRankStatistics(
         await query(
             `
                 SELECT
+                    rank_name,
+
                     COUNT(*)::INTEGER
-                        AS active_ranked_souls,
+                        AS member_count,
 
-                    COUNT(*) FILTER (
-                        WHERE rank_name IN (
-                            '👑 Espada 0',
-                            'Ⅰ Espada',
-                            'Ⅱ Espada',
-                            'Ⅲ Espada',
-                            'Ⅳ Espada',
-                            'Ⅴ Espada',
-                            'Ⅵ Espada',
-                            'Ⅶ Espada',
-                            'Ⅷ Espada',
-                            'Ⅸ Espada',
-                            'Ⅹ Espada'
-                        )
-                    )::INTEGER
-                        AS active_espada,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '🌘 Privaron Espada'
-                    )::INTEGER
-                        AS privaron_espada,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '⚔️ Fracción'
-                    )::INTEGER
-                        AS fraccion,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '🦴 Numeros'
-                    )::INTEGER
-                        AS numeros,
-
-                    COUNT(*) FILTER (
-                        WHERE rank_name =
-                            '⚪ Unranked Arrancar'
-                    )::INTEGER
-                        AS unranked_arrancar,
-
-                    MIN(assigned_at)
+                    MIN(
+                        MIN(assigned_at)
+                    ) OVER ()
                         AS oldest_active_assignment_at,
 
-                    MAX(assigned_at)
+                    MAX(
+                        MAX(assigned_at)
+                    ) OVER ()
                         AS latest_active_assignment_at
 
-                FROM arrancar_ranks
+                FROM sin_ranks
 
-                WHERE guild_id = $1;
+                WHERE guild_id = $1
+
+                GROUP BY
+                    rank_name;
             `,
             [
                 guildId
             ]
         );
 
-    const row =
+    const rankCounts =
+        Object.fromEntries(
+            Object.keys(
+                rankConfig.hierarchy
+            ).map(
+                rankKey => [
+                    rankKey,
+                    0
+                ]
+            )
+        );
+
+    for (
+        const row
+        of result.rows
+    ) {
+        const rankEntry =
+            Object.entries(
+                rankConfig.hierarchy
+            ).find(
+                ([, rank]) =>
+                    rank.name ===
+                    row.rank_name
+            );
+
+        if (rankEntry) {
+            rankCounts[
+                rankEntry[0]
+            ] =
+                Number(
+                    row.member_count || 0
+                );
+        }
+    }
+
+    const activeRankedSouls =
+        result.rows.reduce(
+            (total, row) =>
+                total +
+                Number(
+                    row.member_count || 0
+                ),
+            0
+        );
+
+    const tenSins =
+        Object.entries(
+            rankCounts
+        ).reduce(
+            (total, [rankKey, count]) =>
+                rankKey ===
+                    'dominion' ||
+                rankKey ===
+                    'unranked'
+                    ? total
+                    : total + count,
+            0
+        );
+
+    const firstRow =
         result.rows[0] ||
         {};
 
     return {
-        activeRankedSouls:
-            Number(
-                row.active_ranked_souls || 0
-            ),
+        activeRankedSouls,
 
-        activeEspada:
-            Number(
-                row.active_espada || 0
-            ),
+        dominion:
+            rankCounts.dominion,
 
-        privaronEspada:
-            Number(
-                row.privaron_espada || 0
-            ),
+        tenSins,
 
-        fraccion:
-            Number(
-                row.fraccion || 0
-            ),
-
-        numeros:
-            Number(
-                row.numeros || 0
-            ),
-
-        unrankedArrancar:
-            Number(
-                row.unranked_arrancar || 0
-            ),
+        byRank:
+            rankCounts,
 
         oldestActiveAssignmentAt:
-            row.oldest_active_assignment_at
+            firstRow.oldest_active_assignment_at
                 ? new Date(
-                    row.oldest_active_assignment_at
+                    firstRow.oldest_active_assignment_at
                 )
                 : null,
 
         latestActiveAssignmentAt:
-            row.latest_active_assignment_at
+            firstRow.latest_active_assignment_at
                 ? new Date(
-                    row.latest_active_assignment_at
+                    firstRow.latest_active_assignment_at
                 )
                 : null
     };
-}/**
- * Get Arrancar Rank history statistics.
+}
+
+/**
+ * Get Sin Rank history statistics.
  *
  * @param {string} guildId
  * @returns {Promise<Object>}
@@ -879,7 +885,7 @@ async function getRankHistoryStatistics(
                     MAX(created_at)
                         AS latest_rank_action_at
 
-                FROM arrancar_rank_history
+                FROM sin_rank_history
 
                 WHERE guild_id = $1;
             `,
@@ -932,9 +938,7 @@ async function getRankHistoryStatistics(
                 )
                 : null
     };
-}
-
-/**
+}/**
  * Get the most recent Kingdom
  * Achievement unlocks.
  *
@@ -1054,7 +1058,7 @@ async function getRecentKingdomTitles(
 }
 
 /**
- * Get the most recent Arrancar
+ * Get the most recent Sin Rank
  * hierarchy actions.
  *
  * @param {string} guildId
@@ -1086,7 +1090,7 @@ async function getRecentRankHistory(
                     reason,
                     created_at
 
-                FROM arrancar_rank_history
+                FROM sin_rank_history
 
                 WHERE guild_id = $1
 
@@ -1161,7 +1165,7 @@ async function getActivityStatistics(
                         SELECT
                             COUNT(*)::INTEGER
 
-                        FROM arrancar_rank_history
+                        FROM sin_rank_history
 
                         WHERE guild_id = $1
                           AND created_at >=
@@ -1209,7 +1213,7 @@ async function getActivityStatistics(
                         SELECT
                             COUNT(*)::INTEGER
 
-                        FROM arrancar_rank_history
+                        FROM sin_rank_history
 
                         WHERE guild_id = $1
                           AND created_at >=
@@ -1271,9 +1275,7 @@ async function getActivityStatistics(
                 )
         }
     };
-}
-
-/**
+}/**
  * Calculate combined Kingdom archive
  * totals from loaded statistics.
  *
@@ -1429,7 +1431,7 @@ async function getKingdomLeaderboards(
 
 /**
  * Get the complete Kingdom statistics
- * required by the Las Noches Dashboard.
+ * required by the THE Ⅹ SINS Dashboard.
  *
  * @param {string} guildId
  * @param {Object} options
@@ -1452,9 +1454,7 @@ async function getKingdomStatistics(
         throw new TypeError(
             'A guild ID is required to open Kingdom statistics.'
         );
-    }
-
-    const [
+    }    const [
         progression,
         achievementStatistics,
         titleStatistics,
@@ -1520,12 +1520,16 @@ async function getKingdomStatistics(
     const archiveSummary =
         buildArchiveSummary({
             progression,
+
             achievements:
                 achievementStatistics,
+
             titles:
                 titleStatistics,
+
             ranks:
                 rankStatistics,
+
             rankHistory:
                 rankHistoryStatistics
         });
@@ -1564,7 +1568,9 @@ async function getKingdomStatistics(
         recentTitles,
         recentRanks
     };
-}module.exports = {
+}
+
+module.exports = {
     getProgressionStatistics,
     getAchievementStatistics,
     getTitleStatistics,

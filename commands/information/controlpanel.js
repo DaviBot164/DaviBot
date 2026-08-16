@@ -18,13 +18,13 @@ const Terminal =
     require('../../utils/terminal');
 
 /**
- * Umbra Terminal visual color.
+ * Evelynn Terminal visual color.
  */
 const CONTROL_PANEL_COLOR =
     '#C8CDD4';
 
 /**
- * Custom ID used by the Umbra Terminal
+ * Custom ID used by the Evelynn Terminal
  * module selection menu.
  */
 const CONTROL_PANEL_CUSTOM_ID =
@@ -256,7 +256,7 @@ async function collectHealthSafely(
                     setTimeout(
                         () => {
                             console.warn(
-                                `⚠️ Umbra Terminal health collection exceeded ${HEALTH_SNAPSHOT_TIMEOUT} ms.`
+                                `⚠️ Evelynn Terminal health collection exceeded ${HEALTH_SNAPSHOT_TIMEOUT} ms.`
                             );
 
                             resolve(
@@ -284,7 +284,7 @@ async function collectHealthSafely(
         ]);
     } catch (error) {
         console.error(
-            '❌ Umbra Terminal health collection failed:'
+            '❌ Evelynn Terminal health collection failed:'
         );
 
         console.error(
@@ -306,7 +306,7 @@ async function collectHealthSafely(
 }
 
 /**
- * Build the Umbra Terminal module menu.
+ * Build the Evelynn Terminal module menu.
  *
  * @returns {StringSelectMenuBuilder}
  */
@@ -317,7 +317,7 @@ function buildControlPanelMenu() {
         )
 
         .setPlaceholder(
-            'Select an Umbra Terminal module...'
+            'Select an Evelynn Terminal module...'
         )
 
         .setMinValues(
@@ -334,7 +334,7 @@ function buildControlPanelMenu() {
                     'Terminal Overview'
                 )
                 .setDescription(
-                    'View live Umbra health and system information'
+                    'View live Evelynn health and system information'
                 )
                 .setEmoji(
                     '🖥️'
@@ -362,7 +362,7 @@ function buildControlPanelMenu() {
                     'Incident Center'
                 )
                 .setDescription(
-                    'Review archived Umbra system incidents'
+                    'Review archived Evelynn system incidents'
                 )
                 .setEmoji(
                     '🚨'
@@ -401,7 +401,7 @@ function buildControlPanelMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Arrancar Ranks'
+                    'Sin Ranks'
                 )
                 .setDescription(
                     'View hierarchy management controls'
@@ -410,7 +410,7 @@ function buildControlPanelMenu() {
                     '👑'
                 )
                 .setValue(
-                    'arrancar-ranks'
+                    'sin-ranks'
                 ),
 
             new StringSelectMenuOptionBuilder()
@@ -418,7 +418,7 @@ function buildControlPanelMenu() {
                     'Setup Center'
                 )
                 .setDescription(
-                    'View Las Noches setup controls'
+                    'View THE \u2169 SINS setup controls'
                 )
                 .setEmoji(
                     '📚'
@@ -615,7 +615,7 @@ function buildServicesCenterActionRow(
 }
 
 /**
- * Build the normal Umbra Terminal
+ * Build the normal Evelynn Terminal
  * component rows.
  *
  * @param {boolean} refreshDisabled
@@ -672,7 +672,7 @@ function buildServicesCenterComponents(
 }
 
 /**
- * Build the live Umbra Terminal
+ * Build the live Evelynn Terminal
  * home Embed.
  *
  * @param {import('discord.js').Interaction} interaction
@@ -768,7 +768,7 @@ function buildControlPanelEmbed(
     const terminalEmbed =
         createEmbed({
             title:
-                `${overallHealth.emoji} Umbra Terminal`,
+                `${overallHealth.emoji} Evelynn Terminal`,
 
             description:
                 descriptionLines.join(
@@ -859,7 +859,7 @@ function buildControlPanelEmbed(
                 },
                 {
                     name:
-                        '🌙 Las Noches',
+                        '🌙 THE \u2169 SINS',
 
                     value:
                         [
@@ -906,7 +906,7 @@ function buildControlPanelEmbed(
 
     terminalEmbed.setAuthor({
         name:
-            'Umbra • Core Operations',
+            'Evelynn • Core Operations',
 
         iconURL:
             botAvatar
@@ -914,7 +914,7 @@ function buildControlPanelEmbed(
 
     terminalEmbed.setFooter({
         text:
-            'Las Noches • Administrative Terminal',
+            'THE \u2169 SINS • Administrative Terminal',
 
         iconURL:
             guildIcon
@@ -923,7 +923,9 @@ function buildControlPanelEmbed(
     terminalEmbed.setTimestamp();
 
     return terminalEmbed;
-}module.exports = {
+}
+
+module.exports = {
     category:
         'information',
 
@@ -934,7 +936,7 @@ function buildControlPanelEmbed(
             )
 
             .setDescription(
-                'Open the live Umbra administrative terminal.'
+                'Open the live Evelynn administrative terminal.'
             )
 
             .setDefaultMemberPermissions(
@@ -946,7 +948,7 @@ function buildControlPanelEmbed(
             ),
 
     /**
-     * Open the live Umbra Terminal.
+     * Open the live Evelynn Terminal.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -965,7 +967,7 @@ function buildControlPanelEmbed(
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'The Umbra Terminal can only be opened inside Las Noches.'
+                            'The Evelynn Terminal can only be opened inside THE \u2169 SINS.'
                         )
                     ]
                 });
@@ -986,7 +988,7 @@ function buildControlPanelEmbed(
                     embeds: [
                         createErrorEmbed(
                             '❌ Authority Denied',
-                            'Only a Las Noches Administrator may access the Umbra Terminal.'
+                            'Only a THE \u2169 SINS Administrator may access the Evelynn Terminal.'
                         )
                     ]
                 });
@@ -1024,7 +1026,7 @@ function buildControlPanelEmbed(
             );
 
             console.log(
-                '🖥️ Umbra Terminal Opened'
+                '🖥️ Evelynn Terminal Opened'
             );
 
             console.log(
@@ -1070,7 +1072,7 @@ function buildControlPanelEmbed(
             );
         } catch (error) {
             console.error(
-                '❌ Umbra Terminal command error:'
+                '❌ Evelynn Terminal command error:'
             );
 
             console.error(
@@ -1079,9 +1081,9 @@ function buildControlPanelEmbed(
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Umbra Terminal Failed',
+                    '❌ Evelynn Terminal Failed',
                     [
-                        'Umbra could not open the administrative Terminal.',
+                        'Evelynn could not open the administrative Terminal.',
                         '',
                         'Check the Discord Gateway, PostgreSQL connection and Terminal modules.'
                     ].join(

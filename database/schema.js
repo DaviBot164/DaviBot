@@ -151,15 +151,13 @@ async function initializeSchema() {
         ON raid_cases (
             detected_at DESC
         );
-    `);
-
-    /*
+    `);    /*
      * ======================================================
-     * Umbra Monthly Rank Trials System
+     * Evelynn Monthly Rank Trials System
      * ======================================================
      *
      * Stores every automatic Rank Trial
-     * announcement published by Umbra.
+     * announcement published by Evelynn.
      *
      * The unique constraint prevents duplicate
      * announcements after restart or redeploy.
@@ -251,7 +249,7 @@ async function initializeSchema() {
      * ======================================================
      *
      * Stores every Soul who registers for
-     * one monthly Las Noches Rank Trial.
+     * one monthly THE Ⅹ SINS Rank Trial.
      *
      * Registration, withdrawal, Staff Review
      * and final promotion decisions remain
@@ -421,11 +419,9 @@ async function initializeSchema() {
             promoted_at DESC
         )
         WHERE promoted_at IS NOT NULL;
-    `);
-
-    /*
+    `);    /*
      * ======================================================
-     * Las Noches Event System
+     * THE Ⅹ SINS Event System
      * ======================================================
      */
     await query(`
@@ -542,9 +538,11 @@ async function initializeSchema() {
         ON event_participants (
             joined_at DESC
         );
-    `);    /*
+    `);
+
+    /*
      * ======================================================
-     * Las Noches Giveaway System
+     * THE Ⅹ SINS Giveaway System
      * ======================================================
      */
     await query(`
@@ -711,11 +709,9 @@ async function initializeSchema() {
             guild_id,
             user_id
         );
-    `);
-
-    /*
+    `);    /*
      * ======================================================
-     * Umbra Level System
+     * Evelynn Level System
      * ======================================================
      *
      * Stores each Soul's XP, Level and
@@ -726,9 +722,14 @@ async function initializeSchema() {
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
 
-            xp BIGINT NOT NULL DEFAULT 0,
-            level INTEGER NOT NULL DEFAULT 0,
-            message_count BIGINT NOT NULL DEFAULT 0,
+            xp BIGINT NOT NULL
+                DEFAULT 0,
+
+            level INTEGER NOT NULL
+                DEFAULT 0,
+
+            message_count BIGINT NOT NULL
+                DEFAULT 0,
 
             last_xp_at TIMESTAMPTZ,
 
@@ -795,7 +796,7 @@ async function initializeSchema() {
     /*
      * Level Reward Roles
      *
-     * Stores the Discord roles Umbra should
+     * Stores the Discord roles Evelynn should
      * grant when a Soul reaches a Level.
      */
     await query(`
@@ -836,9 +837,11 @@ async function initializeSchema() {
             guild_id,
             role_id
         );
-    `);/*
+    `);
+
+    /*
      * ======================================================
-     * Umbra Achievement System
+     * Evelynn Achievement System
      * ======================================================
      */
 
@@ -846,7 +849,7 @@ async function initializeSchema() {
      * Achievement Definitions
      *
      * Stores every Achievement available
-     * inside Umbra.
+     * inside THE Ⅹ SINS.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS achievements (
@@ -918,20 +921,61 @@ async function initializeSchema() {
         ON soul_achievements (
             unlocked_at DESC
         );
+    `);    /*
+     * ======================================================
+     * THE Ⅹ SINS Rank Migration
+     * ======================================================
+     *
+     * Safely rename existing legacy Rank tables.
+     *
+     * PostgreSQL table renaming preserves all rows,
+     * primary keys, constraints and sequence data.
+     *
+     * This block is idempotent and only runs when
+     * the new table does not already exist.
+     */
+    await query(`
+        DO $$
+        BEGIN
+            IF (
+                TO_REGCLASS(
+                    'public.sin_ranks'
+                ) IS NULL
+                AND TO_REGCLASS(
+                    'public.arrancar_ranks'
+                ) IS NOT NULL
+            ) THEN
+                ALTER TABLE arrancar_ranks
+                RENAME TO sin_ranks;
+            END IF;
+
+            IF (
+                TO_REGCLASS(
+                    'public.sin_rank_history'
+                ) IS NULL
+                AND TO_REGCLASS(
+                    'public.arrancar_rank_history'
+                ) IS NOT NULL
+            ) THEN
+                ALTER TABLE arrancar_rank_history
+                RENAME TO sin_rank_history;
+            END IF;
+        END
+        $$;
     `);
 
     /*
      * ======================================================
-     * Las Noches Arrancar Rank System
+     * THE Ⅹ SINS Rank System
      * ======================================================
      */
 
     /*
      * Stores the current manually assigned
-     * Arrancar Rank of every Soul.
+     * Sin Rank of every Soul.
      */
     await query(`
-        CREATE TABLE IF NOT EXISTS arrancar_ranks (
+        CREATE TABLE IF NOT EXISTS sin_ranks (
             guild_id VARCHAR(32) NOT NULL,
             user_id VARCHAR(32) NOT NULL,
 
@@ -956,28 +1000,28 @@ async function initializeSchema() {
     `);
 
     await query(`
-        CREATE INDEX IF NOT EXISTS arrancar_ranks_guild_rank_index
-        ON arrancar_ranks (
+        CREATE INDEX IF NOT EXISTS sin_ranks_guild_rank_index
+        ON sin_ranks (
             guild_id,
             rank_name
         );
     `);
 
     await query(`
-        CREATE INDEX IF NOT EXISTS arrancar_ranks_updated_at_index
-        ON arrancar_ranks (
+        CREATE INDEX IF NOT EXISTS sin_ranks_updated_at_index
+        ON sin_ranks (
             updated_at DESC
         );
     `);
 
     /*
-     * Arrancar Rank History
+     * Sin Rank History
      *
-     * Stores every promotion, demotion,
-     * replacement and removal.
+     * Stores every assignment, replacement
+     * and removal.
      */
     await query(`
-        CREATE TABLE IF NOT EXISTS arrancar_rank_history (
+        CREATE TABLE IF NOT EXISTS sin_rank_history (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id VARCHAR(32) NOT NULL,
@@ -995,7 +1039,7 @@ async function initializeSchema() {
             created_at TIMESTAMPTZ NOT NULL
                 DEFAULT NOW(),
 
-            CONSTRAINT arrancar_rank_history_action_valid
+            CONSTRAINT sin_rank_history_action_valid
                 CHECK (
                     action IN (
                         'SET',
@@ -1003,7 +1047,7 @@ async function initializeSchema() {
                     )
                 ),
 
-            CONSTRAINT arrancar_rank_history_rank_valid
+            CONSTRAINT sin_rank_history_rank_valid
                 CHECK (
                     old_rank IS NOT NULL
                     OR new_rank IS NOT NULL
@@ -1012,8 +1056,8 @@ async function initializeSchema() {
     `);
 
     await query(`
-        CREATE INDEX IF NOT EXISTS arrancar_rank_history_guild_user_index
-        ON arrancar_rank_history (
+        CREATE INDEX IF NOT EXISTS sin_rank_history_guild_user_index
+        ON sin_rank_history (
             guild_id,
             user_id,
             created_at DESC
@@ -1021,8 +1065,8 @@ async function initializeSchema() {
     `);
 
     await query(`
-        CREATE INDEX IF NOT EXISTS arrancar_rank_history_moderator_index
-        ON arrancar_rank_history (
+        CREATE INDEX IF NOT EXISTS sin_rank_history_moderator_index
+        ON sin_rank_history (
             guild_id,
             moderator_id,
             created_at DESC
@@ -1030,15 +1074,13 @@ async function initializeSchema() {
     `);
 
     await query(`
-        CREATE INDEX IF NOT EXISTS arrancar_rank_history_created_at_index
-        ON arrancar_rank_history (
+        CREATE INDEX IF NOT EXISTS sin_rank_history_created_at_index
+        ON sin_rank_history (
             created_at DESC
         );
-    `);
-
-    /*
+    `);    /*
      * ======================================================
-     * Umbra Title System
+     * Evelynn Title System
      * ======================================================
      */
 
@@ -1046,7 +1088,7 @@ async function initializeSchema() {
      * Title Definitions
      *
      * Stores every Title available inside
-     * Umbra's Soul Record system.
+     * THE Ⅹ SINS Soul Record system.
      *
      * These Titles are not Discord roles.
      */
@@ -1075,7 +1117,7 @@ async function initializeSchema() {
     `);
 
     /*
-     * Helps Umbra organize Titles by
+     * Helps Evelynn organize Titles by
      * category and rarity inside /titles.
      */
     await query(`
@@ -1105,7 +1147,9 @@ async function initializeSchema() {
         ON title_definitions (
             updated_at DESC
         );
-    `);    /*
+    `);
+
+    /*
      * Soul Titles
      *
      * Stores every Title unlocked by each
@@ -1198,7 +1242,7 @@ async function initializeSchema() {
 
     /*
      * Used when sorting the latest Title
-     * unlocks throughout Las Noches.
+     * unlocks throughout THE Ⅹ SINS.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS soul_titles_unlocked_at_index
@@ -1234,16 +1278,14 @@ async function initializeSchema() {
             activated_at DESC
         )
         WHERE is_active = TRUE;
-    `);
-
-    /*
+    `);    /*
      * ======================================================
-     * Umbra Terminal Incident Archive
+     * Evelynn Terminal Incident Archive
      * ======================================================
      *
      * Stores important infrastructure,
      * Gateway, PostgreSQL and runtime
-     * incidents detected by Umbra.
+     * incidents detected by Evelynn.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS terminal_incidents (
@@ -1337,12 +1379,12 @@ async function initializeSchema() {
 
     /*
      * ======================================================
-     * Umbra Terminal Services State
+     * Evelynn Terminal Services State
      * ======================================================
      *
      * Stores the latest known state of
      * every infrastructure service monitored
-     * by the Umbra Terminal / Black Box.
+     * by the Evelynn Terminal / Black Box.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS terminal_services (
@@ -1399,9 +1441,8 @@ async function initializeSchema() {
      * Terminal Services Index Migration
      * ======================================================
      *
-     * Older Umbra schema versions created
-     * these two index names with shorter
-     * column definitions.
+     * Older schema versions created these
+     * index names with shorter definitions.
      *
      * DROP INDEX IF EXISTS is safe here:
      * indexes contain no application data.
@@ -1415,9 +1456,7 @@ async function initializeSchema() {
 
     await query(`
         DROP INDEX IF EXISTS terminal_services_severity_index;
-    `);
-
-    /*
+    `);    /*
      * Used when loading services by
      * current status.
      */
@@ -1477,13 +1516,15 @@ async function initializeSchema() {
             guild_id,
             updated_at DESC
         );
-    `);    /*
+    `);
+
+    /*
      * ======================================================
      * Terminal Schema Compatibility
      * ======================================================
      *
      * Preserve compatibility with both
-     * fresh and older Umbra databases.
+     * fresh and older database versions.
      */
 
     /*
@@ -1499,7 +1540,7 @@ async function initializeSchema() {
 
     /*
      * Preserve the original Terminal Service
-     * column limits used by Umbra.
+     * column limits.
      */
     await query(`
         ALTER TABLE terminal_services
@@ -1600,7 +1641,7 @@ async function initializeSchema() {
      * Service history lookup.
      *
      * Kept for compatibility with existing
-     * Umbra database installations.
+     * database installations.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS terminal_incidents_service_history_index

@@ -12,7 +12,7 @@ const titles =
 
 /**
  * Default values reserved for systems
- * that will be added to Umbra later.
+ * that will be added to Evelynn later.
  */
 const DEFAULT_SOUL_DATA = {
     reputation: {
@@ -398,7 +398,7 @@ async function getSoulTitle(
 }
 
 /**
- * Create a safe copy of Umbra's default
+ * Create a safe copy of Evelynn's default
  * future-system data.
  *
  * This prevents one Soul object from sharing
@@ -442,7 +442,7 @@ function createDefaultSoulData() {
 }/**
  * Open one complete Soul Record.
  *
- * This is Umbra Core's central reader.
+ * This is Evelynn Core's central reader.
  *
  * Current live systems:
  * - Levels
@@ -647,7 +647,7 @@ async function soulRecordExists(
 
 /**
  * Ensure that a Soul has the minimum
- * records required by Umbra.
+ * records required by Evelynn.
  *
  * This currently guarantees:
  *

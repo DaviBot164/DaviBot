@@ -55,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -85,8 +85,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Manage Messages** permission to clear messages.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Manage Messages** permission to clear messages.'
                         )
                     ],
 
@@ -106,7 +106,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only a Las Noches moderator with **Manage Messages** may use this command.'
+                            'Only a THE Ⅹ SINS moderator with **Manage Messages** may use this command.'
                         )
                     ],
 
@@ -131,7 +131,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Channel Permission Missing',
-                            `Umbra cannot manage messages inside ${interaction.channel}.`
+                            `Evelynn cannot manage messages inside ${interaction.channel}.`
                         )
                     ],
 
@@ -163,13 +163,13 @@ module.exports = {
 
                     description:
                         [
-                            `Umbra removed **${deletedCount}** message${
+                            `Evelynn removed **${deletedCount}** message${
                                 deletedCount === 1
                                     ? ''
                                     : 's'
                             } from ${interaction.channel}.`,
                             '',
-                            '*The channel has been cleansed beneath the moon of Las Noches.*'
+                            '*The channel has been cleansed beneath the moon of THE Ⅹ SINS.*'
                         ].join('\n'),
 
                     fields: [
@@ -210,7 +210,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Umbra • Guardian of Las Noches',
+                    'Evelynn • Guardian of THE Ⅹ SINS',
 
                 iconURL:
                     interaction.client.user
@@ -280,7 +280,7 @@ module.exports = {
                     '❌ Channel Purge Failed',
 
                 description:
-                    'Umbra could not delete the requested messages. Discord cannot bulk-delete messages older than 14 days.'
+                    'Evelynn could not delete the requested messages. Discord cannot bulk-delete messages older than 14 days.'
             });
         }
     }

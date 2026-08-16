@@ -10,7 +10,7 @@ const {
 
 /**
  * Convert a PostgreSQL Title definition
- * row into Umbra's Title structure.
+ * row into Evelynn's Title structure.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -69,7 +69,7 @@ function mapTitleDefinitionRow(
 
 /**
  * Convert a Soul Title row into
- * Umbra's unlocked Title structure.
+ * Evelynn's unlocked Title structure.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -145,10 +145,10 @@ function mapSoulTitleRow(
 
 /**
  * Create or update every configured
- * Umbra Title definition.
+ * Evelynn Title definition.
  *
  * This function is safe to run whenever
- * Umbra starts.
+ * Evelynn starts.
  *
  * @returns {Promise<number>}
  */
@@ -637,7 +637,7 @@ async function unlockSoulTitle({
         )
     ) {
         throw new Error(
-            `Unknown Umbra Title: ${titleId}`
+            `Unknown Evelynn Title: ${titleId}`
         );
     }
 
@@ -871,7 +871,7 @@ async function setActiveTitle(
         )
     ) {
         throw new Error(
-            `Unknown Umbra Title: ${titleId}`
+            `Unknown Evelynn Title: ${titleId}`
         );
     }
 
@@ -1164,7 +1164,7 @@ async function resetSoulTitles(
  *
  * Useful for automatic checks after
  * Level, Achievement, Evolution or
- * Arrancar Rank updates.
+ * Sin Rank updates.
  *
  * @param {Object} options
  * @param {string} options.guildId

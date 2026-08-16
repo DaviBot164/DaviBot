@@ -9,7 +9,7 @@ const {
 } = require('../embeds');
 
 /**
- * Build the main Umbra Event embed.
+ * Build the main Evelynn Event embed.
  *
  * @param {Object} eventData
  * @param {import('discord.js').User} host
@@ -96,7 +96,7 @@ function buildEventEmbed(
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Every battle becomes part of the chronicles of Las Noches.*'
+                '*Every battle becomes part of the chronicles of THE Ⅹ SINS.*'
             ].join('\n'),
 
         thumbnail:

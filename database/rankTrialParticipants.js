@@ -25,7 +25,7 @@ const PARTICIPANT_STATUS = Object.freeze({
 
 /**
  * Convert one PostgreSQL participant row
- * into the clean object format used by Umbra.
+ * into the clean object format used by Evelynn.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -758,7 +758,7 @@ async function getParticipantHistory(
  * the Staff Review flow.
  *
  * This does not directly change the
- * Arrancar Rank. Promotion execution is
+ * Sin Rank. Promotion execution is
  * handled by the Rank Trials 2.0 service.
  *
  * @param {Object} reviewData
@@ -924,7 +924,7 @@ async function rejectParticipant({
  * Mark an approved participant as
  * successfully promoted.
  *
- * Call this only after the Arrancar Rank
+ * Call this only after the Sin Rank
  * System has completed the real rank
  * assignment successfully.
  *

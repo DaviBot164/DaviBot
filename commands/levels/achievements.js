@@ -306,13 +306,13 @@ module.exports = {
                 embeds: [
                     createErrorEmbed(
                         '❌ Unknown Subcommand',
-                        'Umbra could not recognize that Achievement action.'
+                        'Evelynn could not recognize that Achievement action.'
                     )
                 ]
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /achievements command failed:'
+                '❌ Evelynn /achievements command failed:'
             );
 
             console.error(
@@ -322,7 +322,7 @@ module.exports = {
             const embed =
                 createErrorEmbed(
                     '❌ Achievement Command Failed',
-                    'Umbra could not complete that Achievement action.'
+                    'Evelynn could not complete that Achievement action.'
                 );
 
             if (

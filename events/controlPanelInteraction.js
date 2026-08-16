@@ -47,7 +47,7 @@ const SERVICE_DISPLAY_ORDER = [
     'levels',
     'achievements',
     'titles',
-    'arrancar',
+    'sin_ranks',
     'events',
     'giveaways',
     'soul_records'
@@ -66,7 +66,7 @@ const SERVICE_ICONS = {
     levels: '⭐',
     achievements: '🏆',
     titles: '🏷️',
-    arrancar: '👑',
+    sin_ranks: '👑',
     events: '🎉',
     giveaways: '🎁',
     soul_records: '📖'
@@ -625,7 +625,7 @@ function buildTicketsEmbed(interaction) {
     );
 }
 
-function buildArrancarRanksEmbed(interaction) {
+function buildSinRanksEmbed(interaction) {
     return buildStaticModule(
         interaction,
         '👑 TTS Rank Control',
@@ -903,9 +903,9 @@ async function handleModuleSelection(interaction) {
                 );
             break;
 
-        case 'arrancar-ranks':
+        case 'sin-ranks':
             embed =
-                buildArrancarRanksEmbed(
+                buildSinRanksEmbed(
                     interaction
                 );
             break;

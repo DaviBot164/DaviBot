@@ -1,5 +1,5 @@
 /**
- * Umbra Scam Shield
+ * Evelynn Scam Shield
  *
  * Detects common phishing and scam patterns
  * inside Discord messages.

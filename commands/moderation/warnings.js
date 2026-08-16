@@ -258,7 +258,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `🌑 Umbra Warning Records • Requested by ${interaction.user.username}`,
+                    `🌑 Evelynn Warning Records • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
@@ -273,14 +273,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /warnings command error:',
+                '❌ Evelynn /warnings command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Warning Records Unavailable',
-                    'Umbra could not load the warning records. Please check the database connection.'
+                    'Evelynn could not load the warning records. Please check the database connection.'
                 );
 
             if (interaction.deferred) {

@@ -68,8 +68,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -99,7 +99,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of Las Noches.'
+                            'This Soul is not currently a member of THE Ⅹ SINS.'
                         )
                     ],
 
@@ -114,8 +114,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its Las Noches member information.'
+                            '❌ Evelynn Unavailable',
+                            'Evelynn could not access its THE Ⅹ SINS member information.'
                         )
                     ],
 
@@ -216,7 +216,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 Las Noches Status',
+                        '🌙 THE Ⅹ SINS Status',
 
                     value:
                         orderStatus,
@@ -270,7 +270,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
                             orderStatus,
@@ -292,7 +292,7 @@ module.exports = {
                     '❌ Warning Record Failed',
 
                 description:
-                    'Umbra could not save this warning. Please check the database connection and try again.'
+                    'Evelynn could not save this warning. Please check the database connection and try again.'
             });
         }
     }

@@ -465,20 +465,6 @@ const GUIDE_COMMANDS = {
             ACCESS_LEVELS.everyone
     },
 
-    espada: {
-        page:
-            GUIDE_PAGES.ranks,
-
-        syntax:
-            '/espada',
-
-        summary:
-            'View the current THE Ⅹ SINS rank hierarchy.',
-
-        access:
-            ACCESS_LEVELS.everyone
-    },
-
     /*
      * ======================================================
      * Titles

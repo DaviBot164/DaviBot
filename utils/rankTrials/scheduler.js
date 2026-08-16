@@ -32,7 +32,7 @@ const {
  * Active Rank Trials scheduler interval.
  *
  * Only one interval may run inside the
- * current Umbra process.
+ * current Evelynn process.
  *
  * @type {NodeJS.Timeout|null}
  */
@@ -79,7 +79,7 @@ function getConfiguredGuildIds() {
  * Return every monthly schedule that may
  * currently contain a due announcement.
  *
- * Umbra checks both the current and next month.
+ * Evelynn checks both the current and next month.
  *
  * @param {Date} now
  * @returns {Array<
@@ -220,7 +220,7 @@ function getFinalPublication(
  * The Event becomes eligible when Opening
  * Registration begins.
  *
- * Umbra continues synchronizing it until the
+ * Evelynn continues synchronizing it until the
  * final monthly publication has passed.
  *
  * @param {Object} schedule
@@ -1153,7 +1153,7 @@ async function checkRankTrialSchedule(
 }/**
  * Start the Automatic Rank Trials scheduler.
  *
- * Umbra performs one immediate check so
+ * Evelynn performs one immediate check so
  * recently missed announcements, registration
  * closes and Discord Events may be recovered
  * after restart or redeploy.
@@ -1188,7 +1188,7 @@ async function startRankTrialScheduler(
         !client.isReady()
     ) {
         console.warn(
-            '⚠️ Rank Trials scheduler could not start because Umbra is not ready.'
+            '⚠️ Rank Trials scheduler could not start because Evelynn is not ready.'
         );
 
         return false;
@@ -1291,7 +1291,7 @@ function stopRankTrialScheduler() {
 
 /**
  * Return whether the scheduler is active
- * inside the current Umbra process.
+ * inside the current Evelynn process.
  *
  * @returns {boolean}
  */

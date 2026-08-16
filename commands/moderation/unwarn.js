@@ -82,8 +82,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -128,7 +128,7 @@ module.exports = {
                 embeds: [
                     createErrorEmbed(
                         '❌ Unknown Warning Action',
-                        'Umbra could not recognize the selected warning action.'
+                        'Evelynn could not recognize the selected warning action.'
                     )
                 ]
             });
@@ -144,7 +144,7 @@ module.exports = {
                     '❌ Warning Removal Failed',
 
                 description:
-                    'Umbra could not remove the warning record. Please check the database connection.'
+                    'Evelynn could not remove the warning record. Please check the database connection.'
             });
         }
     }
@@ -176,7 +176,7 @@ async function removeSingleWarning(
             embeds: [
                 createErrorEmbed(
                     '❌ Warning Record Not Found',
-                    `No warning with ID **#${warningId}** exists within Las Noches.`
+                    `No warning with ID **#${warningId}** exists within THE Ⅹ SINS.`
                 )
             ]
         });
@@ -195,7 +195,7 @@ async function removeSingleWarning(
             embeds: [
                 createErrorEmbed(
                     '❌ Warning Removal Failed',
-                    'Umbra could not remove the selected warning record.'
+                    'Evelynn could not remove the selected warning record.'
                 )
             ]
         });
@@ -275,7 +275,7 @@ async function removeSingleWarning(
 
     embed.setFooter({
         text:
-            `🌙 Umbra Warning Records • Removed by ${interaction.user.username}`,
+            `🌙 Evelynn Warning Records • Removed by ${interaction.user.username}`,
 
         iconURL:
             interaction.client.user
@@ -381,7 +381,7 @@ async function removeAllWarnings(
             embeds: [
                 createErrorEmbed(
                     '❌ No Warning Records Found',
-                    `${user.tag} has no warnings within Las Noches.`
+                    `${user.tag} has no warnings within THE Ⅹ SINS.`
                 )
             ]
         });
@@ -404,7 +404,7 @@ async function removeAllWarnings(
                 [
                     `All warning records for ${user} were removed successfully.`,
                     '',
-                    '*Umbra has cleared this Soul’s Guardian record within Las Noches.*'
+                    '*Evelynn has cleared this Soul’s Guardian record within THE Ⅹ SINS.*'
                 ].join('\n'),
 
             thumbnail:
@@ -451,7 +451,7 @@ async function removeAllWarnings(
                 },
                 {
                     name:
-                        '🌙 Las Noches Status',
+                        '🌙 THE Ⅹ SINS Status',
 
                     value:
                         '🟢 Warning record cleared',
@@ -464,7 +464,7 @@ async function removeAllWarnings(
 
     embed.setFooter({
         text:
-            `🌙 Umbra Warning Records • Cleared by ${interaction.user.username}`,
+            `🌙 Evelynn Warning Records • Cleared by ${interaction.user.username}`,
 
         iconURL:
             interaction.client.user
@@ -496,7 +496,7 @@ async function removeAllWarnings(
             interaction.user,
 
         reason:
-            'All warning records were cleared by a Las Noches moderator.',
+            'All warning records were cleared by a THE Ⅹ SINS moderator.',
 
         fields: [
             {
@@ -511,7 +511,7 @@ async function removeAllWarnings(
             },
             {
                 name:
-                    '🌙 Las Noches Status',
+                    '🌙 THE Ⅹ SINS Status',
 
                 value:
                     '🟢 Warning record cleared',

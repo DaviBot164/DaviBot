@@ -381,7 +381,7 @@ module.exports = {
 
                 .setAuthor({
                     name:
-                        'Umbra Moderation History',
+                        'Evelynn Moderation History',
 
                     iconURL:
                         interaction.client.user

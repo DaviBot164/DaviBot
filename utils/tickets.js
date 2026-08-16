@@ -17,7 +17,7 @@ const ticketConfig =
  * tickets functional after rebrands.
  */
 const TICKET_OWNER_PATTERN =
-    /(?:Evelynn|Umbra|Seraphiel) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
+    /(?:Evelynn|Evelynn|Seraphiel) Ticket \| Owner: (\d+) \| Status: (open|closed)/;
 
 /**
  * Convert configured permission names

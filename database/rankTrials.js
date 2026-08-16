@@ -4,7 +4,7 @@ const {
 
 /**
  * Convert one Rank Trial publication row
- * into the format used by Umbra.
+ * into the format used by Evelynn.
  *
  * @param {Object} row
  * @returns {Object}
@@ -149,7 +149,7 @@ async function hasPublication(
  * Atomically reserve one Rank Trial
  * publication before sending it to Discord.
  *
- * This protects Umbra from duplicate posts
+ * This protects Evelynn from duplicate posts
  * when multiple checks happen at the same time
  * or after a restart/redeploy.
  *
@@ -253,7 +253,7 @@ async function completePublication(
 /**
  * Remove an unfinished reservation.
  *
- * This allows Umbra to retry later if the
+ * This allows Evelynn to retry later if the
  * Discord message could not be published.
  *
  * Only rows without a published message
@@ -407,7 +407,7 @@ async function getRecentPublications(
 /**
  * Remove abandoned unpublished reservations.
  *
- * This is useful if Umbra stopped after
+ * This is useful if Evelynn stopped after
  * reserving a publication but before sending
  * the Discord message.
  *

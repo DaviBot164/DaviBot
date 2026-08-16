@@ -9,6 +9,9 @@ const {
 const kingdomFeedConfig =
     require('../config/kingdomFeed');
 
+const rankConfig =
+    require('../config/ranks');
+
 const MAX_VISIBLE_TITLES =
     10;
 
@@ -76,9 +79,7 @@ function findKingdomFeedChannel(
             ''
         ).trim();
 
-    if (
-        channelId
-    ) {
+    if (channelId) {
         const channel =
             guild.channels.cache.get(
                 channelId
@@ -98,9 +99,7 @@ function findKingdomFeedChannel(
             ''
         ).trim();
 
-    if (
-        !channelName
-    ) {
+    if (!channelName) {
         return null;
     }
 
@@ -129,9 +128,7 @@ function canSendToKingdomFeed(
     const botMember =
         channel?.guild?.members.me;
 
-    if (
-        !botMember
-    ) {
+    if (!botMember) {
         return false;
     }
 
@@ -159,64 +156,7 @@ function canSendToKingdomFeed(
  * @param {string} options.color
  * @param {import('discord.js').User|null} [options.user]
  * @param {Object[]} [options.fields]
- * @returns {import('discord.js').EmbedBuilder}
- */
-function createKingdomFeedEmbed({
-    guild,
-    title,
-    description,
-    color,
-    user = null,
-    fields = []
-}) {
-    const guildIcon =
-        guild.iconURL({
-            extension:
-                'png',
-
-            size:
-                512,
-
-            forceStatic:
-                false
-        });
-
-    const userAvatar =
-        user?.displayAvatarURL({
-            extension:
-                'png',
-
-            size:
-                512,
-
-            forceStatic:
-                false
-        }) ??
-        null;
-
-    return createEmbed({
-        title,
-        description,
-        color,
-
-        thumbnail:
-            userAvatar ||
-            guildIcon,
-
-        author: {
-            name:
-                'Evelynn • THE Ⅹ SINS',
-
-            iconURL:
-                guildIcon ||
-                userAvatar
-        },
-
-        fields
-    });
-}
-
-/**
+ * @returns {import/**
  * Send an embed to the feed.
  *
  * Feed failures never interrupt
@@ -236,9 +176,7 @@ async function sendKingdomFeedEmbed(
                 guild
             );
 
-        if (
-            !channel
-        ) {
+        if (!channel) {
             console.warn(
                 `⚠️ Progression feed channel not found in ${guild?.name || 'Unknown Server'}.`
             );
@@ -310,9 +248,6 @@ function normalizeAchievement(
 
 /**
  * Normalize a Title.
- *
- * Internal database names may still
- * use legacy terminology.
  *
  * @param {Object|null|undefined} title
  * @returns {Object}
@@ -391,12 +326,10 @@ function formatUnlockedTitles(
     return lines.join(
         '\n'
     );
-}/**
- * Convert legacy internal Rank names
- * into public THE Ⅹ SINS names.
- *
- * Database values remain untouched
- * until the Rank System is migrated.
+}
+
+/**
+ * Format a configured Sin Rank name.
  *
  * @param {string|null|undefined} rank
  * @returns {string}
@@ -404,54 +337,26 @@ function formatUnlockedTitles(
 function formatRankName(
     rank
 ) {
-    const rankNames = {
-        '👑 Espada 0':
-            'Ø・SIN OF DOMINION',
-
-        'Ⅰ Espada':
-            '♛・SIN OF PRIDE',
-
-        'Ⅱ Espada':
-            '🩸・SIN OF WRATH',
-
-        'Ⅲ Espada':
-            '🐍・SIN OF ENVY',
-
-        'Ⅳ Espada':
-            '💰・SIN OF GREED',
-
-        'Ⅴ Espada':
-            '🖤・SIN OF LUST',
-
-        'Ⅵ Espada':
-            '🍷・SIN OF GLUTTONY',
-
-        'Ⅶ Espada':
-            '💤・SIN OF SLOTH',
-
-        'Ⅷ Espada':
-            '☠️・SIN OF RUIN',
-
-        'Ⅸ Espada':
-            '⛧・SIN OF HERESY',
-
-        'Ⅹ Espada':
-            '⚔️・SIN OF VENGEANCE'
-    };
-
-    if (
-        !rank
-    ) {
+    if (!rank) {
         return 'Unranked';
     }
 
-    return (
-        rankNames[rank] ||
-        rank
-    );
-}
+    const configuredRank =
+        Object.values(
+            rankConfig.hierarchy
+        ).find(
+            rankDetails =>
+                rankDetails.name ===
+                rank
+        );
 
-/**
+    return (
+        configuredRank?.name ||
+        String(
+            rank
+        )
+    );
+}/**
  * Send an Achievement notification.
  *
  * @param {Object} options
@@ -651,9 +556,6 @@ async function sendTitleFeed({
  * Determine the type of
  * one Rank change.
  *
- * Legacy internal names remain here
- * until the Rank database is migrated.
- *
  * @param {string|null|undefined} oldRank
  * @param {string|null|undefined} newRank
  * @returns {'promotion'|'demotion'|'assignment'|'change'}
@@ -669,19 +571,21 @@ function classifyRankChange(
         return 'assignment';
     }
 
-    const rankOrder = [
-        '👑 Espada 0',
-        'Ⅰ Espada',
-        'Ⅱ Espada',
-        'Ⅲ Espada',
-        'Ⅳ Espada',
-        'Ⅴ Espada',
-        'Ⅵ Espada',
-        'Ⅶ Espada',
-        'Ⅷ Espada',
-        'Ⅸ Espada',
-        'Ⅹ Espada'
-    ];
+    const rankOrder =
+        Object.values(
+            rankConfig.hierarchy
+        )
+            .map(
+                rankDetails =>
+                    rankDetails.name
+            )
+            .filter(
+                rankName =>
+                    rankName !==
+                    rankConfig.hierarchy
+                        .unranked
+                        .name
+            );
 
     const oldIndex =
         rankOrder.indexOf(
@@ -717,9 +621,7 @@ function classifyRankChange(
     }
 
     return 'change';
-}
-
-/**
+}/**
  * Send a Sin Rank change.
  *
  * @param {Object} options
@@ -853,9 +755,7 @@ async function sendRankFeed({
         }
     ];
 
-    if (
-        historyId
-    ) {
+    if (historyId) {
         fields.push({
             name:
                 '🆔・RECORD',

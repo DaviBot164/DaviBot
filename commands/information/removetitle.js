@@ -21,7 +21,7 @@ const DEFAULT_TITLE_ID =
     'nameless_soul';
 
 /**
- * Las Noches gold color used for
+ * THE Ⅹ SINS gold color used for
  * Chronicle Title actions.
  */
 const TITLE_COLOR =
@@ -152,7 +152,7 @@ function createTitleResetEmbed({
 
     embed.setFooter({
         text:
-            `🌙 Umbra • Guardian of Las Noches • Reset by ${interaction.user.username}`,
+            `🌙 Evelynn • Guardian of THE Ⅹ SINS • Reset by ${interaction.user.username}`,
 
         iconURL:
             interaction.client.user
@@ -200,8 +200,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -225,7 +225,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'Umbra could not access your Las Noches member record.'
+                            'Evelynn could not access your THE Ⅹ SINS member record.'
                         )
                     ]
                 });
@@ -259,7 +259,7 @@ module.exports = {
                             [
                                 'You do not currently have an active Chronicle Title.',
                                 '',
-                                'Umbra will restore the default **🌑 Nameless Soul** designation.'
+                                'Evelynn will restore the default **🌑 Nameless Soul** designation.'
                             ].join('\n')
                         )
                     ]
@@ -306,7 +306,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Title Removal Failed',
-                            'Umbra could not remove your active Chronicle Title.'
+                            'Evelynn could not remove your active Chronicle Title.'
                         )
                     ]
                 });
@@ -341,7 +341,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Default Title Restoration Failed',
                             [
-                                'The previous Title was removed, but Umbra could not restore **🌑 Nameless Soul**.',
+                                'The previous Title was removed, but Evelynn could not restore **🌑 Nameless Soul**.',
                                 '',
                                 'Please inspect the PostgreSQL connection before trying again.'
                             ].join('\n')
@@ -370,7 +370,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /removetitle command error:',
+                '❌ Evelynn /removetitle command error:',
                 error
             );
 
@@ -378,7 +378,7 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Title Removal Unavailable',
                     [
-                        'Umbra could not reset your active Chronicle Title.',
+                        'Evelynn could not reset your active Chronicle Title.',
                         '',
                         'Please inspect the PostgreSQL connection and Northflank logs before trying again.'
                     ].join('\n')

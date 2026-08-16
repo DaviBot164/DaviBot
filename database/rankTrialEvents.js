@@ -4,7 +4,7 @@ const {
 
 /**
  * Convert one Rank Trial Scheduled Event row
- * into the format used by Umbra.
+ * into the format used by Evelynn.
  *
  * @param {Object} row
  * @returns {Object}
@@ -360,7 +360,7 @@ async function updateRankTrialEventStatus(
  * Mark a Rank Trial Event as deleted and
  * remove its Discord Event ID.
  *
- * This allows Umbra to recreate the Event
+ * This allows Evelynn to recreate the Event
  * later if configured to do so.
  *
  * @param {string} guildId
@@ -404,7 +404,7 @@ async function markRankTrialEventDeleted(
 }
 
 /**
- * Restore a deleted Event record so Umbra
+ * Restore a deleted Event record so Evelynn
  * may attach a newly recreated Discord Event.
  *
  * @param {string} guildId

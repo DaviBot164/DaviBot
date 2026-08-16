@@ -4,7 +4,7 @@ const {
 
 /**
  * Convert a database Event row into the shape
- * used by the Umbra Event System.
+ * used by the Evelynn Event System.
  *
  * @param {Object} row
  * @param {string[]} participantIds

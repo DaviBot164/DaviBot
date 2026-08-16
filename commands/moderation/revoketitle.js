@@ -20,13 +20,13 @@ const {
 } = require('../../database');
 
 /**
- * Las Noches High Command roles allowed
+ * THE Ⅹ SINS High Command roles allowed
  * to revoke Manual and Event Titles.
  *
  * Lieutenants are intentionally excluded.
  */
 const TITLE_MANAGER_ROLES = [
-    '👑 Ruler of Las Noches',
+    '👑 Ruler of THE Ⅹ SINS',
     '⚜️ Head Captain',
     '🛡️ Captain'
 ];
@@ -95,7 +95,7 @@ const REVOKABLE_TITLE_CHOICES =
 
 /**
  * Check whether the command executor
- * belongs to the Las Noches High Command.
+ * belongs to the THE Ⅹ SINS High Command.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -151,7 +151,7 @@ function findRevokableTitle(
 
 /**
  * Find the official Title announcement
- * channel inside Las Noches.
+ * channel inside THE Ⅹ SINS.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {import('discord.js').GuildTextBasedChannel|null}
@@ -259,11 +259,11 @@ function createTitleRevocationEmbed({
 
         description:
             [
-                `${member} no longer holds a special Chronicle designation within Las Noches.`,
+                `${member} no longer holds a special Chronicle designation within THE Ⅹ SINS.`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Umbra has permanently preserved this decision within the Soul Archives.*'
+                '*Evelynn has permanently preserved this decision within the Soul Archives.*'
             ].join('\n'),
 
         color:
@@ -371,7 +371,7 @@ function createTitleRevocationEmbed({
 
         footer: {
             text:
-                '🌙 Umbra • Guardian of Las Noches'
+                '🌙 Evelynn • Guardian of THE Ⅹ SINS'
         }
     });
 }
@@ -459,8 +459,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -484,10 +484,10 @@ module.exports = {
                         createErrorEmbed(
                             '❌ High Command Required',
                             [
-                                'Only the Las Noches High Command may revoke special Chronicle Titles.',
+                                'Only the THE Ⅹ SINS High Command may revoke special Chronicle Titles.',
                                 '',
                                 'Required standing:',
-                                '• 👑 Ruler of Las Noches',
+                                '• 👑 Ruler of THE Ⅹ SINS',
                                 '• ⚜️ Head Captain',
                                 '• 🛡️ Captain'
                             ].join('\n')
@@ -523,7 +523,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
+                            'The selected Soul is not currently inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -654,7 +654,7 @@ module.exports = {
                         );
             } catch (databaseError) {
                 console.error(
-                    '❌ Umbra could not revoke the Chronicle Title:',
+                    '❌ Evelynn could not revoke the Chronicle Title:',
                     databaseError
                 );
 
@@ -663,7 +663,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Title Archive Failed',
                             [
-                                'Umbra could not remove this Chronicle Title from PostgreSQL.',
+                                'Evelynn could not remove this Chronicle Title from PostgreSQL.',
                                 '',
                                 'Please inspect the Northflank database logs before trying again.'
                             ].join('\n')
@@ -679,7 +679,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Title Revocation Failed',
-                            'Umbra could not locate or remove the requested Chronicle Title record.'
+                            'Evelynn could not locate or remove the requested Chronicle Title record.'
                         )
                     ]
                 });
@@ -788,14 +788,14 @@ module.exports = {
                     })
                     .catch(error => {
                         console.error(
-                            '⚠️ Umbra could not publish the Title revocation announcement:',
+                            '⚠️ Evelynn could not publish the Title revocation announcement:',
                             error
                         );
                     });
             }
         } catch (error) {
             console.error(
-                '❌ Umbra /revoketitle command error:',
+                '❌ Evelynn /revoketitle command error:',
                 error
             );
 
@@ -803,7 +803,7 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Chronicle Title Revocation Failed',
                     [
-                        'Umbra could not complete this special Title revocation.',
+                        'Evelynn could not complete this special Title revocation.',
                         '',
                         'Please inspect the PostgreSQL connection and Northflank logs before trying again.'
                     ].join('\n')

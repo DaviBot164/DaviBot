@@ -56,8 +56,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -90,7 +90,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ No Warnings Found',
-                            `${user.tag} does not have any warnings within Las Noches.`
+                            `${user.tag} does not have any warnings within THE Ⅹ SINS.`
                         )
                     ]
                 });
@@ -141,7 +141,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 Las Noches Status',
+                        '🌙 THE Ⅹ SINS Status',
 
                     value:
                         '🟢 Warning record cleared',
@@ -195,7 +195,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
                             '🟢 Warning record cleared',

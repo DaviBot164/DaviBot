@@ -14,7 +14,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('ping')
         .setDescription(
-            'Check Umbra’s current latency and status.'
+            'Check Evelynn’s current latency and status.'
         )
         .setDMPermission(false),
 
@@ -61,10 +61,10 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🌙 Umbra Status',
+                        '🌙 Evelynn Status',
 
                     description:
-                        '**Guardian of Las Noches is online.**',
+                        '**Guardian of THE Ⅹ SINS is online.**',
 
                     color:
                         '#6F42C1',
@@ -108,7 +108,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Umbra • Guardian of Las Noches',
+                    'Evelynn • Guardian of THE Ⅹ SINS',
 
                 iconURL:
                     botAvatar
@@ -116,7 +116,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `Las Noches System Check • Requested by ${interaction.user.username}`,
+                    `THE Ⅹ SINS System Check • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar
@@ -129,14 +129,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Umbra /ping:',
+                '❌ Error executing Evelynn /ping:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Umbra Status Unavailable',
-                    'Umbra could not calculate the current latency.'
+                    '❌ Evelynn Status Unavailable',
+                    'Evelynn could not calculate the current latency.'
                 );
 
             if (interaction.deferred) {

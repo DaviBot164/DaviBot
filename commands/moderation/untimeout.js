@@ -65,8 +65,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -96,7 +96,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of Las Noches.'
+                            'This Soul is not currently a member of THE Ⅹ SINS.'
                         )
                     ],
 
@@ -117,8 +117,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Moderate Members** permission to remove a timeout.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Moderate Members** permission to remove a timeout.'
                         )
                     ],
 
@@ -194,10 +194,10 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌙 Las Noches Status',
+                    '🌙 THE Ⅹ SINS Status',
 
                 value:
-                    'This Soul may communicate within Las Noches again.',
+                    'This Soul may communicate within THE Ⅹ SINS again.',
 
                 inline:
                     false
@@ -227,10 +227,10 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
-                            'This Soul may communicate within Las Noches again.',
+                            'This Soul may communicate within THE Ⅹ SINS again.',
 
                         inline:
                             false
@@ -249,7 +249,7 @@ module.exports = {
                     '❌ Timeout Removal Failed',
 
                 description:
-                    'Umbra encountered an unexpected error while trying to remove this timeout.'
+                    'Evelynn encountered an unexpected error while trying to remove this timeout.'
             });
         }
     }

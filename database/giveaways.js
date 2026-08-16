@@ -4,7 +4,7 @@ const {
 
 /**
  * Convert a PostgreSQL Giveaway row
- * into Umbra's Giveaway data shape.
+ * into Evelynn's Giveaway data shape.
  *
  * @param {Object} row
  * @param {string[]} participantIds

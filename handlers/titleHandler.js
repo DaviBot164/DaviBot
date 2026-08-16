@@ -38,7 +38,7 @@ function getMemberRoleNames(
 }
 
 /**
- * Find a manually managed Arrancar Rank
+ * Find a manually managed Sin Rank
  * directly from a member's Discord roles.
  *
  * This acts as a safe fallback whenever
@@ -47,23 +47,23 @@ function getMemberRoleNames(
  * @param {import('discord.js').GuildMember|null} member
  * @returns {string|null}
  */
-function getDiscordArrancarRank(
+function getDiscordSinRank(
     member
 ) {
     if (!member) {
         return null;
     }
 
-    const arrancarRanks =
+    const sinRanks =
         Array.isArray(
-            rankDatabase.ARRANCAR_RANKS
+            rankDatabase.SIN_RANKS
         )
-            ? rankDatabase.ARRANCAR_RANKS
+            ? rankDatabase.SIN_RANKS
             : [];
 
     for (
         const rankName
-        of arrancarRanks
+        of sinRanks
     ) {
         const hasRank =
             member.roles.cache.some(
@@ -159,7 +159,7 @@ async function getSafeAchievementIds(
 
 /**
  * Safely load one Soul's current
- * manually managed Arrancar Rank.
+ * manually managed Sin Rank.
  *
  * Database state is preferred.
  * Discord roles are used as fallback.
@@ -169,7 +169,7 @@ async function getSafeAchievementIds(
  * @param {import('discord.js').GuildMember|null} member
  * @returns {Promise<string|null>}
  */
-async function getSafeArrancarRank(
+async function getSafeSinRank(
     guildId,
     userId,
     member
@@ -196,12 +196,10 @@ async function getSafeArrancarRank(
         );
     }
 
-    return getDiscordArrancarRank(
+    return getDiscordSinRank(
         member
     );
-}
-
-/**
+}/**
  * Build all information required
  * to evaluate Title requirements.
  *
@@ -222,7 +220,7 @@ async function createTitleContext({
     const [
         levelRecord,
         achievementIds,
-        arrancarRank
+        sinRank
     ] =
         await Promise.all([
             getSafeLevelRecord(
@@ -235,7 +233,7 @@ async function createTitleContext({
                 userId
             ),
 
-            getSafeArrancarRank(
+            getSafeSinRank(
                 guildId,
                 userId,
                 member
@@ -273,7 +271,7 @@ async function createTitleContext({
 
         achievementIds,
 
-        arrancarRank,
+        sinRank,
 
         roleNames:
             getMemberRoleNames(
@@ -287,7 +285,9 @@ async function createTitleContext({
                     member.guild.ownerId
             )
     };
-}/**
+}
+
+/**
  * Check whether one Title definition
  * has been earned by a Soul.
  *
@@ -362,7 +362,7 @@ function isTitleEligible(
                     unlock.roleName
                 );
 
-        case TITLE_UNLOCK_TYPES.ARRANCAR_RANK:
+        case TITLE_UNLOCK_TYPES.SIN_RANK:
             if (
                 !unlock.rankName
             ) {
@@ -370,7 +370,7 @@ function isTitleEligible(
             }
 
             return (
-                context.arrancarRank ===
+                context.sinRank ===
                 unlock.rankName
             );
 
@@ -444,9 +444,9 @@ function getUnlockSource(
                 }`
             );
 
-        case TITLE_UNLOCK_TYPES.ARRANCAR_RANK:
+        case TITLE_UNLOCK_TYPES.SIN_RANK:
             return (
-                `ARRANCAR_RANK_${
+                `SIN_RANK_${
                     unlock.rankName ||
                     'UNKNOWN'
                 }`
@@ -463,16 +463,14 @@ function getUnlockSource(
         default:
             return 'AUTOMATIC';
     }
-}
-
-/**
+}/**
  * Check every automatic Title requirement
  * for one Soul and unlock all eligible Titles.
  *
  * Titles are permanent once earned.
  *
  * Losing a Level requirement, Achievement,
- * Evolution role, Staff role or Arrancar Rank
+ * Evolution role, Staff role or Sin Rank
  * does not automatically revoke an unlocked
  * Chronicle Title.
  *
@@ -623,7 +621,7 @@ async function checkSoulTitles({
             }
         } catch (error) {
             console.error(
-                `❌ Umbra could not unlock Title ${title.id} for ${userId}:`
+                `❌ Evelynn could not unlock Title ${title.id} for ${userId}:`
             );
 
             console.error(
@@ -658,6 +656,7 @@ async function checkSoulTitles({
         context,
         newlyUnlocked,
         activeTitle,
+
         unlockedCount:
             Number(
                 unlockedCount
@@ -693,7 +692,7 @@ async function checkMemberTitles(
         });
     } catch (error) {
         console.error(
-            `❌ Umbra Title check failed for ${member.id}:`
+            `❌ Evelynn Title check failed for ${member.id}:`
         );
 
         console.error(
@@ -733,11 +732,11 @@ async function checkMessageTitles(
 
 module.exports = {
     getMemberRoleNames,
-    getDiscordArrancarRank,
+    getDiscordSinRank,
 
     getSafeLevelRecord,
     getSafeAchievementIds,
-    getSafeArrancarRank,
+    getSafeSinRank,
 
     createTitleContext,
     isTitleEligible,

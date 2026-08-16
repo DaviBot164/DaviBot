@@ -397,7 +397,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Umbra /rank command error:'
+                '❌ Evelynn /rank command error:'
             );
 
             console.error(
@@ -408,7 +408,7 @@ module.exports = {
                 createErrorEmbed(
                     '❌ Rank System Failed',
                     [
-                        'Umbra could not retrieve this Soul’s Level record.',
+                        'Evelynn could not retrieve this Soul’s Level record.',
                         '',
                         'Please check the PostgreSQL connection and try again.'
                     ].join('\n')

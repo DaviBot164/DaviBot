@@ -11,7 +11,7 @@ const {
 } = require('../../database');
 
 /**
- * Official Umbra Incident types.
+ * Official Evelynn Incident types.
  */
 const INCIDENT_TYPES = {
     DATABASE_DISCONNECTED: {
@@ -22,7 +22,7 @@ const INCIDENT_TYPES = {
             'PostgreSQL Connection Lost',
 
         message:
-            'Umbra can no longer communicate with the PostgreSQL database.',
+            'Evelynn can no longer communicate with the PostgreSQL database.',
 
         emoji:
             '🗄️'
@@ -50,7 +50,7 @@ const INCIDENT_TYPES = {
             'Discord Gateway Disconnected',
 
         message:
-            'Umbra lost its connection to the Discord Gateway.',
+            'Evelynn lost its connection to the Discord Gateway.',
 
         emoji:
             '📡'
@@ -64,7 +64,7 @@ const INCIDENT_TYPES = {
             'Discord Gateway Restored',
 
         message:
-            'Umbra successfully restored its Discord Gateway connection.',
+            'Evelynn successfully restored its Discord Gateway connection.',
 
         emoji:
             '✅'
@@ -106,7 +106,7 @@ const INCIDENT_TYPES = {
             'High Memory Usage',
 
         message:
-            'Umbra process memory exceeded the configured warning threshold.',
+            'Evelynn process memory exceeded the configured warning threshold.',
 
         emoji:
             '🧠'
@@ -120,7 +120,7 @@ const INCIDENT_TYPES = {
             'Memory Usage Normalized',
 
         message:
-            'Umbra process memory returned to a normal operating range.',
+            'Evelynn process memory returned to a normal operating range.',
 
         emoji:
             '✅'
@@ -134,7 +134,7 @@ const INCIDENT_TYPES = {
             'Slash Command Failure',
 
         message:
-            'Umbra encountered an unexpected error while executing a Slash Command.',
+            'Evelynn encountered an unexpected error while executing a Slash Command.',
 
         emoji:
             '⚙️'
@@ -148,7 +148,7 @@ const INCIDENT_TYPES = {
             'Guardian System Failure',
 
         message:
-            'Umbra Guardian encountered a critical protection error.',
+            'Evelynn Guardian encountered a critical protection error.',
 
         emoji:
             '🛡️'
@@ -162,7 +162,7 @@ const INCIDENT_TYPES = {
             'Guardian System Restored',
 
         message:
-            'Umbra Guardian protection systems are operational again.',
+            'Evelynn Guardian protection systems are operational again.',
 
         emoji:
             '✅'
@@ -176,7 +176,7 @@ const INCIDENT_TYPES = {
             'Ticket System Failure',
 
         message:
-            'Umbra encountered a critical error inside the Ticket System.',
+            'Evelynn encountered a critical error inside the Ticket System.',
 
         emoji:
             '🎫'
@@ -187,10 +187,10 @@ const INCIDENT_TYPES = {
             'warning',
 
         title:
-            'Umbra System Warning',
+            'Evelynn System Warning',
 
         message:
-            'Umbra detected a degraded system condition that requires investigation.',
+            'Evelynn detected a degraded system condition that requires investigation.',
 
         emoji:
             '⚠️'
@@ -201,10 +201,10 @@ const INCIDENT_TYPES = {
             'critical',
 
         title:
-            'Umbra Critical System Failure',
+            'Evelynn Critical System Failure',
 
         message:
-            'Umbra detected a critical system condition requiring immediate investigation.',
+            'Evelynn detected a critical system condition requiring immediate investigation.',
 
         emoji:
             '🚨'
@@ -215,10 +215,10 @@ const INCIDENT_TYPES = {
             'success',
 
         title:
-            'Umbra System Recovered',
+            'Evelynn System Recovered',
 
         message:
-            'Umbra successfully recovered from the recorded incident.',
+            'Evelynn successfully recovered from the recorded incident.',
 
         emoji:
             '✅'
@@ -229,10 +229,10 @@ const INCIDENT_TYPES = {
             'info',
 
         title:
-            'Umbra Deployment Detected',
+            'Evelynn Deployment Detected',
 
         message:
-            'A new Umbra deployment or container restart was detected.',
+            'A new Evelynn deployment or container restart was detected.',
 
         emoji:
             '📦'
@@ -243,10 +243,10 @@ const INCIDENT_TYPES = {
             'success',
 
         title:
-            'Umbra Deployment Completed',
+            'Evelynn Deployment Completed',
 
         message:
-            'The latest Umbra deployment completed successfully.',
+            'The latest Evelynn deployment completed successfully.',
 
         emoji:
             '✅'
@@ -472,7 +472,7 @@ function resolveIncidentGuildId(
  *
  * A database failure must never prevent
  * the Incident from being published in
- * the Umbra Terminal channel.
+ * the Evelynn Terminal channel.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} options
@@ -503,7 +503,7 @@ async function storeIncident(
                 'function'
         ) {
             console.warn(
-                '⚠️ Umbra Incident Archive is unavailable.'
+                '⚠️ Evelynn Incident Archive is unavailable.'
             );
 
             return false;
@@ -541,7 +541,7 @@ async function storeIncident(
         return true;
     } catch (databaseError) {
         console.error(
-            `⚠️ Failed to archive Umbra Incident "${type}" in PostgreSQL:`
+            `⚠️ Failed to archive Evelynn Incident "${type}" in PostgreSQL:`
         );
 
         console.error(
@@ -553,12 +553,12 @@ async function storeIncident(
 }
 
 /**
- * Publish one standardized Umbra
+ * Publish one standardized Evelynn
  * system Incident.
  *
  * Every Incident is first archived in
  * PostgreSQL and then published inside
- * the Umbra Terminal channel.
+ * the Evelynn Terminal channel.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} options
@@ -591,7 +591,7 @@ async function logIncident(
 
     if (!incident) {
         console.warn(
-            `⚠️ Unknown Umbra Incident type: ${type}`
+            `⚠️ Unknown Evelynn Incident type: ${type}`
         );
 
         return false;

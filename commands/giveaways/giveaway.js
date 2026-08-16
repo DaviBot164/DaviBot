@@ -13,7 +13,7 @@ const {
 } = require('../../utils/embeds');
 
 /**
- * Official Las Noches Community Events channel.
+ * Official THE Ⅹ SINS Community Events channel.
  *
  * Events and Giveaways are published
  * inside the same shared activity channel.
@@ -167,7 +167,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('giveaway')
             .setDescription(
-                'Create and manage Las Noches giveaways.'
+                'Create and manage THE Ⅹ SINS giveaways.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -178,7 +178,7 @@ module.exports = {
                 subcommand
                     .setName('create')
                     .setDescription(
-                        'Open the Las Noches Giveaway creation form.'
+                        'Open the THE Ⅹ SINS Giveaway creation form.'
                     )
             ),
 
@@ -215,7 +215,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Unknown Giveaway Action',
-                            'Umbra does not recognize this Giveaway action.'
+                            'Evelynn does not recognize this Giveaway action.'
                         )
                     ],
 
@@ -244,7 +244,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Giveaway Channel Not Found',
                             [
-                                'Umbra could not find the official Community Events channel.',
+                                'Evelynn could not find the official Community Events channel.',
                                 '',
                                 `Configured Channel ID: \`${GIVEAWAY_CHANNEL_ID}\``
                             ].join('\n')
@@ -281,7 +281,7 @@ module.exports = {
                         createErrorEmbed(
                             '❌ Missing Giveaway Permissions',
                             [
-                                `Umbra cannot publish Giveaways in ${giveawayChannel}.`,
+                                `Evelynn cannot publish Giveaways in ${giveawayChannel}.`,
                                 '',
                                 'Required permissions:',
                                 '• View Channel',
@@ -324,7 +324,7 @@ module.exports = {
             }
 
             console.error(
-                '❌ Umbra Giveaway command error:'
+                '❌ Evelynn Giveaway command error:'
             );
 
             console.error(
@@ -343,7 +343,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Giveaway System Failed',
-                            'Umbra could not open the Giveaway creation form.'
+                            'Evelynn could not open the Giveaway creation form.'
                         )
                     ],
 

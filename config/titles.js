@@ -1,20 +1,20 @@
 /**
- * Umbra Title System configuration.
+ * THE Ⅹ SINS Title System.
  *
  * Titles are internal Soul Record rewards.
  * They are not Discord roles.
  *
  * Unlock types:
- *
- * DEFAULT
- * LEVEL
- * ACHIEVEMENT
- * EVOLUTION
- * ARRANCAR_RANK
- * STAFF_ROLE
- * MANUAL
- * EVENT
+ * - DEFAULT
+ * - LEVEL
+ * - ACHIEVEMENT
+ * - EVOLUTION
+ * - SIN_RANK
+ * - STAFF_ROLE
+ * - MANUAL
+ * - EVENT
  */
+
 const TITLE_CATEGORIES = {
     GENERAL:
         'General',
@@ -28,11 +28,8 @@ const TITLE_CATEGORIES = {
     EVOLUTION:
         'Hollow Evolution',
 
-    ARRANCAR:
-        'Arrancar Hierarchy',
-
-    ESPADA:
-        'Espada',
+    SIN_RANK:
+        'Sin Rank',
 
     STAFF:
         'High Command',
@@ -44,9 +41,6 @@ const TITLE_CATEGORIES = {
         'Legendary'
 };
 
-/**
- * Title rarity levels.
- */
 const TITLE_RARITIES = {
     COMMON:
         'Common',
@@ -67,9 +61,6 @@ const TITLE_RARITIES = {
         'Mythic'
 };
 
-/**
- * Title unlock requirement types.
- */
 const TITLE_UNLOCK_TYPES = {
     DEFAULT:
         'DEFAULT',
@@ -83,8 +74,8 @@ const TITLE_UNLOCK_TYPES = {
     EVOLUTION:
         'EVOLUTION',
 
-    ARRANCAR_RANK:
-        'ARRANCAR_RANK',
+    SIN_RANK:
+        'SIN_RANK',
 
     STAFF_ROLE:
         'STAFF_ROLE',
@@ -97,30 +88,8 @@ const TITLE_UNLOCK_TYPES = {
 };
 
 /**
- * Every Title available inside Umbra.
- *
- * Each Title contains:
- *
- * id:
- * Unique internal identifier.
- *
- * name:
- * Plain Title name.
- *
- * displayName:
- * Title displayed inside /soul.
- *
- * description:
- * Explanation shown inside /titles.
- *
- * category:
- * Title category.
- *
- * rarity:
- * Cosmetic rarity.
- *
- * unlock:
- * Requirement used by the Title Handler.
+ * Every Title available inside
+ * THE Ⅹ SINS.
  */
 const TITLE_DEFINITIONS = [
     /*
@@ -152,18 +121,19 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.DEFAULT
         }
     },
+
     {
         id:
             'resident_of_las_noches',
 
         name:
-            'Resident of Las Noches',
+            'Resident of THE Ⅹ SINS',
 
         displayName:
-            '🌙 Resident of Las Noches',
+            '✦ Resident of THE Ⅹ SINS',
 
         description:
-            'A recognized Soul living beneath the eternal moon.',
+            'A recognized Soul who has begun their journey within THE Ⅹ SINS.',
 
         category:
             TITLE_CATEGORIES.GENERAL,
@@ -179,6 +149,7 @@ const TITLE_DEFINITIONS = [
                 1
         }
     },
+
     {
         id:
             'soul_of_the_white_sands',
@@ -206,6 +177,7 @@ const TITLE_DEFINITIONS = [
                 3
         }
     },
+
     {
         id:
             'moonlit_wanderer',
@@ -217,7 +189,7 @@ const TITLE_DEFINITIONS = [
             '🌘 Moonlit Wanderer',
 
         description:
-            'A wandering Soul guided by the pale moon of Las Noches.',
+            'A wandering Soul guided by the quiet light of the night.',
 
         category:
             TITLE_CATEGORIES.GENERAL,
@@ -266,6 +238,7 @@ const TITLE_DEFINITIONS = [
                 5
         }
     },
+
     {
         id:
             'rising_soul',
@@ -293,6 +266,7 @@ const TITLE_DEFINITIONS = [
                 10
         }
     },
+
     {
         id:
             'spiritual_ascendant',
@@ -320,6 +294,7 @@ const TITLE_DEFINITIONS = [
                 15
         }
     },
+
     {
         id:
             'crimson_soul',
@@ -347,6 +322,7 @@ const TITLE_DEFINITIONS = [
                 25
         }
     },
+
     {
         id:
             'moon_forged',
@@ -374,6 +350,7 @@ const TITLE_DEFINITIONS = [
                 35
         }
     },
+
     {
         id:
             'eternal_soul',
@@ -401,6 +378,7 @@ const TITLE_DEFINITIONS = [
                 50
         }
     },
+
     {
         id:
             'transcendent_soul',
@@ -428,6 +406,7 @@ const TITLE_DEFINITIONS = [
                 75
         }
     },
+
     {
         id:
             'limitless_reiatsu',
@@ -460,8 +439,7 @@ const TITLE_DEFINITIONS = [
      * ======================================================
      * Achievement Titles
      * ======================================================
-     */
-    {
+     */    {
         id:
             'first_voice',
 
@@ -488,6 +466,7 @@ const TITLE_DEFINITIONS = [
                 'first_words'
         }
     },
+
     {
         id:
             'chronicle_awakened',
@@ -515,6 +494,7 @@ const TITLE_DEFINITIONS = [
                 'awakened_soul'
         }
     },
+
     {
         id:
             'chronicle_riser',
@@ -542,6 +522,7 @@ const TITLE_DEFINITIONS = [
                 'rising_soul'
         }
     },
+
     {
         id:
             'keeper_of_crimson_chronicles',
@@ -569,6 +550,7 @@ const TITLE_DEFINITIONS = [
                 'crimson_soul'
         }
     },
+
     {
         id:
             'eternal_chronicle_keeper',
@@ -629,6 +611,7 @@ const TITLE_DEFINITIONS = [
                 '👁️ Hollow'
         }
     },
+
     {
         id:
             'menos_colossus',
@@ -656,6 +639,7 @@ const TITLE_DEFINITIONS = [
                 '🦴 Menos Grande'
         }
     },
+
     {
         id:
             'gillian_of_the_void',
@@ -683,6 +667,7 @@ const TITLE_DEFINITIONS = [
                 '⚪ Gillian'
         }
     },
+
     {
         id:
             'adjuchas_predator',
@@ -710,18 +695,19 @@ const TITLE_DEFINITIONS = [
                 '🐺 Adjuchas'
         }
     },
+
     {
         id:
-            'lord_of_hollows',
+            'vasto_lorde',
 
         name:
-            'Lord of Hollows',
+            'Vasto Lorde',
 
         displayName:
-            '👑 Lord of Hollows',
+            '👑 Vasto Lorde',
 
         description:
-            'Unlocked by evolving into a Vasto Lorde.',
+            'Unlocked by reaching the Vasto Lorde evolution stage.',
 
         category:
             TITLE_CATEGORIES.EVOLUTION,
@@ -737,18 +723,19 @@ const TITLE_DEFINITIONS = [
                 '👑 Vasto Lorde'
         }
     },
+
     {
         id:
-            'perfect_arrancar',
+            'evolution_apex',
 
         name:
-            'The Perfect Arrancar',
+            'Apex of Evolution',
 
         displayName:
-            '⚔️ The Perfect Arrancar',
+            '🌑 Apex of Evolution',
 
         description:
-            'Unlocked after reaching the final Hollow Evolution stage.',
+            'A Soul who has reached the highest known Hollow Evolution stage.',
 
         category:
             TITLE_CATEGORIES.EVOLUTION,
@@ -761,424 +748,291 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.EVOLUTION,
 
             roleName:
-                '⚔️ Arrancar'
+                '👑 Vasto Lorde'
         }
     },
 
     /*
      * ======================================================
-     * Arrancar Hierarchy Titles
+     * Sin Rank Titles
      * ======================================================
-     */
-    {
+     */    {
         id:
-            'unranked_arrancar',
+            'sin_of_pride',
 
         name:
-            'Unranked Arrancar',
+            'Sin of Pride',
 
         displayName:
-            '⚪ Unranked Arrancar',
+            '👑 Sin of Pride',
 
         description:
-            'Unlocked after receiving the first official Arrancar classification.',
+            'The throne of Pride. A rank reserved for the Soul who stands above the others.',
 
         category:
-            TITLE_CATEGORIES.ARRANCAR,
-
-        rarity:
-            TITLE_RARITIES.COMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                '⚪ Unranked Arrancar'
-        }
-    },
-    {
-        id:
-            'numbered_soul',
-
-        name:
-            'Numbered Soul',
-
-        displayName:
-            '🦴 Numbered Soul',
-
-        description:
-            'Unlocked after receiving the Numeros Rank.',
-
-        category:
-            TITLE_CATEGORIES.ARRANCAR,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                '🦴 Numeros'
-        }
-    },
-    {
-        id:
-            'blade_of_the_espada',
-
-        name:
-            'Blade of the Espada',
-
-        displayName:
-            '⚔️ Blade of the Espada',
-
-        description:
-            'Unlocked after joining an Espada’s Fracción.',
-
-        category:
-            TITLE_CATEGORIES.ARRANCAR,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                '⚔️ Fracción'
-        }
-    },
-    {
-        id:
-            'fallen_espada',
-
-        name:
-            'The Fallen Espada',
-
-        displayName:
-            '🌘 The Fallen Espada',
-
-        description:
-            'Unlocked after receiving the Privaron Espada Rank.',
-
-        category:
-            TITLE_CATEGORIES.ARRANCAR,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                '🌘 Privaron Espada'
-        }
-    },
-
-    /*
-     * ======================================================
-     * Espada Titles
-     * ======================================================
-     */
-    {
-        id:
-            'tenth_throne',
-
-        name:
-            'Bearer of the Tenth Throne',
-
-        displayName:
-            'Ⅹ Bearer of the Tenth Throne',
-
-        description:
-            'Unlocked after becoming the Tenth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅹ Espada'
-        }
-    },
-    {
-        id:
-            'ninth_throne',
-
-        name:
-            'Bearer of the Ninth Throne',
-
-        displayName:
-            'Ⅸ Bearer of the Ninth Throne',
-
-        description:
-            'Unlocked after becoming the Ninth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅸ Espada'
-        }
-    },
-    {
-        id:
-            'eighth_throne',
-
-        name:
-            'Bearer of the Eighth Throne',
-
-        displayName:
-            'Ⅷ Bearer of the Eighth Throne',
-
-        description:
-            'Unlocked after becoming the Eighth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅷ Espada'
-        }
-    },
-    {
-        id:
-            'seventh_throne',
-
-        name:
-            'Bearer of the Seventh Throne',
-
-        displayName:
-            'Ⅶ Bearer of the Seventh Throne',
-
-        description:
-            'Unlocked after becoming the Seventh Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅶ Espada'
-        }
-    },
-    {
-        id:
-            'sixth_throne',
-
-        name:
-            'Bearer of the Sixth Throne',
-
-        displayName:
-            'Ⅵ Bearer of the Sixth Throne',
-
-        description:
-            'Unlocked after becoming the Sixth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅵ Espada'
-        }
-    },
-    {
-        id:
-            'fifth_throne',
-
-        name:
-            'Bearer of the Fifth Throne',
-
-        displayName:
-            'Ⅴ Bearer of the Fifth Throne',
-
-        description:
-            'Unlocked after becoming the Fifth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅴ Espada'
-        }
-    },
-    {
-        id:
-            'fourth_throne',
-
-        name:
-            'Bearer of the Fourth Throne',
-
-        displayName:
-            'Ⅳ Bearer of the Fourth Throne',
-
-        description:
-            'Unlocked after becoming the Fourth Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅳ Espada'
-        }
-    },
-    {
-        id:
-            'third_throne',
-
-        name:
-            'Bearer of the Third Throne',
-
-        displayName:
-            'Ⅲ Bearer of the Third Throne',
-
-        description:
-            'Unlocked after becoming the Third Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅲ Espada'
-        }
-    },
-    {
-        id:
-            'second_throne',
-
-        name:
-            'Bearer of the Second Throne',
-
-        displayName:
-            'Ⅱ Bearer of the Second Throne',
-
-        description:
-            'Unlocked after becoming the Second Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
-
-            rankName:
-                'Ⅱ Espada'
-        }
-    },
-    {
-        id:
-            'first_throne',
-
-        name:
-            'Bearer of the First Throne',
-
-        displayName:
-            'Ⅰ Bearer of the First Throne',
-
-        description:
-            'Unlocked after becoming the First Espada.',
-
-        category:
-            TITLE_CATEGORIES.ESPADA,
+            TITLE_CATEGORIES.SIN_RANK,
 
         rarity:
             TITLE_RARITIES.MYTHIC,
 
         unlock: {
             type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
+                TITLE_UNLOCK_TYPES.SIN_RANK,
 
             rankName:
-                'Ⅰ Espada'
+                '👑 Sin of Pride'
         }
     },
+
     {
         id:
-            'cero_espada',
+            'sin_of_wrath',
 
         name:
-            'The Cero Espada',
+            'Sin of Wrath',
 
         displayName:
-            '👑 The Cero Espada',
+            '💧 Sin of Wrath',
 
         description:
-            'Unlocked after claiming the hidden throne of Espada 0.',
+            'The throne of Wrath. Power forged through relentless fury.',
 
         category:
-            TITLE_CATEGORIES.ESPADA,
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '💧 Sin of Wrath'
+        }
+    },
+
+    {
+        id:
+            'sin_of_envy',
+
+        name:
+            'Sin of Envy',
+
+        displayName:
+            '🐍 Sin of Envy',
+
+        description:
+            'The throne of Envy. Always watching, always wanting more.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '🐍 Sin of Envy'
+        }
+    },
+
+    {
+        id:
+            'sin_of_greed',
+
+        name:
+            'Sin of Greed',
+
+        displayName:
+            '💰 Sin of Greed',
+
+        description:
+            'The throne of Greed. Nothing is ever enough.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '💰 Sin of Greed'
+        }
+    },
+
+    {
+        id:
+            'sin_of_lust',
+
+        name:
+            'Sin of Lust',
+
+        displayName:
+            '🖤 Sin of Lust',
+
+        description:
+            'The throne of Lust. Desire turned into power.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '🖤 Sin of Lust'
+        }
+    },
+
+    {
+        id:
+            'sin_of_gluttony',
+
+        name:
+            'Sin of Gluttony',
+
+        displayName:
+            '🍷 Sin of Gluttony',
+
+        description:
+            'The throne of Gluttony. An endless hunger that refuses to fade.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '🍷 Sin of Gluttony'
+        }
+    },
+
+    {
+        id:
+            'sin_of_sloth',
+
+        name:
+            'Sin of Sloth',
+
+        displayName:
+            '💤 Sin of Sloth',
+
+        description:
+            'The throne of Sloth. Quiet power that never needs to prove itself.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '💤 Sin of Sloth'
+        }
+    },
+
+    {
+        id:
+            'sin_of_ruin',
+
+        name:
+            'Sin of Ruin',
+
+        displayName:
+            '☠️ Sin of Ruin',
+
+        description:
+            'The throne of Ruin. What stands today may not stand tomorrow.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '☠️ Sin of Ruin'
+        }
+    },
+
+    {
+        id:
+            'sin_of_heresy',
+
+        name:
+            'Sin of Heresy',
+
+        displayName:
+            '⚜️ Sin of Heresy',
+
+        description:
+            'The throne of Heresy. A Soul who refuses to bow to convention.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.SIN_RANK,
+
+            rankName:
+                '⚜️ Sin of Heresy'
+        }
+    },
+
+    {
+        id:
+            'sin_of_vengeance',
+
+        name:
+            'Sin of Vengeance',
+
+        displayName:
+            '⚔️ Sin of Vengeance',
+
+        description:
+            'The throne of Vengeance. Every debt eventually comes due.',
+
+        category:
+            TITLE_CATEGORIES.SIN_RANK,
 
         rarity:
             TITLE_RARITIES.MYTHIC,
 
         unlock: {
             type:
-                TITLE_UNLOCK_TYPES.ARRANCAR_RANK,
+                TITLE_UNLOCK_TYPES.SIN_RANK,
 
             rankName:
-                '👑 Espada 0'
+                '⚔️ Sin of Vengeance'
         }
     },
 
@@ -1186,73 +1040,46 @@ const TITLE_DEFINITIONS = [
      * ======================================================
      * High Command Titles
      * ======================================================
-     */
-    {
+     */    {
         id:
-            'lieutenant_of_las_noches',
+            'sin_heir',
 
         name:
-            'Lieutenant of Las Noches',
+            'Sin Heir',
 
         displayName:
-            '⚔️ Lieutenant of Las Noches',
+            '👑 Sin Heir',
 
         description:
-            'Reserved for recognized Lieutenants of the kingdom.',
+            'A chosen heir entrusted with authority within THE Ⅹ SINS.',
 
         category:
             TITLE_CATEGORIES.STAFF,
 
         rarity:
-            TITLE_RARITIES.RARE,
+            TITLE_RARITIES.MYTHIC,
 
         unlock: {
             type:
                 TITLE_UNLOCK_TYPES.STAFF_ROLE,
 
             roleName:
-                '⚔️ Lieutenant'
+                '👑 Ruler of THE Ⅹ SINS'
         }
     },
+
     {
         id:
-            'captain_of_las_noches',
+            'head_of_sins',
 
         name:
-            'Captain of Las Noches',
+            'Head of Sins',
 
         displayName:
-            '🛡️ Captain of Las Noches',
+            '⚜️ Head of Sins',
 
         description:
-            'Reserved for recognized Captains of the kingdom.',
-
-        category:
-            TITLE_CATEGORIES.STAFF,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.STAFF_ROLE,
-
-            roleName:
-                '🛡️ Captain'
-        }
-    },
-    {
-        id:
-            'head_captain',
-
-        name:
-            'The Head Captain',
-
-        displayName:
-            '⚜️ The Head Captain',
-
-        description:
-            'Reserved for the Head Captain of Las Noches.',
+            'A high-ranking authority trusted to assist in governing THE Ⅹ SINS.',
 
         category:
             TITLE_CATEGORIES.STAFF,
@@ -1268,34 +1095,60 @@ const TITLE_DEFINITIONS = [
                 '⚜️ Head Captain'
         }
     },
+
     {
         id:
-            'ruler_of_las_noches',
+            'captain_of_sins',
 
         name:
-            'Ruler of Las Noches',
+            'Captain of Sins',
 
         displayName:
-            '👑 Ruler of Las Noches',
+            '🛡️ Captain of Sins',
 
         description:
-            'The sovereign Title of the kingdom’s ruler.',
+            'A captain entrusted with maintaining order and protecting the Sins.',
 
         category:
             TITLE_CATEGORIES.STAFF,
 
         rarity:
-            TITLE_RARITIES.MYTHIC,
+            TITLE_RARITIES.EPIC,
 
         unlock: {
             type:
                 TITLE_UNLOCK_TYPES.STAFF_ROLE,
 
             roleName:
-                '👑 Ruler of Las Noches',
+                '🛡️ Captain'
+        }
+    },
 
-            ownerFallback:
-                true
+    {
+        id:
+            'sin_lieutenant',
+
+        name:
+            'Sin Lieutenant',
+
+        displayName:
+            '⚔️ Sin Lieutenant',
+
+        description:
+            'A trusted officer responsible for assisting the High Command.',
+
+        category:
+            TITLE_CATEGORIES.STAFF,
+
+        rarity:
+            TITLE_RARITIES.RARE,
+
+        unlock: {
+            type:
+                TITLE_UNLOCK_TYPES.STAFF_ROLE,
+
+            roleName:
+                '⚔️ Lieutenant'
         }
     },
 
@@ -1303,8 +1156,7 @@ const TITLE_DEFINITIONS = [
      * ======================================================
      * Event Titles
      * ======================================================
-     */
-    {
+     */    {
         id:
             'event_participant',
 
@@ -1315,7 +1167,7 @@ const TITLE_DEFINITIONS = [
             '🎮 Realm Challenger',
 
         description:
-            'Awarded for participation in an official Las Noches event.',
+            'Awarded for participation in an official THE Ⅹ SINS event.',
 
         category:
             TITLE_CATEGORIES.EVENT,
@@ -1331,18 +1183,19 @@ const TITLE_DEFINITIONS = [
                 'PARTICIPATION'
         }
     },
+
     {
         id:
             'event_champion',
 
         name:
-            'Champion of the Realms',
+            'Champion of the Sins',
 
         displayName:
-            '🏆 Champion of the Realms',
+            '🏆 Champion of the Sins',
 
         description:
-            'Awarded to the winner of an official Las Noches event.',
+            'Awarded to the winner of an official THE Ⅹ SINS event.',
 
         category:
             TITLE_CATEGORIES.EVENT,
@@ -1369,10 +1222,10 @@ const TITLE_DEFINITIONS = [
             'moon_chosen',
 
         name:
-            'The Moon’s Chosen',
+            'The Chosen',
 
         displayName:
-            '🌙 The Moon’s Chosen',
+            '✦ The Chosen',
 
         description:
             'A rare Title personally granted by the High Command.',
@@ -1388,6 +1241,7 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.MANUAL
         }
     },
+
     {
         id:
             'silent_blade',
@@ -1412,6 +1266,7 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.MANUAL
         }
     },
+
     {
         id:
             'unbroken_soul',
@@ -1436,6 +1291,7 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.MANUAL
         }
     },
+
     {
         id:
             'witness_of_evolution',
@@ -1447,7 +1303,7 @@ const TITLE_DEFINITIONS = [
             '👁️ Witness of Evolution',
 
         description:
-            'A special Title for those who have witnessed extraordinary spiritual growth.',
+            'A special Title for a Soul who has witnessed extraordinary spiritual growth.',
 
         category:
             TITLE_CATEGORIES.LEGENDARY,
@@ -1460,18 +1316,19 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.MANUAL
         }
     },
+
     {
         id:
-            'guardian_of_las_noches',
+            'guardian_of_the_sins',
 
         name:
-            'Guardian of Las Noches',
+            'Guardian of the Sins',
 
         displayName:
-            '🌙 Guardian of Las Noches',
+            '🛡️ Guardian of the Sins',
 
         description:
-            'A unique designation reserved for the eternal guardian of the kingdom.',
+            'A unique designation reserved for the guardian of THE Ⅹ SINS.',
 
         category:
             TITLE_CATEGORIES.LEGENDARY,
@@ -1484,9 +1341,7 @@ const TITLE_DEFINITIONS = [
                 TITLE_UNLOCK_TYPES.MANUAL
         }
     }
-];
-
-/**
+];/**
  * Get one Title definition by ID.
  *
  * @param {string} titleId
@@ -1519,10 +1374,35 @@ function getTitleDefinition(
 function getTitlesByCategory(
     category
 ) {
+    if (!category) {
+        return [];
+    }
+
     return TITLE_DEFINITIONS.filter(
         title =>
             title.category ===
             category
+    );
+}
+
+/**
+ * Get every Title that can be
+ * unlocked through one unlock type.
+ *
+ * @param {string} unlockType
+ * @returns {Object[]}
+ */
+function getTitlesByUnlockType(
+    unlockType
+) {
+    if (!unlockType) {
+        return [];
+    }
+
+    return TITLE_DEFINITIONS.filter(
+        title =>
+            title.unlock?.type ===
+            unlockType
     );
 }
 
@@ -1568,6 +1448,7 @@ module.exports = {
 
     getTitleDefinition,
     getTitlesByCategory,
+    getTitlesByUnlockType,
     getAllTitleDefinitions,
     isValidTitleId
 };

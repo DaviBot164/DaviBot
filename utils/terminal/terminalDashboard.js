@@ -93,7 +93,7 @@ const SERVICE_DISPLAY_ORDER = [
     'levels',
     'achievements',
     'titles',
-    'arrancar',
+    'sin_ranks',
     'events',
     'giveaways',
     'soul_records'
@@ -256,7 +256,7 @@ function normalizeDashboardService(
 }
 
 /**
- * Sort services by the official Umbra
+ * Sort services by the official Evelynn
  * Dashboard display order.
  *
  * Unknown future services are displayed
@@ -356,7 +356,7 @@ async function getDashboardServices(
         );
     } catch (error) {
         console.error(
-            '⚠️ Umbra Dashboard could not load Black Box services:'
+            '⚠️ Evelynn Dashboard could not load Black Box services:'
         );
 
         console.error(
@@ -491,7 +491,7 @@ async function getDatabaseHealth() {
         };
     } catch (error) {
         console.error(
-            '⚠️ Umbra Dashboard database health check failed:'
+            '⚠️ Evelynn Dashboard database health check failed:'
         );
 
         console.error(
@@ -509,7 +509,7 @@ async function getDatabaseHealth() {
 }
 
 /**
- * Safely collect Umbra Core Statistics.
+ * Safely collect Evelynn Core Statistics.
  *
  * A Statistics failure must not prevent
  * the Health Dashboard from updating.
@@ -526,7 +526,7 @@ async function getTerminalStatistics(
         );
     } catch (error) {
         console.error(
-            '⚠️ Umbra Terminal statistics collection failed:'
+            '⚠️ Evelynn Terminal statistics collection failed:'
         );
 
         console.error(
@@ -568,7 +568,7 @@ async function getDashboardChannel(
         channel.isThread()
     ) {
         console.warn(
-            '⚠️ Umbra Dashboard channel was not found.'
+            '⚠️ Evelynn Dashboard channel was not found.'
         );
 
         return null;
@@ -579,7 +579,7 @@ async function getDashboardChannel(
 
     if (!botMember) {
         console.warn(
-            '⚠️ Umbra could not access its GuildMember record for the Dashboard channel.'
+            '⚠️ Evelynn could not access its GuildMember record for the Dashboard channel.'
         );
 
         return null;
@@ -599,7 +599,7 @@ async function getDashboardChannel(
         ])
     ) {
         console.warn(
-            '⚠️ Umbra is missing Dashboard channel permissions.'
+            '⚠️ Evelynn is missing Dashboard channel permissions.'
         );
 
         return null;
@@ -744,7 +744,7 @@ function getServicesHealthState(
 }
 
 /**
- * Determine overall Umbra system health.
+ * Determine overall Evelynn system health.
  *
  * @param {Object} health
  * @param {boolean} health.gatewayConnected
@@ -811,7 +811,7 @@ function getOverallHealth({
                 '#FEE75C',
 
             message:
-                'Umbra remains operational, but performance degradation was detected.'
+                'Evelynn remains operational, but performance degradation was detected.'
         };
     }
 
@@ -829,7 +829,7 @@ function getOverallHealth({
             'All monitored systems are operating normally.'
     };
 }/**
- * Collect one complete Umbra
+ * Collect one complete Evelynn
  * system-health snapshot.
  *
  * @param {import('discord.js').Client<true>} client
@@ -982,7 +982,7 @@ async function collectHealthSnapshot(
 }
 
 /**
- * Build the live Umbra Health Dashboard.
+ * Build the live Evelynn Health Dashboard.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Awaited<ReturnType<typeof collectHealthSnapshot>>} snapshot
@@ -1152,7 +1152,7 @@ function buildDashboardEmbed(
             value:
                 [
                     'Current operational state of every',
-                    'service registered inside Umbra Black Box.'
+                    'service registered inside Evelynn Black Box.'
                 ].join('\n'),
 
             inline:
@@ -1183,7 +1183,7 @@ function buildDashboardEmbed(
     } else {
         dashboardFields.push({
             name:
-                '📊 Umbra Core Statistics',
+                '📊 Evelynn Core Statistics',
 
             value:
                 [
@@ -1203,7 +1203,7 @@ function buildDashboardEmbed(
         )
         .setAuthor({
             name:
-                'Umbra Core Health Monitor',
+                'Evelynn Core Health Monitor',
 
             iconURL:
                 client.user
@@ -1235,7 +1235,7 @@ function buildDashboardEmbed(
         )
         .setFooter({
             text:
-                'Umbra • Black Box Services & Live Diagnostics'
+                'Evelynn • Black Box Services & Live Diagnostics'
         })
         .setTimestamp();
 }/**
@@ -1406,7 +1406,7 @@ async function processOverallHealthTransition(
                     'SYSTEM_RECOVERED',
 
                 message:
-                    `Umbra recovered from ${previousLabel} status. All monitored systems are operating normally again.`,
+                    `Evelynn recovered from ${previousLabel} status. All monitored systems are operating normally again.`,
 
                 fields
             }
@@ -1427,8 +1427,8 @@ async function processOverallHealthTransition(
             message:
                 currentLabel ===
                     'CRITICAL'
-                    ? 'Umbra detected a critical system condition requiring immediate investigation.'
-                    : 'Umbra detected degraded performance in one or more monitored systems.',
+                    ? 'Evelynn detected a critical system condition requiring immediate investigation.'
+                    : 'Evelynn detected degraded performance in one or more monitored systems.',
 
             fields: [
                 ...fields,
@@ -1664,7 +1664,7 @@ async function processComponentTransitions(
                     'PostgreSQL Connection Lost',
 
                 message:
-                    'Umbra can no longer communicate with the PostgreSQL database.',
+                    'Evelynn can no longer communicate with the PostgreSQL database.',
 
                 fields: [
                     {
@@ -1697,7 +1697,7 @@ async function processComponentTransitions(
                                 '• Levels',
                                 '• Achievements',
                                 '• Chronicle Titles',
-                                '• Arrancar Ranks',
+                                '• Sin Ranks',
                                 '• Kingdom Records'
                             ].join('\n'),
 
@@ -1802,7 +1802,7 @@ async function processComponentTransitions(
                     'Discord Gateway Disconnected',
 
                 message:
-                    'Umbra lost its connection to the Discord Gateway.',
+                    'Evelynn lost its connection to the Discord Gateway.',
 
                 fields: [
                     {
@@ -1859,7 +1859,7 @@ async function processComponentTransitions(
                     'Discord Gateway Restored',
 
                 message:
-                    'Umbra successfully restored its Discord Gateway connection.',
+                    'Evelynn successfully restored its Discord Gateway connection.',
 
                 fields: [
                     {
@@ -2104,7 +2104,7 @@ async function processComponentTransitions(
                     'High Memory Usage',
 
                 message:
-                    'Umbra process memory exceeded the configured warning threshold.',
+                    'Evelynn process memory exceeded the configured warning threshold.',
 
                 fields: [
                     {
@@ -2174,7 +2174,7 @@ async function processComponentTransitions(
                     'Critical Memory Usage',
 
                 message:
-                    'Umbra process memory exceeded the configured critical threshold.',
+                    'Evelynn process memory exceeded the configured critical threshold.',
 
                 fields: [
                     {
@@ -2238,7 +2238,7 @@ async function processComponentTransitions(
                     'Memory Usage Normalized',
 
                 message:
-                    'Umbra process memory returned to a normal operating range.',
+                    'Evelynn process memory returned to a normal operating range.',
 
                 fields: [
                     {
@@ -2361,7 +2361,7 @@ async function findDashboardMessage(
                 message.embeds.some(
                     embed =>
                         embed.author?.name ===
-                        'Umbra Core Health Monitor'
+                        'Evelynn Core Health Monitor'
                 )
         ) ||
         null;
@@ -2560,7 +2560,7 @@ async function synchronizeHealthyServiceStates(
                             'success',
 
                         statusMessage:
-                            'Umbra process memory is within the normal operating range.',
+                            'Evelynn process memory is within the normal operating range.',
 
                         incidentType:
                             null,
@@ -2702,7 +2702,7 @@ async function updateTerminalDashboard(
         return true;
     } catch (error) {
         console.error(
-            '❌ Failed to update Umbra Dashboard:'
+            '❌ Failed to update Evelynn Dashboard:'
         );
 
         console.error(

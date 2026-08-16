@@ -25,7 +25,7 @@ const {
 } = require('./database');
 
 /**
- * Central Umbra Core Terminal API.
+ * Central Evelynn Core Terminal API.
  */
 const terminal =
     require('./utils/terminal');
@@ -40,7 +40,7 @@ const {
 } = require('./utils/rankTrials/scheduler');
 
 /**
- * Server that Umbra must leave.
+ * Server that Evelynn must leave.
  */
 const SERVER_TO_LEAVE_ID =
     '1521240178633605383';
@@ -87,7 +87,7 @@ client.commands =
     new Collection();
 
 /**
- * Load Umbra commands and events.
+ * Load Evelynn commands and events.
  */
 commandHandler(
     client
@@ -137,7 +137,7 @@ function getConfiguredGuildIds() {
 
 /**
  * Return every active Guild connected
- * to Umbra.
+ * to Evelynn.
  *
  * @param {import('discord.js').Client<true>} readyClient
  * @returns {import('discord.js').Guild[]}
@@ -166,7 +166,7 @@ function getActiveGuilds(
  * as ONLINE.
  *
  * A service-state database failure must
- * never interrupt Umbra startup.
+ * never interrupt Evelynn startup.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -220,7 +220,7 @@ async function markBlackBoxServiceOnline({
 }
 
 /**
- * Initialize all official Umbra services
+ * Initialize all official Evelynn services
  * for one Discord server.
  *
  * Every service is first registered as
@@ -336,7 +336,7 @@ async function initializeBlackBoxServices(
                     .name,
 
             message:
-                'Umbra process memory is within the initial operating range.',
+                'Evelynn process memory is within the initial operating range.',
 
             metadata: {
                 rssBytes:
@@ -481,17 +481,17 @@ async function initializeBlackBoxServices(
             serviceKey:
                 terminal
                     .UMBRA_SERVICES
-                    .ARRANCAR
+                    .SIN_RANKS
                     .key,
 
             displayName:
                 terminal
                     .UMBRA_SERVICES
-                    .ARRANCAR
+                    .SIN_RANKS
                     .name,
 
             message:
-                'Arrancar Rank registry is available.'
+                'Sin Rank registry is available.'
         },
         {
             serviceKey:
@@ -549,7 +549,7 @@ async function initializeBlackBoxServices(
                 'Node.js Process',
 
             message:
-                'Umbra Node.js process is running normally after a successful boot.',
+                'Evelynn Node.js process is running normally after a successful boot.',
 
             metadata: {
                 processId:
@@ -616,7 +616,7 @@ async function leaveSelectedServer(
     readyClient
 ) {
     console.log(
-        '🔍 Checking whether Umbra is still in the removed server...'
+        '🔍 Checking whether Evelynn is still in the removed server...'
     );
 
     let guild =
@@ -636,7 +636,7 @@ async function leaveSelectedServer(
                 10004
             ) {
                 console.log(
-                    'ℹ️ Umbra is no longer in that server.'
+                    'ℹ️ Evelynn is no longer in that server.'
                 );
 
                 return false;
@@ -661,13 +661,13 @@ async function leaveSelectedServer(
         await guild.leave();
 
         console.log(
-            `✅ Umbra successfully left: ${guildName}`
+            `✅ Evelynn successfully left: ${guildName}`
         );
 
         return true;
     } catch (error) {
         console.error(
-            '❌ Umbra failed to leave the selected server:'
+            '❌ Evelynn failed to leave the selected server:'
         );
 
         console.error(
@@ -893,7 +893,7 @@ async function updateRankTrialServiceStates(
 }
 
 /**
- * Publish the official Umbra
+ * Publish the official Evelynn
  * Core Boot Sequence.
  *
  * @param {import('discord.js').Client<true>} readyClient
@@ -937,7 +937,7 @@ async function publishBootSequence(
         readyClient,
         {
             title:
-                'Umbra Core Online',
+                'Evelynn Core Online',
 
             message:
                 'Boot sequence completed successfully. All primary systems are operational.',
@@ -956,7 +956,7 @@ async function publishBootSequence(
                             '+ Event Handler Loaded',
                             '+ Guardian Systems Ready',
                             '+ Kingdom Records Available',
-                            '+ Arrancar Registry Online',
+                            '+ Sin Rank Registry Online',
                             '+ Monthly Rank Trials Ready',
                             '+ Alert Engine Armed',
                             '+ Incident Engine Ready',
@@ -1305,7 +1305,7 @@ client.once(
 
         /*
          * Publish one Boot Sequence event
-         * after Umbra and the Rank Trials
+         * after Evelynn and the Rank Trials
          * scheduler are fully initialized.
          */
         try {
@@ -1318,16 +1318,16 @@ client.once(
                 terminalPublished
             ) {
                 console.log(
-                    '✅ Umbra Boot Sequence published.'
+                    '✅ Evelynn Boot Sequence published.'
                 );
             } else {
                 console.warn(
-                    '⚠️ Umbra Boot Sequence was not published.'
+                    '⚠️ Evelynn Boot Sequence was not published.'
                 );
             }
         } catch (error) {
             console.error(
-                '❌ Umbra Boot Sequence failed:'
+                '❌ Evelynn Boot Sequence failed:'
             );
 
             console.error(
@@ -1349,16 +1349,16 @@ client.once(
                 dashboardStarted
             ) {
                 console.log(
-                    '✅ Umbra Health Dashboard started.'
+                    '✅ Evelynn Health Dashboard started.'
                 );
             } else {
                 console.warn(
-                    '⚠️ Umbra Health Dashboard did not start.'
+                    '⚠️ Evelynn Health Dashboard did not start.'
                 );
             }
         } catch (error) {
             console.error(
-                '❌ Umbra Health Dashboard failed to start:'
+                '❌ Evelynn Health Dashboard failed to start:'
             );
 
             console.error(
@@ -1425,7 +1425,7 @@ client.on(
                             'COMMAND_FAILURE',
 
                         message:
-                            `Umbra encountered an unexpected error while executing /${interaction.commandName}.`,
+                            `Evelynn encountered an unexpected error while executing /${interaction.commandName}.`,
 
                         fields: [
                             {
@@ -1554,7 +1554,7 @@ client.on(
 );
 
 /**
- * Start Umbra.
+ * Start Evelynn.
  *
  * PostgreSQL initializes before Discord
  * login so the Ready event runs only after
@@ -1581,7 +1581,7 @@ async function startBot() {
             );
         } else {
             console.warn(
-                '⚠️ Umbra is starting without a local PostgreSQL connection.'
+                '⚠️ Evelynn is starting without a local PostgreSQL connection.'
             );
         }
 
@@ -1594,7 +1594,7 @@ async function startBot() {
         );
 
         console.error(
-            '❌ Failed to start Umbra:'
+            '❌ Failed to start Evelynn:'
         );
 
         console.error(
@@ -1659,7 +1659,7 @@ async function startBot() {
                                 'PostgreSQL Connection Lost',
 
                             message:
-                                'Umbra failed to initialize or communicate with PostgreSQL during startup.',
+                                'Evelynn failed to initialize or communicate with PostgreSQL during startup.',
 
                             fields: [
                                 {
@@ -1698,7 +1698,7 @@ async function startBot() {
             }
         } catch (blackBoxError) {
             console.error(
-                '⚠️ Umbra could not record the startup failure in Black Box:'
+                '⚠️ Evelynn could not record the startup failure in Black Box:'
             );
 
             console.error(
@@ -1735,7 +1735,7 @@ async function stopBlackBoxServices(
                     .services
                     .stopAll(
                         guild.id,
-                        `Umbra service shutdown was initiated by ${signal}.`
+                        `Evelynn service shutdown was initiated by ${signal}.`
                     );
 
             console.log(
@@ -1756,7 +1756,7 @@ async function stopBlackBoxServices(
 }
 
 /**
- * Gracefully stop Umbra.
+ * Gracefully stop Evelynn.
  *
  * @param {string} signal
  * @returns {Promise<void>}
@@ -1818,7 +1818,7 @@ async function shutdown(
     terminal.dashboard.stop();
 
     console.log(
-        '✅ Umbra Health Dashboard stopped.'
+        '✅ Evelynn Health Dashboard stopped.'
     );
 
     /*
@@ -1833,7 +1833,7 @@ async function shutdown(
                 client,
                 {
                     title:
-                        'Umbra Core Shutdown',
+                        'Evelynn Core Shutdown',
 
                     message:
                         `A graceful shutdown sequence was initiated by ${signal}.`,
@@ -1884,7 +1884,7 @@ async function shutdown(
         }
     } catch (terminalError) {
         console.error(
-            '⚠️ Umbra could not publish the shutdown Terminal notice:'
+            '⚠️ Evelynn could not publish the shutdown Terminal notice:'
         );
 
         console.error(
@@ -1920,7 +1920,7 @@ async function shutdown(
         await closeConnection();
 
         console.log(
-            '✅ Umbra shut down safely.'
+            '✅ Evelynn shut down safely.'
         );
 
         console.log(
@@ -2080,7 +2080,7 @@ async function publishProcessIncident({
         !client.isReady()
     ) {
         console.warn(
-            '⚠️ Process Incident could not be published because Umbra is not ready.'
+            '⚠️ Process Incident could not be published because Evelynn is not ready.'
         );
 
         return;
@@ -2311,7 +2311,7 @@ async function publishProcessIncident({
  * Handle a fatal Node.js process error.
  *
  * Continuing after an uncaught exception
- * is unsafe. Umbra records the Incident,
+ * is unsafe. Evelynn records the Incident,
  * stops recurring systems and exits.
  *
  * @param {string} source
@@ -2370,7 +2370,7 @@ async function handleFatalProcessError(
             'Critical Node.js Process Failure',
 
         message:
-            'Umbra detected a fatal Node.js error. An emergency shutdown sequence has started.',
+            'Evelynn detected a fatal Node.js error. An emergency shutdown sequence has started.',
 
         severity:
             terminal
@@ -2439,7 +2439,7 @@ process.on(
  * Capture Promise rejections that were
  * not handled by their originating module.
  *
- * Umbra remains online, but the Node.js
+ * Evelynn remains online, but the Node.js
  * Process service becomes DEGRADED.
  */
 process.on(
@@ -2462,7 +2462,7 @@ process.on(
                 'Unhandled Promise Rejection',
 
             message:
-                'Umbra detected a Promise rejection that was not handled by its originating module.',
+                'Evelynn detected a Promise rejection that was not handled by its originating module.',
 
             severity:
                 terminal
@@ -2595,7 +2595,7 @@ client.on(
                             'Discord Gateway Disconnected',
 
                         message:
-                            'Umbra lost its connection to the Discord Gateway.',
+                            'Evelynn lost its connection to the Discord Gateway.',
 
                         fields: [
                             {
@@ -2700,7 +2700,7 @@ client.on(
                             'Discord Gateway Restored',
 
                         message:
-                            'Umbra successfully restored its Discord Gateway connection.',
+                            'Evelynn successfully restored its Discord Gateway connection.',
 
                         fields: [
                             {
@@ -2840,6 +2840,6 @@ process.once(
 );
 
 /**
- * Begin the Umbra startup sequence.
+ * Begin the Evelynn startup sequence.
  */
 startBot();

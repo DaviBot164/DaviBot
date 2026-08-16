@@ -47,7 +47,7 @@ const TRIAL_KEY_PATTERN =
 const USER_ID_PATTERN =
     /^[0-9]{16,22}$/;
 
-async function getCurrentArrancarRank(
+async function getCurrentSinRank(
     guildId,
     userId
 ) {
@@ -238,7 +238,7 @@ async function replySuccess(
     );
 }async function handleRegister(interaction) {
     const previousRank =
-        await getCurrentArrancarRank(
+        await getCurrentSinRank(
             interaction.guildId,
             interaction.user.id
         );
@@ -308,7 +308,7 @@ async function handleTestRegister(interaction) {
         getRelevantRankTrialSchedule();
 
     const previousRank =
-        await getCurrentArrancarRank(
+        await getCurrentSinRank(
             interaction.guildId,
             interaction.user.id
         );

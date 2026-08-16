@@ -273,7 +273,7 @@ module.exports = {
 
                     .setAuthor({
                         name:
-                            'Umbra Case System',
+                            'Evelynn Case System',
 
                         iconURL:
                             interaction.client.user
@@ -324,7 +324,7 @@ module.exports = {
 
                 .setAuthor({
                     name:
-                        'Umbra Case System',
+                        'Evelynn Case System',
 
                     iconURL:
                         interaction.client.user

@@ -23,9 +23,9 @@ const {
 } = require('../../database');
 
 /**
- * Las Noches silver embed color.
+ * THE Ⅹ SINS silver embed color.
  */
-const LAS_NOCHES_COLOR =
+const SINS_TITLE_COLOR =
     '#E8E8E8';
 
 /**
@@ -41,7 +41,7 @@ const TITLE_SELECT_MENU_ID =
     'settitle_select_title';
 
 /**
- * Title category choices.
+ * Available Title categories.
  */
 const CATEGORY_CHOICES = [
     {
@@ -74,17 +74,10 @@ const CATEGORY_CHOICES = [
     },
     {
         name:
-            '⚔️ Arrancar Hierarchy',
+            '⚔️ Sin Ranks',
 
         value:
-            TITLE_CATEGORIES.ARRANCAR
-    },
-    {
-        name:
-            '👑 Espada',
-
-        value:
-            TITLE_CATEGORIES.ESPADA
+            TITLE_CATEGORIES.SIN_RANK
     },
     {
         name:
@@ -228,9 +221,6 @@ function formatDiscordDate(
 /**
  * Create a safe Select Menu label.
  *
- * Discord Select Menu option labels
- * cannot exceed 100 characters.
- *
  * @param {string} value
  * @returns {string}
  */
@@ -249,9 +239,6 @@ function createSafeLabel(
 /**
  * Create a safe Select Menu description.
  *
- * Discord Select Menu descriptions
- * cannot exceed 100 characters.
- *
  * @param {string} value
  * @returns {string}
  */
@@ -265,18 +252,13 @@ function createSafeDescription(
         0,
         100
     );
-}
-
-/**
+}/**
  * Create the unlocked Title selection menu.
- *
- * A category currently contains fewer
- * than Discord's maximum 25 options.
  *
  * @param {Object[]} unlockedTitles
  * @param {string|null} activeTitleId
  * @param {boolean} disabled
- * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
+ * @returns {ActionRowBuilder}
  */
 function createTitleSelectMenu(
     unlockedTitles,
@@ -345,13 +327,9 @@ function createTitleSelectMenu(
 }
 
 /**
- * Create the Title selection embed.
+ * Create the Chronicle Title selection embed.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {string} category
- * @param {Object[]} unlockedTitles
- * @param {Object|null} activeTitle
+ * @param {Object} options
  * @returns {import('discord.js').EmbedBuilder}
  */
 function createSelectionEmbed({
@@ -372,110 +350,106 @@ function createSelectionEmbed({
 
     const availableTitleDisplay =
         unlockedTitles
-            .map(title => {
-                const rarity =
-                    getRarityDetails(
-                        title.rarity
-                    );
+            .map(
+                title => {
+                    const rarity =
+                        getRarityDetails(
+                            title.rarity
+                        );
 
-                const status =
-                    title.titleId ===
-                    activeTitle?.titleId
-                        ? '👑 Active'
-                        : '✅ Unlocked';
+                    const status =
+                        title.titleId ===
+                        activeTitle?.titleId
+                            ? '👑 Active'
+                            : '✅ Unlocked';
 
-                return [
-                    `${status} • **${title.displayName}**`,
-                    `-# ${rarity.emoji} ${rarity.label}`
-                ].join('\n');
-            })
+                    return [
+                        `${status} • **${title.displayName}**`,
+                        `-# ${rarity.emoji} ${rarity.label}`
+                    ].join('\n');
+                }
+            )
             .join('\n\n');
 
-    const embed =
-        createEmbed({
-            title:
-                '🏷️ Select Chronicle Title',
+    return createEmbed({
+        title:
+            '🏷️ Select Chronicle Title',
 
-            description:
-                [
-                    `${member}, select one unlocked Title from the menu below.`,
-                    '',
-                    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-                    '',
-                    `**Archive Category:** ${category}`,
-                    '',
-                    '*The selected designation will appear inside your official Soul Record.*'
-                ].join('\n'),
+        description:
+            [
+                `${member}, select one unlocked Title from the menu below.`,
 
-            color:
-                activeTitle
-                    ? ACTIVE_TITLE_COLOR
-                    : LAS_NOCHES_COLOR,
+                '',
 
-            thumbnail:
-                avatarURL,
+                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
 
-            fields: [
-                {
-                    name:
-                        '👑 Current Active Title',
+                '',
 
-                    value:
-                        activeTitle
-                            ? [
-                                `**${activeTitle.displayName}**`,
-                                `-# ${activeTitle.rarity} • ${activeTitle.category}`
-                            ].join('\n')
-                            : '🌑 No active Title is currently selected.',
+                `**Archive Category:** ${category}`,
 
-                    inline:
-                        false
-                },
-                {
-                    name:
-                        `📚 Unlocked ${category} Titles`,
+                '',
 
-                    value:
-                        availableTitleDisplay,
+                '*The selected designation will appear inside your official Soul Record.*'
+            ].join('\n'),
 
-                    inline:
-                        false
-                }
-            ],
+        color:
+            activeTitle
+                ? ACTIVE_TITLE_COLOR
+                : SINS_TITLE_COLOR,
 
-            footer: {
-                text:
-                    `🌙 Umbra • Guardian of Las Noches • Requested by ${interaction.user.username}`,
+        thumbnail:
+            avatarURL,
 
-                iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
+        fields: [
+            {
+                name:
+                    '👑 Current Active Title',
 
-                            forceStatic:
-                                false
-                        })
+                value:
+                    activeTitle
+                        ? [
+                            `**${activeTitle.displayName}**`,
+                            `-# ${activeTitle.rarity} • ${activeTitle.category}`
+                        ].join('\n')
+                        : '🌑 No active Title is currently selected.',
+
+                inline:
+                    false
+            },
+
+            {
+                name:
+                    `📚 Unlocked ${category} Titles`,
+
+                value:
+                    availableTitleDisplay,
+
+                inline:
+                    false
             }
-        });
+        ],
 
-    embed.setAuthor({
-        name:
-            `${member.displayName} • Chronicle Title Selection`,
+        footer: {
+            text:
+                `THE Ⅹ SINS • Chronicle Titles • Requested by ${interaction.user.username}`,
 
-        iconURL:
-            avatarURL
+            iconURL:
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            128,
+
+                        forceStatic:
+                            false
+                    })
+        }
     });
-
-    return embed;
 }
 
 /**
  * Create the successful Title activation embed.
  *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object} activatedTitle
+ * @param {Object} options
  * @returns {import('discord.js').EmbedBuilder}
  */
 function createTitleActivatedEmbed({
@@ -493,7 +467,9 @@ function createTitleActivatedEmbed({
             '👑 Chronicle Title Activated',
             [
                 `${member} has selected a new active designation within the Soul Archives.`,
+
                 '',
+
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
             ].join('\n')
         );
@@ -523,6 +499,7 @@ function createTitleActivatedEmbed({
             inline:
                 false
         },
+
         {
             name:
                 '📚 Classification',
@@ -536,6 +513,7 @@ function createTitleActivatedEmbed({
             inline:
                 true
         },
+
         {
             name:
                 '🕒 Activated At',
@@ -548,6 +526,7 @@ function createTitleActivatedEmbed({
             inline:
                 true
         },
+
         {
             name:
                 '📖 Chronicle Description',
@@ -562,7 +541,7 @@ function createTitleActivatedEmbed({
 
     embed.setFooter({
         text:
-            `🌙 Umbra • Guardian of Las Noches • Activated by ${interaction.user.username}`,
+            `THE Ⅹ SINS • Chronicle Titles • Activated by ${interaction.user.username}`,
 
         iconURL:
             interaction.client.user
@@ -576,9 +555,7 @@ function createTitleActivatedEmbed({
     });
 
     return embed;
-}
-
-module.exports = {
+}module.exports = {
     category:
         'information',
 
@@ -590,27 +567,28 @@ module.exports = {
             .setDescription(
                 'Select one of your unlocked Chronicle Titles.'
             )
-
-            .addStringOption(option =>
-                option
-                    .setName(
-                        'category'
-                    )
-                    .setDescription(
-                        'Select the Title category you want to open'
-                    )
-                    .setRequired(
-                        true
-                    )
-                    .addChoices(
-                        ...CATEGORY_CHOICES
-                    )
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'category'
+                        )
+                        .setDescription(
+                            'Select a Title category.'
+                        )
+                        .setRequired(
+                            true
+                        )
+                        .addChoices(
+                            ...CATEGORY_CHOICES
+                        )
             )
-
             .setDMPermission(
                 false
-            ),    /**
-     * Execute the /settitle command.
+            ),
+
+    /**
+     * Execute /settitle.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -625,8 +603,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -650,7 +628,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'Umbra could not access your Las Noches member record.'
+                            'The server could not access your Soul Record.'
                         )
                     ],
 
@@ -704,8 +682,10 @@ module.exports = {
                             '❌ No Titles Unlocked',
                             [
                                 `You have not unlocked any Titles from the **${selectedCategory}** category.`,
+
                                 '',
-                                'Use `/titles` to view locked Titles and their requirements.'
+
+                                'Use `/titles` to view available Chronicle Titles and their requirements.'
                             ].join('\n')
                         )
                     ],
@@ -738,7 +718,7 @@ module.exports = {
                         createTitleSelectMenu(
                             categoryTitles,
                             activeTitle?.titleId ||
-                            null
+                                null
                         )
                     ],
 
@@ -768,7 +748,7 @@ module.exports = {
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Private Title Selection',
-                                        'Only the Soul who opened this selection menu may use it.'
+                                        'Only the Soul who opened this menu may use it.'
                                     )
                                 ],
 
@@ -802,7 +782,7 @@ module.exports = {
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Title Not Found',
-                                        'Umbra could not locate the selected unlocked Title.'
+                                        'The selected Chronicle Title could not be located.'
                                     )
                                 ],
 
@@ -848,11 +828,7 @@ module.exports = {
                                     embeds: [
                                         createErrorEmbed(
                                             '❌ Title Activation Failed',
-                                            [
-                                                'Umbra could not activate the selected Title.',
-                                                '',
-                                                'The Title may no longer be unlocked for this Soul.'
-                                            ].join('\n')
+                                            'The selected Chronicle Title could not be activated.'
                                         )
                                     ],
 
@@ -864,41 +840,32 @@ module.exports = {
                                 );
 
                             return;
-                        }
-
-                        collector.stop(
+                        }                        collector.stop(
                             'title_selected'
                         );
 
-                        const activatedEmbed =
-                            createTitleActivatedEmbed({
-                                interaction,
-                                member,
-                                activatedTitle
-                            });
-
                         await interaction.editReply({
                             embeds: [
-                                activatedEmbed
+                                createTitleActivatedEmbed({
+                                    interaction,
+                                    member,
+                                    activatedTitle
+                                })
                             ],
 
                             components:
                                 []
                         });
-                    } catch (menuError) {
+                    } catch (error) {
                         console.error(
-                            '❌ Umbra /settitle selection error:',
-                            menuError
+                            '❌ THE Ⅹ SINS /settitle selection error:',
+                            error
                         );
 
                         const errorEmbed =
                             createErrorEmbed(
                                 '❌ Title Activation Failed',
-                                [
-                                    'Umbra could not activate the selected Chronicle Title.',
-                                    '',
-                                    'Please inspect the PostgreSQL connection and try again.'
-                                ].join('\n')
+                                'The Chronicle Title could not be activated.'
                             );
 
                         if (
@@ -956,7 +923,7 @@ module.exports = {
                                 createTitleSelectMenu(
                                     categoryTitles,
                                     activeTitle?.titleId ||
-                                    null,
+                                        null,
                                     true
                                 )
                             ]
@@ -968,22 +935,19 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /settitle command error:',
+                '❌ THE Ⅹ SINS /settitle command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
-                    '❌ Title Selection Unavailable',
-                    [
-                        'Umbra could not open your Chronicle Title selection.',
-                        '',
-                        'Please inspect the PostgreSQL connection and Northflank logs before trying again.'
-                    ].join('\n')
+                    '❌ Chronicle Title Error',
+                    'The Chronicle Title selection menu could not be opened.'
                 );
 
             if (
-                interaction.deferred
+                interaction.deferred ||
+                interaction.replied
             ) {
                 await interaction
                     .editReply({
@@ -993,25 +957,6 @@ module.exports = {
 
                         components:
                             []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
                     })
                     .catch(
                         () => null

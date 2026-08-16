@@ -12,7 +12,7 @@ module.exports = {
     /**
      * Dedicated Sacred Laws channel.
      *
-     * Only the Royal Laws of Las Noches
+     * Only the Royal Laws of THE Ⅹ SINS
      * are published in this channel.
      */
     sacredLawsChannelId:

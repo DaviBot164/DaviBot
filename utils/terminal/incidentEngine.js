@@ -10,7 +10,7 @@ const {
 /**
  * Active Incident cache.
  *
- * Prevents Umbra from repeatedly
+ * Prevents Evelynn from repeatedly
  * logging the same Incident.
  *
  * Key format:
@@ -252,7 +252,7 @@ async function archiveIncident({
         });
     } catch (archiveError) {
         console.error(
-            `⚠️ Umbra Black Box could not archive Incident "${incidentType}":`
+            `⚠️ Evelynn Black Box could not archive Incident "${incidentType}":`
         );
 
         console.error(
@@ -320,7 +320,7 @@ async function openIncident({
         !message
     ) {
         throw new TypeError(
-            'Umbra Black Box openIncident received incomplete Incident data.'
+            'Evelynn Black Box openIncident received incomplete Incident data.'
         );
     }
 
@@ -335,7 +335,7 @@ async function openIncident({
             );
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not load service "${serviceKey}":`
+            `⚠️ Evelynn Black Box could not load service "${serviceKey}":`
         );
 
         console.error(
@@ -397,7 +397,7 @@ async function openIncident({
             };
         } catch (databaseError) {
             console.error(
-                `⚠️ Umbra Black Box could not refresh service "${serviceKey}":`
+                `⚠️ Evelynn Black Box could not refresh service "${serviceKey}":`
             );
 
             console.error(
@@ -468,7 +468,7 @@ async function openIncident({
             });
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not update service "${serviceKey}":`
+            `⚠️ Evelynn Black Box could not update service "${serviceKey}":`
         );
 
         console.error(
@@ -537,7 +537,7 @@ async function recoverIncident({
         !message
     ) {
         throw new TypeError(
-            'Umbra Black Box recoverIncident received incomplete recovery data.'
+            'Evelynn Black Box recoverIncident received incomplete recovery data.'
         );
     }
 
@@ -552,7 +552,7 @@ async function recoverIncident({
             );
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not load recovery state for "${serviceKey}":`
+            `⚠️ Evelynn Black Box could not load recovery state for "${serviceKey}":`
         );
 
         console.error(
@@ -617,7 +617,7 @@ async function recoverIncident({
             };
         } catch (databaseError) {
             console.error(
-                `⚠️ Umbra Black Box could not refresh recovered service "${serviceKey}":`
+                `⚠️ Evelynn Black Box could not refresh recovered service "${serviceKey}":`
             );
 
             console.error(
@@ -692,7 +692,7 @@ async function recoverIncident({
             });
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not mark service "${serviceKey}" as recovered:`
+            `⚠️ Evelynn Black Box could not mark service "${serviceKey}" as recovered:`
         );
 
         console.error(
@@ -758,7 +758,7 @@ async function markServiceOnline({
         !displayName
     ) {
         throw new TypeError(
-            'Umbra Black Box markServiceOnline received incomplete service data.'
+            'Evelynn Black Box markServiceOnline received incomplete service data.'
         );
     }
 
@@ -807,7 +807,7 @@ async function markServiceOnline({
         return service;
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not mark service "${serviceKey}" as ONLINE:`
+            `⚠️ Evelynn Black Box could not mark service "${serviceKey}" as ONLINE:`
         );
 
         console.error(
@@ -848,7 +848,7 @@ async function markServiceStarting({
         !displayName
     ) {
         throw new TypeError(
-            'Umbra Black Box markServiceStarting received incomplete service data.'
+            'Evelynn Black Box markServiceStarting received incomplete service data.'
         );
     }
 
@@ -888,7 +888,7 @@ async function markServiceStarting({
         });
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not mark service "${serviceKey}" as STARTING:`
+            `⚠️ Evelynn Black Box could not mark service "${serviceKey}" as STARTING:`
         );
 
         console.error(
@@ -932,7 +932,7 @@ async function markServiceStopped({
         !displayName
     ) {
         throw new TypeError(
-            'Umbra Black Box markServiceStopped received incomplete service data.'
+            'Evelynn Black Box markServiceStopped received incomplete service data.'
         );
     }
 
@@ -980,7 +980,7 @@ async function markServiceStopped({
         return service;
     } catch (databaseError) {
         console.error(
-            `⚠️ Umbra Black Box could not mark service "${serviceKey}" as STOPPED:`
+            `⚠️ Evelynn Black Box could not mark service "${serviceKey}" as STOPPED:`
         );
 
         console.error(
@@ -1079,7 +1079,7 @@ function clearAllActiveIncidents() {
 }
 
 /**
- * Official Umbra service definitions.
+ * Official Evelynn service definitions.
  */
 const UMBRA_SERVICES = {
     POSTGRESQL: {
@@ -1178,12 +1178,12 @@ const UMBRA_SERVICES = {
             'Chronicle Titles'
     },
 
-    ARRANCAR: {
+    SIN_RANKS: {
         key:
-            'arrancar',
+            'sin_ranks',
 
         name:
-            'Arrancar'
+            'Sin Ranks'
     },
 
     EVENTS: {
@@ -1212,14 +1212,14 @@ const UMBRA_SERVICES = {
 };
 
 /**
- * Return every official Umbra service.
+ * Return every official Evelynn service.
  *
  * @returns {Array<{
  *     key: string,
  *     name: string
  * }>}
  */
-function getUmbraServices() {
+function getEvelynnServices() {
     return Object.values(
         UMBRA_SERVICES
     );
@@ -1239,7 +1239,7 @@ function getUmbraServices() {
  *     name: string
  * }|null}
  */
-function getUmbraService(
+function getEvelynnService(
     serviceIdentifier
 ) {
     if (
@@ -1265,7 +1265,7 @@ function getUmbraService(
     }
 
     return (
-        getUmbraServices().find(
+        getEvelynnServices().find(
             service =>
                 service.key ===
                 normalizedIdentifier
@@ -1274,7 +1274,7 @@ function getUmbraService(
         null
     );
 }/**
- * Register every official Umbra service
+ * Register every official Evelynn service
  * as STARTING.
  *
  * Existing service start times are
@@ -1291,7 +1291,7 @@ async function initializeTerminalServices(
 ) {
     if (!guildId) {
         throw new TypeError(
-            'Umbra Black Box initializeTerminalServices requires a Guild ID.'
+            'Evelynn Black Box initializeTerminalServices requires a Guild ID.'
         );
     }
 
@@ -1303,7 +1303,7 @@ async function initializeTerminalServices(
 
     for (
         const service
-        of getUmbraServices()
+        of getEvelynnServices()
     ) {
         const result =
             await markServiceStarting({
@@ -1316,11 +1316,11 @@ async function initializeTerminalServices(
                     service.name,
 
                 message:
-                    'Umbra is initializing this service.',
+                    'Evelynn is initializing this service.',
 
                 metadata: {
                     initializedBy:
-                        'Umbra Black Box',
+                        'Evelynn Black Box',
 
                     registeredAt:
                         new Date()
@@ -1344,7 +1344,7 @@ async function initializeTerminalServices(
 }
 
 /**
- * Mark every official Umbra service
+ * Mark every official Evelynn service
  * as STOPPED.
  *
  * Intended for graceful shutdown.
@@ -1359,11 +1359,11 @@ async function initializeTerminalServices(
 async function stopTerminalServices(
     guildId,
     message =
-        'Umbra is shutting down this service.'
+        'Evelynn is shutting down this service.'
 ) {
     if (!guildId) {
         throw new TypeError(
-            'Umbra Black Box stopTerminalServices requires a Guild ID.'
+            'Evelynn Black Box stopTerminalServices requires a Guild ID.'
         );
     }
 
@@ -1375,7 +1375,7 @@ async function stopTerminalServices(
 
     for (
         const service
-        of getUmbraServices()
+        of getEvelynnServices()
     ) {
         const result =
             await markServiceStopped({
@@ -1391,7 +1391,7 @@ async function stopTerminalServices(
 
                 metadata: {
                     stoppedBy:
-                        'Umbra Black Box',
+                        'Evelynn Black Box',
 
                     stoppedAt:
                         new Date()
@@ -1441,8 +1441,8 @@ module.exports = {
     getActiveIncidentKeys,
     clearAllActiveIncidents,
 
-    getUmbraServices,
-    getUmbraService,
+    getEvelynnServices,
+    getEvelynnService,
 
     initializeTerminalServices,
     stopTerminalServices

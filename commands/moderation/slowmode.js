@@ -66,8 +66,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'This command can only be used inside Las Noches.'
+                            '❌ THE Ⅹ SINS Only Command',
+                            'This command can only be used inside THE Ⅹ SINS.'
                         )
                     ],
 
@@ -126,8 +126,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Umbra Unavailable',
-                            'Umbra could not access its Las Noches member information.'
+                            '❌ Evelynn Unavailable',
+                            'Evelynn could not access its THE Ⅹ SINS member information.'
                         )
                     ],
 
@@ -151,8 +151,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Missing Umbra Permission',
-                            'Umbra requires the **Manage Channels** permission in this channel.'
+                            '❌ Missing Evelynn Permission',
+                            'Evelynn requires the **Manage Channels** permission in this channel.'
                         )
                     ],
 
@@ -244,7 +244,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 Las Noches Status',
+                        '🌙 THE Ⅹ SINS Status',
 
                     value:
                         statusText,
@@ -286,7 +286,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 Las Noches Status',
+                            '🌙 THE Ⅹ SINS Status',
 
                         value:
                             statusText,
@@ -308,7 +308,7 @@ module.exports = {
                     '❌ Slowmode Failed',
 
                 description:
-                    'Umbra could not change slowmode. Check its permissions and Northflank logs.'
+                    'Evelynn could not change slowmode. Check its permissions and Northflank logs.'
             });
         }
     }

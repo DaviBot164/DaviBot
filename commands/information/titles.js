@@ -27,13 +27,13 @@ const {
 } = require('../../database');
 
 /**
- * Select menu custom ID.
+ * Chronicle Title category menu.
  */
 const TITLE_CATEGORY_MENU_ID =
     'titles_category_menu';
 
 /**
- * Overview page identifier.
+ * Collection overview page.
  */
 const OVERVIEW_PAGE_ID =
     'titles_overview';
@@ -46,8 +46,7 @@ const TITLE_CATEGORY_ORDER = [
     TITLE_CATEGORIES.LEVEL,
     TITLE_CATEGORIES.ACHIEVEMENT,
     TITLE_CATEGORIES.EVOLUTION,
-    TITLE_CATEGORIES.ARRANCAR,
-    TITLE_CATEGORIES.ESPADA,
+    TITLE_CATEGORIES.SIN_RANK,
     TITLE_CATEGORIES.STAFF,
     TITLE_CATEGORIES.EVENT,
     TITLE_CATEGORIES.LEGENDARY
@@ -87,7 +86,7 @@ const CATEGORY_DETAILS = {
             'Achievements',
 
         description:
-            'Titles unlocked through Soul Chronicles'
+            'Titles unlocked through Soul Achievements'
     },
 
     [TITLE_CATEGORIES.EVOLUTION]: {
@@ -101,26 +100,15 @@ const CATEGORY_DETAILS = {
             'Hollow Evolution Titles'
     },
 
-    [TITLE_CATEGORIES.ARRANCAR]: {
+    [TITLE_CATEGORIES.SIN_RANK]: {
         emoji:
             '⚔️',
 
         label:
-            'Arrancar',
+            'Sin Ranks',
 
         description:
-            'Arrancar hierarchy Titles'
-    },
-
-    [TITLE_CATEGORIES.ESPADA]: {
-        emoji:
-            '👑',
-
-        label:
-            'Espada',
-
-        description:
-            'Titles belonging to the Espada thrones'
+            'Titles belonging to the Ten Sins'
     },
 
     [TITLE_CATEGORIES.STAFF]: {
@@ -241,7 +229,7 @@ const RARITY_DETAILS = {
 };
 
 /**
- * Format a number using readable
+ * Format a number with readable
  * thousands separators.
  *
  * @param {number|string|null|undefined} value
@@ -384,8 +372,8 @@ function getRarityDetails(
 }
 
 /**
- * Convert unlocked Soul Titles into
- * a Set containing their Title IDs.
+ * Convert unlocked Soul Titles
+ * into a Set containing their IDs.
  *
  * @param {Object[]} unlockedTitles
  * @returns {Set<string>}
@@ -456,8 +444,8 @@ function findLatestUnlockedTitle(
 }
 
 /**
- * Get every configured Title belonging
- * to one category.
+ * Get every configured Title
+ * belonging to one category.
  *
  * @param {string} category
  * @returns {Object[]}
@@ -495,7 +483,7 @@ function countUnlockedCategoryTitles(
 }
 
 /**
- * Count total configured Titles belonging
+ * Count total Titles belonging
  * to one rarity.
  *
  * @param {string} rarity
@@ -534,7 +522,7 @@ function countUnlockedRarityTitles(
 }
 
 /**
- * Calculate completion percentage.
+ * Calculate collection completion.
  *
  * @param {number} unlocked
  * @param {number} total
@@ -561,9 +549,7 @@ function calculateCompletion(
             100
         )
     );
-}
-
-/**
+}/**
  * Create readable unlock requirement text.
  *
  * @param {Object} title
@@ -599,20 +585,12 @@ function formatUnlockRequirement(
                 `Reach the Hollow Evolution stage **${unlock.roleName}**.`
             );
 
-        case TITLE_UNLOCK_TYPES.ARRANCAR_RANK:
+        case TITLE_UNLOCK_TYPES.SIN_RANK:
             return (
-                `Receive the Arrancar Rank **${unlock.rankName}**.`
+                `Receive the Sin Rank **${unlock.rankName}**.`
             );
 
         case TITLE_UNLOCK_TYPES.STAFF_ROLE:
-            if (
-                unlock.ownerFallback
-            ) {
-                return (
-                    `Hold **${unlock.roleName}** or become the Ruler of Las Noches.`
-                );
-            }
-
             return (
                 `Hold the High Command role **${unlock.roleName}**.`
             );
@@ -623,17 +601,17 @@ function formatUnlockRequirement(
                 'WINNER'
             ) {
                 return (
-                    'Win an official Las Noches event.'
+                    'Win an official THE Ⅹ SINS event.'
                 );
             }
 
             return (
-                'Participate in an official Las Noches event.'
+                'Participate in an official THE Ⅹ SINS event.'
             );
 
         case TITLE_UNLOCK_TYPES.MANUAL:
             return (
-                'Receive this Title directly from the Las Noches High Command.'
+                'Receive this Title directly from the High Command.'
             );
 
         default:
@@ -678,7 +656,7 @@ function createCategoryMenu(
                 'Collection Overview'
             )
             .setDescription(
-                'View active Title and full collection progress'
+                'View active Title and collection progress'
             )
             .setEmoji(
                 '📖'
@@ -767,11 +745,15 @@ function createTitlesEmbed(
         description:
             [
                 description,
+
                 '',
+
                 embedConfig
                     .branding
                     .divider,
+
                 '',
+
                 '*Every earned designation is preserved permanently within the Soul Archives.*'
             ].join('\n'),
 
@@ -790,7 +772,7 @@ function createTitlesEmbed(
 
         footer: {
             text:
-                `🌙 Umbra • Guardian of Las Noches • Opened by ${interaction.user.username}`,
+                `THE Ⅹ SINS • Chronicle Titles • Opened by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -806,7 +788,9 @@ function createTitlesEmbed(
                     })
         }
     });
-}/**
+}
+
+/**
  * Format one rarity collection row.
  *
  * @param {string} rarity
@@ -893,10 +877,8 @@ function formatCategoryProgress(
         `\`${createProgressBar(percentage, 8)}\` **${percentage}%**`,
         `-# ${formatNumber(unlockedCount)} / ${formatNumber(categoryTitles.length)} unlocked`
     ].join('\n');
-}
-
-/**
- * Build the Chronicle Collection Overview.
+}/**
+ * Build the Collection Overview page.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {import('discord.js').GuildMember} member
@@ -908,6 +890,11 @@ function buildOverviewPage(
     member,
     unlockedTitles
 ) {
+    const unlockedTitleIds =
+        createUnlockedTitleIdSet(
+            unlockedTitles
+        );
+
     const activeTitle =
         findActiveTitle(
             unlockedTitles
@@ -918,400 +905,113 @@ function buildOverviewPage(
             unlockedTitles
         );
 
-    const unlockedTitleIds =
-        createUnlockedTitleIdSet(
-            unlockedTitles
-        );
-
     const totalTitles =
         TITLE_DEFINITIONS.length;
 
     const unlockedCount =
         unlockedTitles.length;
 
-    const lockedCount =
-        Math.max(
-            0,
-            totalTitles -
-            unlockedCount
-        );
-
-    const collectionPercentage =
+    const completion =
         calculateCompletion(
             unlockedCount,
             totalTitles
         );
 
-    const activeRarity =
-        getRarityDetails(
-            activeTitle?.rarity
-        );
+    const categoryProgress =
+        TITLE_CATEGORY_ORDER
+            .map(
+                category =>
+                    formatCategoryProgress(
+                        category,
+                        unlockedTitleIds
+                    )
+            )
+            .join('\n\n');
 
-    const latestRarity =
-        getRarityDetails(
-            latestTitle?.rarity
-        );
+    const rarityProgress =
+        RARITY_ORDER
+            .map(
+                rarity =>
+                    formatRarityProgress(
+                        rarity,
+                        unlockedTitleIds
+                    )
+            )
+            .join('\n\n');
 
-    const embed =
-        createTitlesEmbed(
-            interaction,
-            member,
-            '📖 Chronicle Title Collection',
-            `Umbra has opened the complete Chronicle Title archive of ${member}.`,
+    return createTitlesEmbed(
+        interaction,
+        member,
+
+        '📖 Chronicle Title Archives',
+
+        [
+            `A record of every designation earned by **${member.displayName}**.`,
+
+            '',
+
+            `**Active Title**`,
             activeTitle
-                ? activeRarity.color
-                : embedConfig.colors.title
-        );
+                ? `> ${activeTitle.displayName || activeTitle.name}`
+                : '> *No active Title*',
 
-    embed.addFields(
-        {
-            name:
-                '👑 Active Chronicle Title',
+            '',
 
-            value:
-                activeTitle
-                    ? [
-                        embedConfig
-                            .branding
-                            .divider,
-                        '',
-                        `## ${activeTitle.displayName}`,
-                        '',
-                        `${activeRarity.emoji} **${activeRarity.label}** • ${activeTitle.category}`,
-                        '',
-                        `-# ${activeTitle.description}`,
-                        '',
-                        `**Activated:** ${formatDiscordDate(activeTitle.activatedAt, 'F')}`,
-                        '',
-                        embedConfig
-                            .branding
-                            .divider
-                    ].join('\n')
-                    : [
-                        '🌑 No active Chronicle Title is currently selected.',
-                        '',
-                        'Use `/settitle` after unlocking a new designation.'
-                    ].join('\n'),
+            `**Collection Progress**`,
+            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
+            `-# ${formatNumber(unlockedCount)} / ${formatNumber(totalTitles)} Titles unlocked`,
 
-            inline:
-                false
-        },
-        {
-            name:
-                '🏆 Chronicle Collection',
+            '',
 
-            value:
-                [
-                    `\`${createProgressBar(collectionPercentage, 18)}\` **${collectionPercentage}%**`,
-                    '',
-                    `🏷️ **Unlocked:** \`${formatNumber(unlockedCount)} / ${formatNumber(totalTitles)}\``,
-                    `🔒 **Remaining:** \`${formatNumber(lockedCount)}\``,
-                    `📈 **Collection Completion:** \`${collectionPercentage}%\``
-                ].join('\n'),
+            `**Latest Unlock**`,
+            latestTitle
+                ? `> ${latestTitle.displayName || latestTitle.name} • ${formatDiscordDate(latestTitle.unlockedAt, 'R')}`
+                : '> *No Titles unlocked yet.*'
+        ].join('\n'),
 
-            inline:
-                false
-        }
-    );
-
-    if (latestTitle) {
-        embed.addFields({
-            name:
-                '📖 Latest Chronicle Unlock',
-
-            value:
-                [
-                    `${latestRarity.emoji} **${latestTitle.displayName}**`,
-                    `**Rarity:** ${latestRarity.label}`,
-                    `**Category:** ${latestTitle.category}`,
-                    `**Unlocked:** ${formatDiscordDate(latestTitle.unlockedAt, 'R')}`,
-                    '',
-                    `-# ${latestTitle.description}`
-                ].join('\n'),
-
-            inline:
-                false
-        });
-    }
-
-    const rarityRows =
-        RARITY_ORDER.map(
-            rarity =>
-                formatRarityProgress(
-                    rarity,
-                    unlockedTitleIds
-                )
-        );
-
-    const rarityChunks = [];
-
-    let currentRarityChunk =
-        '';
-
-    for (
-        const rarityRow
-        of rarityRows
-    ) {
-        const nextChunk =
-            currentRarityChunk
-                ? `${currentRarityChunk}\n\n${rarityRow}`
-                : rarityRow;
-
-        if (
-            nextChunk.length >
-            1_000
-        ) {
-            if (currentRarityChunk) {
-                rarityChunks.push(
-                    currentRarityChunk
-                );
-            }
-
-            currentRarityChunk =
-                rarityRow;
-        } else {
-            currentRarityChunk =
-                nextChunk;
-        }
-    }
-
-    if (currentRarityChunk) {
-        rarityChunks.push(
-            currentRarityChunk
-        );
-    }
-
-    rarityChunks.forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
+        embedConfig.colors.title
+    )
+        .addFields(
+            {
                 name:
-                    index === 0
-                        ? '🌟 Rarity Collection'
-                        : '🌟 Rarity Collection — Continued',
+                    '📚 Title Categories',
 
                 value:
-                    chunk,
+                    categoryProgress,
 
                 inline:
                     false
-            });
-        }
-    );
+            },
 
-    const categoryRows =
-        TITLE_CATEGORY_ORDER.map(
-            category =>
-                formatCategoryProgress(
-                    category,
-                    unlockedTitleIds
-                )
-        );
-
-    const categoryChunks = [];
-
-    let currentCategoryChunk =
-        '';
-
-    for (
-        const categoryRow
-        of categoryRows
-    ) {
-        const nextChunk =
-            currentCategoryChunk
-                ? `${currentCategoryChunk}\n\n${categoryRow}`
-                : categoryRow;
-
-        if (
-            nextChunk.length >
-            1_000
-        ) {
-            if (currentCategoryChunk) {
-                categoryChunks.push(
-                    currentCategoryChunk
-                );
-            }
-
-            currentCategoryChunk =
-                categoryRow;
-        } else {
-            currentCategoryChunk =
-                nextChunk;
-        }
-    }
-
-    if (currentCategoryChunk) {
-        categoryChunks.push(
-            currentCategoryChunk
-        );
-    }
-
-    categoryChunks.forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
+            {
                 name:
-                    index === 0
-                        ? '📚 Category Completion'
-                        : '📚 Category Completion — Continued',
+                    '💎 Rarity Collection',
 
                 value:
-                    chunk,
+                    rarityProgress,
 
                 inline:
                     false
-            });
-        }
-    );
-
-    embed.addFields({
-        name:
-            '🧭 Recommended Workflow',
-
-        value:
-            [
-                '`/titles` — inspect this collection',
-                '`/settitle` — activate an unlocked Title',
-                '`/soul` — view the active Title inside the complete Soul Record',
-                '',
-                '-# High Command may use `/granttitle` and `/revoketitle` for Manual or Event Titles.'
-            ].join('\n'),
-
-        inline:
-            false
-    });
-
-    return embed;
-}
-
-/**
- * Format one unlocked Chronicle Title.
- *
- * @param {Object} titleDefinition
- * @param {Object|null} unlockedTitle
- * @returns {string}
- */
-function formatUnlockedTitle(
-    titleDefinition,
-    unlockedTitle
-) {
-    const rarity =
-        getRarityDetails(
-            titleDefinition.rarity
-        );
-
-    const activeMarker =
-        unlockedTitle?.isActive
-            ? '👑 **ACTIVE TITLE**'
-            : '✅ **UNLOCKED**';
-
-    return [
-        `${activeMarker}`,
-        `### ${titleDefinition.displayName}`,
-        `${rarity.emoji} **${rarity.label}** • ${titleDefinition.category}`,
-        `**Unlocked:** ${formatDiscordDate(unlockedTitle?.unlockedAt, 'D')} (${formatDiscordDate(unlockedTitle?.unlockedAt, 'R')})`,
-        `-# ${titleDefinition.description}`
-    ].join('\n');
-}
-
-/**
- * Format one locked Chronicle Title.
- *
- * @param {Object} titleDefinition
- * @returns {string}
- */
-function formatLockedTitle(
-    titleDefinition
-) {
-    const rarity =
-        getRarityDetails(
-            titleDefinition.rarity
-        );
-
-    return [
-        `🔒 **${titleDefinition.displayName}**`,
-        `${rarity.emoji} **${rarity.label}**`,
-        `**Requirement:** ${formatUnlockRequirement(titleDefinition)}`,
-        `-# ${titleDefinition.description}`
-    ].join('\n');
-}
-
-/**
- * Split formatted entries into safe
- * Discord Embed field values.
- *
- * @param {string[]} entries
- * @param {number} maxLength
- * @returns {string[]}
- */
-function splitTitleEntries(
-    entries,
-    maxLength = 1_000
-) {
-    const chunks = [];
-
-    let currentChunk =
-        '';
-
-    for (
-        const entry
-        of entries
-    ) {
-        const separator =
-            currentChunk
-                ? '\n\n━━━━━━━━━━━━━━━━━━━━\n\n'
-                : '';
-
-        const nextChunk =
-            `${currentChunk}${separator}${entry}`;
-
-        if (
-            nextChunk.length >
-            maxLength
-        ) {
-            if (currentChunk) {
-                chunks.push(
-                    currentChunk
-                );
             }
-
-            currentChunk =
-                entry;
-        } else {
-            currentChunk =
-                nextChunk;
-        }
-    }
-
-    if (currentChunk) {
-        chunks.push(
-            currentChunk
         );
-    }
-
-    return chunks;
 }
 
 /**
- * Build one Chronicle Title category page.
+ * Build a category page.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {import('discord.js').GuildMember} member
- * @param {string} category
  * @param {Object[]} unlockedTitles
+ * @param {string} category
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildCategoryPage(
     interaction,
     member,
-    category,
-    unlockedTitles
+    unlockedTitles,
+    category
 ) {
-    const categoryDetails =
+    const details =
         CATEGORY_DETAILS[
             category
         ] || {
@@ -1330,199 +1030,195 @@ function buildCategoryPage(
             category
         );
 
-    const unlockedTitleMap =
-        new Map(
-            unlockedTitles.map(
-                title => [
-                    title.titleId,
-                    title
-                ]
-            )
+    const unlockedTitleIds =
+        createUnlockedTitleIdSet(
+            unlockedTitles
         );
 
-    const unlockedCategoryTitles =
-        categoryTitles.filter(
-            title =>
-                unlockedTitleMap.has(
-                    title.id
-                )
+    const unlockedCount =
+        countUnlockedCategoryTitles(
+            category,
+            unlockedTitleIds
         );
 
-    const lockedCategoryTitles =
-        categoryTitles.filter(
-            title =>
-                !unlockedTitleMap.has(
-                    title.id
-                )
-        );
-
-    const categoryPercentage =
+    const completion =
         calculateCompletion(
-            unlockedCategoryTitles.length,
+            unlockedCount,
             categoryTitles.length
         );
 
-    const embed =
-        createTitlesEmbed(
-            interaction,
-            member,
-            `${categoryDetails.emoji} ${categoryDetails.label} Chronicle Titles`,
-            [
-                categoryDetails.description,
-                '',
-                `This archive contains every configured **${categoryDetails.label}** designation.`
-            ].join('\n'),
-            categoryPercentage ===
-                100
-                ? embedConfig.colors.success
-                : embedConfig.colors.title
-        );
+    const titleRows =
+        categoryTitles.length > 0
+            ? categoryTitles
+                .map(
+                    title => {
+                        const unlocked =
+                            unlockedTitleIds.has(
+                                title.id
+                            );
 
-    embed.addFields({
-        name:
-            '📊 Category Collection',
+                        const rarity =
+                            getRarityDetails(
+                                title.rarity
+                            );
 
-        value:
-            [
-                `\`${createProgressBar(categoryPercentage, 16)}\` **${categoryPercentage}%**`,
-                '',
-                `✅ **Unlocked:** \`${formatNumber(unlockedCategoryTitles.length)}\``,
-                `🔒 **Locked:** \`${formatNumber(lockedCategoryTitles.length)}\``,
-                `📚 **Total:** \`${formatNumber(categoryTitles.length)}\``
-            ].join('\n'),
+                        const status =
+                            unlocked
+                                ? '✅'
+                                : '🔒';
 
-        inline:
-            false
-    });
+                        return [
+                            `${status} ${rarity.emoji} **${title.displayName || title.name}**`,
+                            `-# ${title.description}`,
+                            `-# ${unlocked ? 'Unlocked' : formatUnlockRequirement(title)}`
+                        ].join('\n');
+                    }
+                )
+                .join('\n\n')
+            : '*No Titles are currently configured in this archive.*';
 
-    if (
-        unlockedCategoryTitles.length >
-        0
-    ) {
-        const unlockedEntries =
-            unlockedCategoryTitles.map(
-                titleDefinition =>
-                    formatUnlockedTitle(
-                        titleDefinition,
-                        unlockedTitleMap.get(
-                            titleDefinition.id
-                        )
-                    )
-            );
+    return createTitlesEmbed(
+        interaction,
+        member,
 
-        const unlockedChunks =
-            splitTitleEntries(
-                unlockedEntries
-            );
+        `${details.emoji} ${details.label} Titles`,
 
-        unlockedChunks.forEach(
-            (
-                chunk,
-                index
-            ) => {
-                embed.addFields({
-                    name:
-                        index === 0
-                            ? '✅ Unlocked Chronicle Titles'
-                            : '✅ Unlocked Chronicle Titles — Continued',
+        [
+            details.description,
 
-                    value:
-                        chunk,
+            '',
 
-                    inline:
-                        false
-                });
-            }
-        );
-    } else {
-        embed.addFields({
+            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
+
+            `-# ${formatNumber(unlockedCount)} / ${formatNumber(categoryTitles.length)} unlocked`
+        ].join('\n'),
+
+        embedConfig.colors.title
+    )
+        .addFields({
             name:
-                '✅ Unlocked Chronicle Titles',
+                '📜 Chronicle Records',
 
             value:
-                [
-                    '🌑 No Titles from this category have been unlocked yet.',
-                    '',
-                    '-# Continue progressing through Las Noches to expand this collection.'
-                ].join('\n'),
+                titleRows,
 
             inline:
                 false
         });
-    }
-
-    if (
-        lockedCategoryTitles.length >
-        0
-    ) {
-        const lockedEntries =
-            lockedCategoryTitles.map(
-                formatLockedTitle
-            );
-
-        const lockedChunks =
-            splitTitleEntries(
-                lockedEntries
-            );
-
-        lockedChunks.forEach(
-            (
-                chunk,
-                index
-            ) => {
-                embed.addFields({
-                    name:
-                        index === 0
-                            ? '🔒 Locked Chronicle Titles'
-                            : '🔒 Locked Chronicle Titles — Continued',
-
-                    value:
-                        chunk,
-
-                    inline:
-                        false
-                });
-            }
-        );
-    } else {
-        embed.addFields({
-            name:
-                '🏆 Category Completed',
-
-            value:
-                [
-                    'Every Title within this category has been unlocked.',
-                    '',
-                    `\`${createProgressBar(100, 16)}\` **100%**`,
-                    '',
-                    '-# This Chronicle collection is complete.'
-                ].join('\n'),
-
-            inline:
-                false
-        });
-    }
-
-    return embed;
 }
 
 /**
- * Build the requested Chronicle Title page.
+ * Build the user's unlocked Title archive.
  *
  * @param {import('discord.js').ChatInputCommandInteraction} interaction
  * @param {import('discord.js').GuildMember} member
- * @param {string} selectedPage
  * @param {Object[]} unlockedTitles
+ * @returns {import('discord.js').EmbedBuilder}
+ */
+function buildUnlockedTitlesPage(
+    interaction,
+    member,
+    unlockedTitles
+) {
+    const activeTitle =
+        findActiveTitle(
+            unlockedTitles
+        );
+
+    const sortedTitles =
+        [...unlockedTitles]
+            .sort(
+                (
+                    firstTitle,
+                    secondTitle
+                ) =>
+                    new Date(
+                        secondTitle.unlockedAt ||
+                        0
+                    ).getTime() -
+                    new Date(
+                        firstTitle.unlockedAt ||
+                        0
+                    ).getTime()
+            );
+
+    const rows =
+        sortedTitles.length > 0
+            ? sortedTitles
+                .map(
+                    title => {
+                        const definition =
+                            TITLE_DEFINITIONS.find(
+                                configuredTitle =>
+                                    configuredTitle.id ===
+                                    title.titleId
+                            );
+
+                        const rarity =
+                            getRarityDetails(
+                                definition?.rarity
+                            );
+
+                        const active =
+                            activeTitle?.titleId ===
+                            title.titleId;
+
+                        return [
+                            `${active ? '⭐' : '📜'} ${rarity.emoji} **${title.displayName || title.name}**`,
+                            `-# ${formatDiscordDate(title.unlockedAt, 'R')}`
+                        ].join('\n');
+                    }
+                )
+                .join('\n\n')
+            : '*This Soul has not unlocked any Chronicle Titles yet.*';
+
+    return createTitlesEmbed(
+        interaction,
+        member,
+
+        '📜 Unlocked Chronicle Titles',
+
+        [
+            `**${member.displayName}** has unlocked **${formatNumber(unlockedTitles.length)}** Chronicle Title${unlockedTitles.length === 1 ? '' : 's'}.`,
+
+            '',
+
+            activeTitle
+                ? `**Active:** ${activeTitle.displayName || activeTitle.name}`
+                : '**Active:** *None*'
+        ].join('\n'),
+
+        embedConfig.colors.title
+    )
+        .addFields({
+            name:
+                'Soul Archive',
+
+            value:
+                rows,
+
+            inline:
+                false
+        });
+}
+
+/**
+ * Resolve the requested archive page.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {import('discord.js').GuildMember} member
+ * @param {Object[]} unlockedTitles
+ * @param {string} page
  * @returns {import('discord.js').EmbedBuilder}
  */
 function buildTitlesPage(
     interaction,
     member,
-    selectedPage,
-    unlockedTitles
+    unlockedTitles,
+    page
 ) {
     if (
-        selectedPage ===
+        page ===
         OVERVIEW_PAGE_ID
     ) {
         return buildOverviewPage(
@@ -1534,14 +1230,14 @@ function buildTitlesPage(
 
     if (
         TITLE_CATEGORY_ORDER.includes(
-            selectedPage
+            page
         )
     ) {
         return buildCategoryPage(
             interaction,
             member,
-            selectedPage,
-            unlockedTitles
+            unlockedTitles,
+            page
         );
     }
 
@@ -1550,7 +1246,132 @@ function buildTitlesPage(
         member,
         unlockedTitles
     );
-}module.exports = {
+}
+
+/**
+ * Create the final response payload.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {import('discord.js').GuildMember} member
+ * @param {Object[]} unlockedTitles
+ * @param {string} page
+ * @returns {{
+ *     embeds: import('discord.js').EmbedBuilder[],
+ *     components: ActionRowBuilder[]
+ * }}
+ */
+function createTitlesResponse(
+    interaction,
+    member,
+    unlockedTitles,
+    page
+) {
+    return {
+        embeds: [
+            buildTitlesPage(
+                interaction,
+                member,
+                unlockedTitles,
+                page
+            )
+        ],
+
+        components: [
+            createCategoryMenu(
+                page
+            )
+        ]
+    };
+}/**
+ * Get the requested member.
+ *
+ * Falls back to the command user when
+ * no user option was provided.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @returns {Promise<import('discord.js').GuildMember|null>}
+ */
+async function resolveTargetMember(
+    interaction
+) {
+    const requestedUser =
+        interaction.options.getUser(
+            'user'
+        );
+
+    if (!requestedUser) {
+        return interaction.member;
+    }
+
+    try {
+        return await interaction.guild
+            .members
+            .fetch(
+                requestedUser.id
+            );
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Send a safe error response.
+ *
+ * @param {import('discord.js').ChatInputCommandInteraction} interaction
+ * @param {string} message
+ * @returns {Promise<void>}
+ */
+async function sendTitlesError(
+    interaction,
+    message
+) {
+    const embed =
+        createErrorEmbed(
+            'Chronicle Titles',
+            message
+        );
+
+    if (
+        interaction.deferred
+    ) {
+        await interaction.editReply({
+            embeds: [
+                embed
+            ],
+
+            components:
+                []
+        });
+
+        return;
+    }
+
+    if (
+        interaction.replied
+    ) {
+        await interaction.followUp({
+            flags:
+                MessageFlags.Ephemeral,
+
+            embeds: [
+                embed
+            ]
+        });
+
+        return;
+    }
+
+    await interaction.reply({
+        flags:
+            MessageFlags.Ephemeral,
+
+        embeds: [
+            embed
+        ]
+    });
+}
+
+module.exports = {
     category:
         'information',
 
@@ -1560,28 +1381,27 @@ function buildTitlesPage(
                 'titles'
             )
             .setDescription(
-                'Open a Soul’s interactive Chronicle Title collection.'
+                'View Chronicle Titles and Soul progression.'
             )
-
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'user'
-                    )
-                    .setDescription(
-                        'Select the Soul whose Chronicle Title collection you want to view'
-                    )
-                    .setRequired(
-                        false
-                    )
+            .addUserOption(
+                option =>
+                    option
+                        .setName(
+                            'user'
+                        )
+                        .setDescription(
+                            'View another Soul\'s Chronicle Titles.'
+                        )
+                        .setRequired(
+                            false
+                        )
             )
-
             .setDMPermission(
                 false
             ),
 
     /**
-     * Execute the /titles command.
+     * Execute /titles.
      *
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
@@ -1593,350 +1413,145 @@ function buildTitlesPage(
             if (
                 !interaction.inGuild()
             ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Las Noches Only Command',
-                            'Chronicle Title collections can only be opened inside Las Noches.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
-
-                return;
-            }
-
-            await interaction.deferReply();
-
-            const selectedUser =
-                interaction.options.getUser(
-                    'user'
-                ) ??
-                interaction.user;
-
-            const member =
-                await interaction.guild.members
-                    .fetch(
-                        selectedUser.id
-                    )
-                    .catch(
-                        () => null
-                    );
-
-            if (!member) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Soul Not Found',
-                            'The selected Soul is not currently inside Las Noches.'
-                        )
-                    ],
-
-                    components:
-                        []
-                });
-
-                return;
-            }
-
-            /*
-             * Guarantee that the default
-             * Nameless Soul Title exists.
-             */
-            await titleDatabase
-                .ensureDefaultSoulTitle(
-                    interaction.guild.id,
-                    member.id
+                await sendTitlesError(
+                    interaction,
+                    'This command can only be used inside THE Ⅹ SINS.'
                 );
 
-            let unlockedTitles =
+                return;
+            }
+
+            const member =
+                await resolveTargetMember(
+                    interaction
+                );
+
+            if (!member) {
+                await sendTitlesError(
+                    interaction,
+                    'The requested Soul could not be found.'
+                );
+
+                return;
+            }
+
+            const unlockedTitles =
                 await titleDatabase
-                    .getSoulTitles(
+                    .getUserTitles(
                         interaction.guild.id,
                         member.id
                     );
 
-            let selectedPage =
-                OVERVIEW_PAGE_ID;
-
-            const initialEmbed =
-                buildTitlesPage(
+            const response =
+                createTitlesResponse(
                     interaction,
                     member,
-                    selectedPage,
-                    unlockedTitles
+                    unlockedTitles,
+                    OVERVIEW_PAGE_ID
                 );
 
-            const replyMessage =
-                await interaction.editReply({
-                    embeds: [
-                        initialEmbed
-                    ],
-
-                    components: [
-                        createCategoryMenu(
-                            selectedPage
-                        )
-                    ],
-
-                    fetchReply:
-                        true
-                });
-
-            const collector =
-                replyMessage
-                    .createMessageComponentCollector({
-                        componentType:
-                            ComponentType.StringSelect,
-
-                        time:
-                            10 * 60 * 1000
-                    });
-
-            collector.on(
-                'collect',
-                async menuInteraction => {
-                    try {
-                        if (
-                            menuInteraction.user.id !==
-                            interaction.user.id
-                        ) {
-                            await menuInteraction.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        '❌ Private Chronicle Archive',
-                                        'Only the Soul who opened this Chronicle Title collection may control its navigation.'
-                                    )
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            });
-
-                            return;
-                        }
-
-                        if (
-                            menuInteraction.customId !==
-                            TITLE_CATEGORY_MENU_ID
-                        ) {
-                            return;
-                        }
-
-                        const requestedPage =
-                            menuInteraction.values[0];
-
-                        const validPage =
-                            requestedPage ===
-                                OVERVIEW_PAGE_ID ||
-                            TITLE_CATEGORY_ORDER.includes(
-                                requestedPage
-                            );
-
-                        if (!validPage) {
-                            await menuInteraction.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        '❌ Unknown Chronicle Archive',
-                                        'Umbra could not recognize the selected Chronicle Title category.'
-                                    )
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            });
-
-                            return;
-                        }
-
-                        selectedPage =
-                            requestedPage;
-
-                        /*
-                         * Reload the collection before
-                         * each page change.
-                         *
-                         * Newly unlocked, revoked or
-                         * activated Titles will appear
-                         * without reopening /titles.
-                         */
-                        unlockedTitles =
-                            await titleDatabase
-                                .getSoulTitles(
-                                    interaction.guild.id,
-                                    member.id
-                                );
-
-                        const updatedEmbed =
-                            buildTitlesPage(
-                                interaction,
-                                member,
-                                selectedPage,
-                                unlockedTitles
-                            );
-
-                        await menuInteraction.update({
-                            embeds: [
-                                updatedEmbed
-                            ],
-
-                            components: [
-                                createCategoryMenu(
-                                    selectedPage
-                                )
-                            ]
-                        });
-                    } catch (menuError) {
-                        console.error(
-                            '❌ Umbra /titles navigation error:',
-                            menuError
-                        );
-
-                        const navigationErrorEmbed =
-                            createErrorEmbed(
-                                '❌ Chronicle Navigation Failed',
-                                [
-                                    'Umbra could not open the selected Chronicle Title archive.',
-                                    '',
-                                    'Please try opening `/titles` again.'
-                                ].join('\n')
-                            );
-
-                        if (
-                            menuInteraction.deferred ||
-                            menuInteraction.replied
-                        ) {
-                            await menuInteraction
-                                .followUp({
-                                    embeds: [
-                                        navigationErrorEmbed
-                                    ],
-
-                                    flags:
-                                        MessageFlags.Ephemeral
-                                })
-                                .catch(
-                                    () => null
-                                );
-
-                            return;
-                        }
-
-                        await menuInteraction
-                            .reply({
-                                embeds: [
-                                    navigationErrorEmbed
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            })
-                            .catch(
-                                () => null
-                            );
-                    }
-                }
-            );
-
-            collector.on(
-                'end',
-                async (
-                    collected,
-                    reason
-                ) => {
-                    if (
-                        reason ===
-                        'messageDelete' ||
-                        reason ===
-                        'channelDelete' ||
-                        reason ===
-                        'guildDelete'
-                    ) {
-                        return;
-                    }
-
-                    await interaction
-                        .editReply({
-                            components: [
-                                createCategoryMenu(
-                                    selectedPage,
-                                    true
-                                )
-                            ]
-                        })
-                        .catch(
-                            () => null
-                        );
-                }
+            await interaction.reply(
+                response
             );
         } catch (error) {
             console.error(
-                '❌ Umbra /titles command error:',
+                '❌ THE Ⅹ SINS /titles command error:',
                 error
             );
 
-            const errorEmbed =
-                createErrorEmbed(
-                    '❌ Chronicle Title Collection Unavailable',
-                    [
-                        'Umbra could not open the requested Chronicle Title collection.',
-                        '',
-                        'Please inspect the PostgreSQL connection and Northflank logs before trying again.'
-                    ].join('\n')
-                );
-
-            if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await sendTitlesError(
+                interaction,
+                'The Chronicle Title archive could not be opened.'
+            ).catch(
+                () => null
+            );
         }
     }
 };
+
+/**
+ * Handle Chronicle Title category
+ * selection menus.
+ *
+ * This listener is intentionally exported
+ * so index.js can route the interaction
+ * through the central interaction handler.
+ *
+ * @param {import('discord.js').StringSelectMenuInteraction} interaction
+ * @returns {Promise<boolean>}
+ */
+async function handleTitlesInteraction(
+    interaction
+) {
+    if (
+        !interaction.isStringSelectMenu()
+    ) {
+        return false;
+    }
+
+    if (
+        interaction.customId !==
+        TITLE_CATEGORY_MENU_ID
+    ) {
+        return false;
+    }
+
+    try {
+        const member =
+            await interaction.guild
+                .members
+                .fetch(
+                    interaction.user.id
+                );
+
+        const unlockedTitles =
+            await titleDatabase
+                .getUserTitles(
+                    interaction.guild.id,
+                    member.id
+                );
+
+        const selectedPage =
+            interaction.values?.[0] ||
+            OVERVIEW_PAGE_ID;
+
+        const response =
+            createTitlesResponse(
+                interaction,
+                member,
+                unlockedTitles,
+                selectedPage
+            );
+
+        await interaction.update(
+            response
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            '❌ THE Ⅹ SINS Chronicle Titles interaction error:',
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+            await interaction.reply({
+                flags:
+                    MessageFlags.Ephemeral,
+
+                content:
+                    '❌ The Chronicle Title archive could not be updated.'
+            }).catch(
+                () => null
+            );
+        }
+
+        return true;
+    }
+}
+
+module.exports.handleTitlesInteraction =
+    handleTitlesInteraction;
