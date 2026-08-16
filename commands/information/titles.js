@@ -1437,7 +1437,7 @@ module.exports = {
 
             const unlockedTitles =
                 await titleDatabase
-                    .getUserTitles(
+                    .getSoulTitles(
                         interaction.guild.id,
                         member.id
                     );
@@ -1506,7 +1506,7 @@ async function handleTitlesInteraction(
 
         const unlockedTitles =
             await titleDatabase
-                .getUserTitles(
+                .getSoulTitles(
                     interaction.guild.id,
                     member.id
                 );
