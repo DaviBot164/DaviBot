@@ -1017,10 +1017,8 @@ function buildCategoryPage(
         ] || {
             emoji:
                 '📜',
-
             label:
                 category,
-
             description:
                 `${category} Titles`
         };
@@ -1047,66 +1045,87 @@ function buildCategoryPage(
             categoryTitles.length
         );
 
-    const titleRows =
+    const fields =
         categoryTitles.length > 0
-            ? categoryTitles
-                .map(
-                    title => {
-                        const unlocked =
-                            unlockedTitleIds.has(
-                                title.id
-                            );
+            ? categoryTitles.map(
+                title => {
+                    const unlocked =
+                        unlockedTitleIds.has(
+                            title.id
+                        );
 
-                        const rarity =
-                            getRarityDetails(
-                                title.rarity
-                            );
+                    const rarity =
+                        getRarityDetails(
+                            title.rarity
+                        );
 
-                        const status =
-                            unlocked
-                                ? '✅'
-                                : '🔒';
+                    return {
+                        name:
+                            [
+                                unlocked
+                                    ? '✅'
+                                    : '🔒',
+                                rarity.emoji,
+                                title.displayName ||
+                                    title.name
+                            ].join(' ')
+                                .slice(
+                                    0,
+                                    256
+                                ),
 
-                        return [
-                            `${status} ${rarity.emoji} **${title.displayName || title.name}**`,
-                            `-# ${title.description}`,
-                            `-# ${unlocked ? 'Unlocked' : formatUnlockRequirement(title)}`
-                        ].join('\n');
-                    }
-                )
-                .join('\n\n')
-            : '*No Titles are currently configured in this archive.*';
+                        value:
+                            [
+                                title.description,
+                                unlocked
+                                    ? '✅ Unlocked'
+                                    : `🔒 ${formatUnlockRequirement(
+                                        title
+                                    )}`
+                            ].join('\n')
+                                .slice(
+                                    0,
+                                    1024
+                                ),
+
+                        inline:
+                            false
+                    };
+                }
+            )
+            : [
+                {
+                    name:
+                        '📜 Chronicle Records',
+                    value:
+                        'No Titles are currently configured in this archive.',
+                    inline:
+                        false
+                }
+            ];
 
     return createTitlesEmbed(
         interaction,
         member,
-
         `${details.emoji} ${details.label} Titles`,
-
         [
             details.description,
-
             '',
-
-            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
-
-            `-# ${formatNumber(unlockedCount)} / ${formatNumber(categoryTitles.length)} unlocked`
+            `\`${createProgressBar(
+                completion,
+                18
+            )}\` **${completion}%**`,
+            `-# ${formatNumber(
+                unlockedCount
+            )} / ${formatNumber(
+                categoryTitles.length
+            )} unlocked`
         ].join('\n'),
-
         embedConfig.colors.title
-    )
-        .addFields({
-            name:
-                '📜 Chronicle Records',
-
-            value:
-                titleRows,
-
-            inline:
-                false
-        });
+    ).addFields(
+        fields
+    );
 }
-
 /**
  * Build the user's unlocked Title archive.
  *

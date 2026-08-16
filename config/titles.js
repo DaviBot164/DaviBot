@@ -1,3 +1,5 @@
+const rankConfig = require('./ranks');
+
 /**
  * THE Ⅹ SINS Title System.
  *
@@ -87,6 +89,116 @@ const TITLE_UNLOCK_TYPES = {
         'EVENT'
 };
 
+const ACHIEVEMENT_TITLE_DETAILS = Object.freeze([
+    {
+        id: 'first_voice',
+        name: 'SIN AWAKENED',
+        achievementId: 'first_words',
+        rarity: TITLE_RARITIES.COMMON
+    },
+    {
+        id: 'chronicle_awakened',
+        name: 'SINBOUND',
+        achievementId: 'awakened_soul',
+        rarity: TITLE_RARITIES.UNCOMMON
+    },
+    {
+        id: 'chronicle_riser',
+        name: 'SIN ASCENDANT',
+        achievementId: 'rising_soul',
+        rarity: TITLE_RARITIES.RARE
+    },
+    {
+        id: 'keeper_of_crimson_chronicles',
+        name: 'SIN SOVEREIGN',
+        achievementId: 'crimson_soul',
+        rarity: TITLE_RARITIES.EPIC
+    },
+    {
+        id: 'eternal_chronicle_keeper',
+        name: 'ETERNAL SIN',
+        achievementId: 'eternal_soul',
+        rarity: TITLE_RARITIES.LEGENDARY
+    }
+]);
+
+const SIN_RANK_TITLE_KEYS = Object.freeze([
+    'dominion',
+    'pride',
+    'wrath',
+    'envy',
+    'greed',
+    'lust',
+    'gluttony',
+    'sloth',
+    'ruin',
+    'heresy',
+    'vengeance'
+]);
+
+function createAchievementTitles() {
+    return ACHIEVEMENT_TITLE_DETAILS.map(
+        title => ({
+            id: title.id,
+            name: title.name,
+            displayName: title.name,
+            description:
+                `Unlocked by earning the ${title.name} Achievement.`,
+            category:
+                TITLE_CATEGORIES.ACHIEVEMENT,
+            rarity:
+                title.rarity,
+            unlock: {
+                type:
+                    TITLE_UNLOCK_TYPES.ACHIEVEMENT,
+                achievementId:
+                    title.achievementId
+            }
+        })
+    );
+}
+
+function createSinRankTitles() {
+    return SIN_RANK_TITLE_KEYS.map(
+        (
+            rankKey,
+            index
+        ) => {
+            const rank =
+                rankConfig.hierarchy[
+                    rankKey
+                ];
+
+            const name =
+                rank.name.replace(
+                    /^.*?SIN OF /,
+                    'SIN OF '
+                );
+
+            return {
+                id:
+                    `sin_of_${rankKey}`,
+                name,
+                displayName:
+                    rank.name,
+                description:
+                    `Unlocked by receiving the ${name} rank.`,
+                category:
+                    TITLE_CATEGORIES.SIN_RANK,
+                rarity:
+                    index < 2
+                        ? TITLE_RARITIES.MYTHIC
+                        : TITLE_RARITIES.LEGENDARY,
+                unlock: {
+                    type:
+                        TITLE_UNLOCK_TYPES.SIN_RANK,
+                    rankName:
+                        rank.name
+                }
+            };
+        }
+    );
+}
 /**
  * Every Title available inside
  * THE Ⅹ SINS.
@@ -439,146 +551,8 @@ const TITLE_DEFINITIONS = [
      * ======================================================
      * Achievement Titles
      * ======================================================
-     */    {
-        id:
-            'first_voice',
-
-        name:
-            'The First Voice',
-
-        displayName:
-            '🗣️ The First Voice',
-
-        description:
-            'Unlocked after recording the First Words Achievement.',
-
-        category:
-            TITLE_CATEGORIES.ACHIEVEMENT,
-
-        rarity:
-            TITLE_RARITIES.COMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ACHIEVEMENT,
-
-            achievementId:
-                'first_words'
-        }
-    },
-
-    {
-        id:
-            'chronicle_awakened',
-
-        name:
-            'Chronicle Awakened',
-
-        displayName:
-            '📖 Chronicle Awakened',
-
-        description:
-            'Unlocked after recording the Awakened Soul Achievement.',
-
-        category:
-            TITLE_CATEGORIES.ACHIEVEMENT,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ACHIEVEMENT,
-
-            achievementId:
-                'awakened_soul'
-        }
-    },
-
-    {
-        id:
-            'chronicle_riser',
-
-        name:
-            'Keeper of Rising Chronicles',
-
-        displayName:
-            '⭐ Keeper of Rising Chronicles',
-
-        description:
-            'Unlocked after recording the Rising Soul Achievement.',
-
-        category:
-            TITLE_CATEGORIES.ACHIEVEMENT,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ACHIEVEMENT,
-
-            achievementId:
-                'rising_soul'
-        }
-    },
-
-    {
-        id:
-            'keeper_of_crimson_chronicles',
-
-        name:
-            'Keeper of Crimson Chronicles',
-
-        displayName:
-            '🌔 Keeper of Crimson Chronicles',
-
-        description:
-            'Unlocked after recording the Crimson Soul Achievement.',
-
-        category:
-            TITLE_CATEGORIES.ACHIEVEMENT,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ACHIEVEMENT,
-
-            achievementId:
-                'crimson_soul'
-        }
-    },
-
-    {
-        id:
-            'eternal_chronicle_keeper',
-
-        name:
-            'Eternal Chronicle Keeper',
-
-        displayName:
-            '🌕 Eternal Chronicle Keeper',
-
-        description:
-            'Unlocked after recording the Eternal Soul Achievement.',
-
-        category:
-            TITLE_CATEGORIES.ACHIEVEMENT,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.ACHIEVEMENT,
-
-            achievementId:
-                'eternal_soul'
-        }
-    },
-
+     */
+    ...createAchievementTitles(),
     /*
      * ======================================================
      * Hollow Evolution Titles
@@ -756,286 +730,8 @@ const TITLE_DEFINITIONS = [
      * ======================================================
      * Sin Rank Titles
      * ======================================================
-     */    {
-        id:
-            'sin_of_pride',
-
-        name:
-            'Sin of Pride',
-
-        displayName:
-            '👑 Sin of Pride',
-
-        description:
-            'The throne of Pride. A rank reserved for the Soul who stands above the others.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '👑 Sin of Pride'
-        }
-    },
-
-    {
-        id:
-            'sin_of_wrath',
-
-        name:
-            'Sin of Wrath',
-
-        displayName:
-            '💧 Sin of Wrath',
-
-        description:
-            'The throne of Wrath. Power forged through relentless fury.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '💧 Sin of Wrath'
-        }
-    },
-
-    {
-        id:
-            'sin_of_envy',
-
-        name:
-            'Sin of Envy',
-
-        displayName:
-            '🐍 Sin of Envy',
-
-        description:
-            'The throne of Envy. Always watching, always wanting more.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '🐍 Sin of Envy'
-        }
-    },
-
-    {
-        id:
-            'sin_of_greed',
-
-        name:
-            'Sin of Greed',
-
-        displayName:
-            '💰 Sin of Greed',
-
-        description:
-            'The throne of Greed. Nothing is ever enough.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '💰 Sin of Greed'
-        }
-    },
-
-    {
-        id:
-            'sin_of_lust',
-
-        name:
-            'Sin of Lust',
-
-        displayName:
-            '🖤 Sin of Lust',
-
-        description:
-            'The throne of Lust. Desire turned into power.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '🖤 Sin of Lust'
-        }
-    },
-
-    {
-        id:
-            'sin_of_gluttony',
-
-        name:
-            'Sin of Gluttony',
-
-        displayName:
-            '🍷 Sin of Gluttony',
-
-        description:
-            'The throne of Gluttony. An endless hunger that refuses to fade.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '🍷 Sin of Gluttony'
-        }
-    },
-
-    {
-        id:
-            'sin_of_sloth',
-
-        name:
-            'Sin of Sloth',
-
-        displayName:
-            '💤 Sin of Sloth',
-
-        description:
-            'The throne of Sloth. Quiet power that never needs to prove itself.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '💤 Sin of Sloth'
-        }
-    },
-
-    {
-        id:
-            'sin_of_ruin',
-
-        name:
-            'Sin of Ruin',
-
-        displayName:
-            '☠️ Sin of Ruin',
-
-        description:
-            'The throne of Ruin. What stands today may not stand tomorrow.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '☠️ Sin of Ruin'
-        }
-    },
-
-    {
-        id:
-            'sin_of_heresy',
-
-        name:
-            'Sin of Heresy',
-
-        displayName:
-            '⚜️ Sin of Heresy',
-
-        description:
-            'The throne of Heresy. A Soul who refuses to bow to convention.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '⚜️ Sin of Heresy'
-        }
-    },
-
-    {
-        id:
-            'sin_of_vengeance',
-
-        name:
-            'Sin of Vengeance',
-
-        displayName:
-            '⚔️ Sin of Vengeance',
-
-        description:
-            'The throne of Vengeance. Every debt eventually comes due.',
-
-        category:
-            TITLE_CATEGORIES.SIN_RANK,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.SIN_RANK,
-
-            rankName:
-                '⚔️ Sin of Vengeance'
-        }
-    },
-
+     */
+    ...createSinRankTitles(),
     /*
      * ======================================================
      * High Command Titles
