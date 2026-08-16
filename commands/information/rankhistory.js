@@ -4,7 +4,8 @@ const {
     MessageFlags,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder
+    StringSelectMenuOptionBuilder,
+    ComponentType
 } = require('discord.js');
 
 const {
@@ -20,6 +21,9 @@ const rankConfig =
 
 const HISTORY_MENU_ID =
     'umbra_rankhistory_menu';
+
+const MENU_TIMEOUT =
+    10 * 60 * 1000;
 
 const HISTORY_PAGES = {
     overview:
@@ -44,69 +48,60 @@ const HISTORY_PAGE_ORDER = [
 
 const HISTORY_PAGE_DETAILS = {
     [HISTORY_PAGES.overview]: {
-        label:
-            'Overview',
-
-        emoji:
-            '📜',
-
+        label: 'Overview',
+        emoji: '📜',
         description:
-            'View the Soul’s current Rank and recent history.'
+            'Current Sin Rank and recent history'
     },
 
     [HISTORY_PAGES.promotions]: {
-        label:
-            'Promotions',
-
-        emoji:
-            '⬆️',
-
+        label: 'Promotions',
+        emoji: '⬆️',
         description:
-            'View previous Sin Rank assignments.'
+            'Previous Sin Rank assignments'
     },
 
     [HISTORY_PAGES.removals]: {
-        label:
-            'Removals',
-
-        emoji:
-            '⬇️',
-
+        label: 'Removals',
+        emoji: '⬇️',
         description:
-            'View previous Sin Rank removals.'
+            'Previous Sin Rank removals'
     },
 
     [HISTORY_PAGES.complete]: {
-        label:
-            'Complete Archive',
-
-        emoji:
-            '🗃️',
-
+        label: 'Complete Archive',
+        emoji: '🗃️',
         description:
-            'View the complete Sin Rank history archive.'
+            'Complete recorded Sin Rank history'
     }
 };
 
-/**
- * Format a Discord timestamp safely.
- *
- * @param {string|Date|null} value
- * @param {string} style
- * @returns {string}
- */
+const CONFIGURED_RANKS =
+    Object.entries(
+        rankConfig.hierarchy
+    ).map(
+        (
+            [
+                key,
+                rank
+            ],
+            index
+        ) => ({
+            ...rank,
+            key,
+            index
+        })
+    );
+
 function formatTimestamp(
     value,
     style = 'R'
 ) {
-    if (!value) {
-        return 'Unknown date';
-    }
-
     const date =
         new Date(value);
 
     if (
+        !value ||
         Number.isNaN(
             date.getTime()
         )
@@ -114,18 +109,14 @@ function formatTimestamp(
         return 'Unknown date';
     }
 
-    return `<t:${Math.floor(
-        date.getTime() / 1000
-    )}:${style}>`;
+    const timestamp =
+        Math.floor(
+            date.getTime() / 1000
+        );
+
+    return `<t:${timestamp}:${style}>`;
 }
 
-/**
- * Shorten text for embeds.
- *
- * @param {unknown} value
- * @param {number} limit
- * @returns {string}
- */
 function shorten(
     value,
     limit = 180
@@ -148,49 +139,28 @@ function shorten(
 
     return text.length <= limit
         ? text
-        : `${text.slice(
-            0,
-            limit - 3
-        )}...`;
+        : (
+            `${text.slice(
+                0,
+                limit - 3
+            )}...`
+        );
 }
 
-/**
- * Get a configured Sin Rank by name.
- *
- * @param {string|null} name
- * @returns {Object|null}
- */
-function getConfiguredRank(
-    name
-) {
+function getConfiguredRank(name) {
     if (!name) {
         return null;
     }
 
     return (
-        Object.values(
-            rankConfig.hierarchy
-        ).find(
+        CONFIGURED_RANKS.find(
             rank =>
                 rank.name === name
-        ) ??
-        null
+        ) ?? null
     );
 }
 
-/**
- * Format a Rank name.
- *
- * Historical values that no longer
- * exist in the current configuration
- * are preserved.
- *
- * @param {string|null} rankName
- * @returns {string}
- */
-function formatRank(
-    rankName
-) {
+function formatRank(rankName) {
     if (!rankName) {
         return rankConfig
             .hierarchy
@@ -206,34 +176,29 @@ function formatRank(
     );
 }
 
-/**
- * Classify one Rank History record.
- *
- * @param {Object} record
- * @returns {'promotion'|'removal'|'other'}
- */
-function classifyHistory(
-    record
-) {
+function classifyHistory(record) {
     const action =
         String(
-            record?.action ??
-            ''
+            record?.action ?? ''
         ).toUpperCase();
 
     if (
-        action === 'REMOVE' ||
-        action === 'REMOVED' ||
-        action === 'DEMOTION' ||
-        action === 'REVOKE'
+        [
+            'REMOVE',
+            'REMOVED',
+            'DEMOTION',
+            'REVOKE'
+        ].includes(action)
     ) {
         return 'removal';
     }
 
     if (
-        action === 'SET' ||
-        action === 'ASSIGN' ||
-        action === 'PROMOTION'
+        [
+            'SET',
+            'ASSIGN',
+            'PROMOTION'
+        ].includes(action)
     ) {
         return 'promotion';
     }
@@ -255,91 +220,28 @@ function classifyHistory(
     return 'other';
 }
 
-/**
- * Filter Rank History records by page.
- *
- * @param {Array<Object>} records
- * @param {string} page
- * @returns {Array<Object>}
- */
-function filterHistory(
-    records,
-    page
-) {
-    if (
-        page ===
-        HISTORY_PAGES.promotions
-    ) {
-        return records.filter(
-            record =>
-                classifyHistory(
-                    record
-                ) === 'promotion'
-        );
-    }
-
-    if (
-        page ===
-        HISTORY_PAGES.removals
-    ) {
-        return records.filter(
-            record =>
-                classifyHistory(
-                    record
-                ) === 'removal'
-        );
-    }
-
-    return records;
-}/**
- * Get visual details for one Rank History entry.
- *
- * @param {'promotion'|'removal'|'other'} type
- * @returns {{
- *     emoji: string,
- *     label: string
- * }}
- */
-function getHistoryTypeDetails(
-    type
-) {
+function getHistoryTypeDetails(type) {
     switch (type) {
         case 'promotion':
             return {
-                emoji:
-                    '⬆️',
-
-                label:
-                    'Rank Assigned'
+                emoji: '⬆️',
+                label: 'Rank Assigned'
             };
 
         case 'removal':
             return {
-                emoji:
-                    '◇',
-
-                label:
-                    'Rank Removed'
+                emoji: '◇',
+                label: 'Rank Removed'
             };
 
         default:
             return {
-                emoji:
-                    '◆',
-
-                label:
-                    'Rank Change'
+                emoji: '◆',
+                label: 'Rank Changed'
             };
     }
 }
 
-/**
- * Create the Rank History navigation menu.
- *
- * @param {string} selectedPage
- * @param {boolean} disabled
- * @returns {ActionRowBuilder}
- */
 function createRankHistoryMenu(
     selectedPage,
     disabled = false
@@ -350,26 +252,16 @@ function createRankHistoryMenu(
                 HISTORY_MENU_ID
             )
             .setPlaceholder(
-                'Choose an archive section...'
+                'Choose a Rank History page'
             )
-            .setMinValues(
-                1
-            )
-            .setMaxValues(
-                1
-            )
-            .setDisabled(
-                disabled
-            );
+            .setDisabled(disabled);
 
     for (
         const pageId
         of HISTORY_PAGE_ORDER
     ) {
         const details =
-            HISTORY_PAGE_DETAILS[
-                pageId
-            ];
+            HISTORY_PAGE_DETAILS[pageId];
 
         menu.addOptions(
             new StringSelectMenuOptionBuilder()
@@ -393,76 +285,37 @@ function createRankHistoryMenu(
     }
 
     return new ActionRowBuilder()
-        .addComponents(
-            menu
-        );
+        .addComponents(menu);
 }
 
-/**
- * Create the shared Rank History embed.
- *
- * @param {Object} options
- * @param {import('discord.js').ChatInputCommandInteraction} options.interaction
- * @param {import('discord.js').GuildMember} options.member
- * @param {string} options.title
- * @param {string} options.description
- * @param {string} [options.color]
- * @returns {import('discord.js').EmbedBuilder}
- */
 function createRankHistoryEmbed({
     interaction,
     member,
     title,
     description,
-    color =
-        '#B026FF'
+    color = '#B026FF'
 }) {
-    const avatar =
-        member.user.displayAvatarURL({
-            size:
-                1024,
-
-            forceStatic:
-                false
-        });
-
-    const botAvatar =
-        interaction.client.user
+    const avatarURL =
+        member.user
             .displayAvatarURL({
-                size:
-                    256,
-
-                forceStatic:
-                    false
+                size: 1024,
+                forceStatic: false
             });
 
     return createEmbed({
         title,
-
-        description:
-            [
-                description,
-
-                '',
-
-                '━━━━━━━━━━━━━━━━━━━━',
-
-                '',
-
-                '-# THE Ⅹ SINS • Rank Archive'
-            ].join('\n'),
-
+        description,
         color,
 
         thumbnail:
-            avatar,
+            avatarURL,
 
         author: {
             name:
-                `${member.displayName} • Rank History`,
+                `${member.displayName} • Sin Rank History`,
 
             iconURL:
-                avatar
+                avatarURL
         },
 
         footer: {
@@ -470,30 +323,20 @@ function createRankHistoryEmbed({
                 `THE Ⅹ SINS • Opened by ${interaction.user.username}`,
 
             iconURL:
-                botAvatar
+                interaction.client.user
+                    .displayAvatarURL({
+                        size: 128,
+                        forceStatic: false
+                    })
         }
     });
-}
-
-/**
- * Format one Rank History record.
- *
- * @param {Object} entry
- * @param {number} position
- * @returns {string}
- */
-function formatHistoryEntry(
+}function formatHistoryEntry(
     entry,
     position
 ) {
-    const type =
-        classifyHistory(
-            entry
-        );
-
     const details =
         getHistoryTypeDetails(
-            type
+            classifyHistory(entry)
         );
 
     const oldRank =
@@ -511,199 +354,189 @@ function formatHistoryEntry(
             ? `<@${entry.moderator_id}>`
             : 'Unknown';
 
-    const reason =
-        shorten(
-            entry?.reason,
-            160
-        );
-
     const rankChange =
-        entry?.old_rank ||
-        entry?.new_rank
+        (
+            entry?.old_rank ||
+            entry?.new_rank
+        )
             ? `${oldRank} → ${newRank}`
             : newRank;
 
     return [
         `### ${position}. ${details.emoji} ${details.label}`,
-
         `**Rank:** ${rankChange}`,
-
         `**High Command:** ${moderator}`,
-
-        `**Reason:** ${reason}`,
-
-        `**Recorded:** ${formatTimestamp(
-            entry?.created_at
-        )}`,
+        `**Reason:** ${
+            shorten(
+                entry?.reason,
+                160
+            )
+        }`,
+        `**Recorded:** ${
+            formatTimestamp(
+                entry?.created_at
+            )
+        }`,
 
         entry?.id
-            ? `-# Archive Record #${entry.id}`
+            ? (
+                `-# Archive Record #${entry.id}`
+            )
             : null
     ]
         .filter(Boolean)
         .join('\n');
 }
 
-/**
- * Split formatted history records into
- * Discord-safe field values.
- *
- * @param {string[]} records
- * @param {number} maxLength
- * @returns {string[]}
- */
 function splitHistoryRecords(
     records,
     maxLength = 1000
 ) {
     const chunks = [];
+    let current = '';
 
-    let current =
-        '';
-
-    for (
-        const record
-        of records
-    ) {
+    for (const record of records) {
         const next =
             current
                 ? `${current}\n\n${record}`
                 : record;
 
-        if (
-            next.length >
-            maxLength
-        ) {
+        if (next.length > maxLength) {
             if (current) {
-                chunks.push(
-                    current
-                );
+                chunks.push(current);
             }
 
             current =
-                record;
+                record.slice(
+                    0,
+                    maxLength
+                );
 
             continue;
         }
 
-        current =
-            next;
+        current = next;
     }
 
     if (current) {
-        chunks.push(
-            current
-        );
+        chunks.push(current);
     }
 
     return chunks;
-}/**
- * Count history records of one type.
- *
- * @param {Object[]} history
- * @param {'promotion'|'removal'} type
- * @returns {number}
- */
+}
+
 function countHistoryType(
     history,
     type
 ) {
     return history.filter(
         entry =>
-            classifyHistory(
-                entry
-            ) === type
+            classifyHistory(entry) ===
+            type
     ).length;
 }
 
-/**
- * Find the highest configured Rank
- * ever recorded for a Soul.
- *
- * @param {Object[]} history
- * @param {Object|null} currentRank
- * @returns {string|null}
- */
 function findHighestRank(
     history,
     currentRank
 ) {
-    const names = [];
+    const rankNames = [];
 
-    if (
-        currentRank?.rank_name
-    ) {
-        names.push(
+    if (currentRank?.rank_name) {
+        rankNames.push(
             currentRank.rank_name
         );
     }
 
-    for (
-        const entry
-        of history
-    ) {
-        if (
-            entry?.old_rank
-        ) {
-            names.push(
+    for (const entry of history) {
+        if (entry?.old_rank) {
+            rankNames.push(
                 entry.old_rank
             );
         }
 
-        if (
-            entry?.new_rank
-        ) {
-            names.push(
+        if (entry?.new_rank) {
+            rankNames.push(
                 entry.new_rank
             );
         }
     }
 
-    const configured =
-        names
-            .map(
-                name =>
-                    getConfiguredRank(
-                        name
-                    )
+    const configuredRanks =
+        rankNames
+            .map(getConfiguredRank)
+            .filter(Boolean)
+            .filter(
+                rank =>
+                    rank.key !==
+                    'unranked'
             )
-            .filter(Boolean);
+            .sort(
+                (
+                    first,
+                    second
+                ) =>
+                    first.index -
+                    second.index
+            );
 
-    if (
-        !configured.length
-    ) {
-        return names[0] ?? null;
+    if (configuredRanks.length > 0) {
+        return configuredRanks[0].name;
     }
 
-    return configured
-        .sort(
-            (
-                first,
-                second
-            ) =>
-                Object.keys(
-                    rankConfig.hierarchy
-                ).indexOf(
-                    first.key
-                ) -
-                Object.keys(
-                    rankConfig.hierarchy
-                ).indexOf(
-                    second.key
-                )
-        )[0]
-        ?.name ?? null;
+    return (
+        rankNames[0] ??
+        rankConfig.hierarchy
+            .unranked.name
+    );
 }
 
-/**
- * Build the overview page.
- *
- * @param {Object} context
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildOverviewPage(
-    context
+function addHistoryFields(
+    embed,
+    history,
+    firstFieldName
 ) {
+    if (history.length === 0) {
+        return embed;
+    }
+
+    const formatted =
+        history.map(
+            (
+                entry,
+                index
+            ) =>
+                formatHistoryEntry(
+                    entry,
+                    index + 1
+                )
+        );
+
+    const chunks =
+        splitHistoryRecords(
+            formatted
+        );
+
+    for (
+        let index = 0;
+        index < chunks.length;
+        index += 1
+    ) {
+        embed.addFields({
+            name:
+                index === 0
+                    ? firstFieldName
+                    : `${firstFieldName} — Continued`,
+
+            value:
+                chunks[index]
+        });
+    }
+
+    return embed;
+}
+
+function buildOverviewPage(context) {
     const {
         interaction,
         member,
@@ -713,11 +546,15 @@ function buildOverviewPage(
     } = context;
 
     const currentRankName =
-        currentRank?.rank_name ??
-        rankConfig
-            .hierarchy
-            .unranked
-            .name;
+        formatRank(
+            currentRank?.rank_name
+        );
+
+    const highestRank =
+        findHighestRank(
+            history,
+            currentRank
+        );
 
     const promotions =
         countHistoryType(
@@ -731,30 +568,16 @@ function buildOverviewPage(
             'removal'
         );
 
-    const highestRank =
-        findHighestRank(
-            history,
-            currentRank
-        ) ??
-        rankConfig
-            .hierarchy
-            .unranked
-            .name;
-
     const embed =
         createRankHistoryEmbed({
             interaction,
-
             member,
 
             title:
-                '📖 Rank Career',
+                '📖 Sin Rank Career',
 
             description:
-                `${member} • complete Sin Rank archive.`,
-
-            color:
-                '#B026FF'
+                `${member} • recorded Sin Rank history.`
         });
 
     embed.addFields(
@@ -763,9 +586,7 @@ function buildOverviewPage(
                 '⚔️ Current Rank',
 
             value:
-                `## ${formatRank(
-                    currentRankName
-                )}`,
+                `**${currentRankName}**`,
 
             inline:
                 true
@@ -776,9 +597,7 @@ function buildOverviewPage(
                 '♛ Highest Rank',
 
             value:
-                `**${formatRank(
-                    highestRank
-                )}**`,
+                `**${highestRank}**`,
 
             inline:
                 true
@@ -788,23 +607,18 @@ function buildOverviewPage(
             name:
                 '📊 Archive',
 
-            value:
-                [
-                    `**Total:** \`${totalHistoryCount}\``,
-
-                    `**Promotions:** \`${promotions}\``,
-
-                    `**Removals:** \`${removals}\``
-                ].join('\n'),
+            value: [
+                `**Total:** \`${totalHistoryCount}\``,
+                `**Promotions:** \`${promotions}\``,
+                `**Removals:** \`${removals}\``
+            ].join('\n'),
 
             inline:
                 true
         }
     );
 
-    if (
-        currentRank?.assigned_at
-    ) {
+    if (currentRank?.assigned_at) {
         embed.addFields({
             name:
                 '🕒 Current Rank Since',
@@ -813,79 +627,61 @@ function buildOverviewPage(
                 formatTimestamp(
                     currentRank.assigned_at,
                     'D'
-                ),
-
-            inline:
-                false
+                )
         });
     }
 
-    if (
-        history.length
-    ) {
-        const latest =
-            history[0];
+    const latest =
+        history[0];
 
+    if (latest) {
         const details =
             getHistoryTypeDetails(
-                classifyHistory(
-                    latest
-                )
+                classifyHistory(latest)
             );
 
         embed.addFields({
             name:
                 '📜 Latest Record',
 
-            value:
-                [
-                    `${details.emoji} **${details.label}**`,
-
-                    `**Rank:** ${formatRank(
-                        latest?.old_rank
-                    )} → ${formatRank(
-                        latest?.new_rank
-                    )}`,
-
-                    `**Recorded:** ${formatTimestamp(
-                        latest?.created_at
-                    )}`,
-
-                    `**Reason:** ${shorten(
-                        latest?.reason,
-                        180
-                    )}`
-                ].join('\n'),
-
-            inline:
-                false
+            value: [
+                `${details.emoji} **${details.label}**`,
+                `**Rank:** ${
+                    formatRank(
+                        latest.old_rank
+                    )
+                } → ${
+                    formatRank(
+                        latest.new_rank
+                    )
+                }`,
+                `**Recorded:** ${
+                    formatTimestamp(
+                        latest.created_at
+                    )
+                }`,
+                `**Reason:** ${
+                    shorten(
+                        latest.reason
+                    )
+                }`
+            ].join('\n')
         });
     }
 
     return embed;
-}
-
-/**
- * Build a filtered history page.
- *
- * @param {Object} context
- * @param {'promotion'|'removal'} type
- * @param {string} title
- * @param {string} description
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildFilteredPage(
+}function buildFilteredPage(
     context,
-    type,
-    title,
-    description
+    type
 ) {
+    const isPromotion =
+        type === 'promotion';
+
     const records =
-        filterHistory(
-            context.history,
-            type === 'promotion'
-                ? HISTORY_PAGES.promotions
-                : HISTORY_PAGES.removals
+        context.history.filter(
+            entry =>
+                classifyHistory(entry) ===
+                type
         );
 
     const embed =
@@ -896,12 +692,24 @@ function buildFilteredPage(
             member:
                 context.member,
 
-            title,
+            title:
+                isPromotion
+                    ? '⬆️ Sin Rank Promotions'
+                    : '◇ Sin Rank Removals',
 
-            description,
+            description:
+                isPromotion
+                    ? (
+                        `${context.member} • previous ` +
+                        'Sin Rank assignments.'
+                    )
+                    : (
+                        `${context.member} • previous ` +
+                        'Sin Rank removals.'
+                    ),
 
             color:
-                type === 'promotion'
+                isPromotion
                     ? '#57F287'
                     : '#ED4245'
         });
@@ -910,181 +718,84 @@ function buildFilteredPage(
         name:
             '📊 Archive',
 
-        value:
-            [
-                `**Matching Records:** \`${records.length}\``,
-
-                `**Total Records:** \`${context.totalHistoryCount}\``
-            ].join('\n'),
-
-        inline:
-            false
+        value: [
+            `**Matching Records:** \`${records.length}\``,
+            `**Total Records:** \`${context.totalHistoryCount}\``
+        ].join('\n')
     });
 
-    if (
-        !records.length
-    ) {
+    if (records.length === 0) {
         embed.addFields({
             name:
                 '◇ No Records',
 
             value:
-                type === 'promotion'
-                    ? 'No previous Sin Rank assignments have been recorded.'
-                    : 'No previous Sin Rank removals have been recorded.',
-
-            inline:
-                false
+                isPromotion
+                    ? (
+                        'No previous Sin Rank ' +
+                        'assignments have been recorded.'
+                    )
+                    : (
+                        'No previous Sin Rank ' +
+                        'removals have been recorded.'
+                    )
         });
 
         return embed;
     }
 
-    const formatted =
-        records.map(
-            (
-                entry,
-                index
-            ) =>
-                formatHistoryEntry(
-                    entry,
-                    index + 1
-                )
-        );
-
-    splitHistoryRecords(
-        formatted
-    ).forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
-                name:
-                    index === 0
-                        ? '📜 Recorded Changes'
-                        : '📜 Recorded Changes — Continued',
-
-                value:
-                    chunk,
-
-                inline:
-                    false
-            });
-        }
+    return addHistoryFields(
+        embed,
+        records,
+        '📜 Recorded Changes'
     );
-
-    return embed;
 }
 
-/**
- * Build the complete archive page.
- *
- * @param {Object} context
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildCompletePage(
-    context
-) {
-    const {
-        interaction,
-        member,
-        history,
-        totalHistoryCount
-    } = context;
-
+function buildCompletePage(context) {
     const embed =
         createRankHistoryEmbed({
-            interaction,
+            interaction:
+                context.interaction,
 
-            member,
+            member:
+                context.member,
 
             title:
-                '🗃️ Complete Archive',
+                '🗃️ Complete Sin Rank Archive',
 
             description:
-                `${member} • complete recorded Rank history.`,
-
-            color:
-                '#B026FF'
+                `${context.member} • complete recorded Sin Rank history.`
         });
 
     embed.addFields({
         name:
             '📊 Archive Status',
 
-        value:
-            [
-                `**Loaded:** \`${history.length}\``,
-
-                `**Total:** \`${totalHistoryCount}\``
-            ].join('\n'),
-
-        inline:
-            false
+        value: [
+            `**Loaded:** \`${context.history.length}\``,
+            `**Total:** \`${context.totalHistoryCount}\``
+        ].join('\n')
     });
 
-    if (
-        !history.length
-    ) {
+    if (context.history.length === 0) {
         embed.addFields({
             name:
                 '◇ Empty Archive',
 
             value:
-                'No Rank history has been recorded for this Soul.',
-
-            inline:
-                false
+                'No Sin Rank history has been recorded for this member.'
         });
 
         return embed;
     }
 
-    const records =
-        history.map(
-            (
-                entry,
-                index
-            ) =>
-                formatHistoryEntry(
-                    entry,
-                    index + 1
-                )
-        );
-
-    splitHistoryRecords(
-        records
-    ).forEach(
-        (
-            chunk,
-            index
-        ) => {
-            embed.addFields({
-                name:
-                    index === 0
-                        ? '📜 Rank Records'
-                        : '📜 Rank Records — Continued',
-
-                value:
-                    chunk,
-
-                inline:
-                    false
-            });
-        }
+    return addHistoryFields(
+        embed,
+        context.history,
+        '📜 Sin Rank Records'
     );
-
-    return embed;
 }
 
-/**
- * Build the requested Rank History page.
- *
- * @param {Object} context
- * @param {string} page
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildRankHistoryPage(
     context,
     page
@@ -1093,17 +804,13 @@ function buildRankHistoryPage(
         case HISTORY_PAGES.promotions:
             return buildFilteredPage(
                 context,
-                'promotion',
-                '⬆️ Promotions',
-                `${context.member} • previous Sin Rank assignments.`
+                'promotion'
             );
 
         case HISTORY_PAGES.removals:
             return buildFilteredPage(
                 context,
-                'removal',
-                '◇ Rank Removals',
-                `${context.member} • previous Sin Rank removals.`
+                'removal'
             );
 
         case HISTORY_PAGES.complete:
@@ -1117,15 +824,9 @@ function buildRankHistoryPage(
                 context
             );
     }
-}/**
- * Resolve the requested Soul.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {Promise<import('discord.js').GuildMember|null>}
- */
-async function resolveMember(
-    interaction
-) {
+}
+
+async function resolveMember(interaction) {
     const user =
         interaction.options.getUser(
             'user'
@@ -1137,30 +838,13 @@ async function resolveMember(
 
     return (
         interaction.guild.members
-            .cache.get(
-                user.id
-            ) ??
+            .cache.get(user.id) ??
         await interaction.guild.members
-            .fetch(
-                user.id
-            )
-            .catch(
-                () => null
-            )
+            .fetch(user.id)
+            .catch(() => null)
     );
 }
 
-/**
- * Check whether the requester may inspect
- * another Soul's Rank History.
- *
- * Members may always inspect their own
- * archive. High Command may inspect others.
- *
- * @param {import('discord.js').GuildMember} requester
- * @param {import('discord.js').GuildMember} target
- * @returns {boolean}
- */
 function canViewHistory(
     requester,
     target
@@ -1182,43 +866,42 @@ function canViewHistory(
 
     return Object.values(
         rankConfig.highCommand
-    ).some(
-        roleId =>
-            requester.roles.cache.has(
-                roleId
-            )
-    );
+    )
+        .filter(Boolean)
+        .some(
+            roleId =>
+                requester.roles.cache.has(
+                    roleId
+                )
+        );
 }
 
-/**
- * Load the Rank History data.
- *
- * @param {import('discord.js').Guild} guild
- * @param {string} userId
- * @param {number} limit
- * @returns {Promise<{
- *     currentRank: Object|null,
- *     history: Object[],
- *     totalHistoryCount: number
- * }>}
- */
 async function loadRankHistory(
-    guild,
+    guildId,
     userId,
     limit
 ) {
-    const currentRank =
-        await rankDatabase.getCurrentRank(
-            guild.id,
-            userId
-        );
+    const [
+        currentRank,
+        loadedHistory
+    ] =
+        await Promise.all([
+            rankDatabase.getCurrentRank(
+                guildId,
+                userId
+            ),
+
+            rankDatabase.getRankHistory(
+                guildId,
+                userId,
+                limit
+            )
+        ]);
 
     const history =
-        await rankDatabase.getRankHistory(
-            guild.id,
-            userId,
-            limit
-        );
+        Array.isArray(loadedHistory)
+            ? loadedHistory
+            : [];
 
     let totalHistoryCount =
         history.length;
@@ -1229,19 +912,16 @@ async function loadRankHistory(
         'function'
     ) {
         totalHistoryCount =
-            await rankDatabase.countRankHistory(
-                guild.id,
-                userId
-            );
+            await rankDatabase
+                .countRankHistory(
+                    guildId,
+                    userId
+                );
     }
 
     return {
         currentRank,
-
-        history:
-            Array.isArray(history)
-                ? history
-                : [],
+        history,
 
         totalHistoryCount:
             Number(
@@ -1250,85 +930,100 @@ async function loadRankHistory(
     };
 }
 
-module.exports = {
+async function sendRankHistoryError(
+    interaction,
+    title,
+    description
+) {
+    const payload = {
+        embeds: [
+            createErrorEmbed(
+                title,
+                description
+            )
+        ],
+
+        components: []
+    };
+
+    if (interaction.deferred) {
+        return interaction
+            .editReply(payload)
+            .catch(() => null);
+    }
+
+    if (interaction.replied) {
+        return interaction
+            .followUp({
+                ...payload,
+
+                flags:
+                    MessageFlags.Ephemeral
+            })
+            .catch(() => null);
+    }
+
+    return interaction
+        .reply({
+            ...payload,
+
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(() => null);
+}module.exports = {
     category:
         'information',
 
     data:
         new SlashCommandBuilder()
-            .setName(
-                'rankhistory'
-            )
+            .setName('rankhistory')
             .setDescription(
-                'View a Soul’s complete Sin Rank history.'
+                'View a member’s Sin Rank history.'
             )
-
-            .addUserOption(
-                option =>
-                    option
-                        .setName(
-                            'user'
-                        )
-                        .setDescription(
-                            'Soul whose Rank history you want to inspect.'
-                        )
-                        .setRequired(
-                            false
-                        )
+            .addUserOption(option =>
+                option
+                    .setName('user')
+                    .setDescription(
+                        'Member whose Sin Rank history you want to inspect.'
+                    )
+                    .setRequired(false)
             )
-
-            .addIntegerOption(
-                option =>
-                    option
-                        .setName(
-                            'limit'
-                        )
-                        .setDescription(
-                            'Maximum number of records to load.'
-                        )
-                        .setMinValue(
-                            5
-                        )
-                        .setMaxValue(
-                            50
-                        )
-                        .setRequired(
-                            false
-                        )
+            .addIntegerOption(option =>
+                option
+                    .setName('limit')
+                    .setDescription(
+                        'Maximum number of records to load.'
+                    )
+                    .setMinValue(5)
+                    .setMaxValue(50)
+                    .setRequired(false)
             )
+            .setDMPermission(false),
 
-            .setDMPermission(
-                false
-            ),
-
-    /**
-     * Execute /rankhistory.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(
-        interaction
-    ) {
+    async execute(interaction) {
         try {
+            if (!interaction.inGuild()) {
+                await sendRankHistoryError(
+                    interaction,
+                    '❌ Server Only Command',
+                    'This command can only be used inside THE Ⅹ SINS.'
+                );
+
+                return;
+            }
+
             const member =
                 await resolveMember(
                     interaction
                 );
 
             if (!member) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Soul Not Found',
-
-                            'The selected Soul could not be found in THE Ⅹ SINS.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await sendRankHistoryError(
+                    interaction,
+                    '❌ Member Not Found',
+                    'The selected member could not be found inside THE Ⅹ SINS.'
+                );
 
                 return;
             }
@@ -1339,31 +1034,22 @@ module.exports = {
                     member
                 )
             ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Archive Access Denied',
-
-                            [
-                                'You may only inspect your own Rank history.',
-                                '',
-                                'High Command may inspect another Soul’s archive.'
-                            ].join('\n')
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await sendRankHistoryError(
+                    interaction,
+                    '❌ Archive Access Denied',
+                    [
+                        'You may only inspect your own Sin Rank history.',
+                        '',
+                        'High Command may inspect another member’s archive.'
+                    ].join('\n')
+                );
 
                 return;
             }
 
             const limit =
                 interaction.options
-                    .getInteger(
-                        'limit'
-                    ) ??
+                    .getInteger('limit') ??
                 25;
 
             await interaction.deferReply({
@@ -1373,14 +1059,13 @@ module.exports = {
 
             const rankData =
                 await loadRankHistory(
-                    interaction.guild,
+                    interaction.guild.id,
                     member.id,
                     limit
                 );
 
             const context = {
                 interaction,
-
                 member,
 
                 currentRank:
@@ -1396,51 +1081,64 @@ module.exports = {
             let selectedPage =
                 HISTORY_PAGES.overview;
 
-            await interaction.editReply({
-                embeds: [
-                    buildRankHistoryPage(
-                        context,
-                        selectedPage
-                    )
-                ],
+            const createPagePayload =
+                (
+                    page,
+                    disabled = false
+                ) => ({
+                    embeds: [
+                        buildRankHistoryPage(
+                            context,
+                            page
+                        )
+                    ],
 
-                components: [
-                    createRankHistoryMenu(
-                        selectedPage
-                    )
-                ]
-            });
+                    components: [
+                        createRankHistoryMenu(
+                            page,
+                            disabled
+                        )
+                    ]
+                });
 
             const message =
-                await interaction.fetchReply();
+                await interaction.editReply({
+                    ...createPagePayload(
+                        selectedPage
+                    ),
+
+                    fetchReply:
+                        true
+                });
 
             const collector =
-                message.createMessageComponentCollector({
-                    filter:
-                        componentInteraction =>
-                            componentInteraction
-                                .customId ===
+                message
+                    .createMessageComponentCollector({
+                        componentType:
+                            ComponentType.StringSelect,
+
+                        filter:
+                            component =>
+                                component.customId ===
                                 HISTORY_MENU_ID,
 
-                    time:
-                        10 * 60 * 1000
-                });
+                        time:
+                            MENU_TIMEOUT
+                    });
 
             collector.on(
                 'collect',
-                async componentInteraction => {
+                async component => {
                     try {
                         if (
-                            componentInteraction
-                                .user.id !==
+                            component.user.id !==
                             interaction.user.id
                         ) {
-                            await componentInteraction.reply({
+                            await component.reply({
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Private Archive',
-
-                                        'Only the Soul who opened this archive may use its navigation.'
+                                        'Only the member who opened this archive may control it.'
                                     )
                                 ],
 
@@ -1452,20 +1150,18 @@ module.exports = {
                         }
 
                         const requestedPage =
-                            componentInteraction
-                                .values[0];
+                            component.values[0];
 
                         if (
                             !HISTORY_PAGE_ORDER.includes(
                                 requestedPage
                             )
                         ) {
-                            await componentInteraction.reply({
+                            await component.reply({
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Invalid Archive Page',
-
-                                        'Evelynn could not recognize that archive section.'
+                                        'Evelynn could not recognize that page.'
                                     )
                                 ],
 
@@ -1479,92 +1175,41 @@ module.exports = {
                         selectedPage =
                             requestedPage;
 
-                        const freshData =
-                            await loadRankHistory(
-                                interaction.guild,
-                                member.id,
-                                limit
-                            );
+                        await component.update(
+                            createPagePayload(
+                                selectedPage
+                            )
+                        );
+                    } catch (error) {
+                        console.error(
+                            '❌ Evelynn /rankhistory navigation error:',
+                            error
+                        );
 
-                        const freshContext = {
-                            interaction,
-
-                            member,
-
-                            currentRank:
-                                freshData.currentRank,
-
-                            history:
-                                freshData.history,
-
-                            totalHistoryCount:
-                                freshData.totalHistoryCount
-                        };
-
-                        await componentInteraction.update({
+                        const payload = {
                             embeds: [
-                                buildRankHistoryPage(
-                                    freshContext,
-                                    selectedPage
+                                createErrorEmbed(
+                                    '❌ Navigation Failed',
+                                    'Evelynn could not open that archive page.'
                                 )
                             ],
 
-                            components: [
-                                createRankHistoryMenu(
-                                    selectedPage
-                                )
-                            ]
-                        });
-                    } catch (
-                        navigationError
-                    ) {
-                        console.error(
-                            '❌ Evelynn /rankhistory navigation error:',
-                            navigationError
-                        );
+                            flags:
+                                MessageFlags.Ephemeral
+                        };
 
                         if (
-                            componentInteraction
-                                .deferred ||
-                            componentInteraction
-                                .replied
+                            component.replied ||
+                            component.deferred
                         ) {
-                            await componentInteraction
-                                .followUp({
-                                    embeds: [
-                                        createErrorEmbed(
-                                            '❌ Navigation Failed',
-
-                                            'Evelynn could not open that archive section.'
-                                        )
-                                    ],
-
-                                    flags:
-                                        MessageFlags.Ephemeral
-                                })
-                                .catch(
-                                    () => null
-                                );
-
-                            return;
+                            await component
+                                .followUp(payload)
+                                .catch(() => null);
+                        } else {
+                            await component
+                                .reply(payload)
+                                .catch(() => null);
                         }
-
-                        await componentInteraction
-                            .reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        '❌ Navigation Failed',
-
-                                        'Evelynn could not open that archive section.'
-                                    )
-                                ],
-
-                                flags:
-                                    MessageFlags.Ephemeral
-                            })
-                            .catch(
-                                () => null
-                            );
                     }
                 }
             );
@@ -1573,17 +1218,13 @@ module.exports = {
                 'end',
                 async () => {
                     await interaction
-                        .editReply({
-                            components: [
-                                createRankHistoryMenu(
-                                    selectedPage,
-                                    true
-                                )
-                            ]
-                        })
-                        .catch(
-                            () => null
-                        );
+                        .editReply(
+                            createPagePayload(
+                                selectedPage,
+                                true
+                            )
+                        )
+                        .catch(() => null);
                 }
             );
         } catch (error) {
@@ -1592,49 +1233,11 @@ module.exports = {
                 error
             );
 
-            const errorEmbed =
-                createErrorEmbed(
-                    '❌ Rank History Failed',
-
-                    [
-                        'Evelynn could not load the Rank Archive.',
-                        '',
-                        'Check the Rank database and try again.'
-                    ].join('\n')
-                );
-
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await sendRankHistoryError(
+                interaction,
+                '❌ Rank History Failed',
+                'Evelynn could not load the Sin Rank archive.'
+            );
         }
     }
 };

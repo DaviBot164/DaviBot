@@ -1,3 +1,6 @@
+const path =
+    require('node:path');
+
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
@@ -9,8 +12,53 @@ const {
     WELCOME_BANNER_NAME
 } = require('../../utils/welcomeEmbed');
 
-const path =
-    require('node:path');
+async function sendWelcomeError(
+    interaction,
+    message
+) {
+    const payload = {
+        content:
+            `❌ ${message}`
+    };
+
+    if (interaction.deferred) {
+        await interaction
+            .editReply(
+                payload
+            )
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    if (interaction.replied) {
+        await interaction
+            .followUp({
+                ...payload,
+
+                flags:
+                    MessageFlags.Ephemeral
+            })
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    await interaction
+        .reply({
+            ...payload,
+
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(
+            () => null
+        );
+}
 
 module.exports = {
     category:
@@ -31,12 +79,6 @@ module.exports = {
                 false
             ),
 
-    /**
-     * Execute /testwelcome.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
@@ -44,13 +86,10 @@ module.exports = {
             if (
                 !interaction.inGuild()
             ) {
-                await interaction.reply({
-                    content:
-                        '❌ This command can only be used inside THE Ⅹ SINS.',
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await sendWelcomeError(
+                    interaction,
+                    'This command can only be used inside THE Ⅹ SINS.'
+                );
 
                 return;
             }
@@ -88,50 +127,10 @@ module.exports = {
                 error
             );
 
-            const errorMessage = {
-                content:
-                    '❌ Evelynn could not generate the Welcome preview.',
-
-                flags:
-                    MessageFlags.Ephemeral
-            };
-
-            if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        content:
-                            errorMessage.content
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp(
-                        errorMessage
-                    )
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply(
-                    errorMessage
-                )
-                .catch(
-                    () => null
-                );
+            await sendWelcomeError(
+                interaction,
+                'Evelynn could not generate the Welcome preview.'
+            );
         }
     }
 };

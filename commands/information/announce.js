@@ -15,54 +15,88 @@ const DECREES_CHANNEL_ID =
 
 const ANNOUNCEMENT_TYPES = {
     'server-update': {
-        emoji: '📢',
-        label: 'Server Update',
+        emoji:
+            '📢',
+
+        label:
+            'Server Update',
+
         authority:
             'An official update from THE Ⅹ SINS.'
     },
 
     event: {
-        emoji: '🎉',
-        label: 'Community Event',
+        emoji:
+            '🎉',
+
+        label:
+            'Community Event',
+
         authority:
-            'An official TTS community event.'
+            'An official THE Ⅹ SINS community event.'
     },
 
     giveaway: {
-        emoji: '🎁',
-        label: 'Giveaway',
+        emoji:
+            '🎁',
+
+        label:
+            'Giveaway',
+
         authority:
             'An official giveaway hosted by THE Ⅹ SINS.'
     },
 
     maintenance: {
-        emoji: '🛠️',
-        label: 'Maintenance Notice',
+        emoji:
+            '🛠️',
+
+        label:
+            'Maintenance Notice',
+
         authority:
-            'An official TTS maintenance notice.'
+            'An official THE Ⅹ SINS maintenance notice.'
     },
 
     important: {
-        emoji: '⚠️',
-        label: 'Important Notice',
+        emoji:
+            '⚠️',
+
+        label:
+            'Important Notice',
+
         authority:
             'An important notice for all members.'
     },
 
     general: {
-        emoji: 'Ⅹ',
-        label: 'Official Decree',
+        emoji:
+            'Ⅹ',
+
+        label:
+            'Official Decree',
+
         authority:
             'An official decree from THE Ⅹ SINS.'
     }
 };
 
-function getAnnouncementType(type) {
-    return (
-        ANNOUNCEMENT_TYPES[type] ??
-        ANNOUNCEMENT_TYPES.general
+const ANNOUNCEMENT_CHOICES =
+    Object.entries(
+        ANNOUNCEMENT_TYPES
+    ).map(
+        (
+            [
+                value,
+                type
+            ]
+        ) => ({
+            name:
+                `${type.emoji} ${type.label}`,
+
+            value
+        })
     );
-}
 
 function isValidImageURL(value) {
     if (!value) {
@@ -71,39 +105,81 @@ function isValidImageURL(value) {
 
     try {
         const url =
-            new URL(value);
+            new URL(
+                value
+            );
 
-        return [
-            'http:',
-            'https:'
-        ].includes(url.protocol);
+        return (
+            url.protocol ===
+                'http:' ||
+            url.protocol ===
+                'https:'
+        );
     } catch {
         return false;
     }
 }
 
-function errorReply(
+async function sendAnnouncementError(
     interaction,
     title,
     description
 ) {
-    return interaction.editReply({
+    const payload = {
         embeds: [
             createErrorEmbed(
                 title,
                 description
             )
         ]
-    });
+    };
+
+    if (interaction.deferred) {
+        await interaction
+            .editReply(
+                payload
+            )
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    if (interaction.replied) {
+        await interaction
+            .followUp({
+                ...payload,
+
+                flags:
+                    MessageFlags.Ephemeral
+            })
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    await interaction
+        .reply({
+            ...payload,
+
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(
+            () => null
+        );
 }
 
-function buildAnnouncementEmbed(
+function buildAnnouncementEmbed({
     interaction,
     type,
     title,
     message,
     imageURL
-) {
+}) {
     const timestamp =
         Math.floor(
             Date.now() / 1000
@@ -112,30 +188,36 @@ function buildAnnouncementEmbed(
     const botAvatar =
         interaction.client.user
             .displayAvatarURL({
-                size: 256,
-                forceStatic: false
+                size:
+                    256,
+
+                forceStatic:
+                    false
             });
 
     const serverIcon =
         interaction.guild.iconURL({
-            size: 256,
-            forceStatic: false
-        }) ?? botAvatar;
+            size:
+                256,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
 
     const embed =
         createEmbed({
             title:
                 `${type.emoji} ${title}`,
 
-            description:
-                [
-                    `### ${type.emoji} ${type.label}`,
-                    '',
-                    message,
-                    '',
-                    `**Issued by:** ${interaction.user}`,
-                    `**Issued:** <t:${timestamp}:F> • <t:${timestamp}:R>`
-                ].join('\n'),
+            description: [
+                `### ${type.emoji} ${type.label}`,
+                '',
+                message,
+                '',
+                `**Issued by:** ${interaction.user}`,
+                `**Issued:** <t:${timestamp}:F> • <t:${timestamp}:R>`
+            ].join('\n'),
 
             thumbnail:
                 serverIcon,
@@ -143,7 +225,7 @@ function buildAnnouncementEmbed(
             fields: [
                 {
                     name:
-                        'Ⅹ・TTS AUTHORITY',
+                        'Ⅹ・THE Ⅹ SINS AUTHORITY',
 
                     value:
                         type.authority,
@@ -151,22 +233,24 @@ function buildAnnouncementEmbed(
                     inline:
                         false
                 }
-            ]
-        })
-            .setAuthor({
+            ],
+
+            author: {
                 name:
                     'Evelynn • THE Ⅹ SINS',
 
                 iconURL:
                     botAvatar
-            })
-            .setFooter({
+            },
+
+            footer: {
                 text:
-                    `TTS • ${type.label}`,
+                    `THE Ⅹ SINS • ${type.label}`,
 
                 iconURL:
                     serverIcon
-            })
+            }
+        })
             .setTimestamp();
 
     if (imageURL) {
@@ -177,119 +261,140 @@ function buildAnnouncementEmbed(
 
     return embed;
 }module.exports = {
-    category: 'information',
+    category:
+        'information',
 
     data:
         new SlashCommandBuilder()
-            .setName('announce')
+            .setName(
+                'announce'
+            )
             .setDescription(
-                'Publish an official TTS announcement.'
+                'Publish an official THE Ⅹ SINS announcement.'
             )
-            .addStringOption(option =>
-                option
-                    .setName('type')
-                    .setDescription(
-                        'Select the announcement type'
-                    )
-                    .setRequired(true)
-                    .addChoices(
-                        {
-                            name: '📢 Server Update',
-                            value: 'server-update'
-                        },
-                        {
-                            name: '🎉 Event',
-                            value: 'event'
-                        },
-                        {
-                            name: '🎁 Giveaway',
-                            value: 'giveaway'
-                        },
-                        {
-                            name: '🛠️ Maintenance',
-                            value: 'maintenance'
-                        },
-                        {
-                            name: '⚠️ Important Notice',
-                            value: 'important'
-                        },
-                        {
-                            name: 'Ⅹ General Decree',
-                            value: 'general'
-                        }
-                    )
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'type'
+                        )
+                        .setDescription(
+                            'Select the announcement type'
+                        )
+                        .setRequired(
+                            true
+                        )
+                        .addChoices(
+                            ...ANNOUNCEMENT_CHOICES
+                        )
             )
-            .addStringOption(option =>
-                option
-                    .setName('title')
-                    .setDescription(
-                        'Announcement title'
-                    )
-                    .setRequired(true)
-                    .setMaxLength(200)
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'title'
+                        )
+                        .setDescription(
+                            'Announcement title'
+                        )
+                        .setRequired(
+                            true
+                        )
+                        .setMaxLength(
+                            200
+                        )
             )
-            .addStringOption(option =>
-                option
-                    .setName('message')
-                    .setDescription(
-                        'Announcement message'
-                    )
-                    .setRequired(true)
-                    .setMaxLength(3500)
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'message'
+                        )
+                        .setDescription(
+                            'Announcement message'
+                        )
+                        .setRequired(
+                            true
+                        )
+                        .setMaxLength(
+                            3500
+                        )
             )
-            .addStringOption(option =>
-                option
-                    .setName('image')
-                    .setDescription(
-                        'Optional image URL'
-                    )
+            .addStringOption(
+                option =>
+                    option
+                        .setName(
+                            'image'
+                        )
+                        .setDescription(
+                            'Optional image URL'
+                        )
+                        .setRequired(
+                            false
+                        )
             )
-            .addBooleanOption(option =>
-                option
-                    .setName('mention_everyone')
-                    .setDescription(
-                        'Mention everyone when publishing'
-                    )
+            .addBooleanOption(
+                option =>
+                    option
+                        .setName(
+                            'mention_everyone'
+                        )
+                        .setDescription(
+                            'Mention everyone when publishing'
+                        )
+                        .setRequired(
+                            false
+                        )
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.Administrator
             )
-            .setDMPermission(false),
+            .setDMPermission(
+                false
+            ),
 
     async execute(interaction) {
         try {
+            if (
+                !interaction.inGuild()
+            ) {
+                await sendAnnouncementError(
+                    interaction,
+                    '❌ Server Only Command',
+                    'This command can only be used inside THE Ⅹ SINS.'
+                );
+
+                return;
+            }
+
+            if (
+                !interaction.memberPermissions
+                    ?.has(
+                        PermissionFlagsBits.Administrator
+                    )
+            ) {
+                await sendAnnouncementError(
+                    interaction,
+                    '❌ Permission Denied',
+                    'Only Administrators may publish official announcements.'
+                );
+
+                return;
+            }
+
             await interaction.deferReply({
                 flags:
                     MessageFlags.Ephemeral
             });
 
-            if (!interaction.inGuild()) {
-                return errorReply(
-                    interaction,
-                    '❌ Server Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+            const typeKey =
+                interaction.options.getString(
+                    'type',
+                    true
                 );
-            }
-
-            if (
-                !interaction.memberPermissions?.has(
-                    PermissionFlagsBits.Administrator
-                )
-            ) {
-                return errorReply(
-                    interaction,
-                    '❌ Permission Denied',
-                    'Only Administrators may publish official TTS announcements.'
-                );
-            }
 
             const type =
-                getAnnouncementType(
-                    interaction.options.getString(
-                        'type',
-                        true
-                    )
-                );
+                ANNOUNCEMENT_TYPES[typeKey];
 
             const title =
                 interaction.options.getString(
@@ -311,65 +416,88 @@ function buildAnnouncementEmbed(
             const mentionEveryone =
                 interaction.options.getBoolean(
                     'mention_everyone'
-                ) ?? false;
+                ) ??
+                false;
 
-            if (!isValidImageURL(imageURL)) {
-                return errorReply(
+            if (!type) {
+                await sendAnnouncementError(
+                    interaction,
+                    '❌ Invalid Announcement Type',
+                    'Select a valid announcement type.'
+                );
+
+                return;
+            }
+
+            if (
+                !isValidImageURL(
+                    imageURL
+                )
+            ) {
+                await sendAnnouncementError(
                     interaction,
                     '❌ Invalid Image URL',
                     'Use a valid `http://` or `https://` image URL.'
                 );
+
+                return;
             }
 
             const channel =
-                await interaction.guild.channels
+                await interaction.guild
+                    .channels
                     .fetch(
                         DECREES_CHANNEL_ID
                     )
-                    .catch(() => null);
+                    .catch(
+                        () => null
+                    );
 
-            if (!channel?.isTextBased()) {
-                return errorReply(
+            if (
+                !channel?.isTextBased()
+            ) {
+                await sendAnnouncementError(
                     interaction,
                     '❌ Decrees Channel Missing',
                     'Evelynn could not find the configured decrees channel.'
                 );
+
+                return;
             }
 
             const botMember =
                 interaction.guild.members.me;
 
-            if (!botMember) {
-                return errorReply(
-                    interaction,
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access its server member information.'
-                );
-            }
-
-            const requiredPermissions = [
+            const permissions = [
                 PermissionFlagsBits.ViewChannel,
                 PermissionFlagsBits.SendMessages,
                 PermissionFlagsBits.EmbedLinks
             ];
 
             if (mentionEveryone) {
-                requiredPermissions.push(
+                permissions.push(
                     PermissionFlagsBits.MentionEveryone
                 );
             }
 
             if (
-                !channel.permissionsFor(botMember)
-                    ?.has(requiredPermissions)
+                !botMember ||
+                !channel.permissionsFor(
+                    botMember
+                )?.has(
+                    permissions
+                )
             ) {
-                return errorReply(
+                await sendAnnouncementError(
                     interaction,
                     '❌ Missing Evelynn Permissions',
+
                     mentionEveryone
                         ? 'Evelynn needs View Channel, Send Messages, Embed Links and Mention Everyone.'
                         : 'Evelynn needs View Channel, Send Messages and Embed Links.'
                 );
+
+                return;
             }
 
             await channel.send({
@@ -379,19 +507,21 @@ function buildAnnouncementEmbed(
                         : undefined,
 
                 embeds: [
-                    buildAnnouncementEmbed(
+                    buildAnnouncementEmbed({
                         interaction,
                         type,
                         title,
                         message,
                         imageURL
-                    )
+                    })
                 ],
 
                 allowedMentions: {
                     parse:
                         mentionEveryone
-                            ? ['everyone']
+                            ? [
+                                'everyone'
+                            ]
                             : []
                 }
             });
@@ -410,42 +540,11 @@ function buildAnnouncementEmbed(
                 error
             );
 
-            const embed =
-                createErrorEmbed(
-                    '❌ Announcement Failed',
-                    'Evelynn could not publish this announcement.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [embed],
-                        components: []
-                    })
-                    .catch(() => null);
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [embed],
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(() => null);
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [embed],
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(() => null);
+            await sendAnnouncementError(
+                interaction,
+                '❌ Announcement Failed',
+                'Evelynn could not publish this announcement.'
+            );
         }
     }
 };

@@ -12,6 +12,62 @@ const {
     createHelpSelectMenu
 } = require('../../utils/helpMenu');
 
+async function sendHelpError(
+    interaction,
+    title,
+    message
+) {
+    const payload = {
+        embeds: [
+            createErrorEmbed(
+                title,
+                message
+            )
+        ],
+
+        components:
+            []
+    };
+
+    if (interaction.deferred) {
+        await interaction
+            .editReply(
+                payload
+            )
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    if (interaction.replied) {
+        await interaction
+            .followUp({
+                ...payload,
+
+                flags:
+                    MessageFlags.Ephemeral
+            })
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    await interaction
+        .reply({
+            ...payload,
+
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(
+            () => null
+        );
+}
+
 module.exports = {
     category:
         'information',
@@ -28,12 +84,6 @@ module.exports = {
                 false
             ),
 
-    /**
-     * Execute the /help command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
@@ -41,39 +91,24 @@ module.exports = {
             if (
                 !interaction.inGuild()
             ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Server Only Command',
-                            'The command menu can only be opened inside THE Ⅹ SINS.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await sendHelpError(
+                    interaction,
+                    '❌ Server Only Command',
+                    'The command menu can only be opened inside THE Ⅹ SINS.'
+                );
 
                 return;
             }
 
-            const clientCommands =
-                interaction.client.commands;
-
             if (
-                !clientCommands ||
-                clientCommands.size === 0
+                !interaction.client.commands
+                    ?.size
             ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Commands Unavailable',
-                            'No commands are currently loaded.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+                await sendHelpError(
+                    interaction,
+                    '❌ Commands Unavailable',
+                    'No commands are currently loaded.'
+                );
 
                 return;
             }
@@ -98,62 +133,11 @@ module.exports = {
                 error
             );
 
-            const errorEmbed =
-                createErrorEmbed(
-                    '❌ Command Menu Unavailable',
-                    'Evelynn could not open the command menu.'
-                );
-
-            if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await sendHelpError(
+                interaction,
+                '❌ Command Menu Unavailable',
+                'Evelynn could not open the command menu.'
+            );
         }
     }
 };

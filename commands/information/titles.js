@@ -11,7 +11,8 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-const embedConfig = require('../../config/embed');
+const embedConfig =
+    require('../../config/embed');
 
 const {
     TITLE_CATEGORIES,
@@ -19,10 +20,15 @@ const {
     TITLE_UNLOCK_TYPES
 } = require('../../config/titles');
 
-const { titles: titleDatabase } = require('../../database');
+const {
+    titles: titleDatabase
+} = require('../../database');
 
-const TITLE_MENU_PREFIX = 'titles_category_menu';
-const OVERVIEW_PAGE_ID = 'titles_overview';
+const TITLE_MENU_PREFIX =
+    'titles_category_menu';
+
+const OVERVIEW_PAGE_ID =
+    'titles_overview';
 
 const TITLE_CATEGORY_ORDER = [
     TITLE_CATEGORIES.ACHIEVEMENT,
@@ -34,19 +40,22 @@ const CATEGORY_DETAILS = {
     [TITLE_CATEGORIES.ACHIEVEMENT]: {
         emoji: '🏆',
         label: 'Achievements',
-        description: 'Titles earned through Soul Achievements'
+        description:
+            'Titles earned through Soul Achievements'
     },
 
     [TITLE_CATEGORIES.SIN_RANK]: {
         emoji: '⚔️',
         label: 'Sin Ranks',
-        description: 'Dominion and the Ten Sins'
+        description:
+            'Dominion and the Ten Sins'
     },
 
     [TITLE_CATEGORIES.STAFF]: {
         emoji: '🛡️',
         label: 'High Command',
-        description: 'Titles held by THE Ⅹ SINS leadership'
+        description:
+            'Titles held by THE Ⅹ SINS leadership'
     }
 };
 
@@ -60,93 +69,82 @@ const RARITY_ORDER = [
 ];
 
 const RARITY_DETAILS = {
-    Common: {
-        emoji: '⚪',
-        label: 'Common'
-    },
+    Common: [
+        '⚪',
+        'Common'
+    ],
 
-    Uncommon: {
-        emoji: '🟢',
-        label: 'Uncommon'
-    },
+    Uncommon: [
+        '🟢',
+        'Uncommon'
+    ],
 
-    Rare: {
-        emoji: '🔵',
-        label: 'Rare'
-    },
+    Rare: [
+        '🔵',
+        'Rare'
+    ],
 
-    Epic: {
-        emoji: '🟣',
-        label: 'Epic'
-    },
+    Epic: [
+        '🟣',
+        'Epic'
+    ],
 
-    Legendary: {
-        emoji: '🟡',
-        label: 'Legendary'
-    },
+    Legendary: [
+        '🟡',
+        'Legendary'
+    ],
 
-    Mythic: {
-        emoji: '🔴',
-        label: 'Mythic'
-    }
+    Mythic: [
+        '🔴',
+        'Mythic'
+    ]
 };
 
-const TITLE_DEFINITION_MAP = new Map(
-    TITLE_DEFINITIONS.map(
-        title => [
-            title.id,
-            title
-        ]
-    )
-);
+const TITLE_DEFINITION_MAP =
+    new Map(
+        TITLE_DEFINITIONS.map(
+            title => [
+                title.id,
+                title
+            ]
+        )
+    );
 
-function formatNumber(value) {
-    const number = Number(value);
+function getRarityDetails(rarity) {
+    const [emoji, label] =
+        RARITY_DETAILS[rarity] ?? [
+            '⚪',
+            rarity || 'Unknown'
+        ];
 
-    return Number.isFinite(number)
-        ? number.toLocaleString('en-US')
-        : '0';
+    return {
+        emoji,
+        label
+    };
 }
 
 function formatDiscordDate(
     value,
     style = 'D'
 ) {
-    if (!value) {
-        return 'Not recorded';
-    }
+    const date =
+        new Date(value);
 
-    const date = value instanceof Date
-        ? value
-        : new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return 'Not recorded';
-    }
-
-    return `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
-}
-
-function createProgressBar(
-    percentage,
-    length = 16
-) {
-    const safePercentage = Math.min(
-        100,
-        Math.max(
-            0,
-            Number(percentage) || 0
+    if (
+        !value ||
+        Number.isNaN(
+            date.getTime()
         )
-    );
-
-    const filled = Math.round(
-        (safePercentage / 100) *
-        length
-    );
+    ) {
+        return 'Not recorded';
+    }
 
     return (
-        '▰'.repeat(filled) +
-        '▱'.repeat(length - filled)
+        `<t:${
+            Math.floor(
+                date.getTime() / 1000
+            )
+        }:${style}>`
     );
 }
 
@@ -154,60 +152,66 @@ function calculateCompletion(
     unlocked,
     total
 ) {
-    if (total <= 0) {
-        return 0;
-    }
+    return total > 0
+        ? Math.min(
+            100,
+            Math.round(
+                (unlocked / total) *
+                100
+            )
+        )
+        : 0;
+}
 
-    return Math.min(
-        100,
+function createProgressBar(
+    percentage,
+    length = 8
+) {
+    const safePercentage =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                Number(percentage) || 0
+            )
+        );
+
+    const filled =
         Math.round(
-            (unlocked / total) *
-            100
+            (
+                safePercentage /
+                100
+            ) *
+            length
+        );
+
+    return (
+        '▰'.repeat(filled) +
+        '▱'.repeat(
+            length - filled
         )
     );
 }
 
-function getRarityDetails(rarity) {
-    return RARITY_DETAILS[rarity] ?? {
-        emoji: '⚪',
-        label: rarity || 'Unknown'
-    };
-}
-
-function normalizeUnlockedTitles(
-    unlockedTitles
-) {
-    if (!Array.isArray(unlockedTitles)) {
+function normalizeUnlockedTitles(titles) {
+    if (!Array.isArray(titles)) {
         return [];
     }
 
-    return unlockedTitles
-        .filter(
-            title =>
-                TITLE_DEFINITION_MAP.has(
-                    title.titleId
-                )
+    return titles
+        .filter(title =>
+            TITLE_DEFINITION_MAP.has(
+                title.titleId
+            )
         )
-        .map(
-            title => ({
-                ...title,
-                ...TITLE_DEFINITION_MAP.get(
-                    title.titleId
-                ),
-                titleId:
-                    title.titleId
-            })
-        );
-}
-
-function getUnlockedTitleIds(
-    unlockedTitles
-) {
-    return new Set(
-        unlockedTitles.map(
-            title => title.titleId
-        )
-    );
+        .map(title => ({
+            ...title,
+            ...TITLE_DEFINITION_MAP.get(
+                title.titleId
+            ),
+            titleId:
+                title.titleId
+        }));
 }
 
 function getCategoryTitles(category) {
@@ -218,49 +222,25 @@ function getCategoryTitles(category) {
     );
 }
 
-function findActiveTitle(
-    unlockedTitles
-) {
-    return (
-        unlockedTitles.find(
-            title => title.isActive
-        ) ??
-        null
-    );
-}
-
-function findLatestTitle(
-    unlockedTitles
-) {
-    return [...unlockedTitles].sort(
-        (
-            first,
-            second
-        ) =>
-            new Date(
-                second.unlockedAt || 0
-            ).getTime() -
-            new Date(
-                first.unlockedAt || 0
-            ).getTime()
-    )[0] ?? null;
-}
-
 function formatUnlockRequirement(title) {
-    const unlock = title.unlock ?? {};
+    const unlock =
+        title.unlock ?? {};
 
     switch (unlock.type) {
-        case TITLE_UNLOCK_TYPES.ACHIEVEMENT:
+        case TITLE_UNLOCK_TYPES
+            .ACHIEVEMENT:
             return (
                 `Earn the **${title.displayName}** Achievement.`
             );
 
-        case TITLE_UNLOCK_TYPES.SIN_RANK:
+        case TITLE_UNLOCK_TYPES
+            .SIN_RANK:
             return (
                 `Receive the **${unlock.rankName}** rank.`
             );
 
-        case TITLE_UNLOCK_TYPES.STAFF_ROLE:
+        case TITLE_UNLOCK_TYPES
+            .STAFF_ROLE:
             return (
                 `Hold the **${unlock.roleName}** role.`
             );
@@ -273,33 +253,37 @@ function formatUnlockRequirement(title) {
 }
 
 function createCategoryMenu(
+    viewerId,
     memberId,
     selectedPage
 ) {
-    const menu = new StringSelectMenuBuilder()
-        .setCustomId(
-            `${TITLE_MENU_PREFIX}:${memberId}`
-        )
-        .setPlaceholder(
-            'Select a Title archive'
-        )
-        .addOptions(
-            new StringSelectMenuOptionBuilder()
-                .setLabel(
-                    'Collection Overview'
-                )
-                .setDescription(
-                    'View the complete Title collection'
-                )
-                .setEmoji('📖')
-                .setValue(
-                    OVERVIEW_PAGE_ID
-                )
-                .setDefault(
-                    selectedPage ===
-                    OVERVIEW_PAGE_ID
-                )
-        );    for (
+    const menu =
+        new StringSelectMenuBuilder()
+            .setCustomId(
+                `${TITLE_MENU_PREFIX}:${viewerId}:${memberId}`
+            )
+            .setPlaceholder(
+                'Select a Title page'
+            )
+            .addOptions(
+                new StringSelectMenuOptionBuilder()
+                    .setLabel(
+                        'Collection Overview'
+                    )
+                    .setDescription(
+                        'View the complete Title collection'
+                    )
+                    .setEmoji('📖')
+                    .setValue(
+                        OVERVIEW_PAGE_ID
+                    )
+                    .setDefault(
+                        selectedPage ===
+                        OVERVIEW_PAGE_ID
+                    )
+            );
+
+    for (
         const category
         of TITLE_CATEGORY_ORDER
     ) {
@@ -328,9 +312,7 @@ function createCategoryMenu(
     }
 
     return new ActionRowBuilder()
-        .addComponents(
-            menu
-        );
+        .addComponents(menu);
 }
 
 function createTitlesEmbed(
@@ -341,26 +323,14 @@ function createTitlesEmbed(
 ) {
     const avatarURL =
         member.user.displayAvatarURL({
-            extension:
-                'png',
-
-            size:
-                1024,
-
-            forceStatic:
-                false
+            extension: 'png',
+            size: 1024,
+            forceStatic: false
         });
 
     return createEmbed({
         title,
-
-        description: [
-            description,
-            '',
-            embedConfig.branding.divider,
-            '',
-            '*Every earned designation is preserved within the Soul Archives.*'
-        ].join('\n'),
+        description,
 
         color:
             embedConfig.colors.title,
@@ -370,7 +340,7 @@ function createTitlesEmbed(
 
         author: {
             name:
-                `${member.displayName} • Title Archives`,
+                `${member.displayName} • Titles`,
 
             iconURL:
                 avatarURL
@@ -383,22 +353,14 @@ function createTitlesEmbed(
             iconURL:
                 interaction.client.user
                     .displayAvatarURL({
-                        extension:
-                            'png',
-
-                        size:
-                            128,
-
-                        forceStatic:
-                            false
+                        size: 128,
+                        forceStatic: false
                     })
         }
     });
-}
-
-function formatCategoryProgress(
+}function formatCategoryProgress(
     category,
-    unlockedTitleIds
+    unlockedIds
 ) {
     const details =
         CATEGORY_DETAILS[category];
@@ -409,7 +371,7 @@ function formatCategoryProgress(
     const unlocked =
         titles.filter(
             title =>
-                unlockedTitleIds.has(
+                unlockedIds.has(
                     title.id
                 )
         ).length;
@@ -422,14 +384,14 @@ function formatCategoryProgress(
 
     return [
         `${details.emoji} **${details.label}**`,
-        `\`${createProgressBar(completion, 8)}\` **${completion}%**`,
+        `\`${createProgressBar(completion)}\` **${completion}%**`,
         `-# ${unlocked} / ${titles.length} unlocked`
     ].join('\n');
 }
 
 function formatRarityProgress(
     rarity,
-    unlockedTitleIds
+    unlockedIds
 ) {
     const details =
         getRarityDetails(rarity);
@@ -448,7 +410,7 @@ function formatRarityProgress(
     const unlocked =
         titles.filter(
             title =>
-                unlockedTitleIds.has(
+                unlockedIds.has(
                     title.id
                 )
         ).length;
@@ -461,7 +423,7 @@ function formatRarityProgress(
 
     return [
         `${details.emoji} **${details.label}**`,
-        `\`${createProgressBar(completion, 8)}\` **${completion}%**`,
+        `\`${createProgressBar(completion)}\` **${completion}%**`,
         `-# ${unlocked} / ${titles.length} unlocked`
     ].join('\n');
 }
@@ -471,20 +433,34 @@ function buildOverviewPage(
     member,
     unlockedTitles
 ) {
-    const unlockedTitleIds =
-        getUnlockedTitleIds(
-            unlockedTitles
+    const unlockedIds =
+        new Set(
+            unlockedTitles.map(
+                title =>
+                    title.titleId
+            )
         );
 
     const activeTitle =
-        findActiveTitle(
-            unlockedTitles
-        );
+        unlockedTitles.find(
+            title =>
+                title.isActive
+        ) ?? null;
 
     const latestTitle =
-        findLatestTitle(
-            unlockedTitles
-        );
+        [...unlockedTitles]
+            .sort(
+                (
+                    first,
+                    second
+                ) =>
+                    new Date(
+                        second.unlockedAt || 0
+                    ).getTime() -
+                    new Date(
+                        first.unlockedAt || 0
+                    ).getTime()
+            )[0] ?? null;
 
     const completion =
         calculateCompletion(
@@ -494,23 +470,21 @@ function buildOverviewPage(
 
     const categoryProgress =
         TITLE_CATEGORY_ORDER
-            .map(
-                category =>
-                    formatCategoryProgress(
-                        category,
-                        unlockedTitleIds
-                    )
+            .map(category =>
+                formatCategoryProgress(
+                    category,
+                    unlockedIds
+                )
             )
             .join('\n\n');
 
     const rarityProgress =
         RARITY_ORDER
-            .map(
-                rarity =>
-                    formatRarityProgress(
-                        rarity,
-                        unlockedTitleIds
-                    )
+            .map(rarity =>
+                formatRarityProgress(
+                    rarity,
+                    unlockedIds
+                )
             )
             .filter(Boolean)
             .join('\n\n');
@@ -518,9 +492,9 @@ function buildOverviewPage(
     return createTitlesEmbed(
         interaction,
         member,
-        '📖 Title Archives',
+        '📖 Title Collection',
         [
-            `Every designation earned by **${member.displayName}**.`,
+            `Titles unlocked by **${member.displayName}**.`,
             '',
             '**Active Title**',
 
@@ -530,16 +504,22 @@ function buildOverviewPage(
 
             '',
             '**Collection Progress**',
-            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
+            `\`${createProgressBar(
+                completion,
+                18
+            )}\` **${completion}%**`,
             `-# ${unlockedTitles.length} / ${TITLE_DEFINITIONS.length} Titles unlocked`,
             '',
             '**Latest Unlock**',
 
             latestTitle
-                ? `> ${latestTitle.displayName} • ${formatDiscordDate(
-                    latestTitle.unlockedAt,
-                    'R'
-                )}`
+                ? (
+                    `> ${latestTitle.displayName} • ` +
+                    formatDiscordDate(
+                        latestTitle.unlockedAt,
+                        'R'
+                    )
+                )
                 : '> *No Titles unlocked yet.*'
         ].join('\n')
     ).addFields(
@@ -548,21 +528,14 @@ function buildOverviewPage(
                 '📚 Title Categories',
 
             value:
-                categoryProgress,
-
-            inline:
-                false
+                categoryProgress
         },
-
         {
             name:
                 '💎 Rarity Collection',
 
             value:
-                rarityProgress,
-
-            inline:
-                false
+                rarityProgress
         }
     );
 }
@@ -579,15 +552,18 @@ function buildCategoryPage(
     const titles =
         getCategoryTitles(category);
 
-    const unlockedTitleIds =
-        getUnlockedTitleIds(
-            unlockedTitles
+    const unlockedIds =
+        new Set(
+            unlockedTitles.map(
+                title =>
+                    title.titleId
+            )
         );
 
     const unlockedCount =
         titles.filter(
             title =>
-                unlockedTitleIds.has(
+                unlockedIds.has(
                     title.id
                 )
         ).length;
@@ -599,51 +575,46 @@ function buildCategoryPage(
         );
 
     const fields =
-        titles.map(
-            title => {
-                const unlocked =
-                    unlockedTitleIds.has(
-                        title.id
-                    );
+        titles.map(title => {
+            const unlocked =
+                unlockedIds.has(
+                    title.id
+                );
 
-                const rarity =
-                    getRarityDetails(
-                        title.rarity
-                    );
+            const rarity =
+                getRarityDetails(
+                    title.rarity
+                );
 
-                return {
-                    name: [
-                        unlocked
-                            ? '✅'
-                            : '🔒',
+            return {
+                name: [
+                    unlocked
+                        ? '✅'
+                        : '🔒',
 
-                        rarity.emoji,
-                        title.displayName
-                    ].join(' ')
-                        .slice(
-                            0,
-                            256
-                        ),
+                    rarity.emoji,
+                    title.displayName
+                ]
+                    .join(' ')
+                    .slice(0, 256),
 
-                    value: [
-                        title.description,
+                value: [
+                    title.description,
 
-                        unlocked
-                            ? '✅ Unlocked'
-                            : `🔒 ${formatUnlockRequirement(
-                                title
-                            )}`
-                    ].join('\n')
-                        .slice(
-                            0,
-                            1024
-                        ),
-
-                    inline:
-                        false
-                };
-            }
-        );
+                    unlocked
+                        ? '✅ Unlocked'
+                        : (
+                            `🔒 ${
+                                formatUnlockRequirement(
+                                    title
+                                )
+                            }`
+                        )
+                ]
+                    .join('\n')
+                    .slice(0, 1024)
+            };
+        });
 
     return createTitlesEmbed(
         interaction,
@@ -652,39 +623,16 @@ function buildCategoryPage(
         [
             details.description,
             '',
-            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
+            `\`${createProgressBar(
+                completion,
+                18
+            )}\` **${completion}%**`,
             `-# ${unlockedCount} / ${titles.length} unlocked`
         ].join('\n')
-    ).addFields(
-        fields
-    );
+    ).addFields(fields);
 }
 
-function buildTitlesPage(
-    interaction,
-    member,
-    unlockedTitles,
-    page
-) {
-    if (
-        TITLE_CATEGORY_ORDER.includes(
-            page
-        )
-    ) {
-        return buildCategoryPage(
-            interaction,
-            member,
-            unlockedTitles,
-            page
-        );
-    }
-
-    return buildOverviewPage(
-        interaction,
-        member,
-        unlockedTitles
-    );
-}function createTitlesResponse(
+function createTitlesResponse(
     interaction,
     member,
     unlockedTitles,
@@ -695,26 +643,42 @@ function buildTitlesPage(
             unlockedTitles
         );
 
-    return {
-        embeds: [
-            buildTitlesPage(
+    const selectedPage =
+        TITLE_CATEGORY_ORDER.includes(
+            page
+        )
+            ? page
+            : OVERVIEW_PAGE_ID;
+
+    const embed =
+        selectedPage ===
+        OVERVIEW_PAGE_ID
+            ? buildOverviewPage(
+                interaction,
+                member,
+                knownTitles
+            )
+            : buildCategoryPage(
                 interaction,
                 member,
                 knownTitles,
-                page
-            )
+                selectedPage
+            );
+
+    return {
+        embeds: [
+            embed
         ],
 
         components: [
             createCategoryMenu(
+                interaction.user.id,
                 member.id,
-                page
+                selectedPage
             )
         ]
     };
-}
-
-async function resolveTargetMember(
+}async function resolveTargetMember(
     interaction
 ) {
     const user =
@@ -722,64 +686,53 @@ async function resolveTargetMember(
             'user'
         );
 
-    if (!user) {
-        return interaction.member;
-    }
-
-    return interaction.guild
-        .members
-        .fetch(
-            user.id
-        )
-        .catch(
-            () => null
-        );
+    return user
+        ? interaction.guild.members
+            .fetch(user.id)
+            .catch(() => null)
+        : interaction.member;
 }
 
 async function sendTitlesError(
     interaction,
-    message
+    description
 ) {
-    const embed =
-        createErrorEmbed(
-            'Title Archives',
-            message
-        );
+    const payload = {
+        embeds: [
+            createErrorEmbed(
+                '❌ Titles Unavailable',
+                description
+            )
+        ],
+
+        components: []
+    };
 
     if (interaction.deferred) {
-        await interaction.editReply({
-            embeds: [
-                embed
-            ],
-
-            components:
-                []
-        });
-
-        return;
+        return interaction
+            .editReply(payload)
+            .catch(() => null);
     }
 
     if (interaction.replied) {
-        await interaction.followUp({
-            flags:
-                MessageFlags.Ephemeral,
+        return interaction
+            .followUp({
+                ...payload,
 
-            embeds: [
-                embed
-            ]
-        });
-
-        return;
+                flags:
+                    MessageFlags.Ephemeral
+            })
+            .catch(() => null);
     }
 
-    await interaction.reply({
-        flags:
-            MessageFlags.Ephemeral,
+    return interaction
+        .reply({
+            ...payload,
 
-        embeds: [
-            embed
-        ]
-    });
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(() => null);
 }
 
 async function handleTitlesInteraction(
@@ -795,18 +748,37 @@ async function handleTitlesInteraction(
     }
 
     try {
-        const memberId =
-            interaction.customId.slice(
-                TITLE_MENU_PREFIX.length +
-                1
-            );
+        const [
+            ,
+            viewerId,
+            memberId
+        ] =
+            interaction.customId
+                .split(':');
+
+        if (
+            interaction.user.id !==
+            viewerId
+        ) {
+            await interaction.reply({
+                embeds: [
+                    createErrorEmbed(
+                        '❌ Private Title Menu',
+                        'Only the member who opened this menu may control it.'
+                    )
+                ],
+
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            return true;
+        }
 
         const member =
             await interaction.guild
                 .members
-                .fetch(
-                    memberId
-                );
+                .fetch(memberId);
 
         const unlockedTitles =
             await titleDatabase
@@ -815,16 +787,13 @@ async function handleTitlesInteraction(
                     member.id
                 );
 
-        const selectedPage =
-            interaction.values?.[0] ??
-            OVERVIEW_PAGE_ID;
-
         await interaction.update(
             createTitlesResponse(
                 interaction,
                 member,
                 unlockedTitles,
-                selectedPage
+                interaction.values[0] ??
+                    OVERVIEW_PAGE_ID
             )
         );
 
@@ -839,15 +808,15 @@ async function handleTitlesInteraction(
             !interaction.replied &&
             !interaction.deferred
         ) {
-            await interaction.reply({
-                flags:
-                    MessageFlags.Ephemeral,
+            await interaction
+                .reply({
+                    content:
+                        '❌ The Title menu could not be updated.',
 
-                content:
-                    '❌ The Title archive could not be updated.'
-            }).catch(
-                () => null
-            );
+                    flags:
+                        MessageFlags.Ephemeral
+                })
+                .catch(() => null);
         }
 
         return true;
@@ -855,41 +824,27 @@ async function handleTitlesInteraction(
 }
 
 module.exports = {
-    category:
-        'information',
+    category: 'information',
 
     data:
         new SlashCommandBuilder()
-            .setName(
-                'titles'
-            )
+            .setName('titles')
             .setDescription(
                 'View THE Ⅹ SINS Titles and collection progress.'
             )
-            .addUserOption(
-                option =>
-                    option
-                        .setName(
-                            'user'
-                        )
-                        .setDescription(
-                            'View another member\'s Titles.'
-                        )
-                        .setRequired(
-                            false
-                        )
+            .addUserOption(option =>
+                option
+                    .setName('user')
+                    .setDescription(
+                        "View another member's Titles."
+                    )
+                    .setRequired(false)
             )
-            .setDMPermission(
-                false
-            ),
+            .setDMPermission(false),
 
-    async execute(
-        interaction
-    ) {
+    async execute(interaction) {
         try {
-            if (
-                !interaction.inGuild()
-            ) {
+            if (!interaction.inGuild()) {
                 await sendTitlesError(
                     interaction,
                     'This command can only be used inside THE Ⅹ SINS.'
@@ -935,9 +890,7 @@ module.exports = {
 
             await sendTitlesError(
                 interaction,
-                'The Title archive could not be opened.'
-            ).catch(
-                () => null
+                'The Title collection could not be opened.'
             );
         }
     },

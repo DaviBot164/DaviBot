@@ -9,145 +9,103 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    titles:
-        titleDatabase
+    titles: titleDatabase
 } = require('../../database');
 
-const TITLE_COLOR =
-    '#D4AF37';
+const TITLE_COLOR = '#D4AF37';
 
-function createTitleRemovedEmbed({
+function createTitleRemovedEmbed(
     interaction,
     member,
     removedTitle
-}) {
-    const embed =
-        createSuccessEmbed(
-            '🏷️ Active Title Removed',
-            [
-                `${member} no longer has an active Title.`,
-                '',
-                'The Title remains unlocked and may be selected again with `/settitle`.'
-            ].join('\n')
-        );
+) {
+    const embed = createSuccessEmbed(
+        '🏷️ Active Title Removed',
+        [
+            `${member} no longer has an active Title.`,
+            '',
+            'The Title remains unlocked and may be selected again with `/settitle`.'
+        ].join('\n')
+    );
 
-    embed
-        .setColor(
-            TITLE_COLOR
-        )
+    return embed
+        .setColor(TITLE_COLOR)
         .setThumbnail(
             member.user.displayAvatarURL({
-                size:
-                    1024,
-
-                forceStatic:
-                    false
+                size: 1024,
+                forceStatic: false
             })
         )
         .addFields({
-            name:
-                '📜 Previous Active Title',
-
+            name: '🏷️ Previous Active Title',
             value: [
                 `**${removedTitle.displayName}**`,
                 `-# ${removedTitle.rarity} • ${removedTitle.category}`
-            ].join('\n'),
-
-            inline:
-                false
+            ].join('\n')
         })
         .setFooter({
             text:
                 `Evelynn • THE Ⅹ SINS • Removed by ${interaction.user.username}`,
-
             iconURL:
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            128,
-
-                        forceStatic:
-                            false
-                    })
+                interaction.client.user.displayAvatarURL({
+                    size: 128,
+                    forceStatic: false
+                })
         });
-
-    return embed;
 }
 
 async function sendError(
     interaction,
     title,
-    message
+    description
 ) {
     const payload = {
         embeds: [
             createErrorEmbed(
                 title,
-                message
+                description
             )
-        ]
+        ],
+        components: []
     };
 
     if (interaction.deferred) {
-        await interaction
-            .editReply(
-                payload
-            )
-            .catch(
-                () => null
-            );
-
-        return;
+        return interaction
+            .editReply(payload)
+            .catch(() => null);
     }
 
     if (interaction.replied) {
-        await interaction
+        return interaction
             .followUp({
                 ...payload,
-
-                flags:
-                    MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral
             })
-            .catch(
-                () => null
-            );
-
-        return;
+            .catch(() => null);
     }
 
-    await interaction
+    return interaction
         .reply({
             ...payload,
-
-            flags:
-                MessageFlags.Ephemeral
+            flags: MessageFlags.Ephemeral
         })
-        .catch(
-            () => null
-        );
-}module.exports = {
-    category:
-        'information',
+        .catch(() => null);
+}
+
+module.exports = {
+    category: 'information',
 
     data:
         new SlashCommandBuilder()
-            .setName(
-                'removetitle'
-            )
+            .setName('removetitle')
             .setDescription(
                 'Remove your currently active Title.'
             )
-            .setDMPermission(
-                false
-            ),
+            .setDMPermission(false),
 
-    async execute(
-        interaction
-    ) {
+    async execute(interaction) {
         try {
-            if (
-                !interaction.inGuild()
-            ) {
+            if (!interaction.inGuild()) {
                 await sendError(
                     interaction,
                     '❌ THE Ⅹ SINS Only Command',
@@ -158,73 +116,44 @@ async function sendError(
             }
 
             await interaction.deferReply({
-                flags:
-                    MessageFlags.Ephemeral
+                flags: MessageFlags.Ephemeral
             });
 
-            const member =
-                interaction.member;
+            const member = interaction.member;
 
             if (!member) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Member Not Found',
-                            'Evelynn could not access your member record.'
-                        )
-                    ]
-                });
-
-                return;
-            }
-
-            const activeTitle =
-                await titleDatabase
-                    .getActiveTitle(
-                        interaction.guild.id,
-                        member.id
-                    );
-
-            if (!activeTitle) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ No Active Title',
-                            'You do not currently have an active Title.'
-                        )
-                    ]
-                });
+                await sendError(
+                    interaction,
+                    '❌ Member Not Found',
+                    'Evelynn could not access your member record.'
+                );
 
                 return;
             }
 
             const removedTitle =
-                await titleDatabase
-                    .clearActiveTitle(
-                        interaction.guild.id,
-                        member.id
-                    );
+                await titleDatabase.clearActiveTitle(
+                    interaction.guild.id,
+                    member.id
+                );
 
             if (!removedTitle) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Title Removal Failed',
-                            'Evelynn could not remove your active Title.'
-                        )
-                    ]
-                });
+                await sendError(
+                    interaction,
+                    '❌ No Active Title',
+                    'You do not currently have an active Title.'
+                );
 
                 return;
             }
 
             await interaction.editReply({
                 embeds: [
-                    createTitleRemovedEmbed({
+                    createTitleRemovedEmbed(
                         interaction,
                         member,
                         removedTitle
-                    })
+                    )
                 ]
             });
         } catch (error) {

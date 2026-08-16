@@ -12,264 +12,123 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    levels:
-        levelDatabase,
-
-    ranks:
-        rankDatabase,
-
-    titles:
-        titleDatabase
+    levels: levelDatabase,
+    ranks: rankDatabase,
+    titles: titleDatabase
 } = require('../../database');
 
-/**
- * Format a number safely.
- *
- * @param {number|string|null|undefined} value
- * @returns {string}
- */
-function formatNumber(
-    value
-) {
-    const number =
-        Number(
-            value
-        );
+const PROFILE_COLOR = '#5B3A78';
 
-    return Number.isFinite(
-        number
-    )
-        ? number.toLocaleString(
-            'en-US'
-        )
+function formatNumber(value) {
+    const number = Number(value);
+
+    return Number.isFinite(number)
+        ? number.toLocaleString('en-US')
         : '0';
 }
 
-/**
- * Load member progression.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<Object>}
- */
-async function getProgression(
-    guildId,
-    userId
-) {
+async function loadSafely(loader, fallback = null) {
     try {
-        return (
-            await levelDatabase
-                .getUserLevel(
-                    guildId,
-                    userId
-                )
-        ) ?? {
-            level:
-                0,
-
-            xp:
-                0
-        };
+        return (await loader()) ?? fallback;
     } catch {
-        return {
-            level:
-                0,
-
-            xp:
-                0
-        };
+        return fallback;
     }
 }
 
-/**
- * Load leaderboard position.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<number|null>}
- */
-async function getServerRank(
-    guildId,
-    userId
-) {
-    try {
-        return await levelDatabase
-            .getUserRank(
-                guildId,
-                userId
-            );
-    } catch {
-        return null;
-    }
+async function getActiveTitle(guildId, userId) {
+    const titles = await loadSafely(
+        () => titleDatabase.getSoulTitles(guildId, userId),
+        []
+    );
+
+    return Array.isArray(titles)
+        ? titles.find(title => title.isActive) ?? null
+        : null;
 }
 
-/**
- * Load the current managed rank.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-async function getCurrentRank(
-    guildId,
-    userId
-) {
-    try {
-        return await rankDatabase
-            .getCurrentRank(
-                guildId,
-                userId
-            );
-    } catch {
-        return null;
-    }
+async function getProgressionRole(member, level) {
+    const rewards = await loadSafely(
+        () => levelDatabase.getEarnedLevelRewards(
+            member.guild.id,
+            level
+        ),
+        []
+    );
+
+    return [...rewards]
+        .sort((first, second) => second.level - first.level)
+        .map(reward => member.guild.roles.cache.get(reward.roleId))
+        .find(role => role && member.roles.cache.has(role.id))
+        ?.toString() ?? 'None';
 }
 
-/**
- * Load the active Title.
- *
- * @param {string} guildId
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-async function getActiveTitle(
-    guildId,
-    userId
-) {
-    try {
+function buildMediaRow(avatarURL, bannerURL) {
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setLabel('Avatar')
+            .setEmoji('🖼️')
+            .setStyle(ButtonStyle.Link)
+            .setURL(avatarURL)
+    );
 
-        const titles =
-            await titleDatabase
-                .getSoulTitles(
-                    guildId,
-                    userId
-                );
-
-        if (
-            !Array.isArray(
-                titles
-            )
-        ) {
-            return null;
-        }
-
-        return (
-            titles.find(
-                title =>
-                    title.isActive
-            ) ??
-            null
+    if (bannerURL) {
+        row.addComponents(
+            new ButtonBuilder()
+                .setLabel('Banner')
+                .setEmoji('🌌')
+                .setStyle(ButtonStyle.Link)
+                .setURL(bannerURL)
         );
-    } catch {
-        return null;
     }
+
+    return row;
 }
 
-/**
- * Find the highest progression role
- * currently held by the member.
- *
- * @param {import('discord.js').GuildMember} member
- * @param {number} level
- * @returns {Promise<string>}
- */
-async function getProgressionRole(
-    member,
-    level
-) {
-    try {
-        const rewards =
-            await levelDatabase
-                .getEarnedLevelRewards(
-                    member.guild.id,
-                    level
-                );
+async function sendProfileError(interaction, title, description) {
+    const payload = {
+        embeds: [createErrorEmbed(title, description)],
+        components: []
+    };
 
-        const sortedRewards =
-            [...rewards].sort(
-                (
-                    first,
-                    second
-                ) =>
-                    second.level -
-                    first.level
-            );
-
-        for (
-            const reward
-            of sortedRewards
-        ) {
-            const role =
-                member.guild.roles.cache.get(
-                    reward.roleId
-                );
-
-            if (
-                role &&
-                member.roles.cache.has(
-                    role.id
-                )
-            ) {
-                return role.toString();
-            }
-        }
-
-        return 'None';
-    } catch {
-        return 'Unavailable';
+    if (interaction.deferred) {
+        return interaction.editReply(payload).catch(() => null);
     }
-}module.exports = {
-    category:
-        'information',
 
-    data:
-        new SlashCommandBuilder()
-            .setName(
-                'profile'
-            )
-            .setDescription(
-                'View a compact member profile.'
-            )
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'user'
-                    )
-                    .setDescription(
-                        'Select a member'
-                    )
-                    .setRequired(
-                        false
-                    )
-            )
-            .setDMPermission(
-                false
-            ),
+    if (interaction.replied) {
+        return interaction.followUp({
+            ...payload,
+            flags: MessageFlags.Ephemeral
+        }).catch(() => null);
+    }
 
-    /**
-     * Execute the /profile command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(
-        interaction
-    ) {
+    return interaction.reply({
+        ...payload,
+        flags: MessageFlags.Ephemeral
+    }).catch(() => null);
+}
+
+module.exports = {
+    category: 'information',
+
+    data: new SlashCommandBuilder()
+        .setName('profile')
+        .setDescription('View a compact member profile.')
+        .addUserOption(option =>
+            option
+                .setName('user')
+                .setDescription('Select a member')
+                .setRequired(false)
+        )
+        .setDMPermission(false),
+
+    async execute(interaction) {
         try {
-            if (
-                !interaction.inGuild()
-            ) {
-                await interaction.reply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Server Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
-                        )
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                });
+            if (!interaction.inGuild()) {
+                await sendProfileError(
+                    interaction,
+                    '❌ Server Only Command',
+                    'This command can only be used inside THE Ⅹ SINS.'
+                );
 
                 return;
             }
@@ -277,256 +136,118 @@ async function getProgressionRole(
             await interaction.deferReply();
 
             const selectedUser =
-                interaction.options.getUser(
-                    'user'
-                ) ??
-                interaction.user;
+                interaction.options.getUser('user') ?? interaction.user;
 
-            const member =
-                await interaction.guild.members
-                    .fetch(
-                        selectedUser.id
-                    )
-                    .catch(
-                        () => null
-                    );
+            const member = await interaction.guild.members
+                .fetch(selectedUser.id)
+                .catch(() => null);
 
             if (!member) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Member Not Found',
-                            'The selected user is not currently in this server.'
-                        )
-                    ]
-                });
+                await sendProfileError(
+                    interaction,
+                    '❌ Member Not Found',
+                    'The selected user is not currently in this server.'
+                );
 
                 return;
             }
 
-            const fullUser =
-                await selectedUser.fetch(
-                    true
-                );
+            const user = await member.user.fetch(true);
+            const guildId = interaction.guild.id;
 
-            const [
-                progression,
-                serverRank,
-                currentRank,
-                activeTitle
-            ] = await Promise.all([
-                getProgression(
-                    interaction.guild.id,
-                    fullUser.id
-                ),
+            const [progression, serverRank, currentRank, activeTitle] =
+                await Promise.all([
+                    loadSafely(
+                        () => levelDatabase.getUserLevel(guildId, user.id),
+                        { level: 0, xp: 0 }
+                    ),
+                    loadSafely(
+                        () => levelDatabase.getUserRank(guildId, user.id)
+                    ),
+                    loadSafely(
+                        () => rankDatabase.getCurrentRank(guildId, user.id)
+                    ),
+                    getActiveTitle(guildId, user.id)
+                ]);
 
-                getServerRank(
-                    interaction.guild.id,
-                    fullUser.id
-                ),
+            const level = Number(progression.level || 0);
+            const xp = Number(progression.xp || 0);
+            const progressionRole = await getProgressionRole(member, level);
 
-                getCurrentRank(
-                    interaction.guild.id,
-                    fullUser.id
-                ),
+            const avatarURL = user.displayAvatarURL({
+                extension: 'png',
+                size: 2048,
+                forceStatic: false
+            });
 
-                getActiveTitle(
-                    interaction.guild.id,
-                    fullUser.id
-                )
-            ]);
+            const bannerURL = user.bannerURL({
+                extension: 'png',
+                size: 2048,
+                forceStatic: false
+            });
 
-            const level =
-                Number(
-                    progression.level ||
-                    0
-                );
+            const botAvatar = interaction.client.user.displayAvatarURL({
+                size: 256,
+                forceStatic: false
+            });            const highestRole =
+                member.roles.highest.id === guildId
+                    ? 'None'
+                    : member.roles.highest.toString();
 
-            const xp =
-                Number(
-                    progression.xp ||
-                    0
-                );
-
-            const progressionRole =
-                await getProgressionRole(
-                    member,
-                    level
-                );
-
-            const avatarURL =
-                fullUser.displayAvatarURL({
-                    extension:
-                        'png',
-
-                    size:
-                        2048,
-
-                    forceStatic:
-                        false
-                });
-
-            const bannerURL =
-                fullUser.bannerURL({
-                    extension:
-                        'png',
-
-                    size:
-                        2048,
-
-                    forceStatic:
-                        false
-                });
-
-            const botAvatar =
-                interaction.client.user
-                    .displayAvatarURL({
-                        size:
-                            256,
-
-                        forceStatic:
-                            false
-                    });
-
-            const rankName =
-                currentRank
-                    ?.rank_name ??
-                'Unranked';
-
-            const titleName =
-                activeTitle
-                    ?.displayName ??
-                'None';
-
-            const embed =
-                createEmbed({
-                    title:
-                        `Ⅹ・${fullUser.username}`,
-
-                    description:
-                        [
-                            `**${member.displayName}**`,
-                            '',
-                            `⚔️ **Rank:** ${rankName}`,
-                            `♜ **Title:** ${titleName}`
+            const embed = createEmbed({
+                title: `Ⅹ・${user.username}`,
+                description: [
+                    `**${member.displayName}**`,
+                    '',
+                    `⚔️ **Sin Rank:** ${currentRank?.rank_name ?? 'Unranked'}`,
+                    `🏷️ **Title:** ${activeTitle?.displayName ?? 'None'}`
+                ].join('\n'),
+                color: PROFILE_COLOR,
+                thumbnail: avatarURL,
+                fields: [
+                    {
+                        name: '◆・PROGRESSION',
+                        value: [
+                            `**Level:** \`${formatNumber(level)}\``,
+                            `**XP:** \`${formatNumber(xp)}\``,
+                            `**Server Rank:** \`${
+                                serverRank
+                                    ? `#${formatNumber(serverRank)}`
+                                    : 'Unranked'
+                            }\``
                         ].join('\n'),
-
-                    color:
-                        '#5B3A78',
-
-                    thumbnail:
-                        avatarURL,
-
-                    fields: [
-                        {
-                            name:
-                                '◆・PROGRESSION',
-
-                            value:
-                                [
-                                    `**Level:** \`${formatNumber(level)}\``,
-                                    `**XP:** \`${formatNumber(xp)}\``,
-                                    `**Server Rank:** \`${
-                                        serverRank
-                                            ? `#${serverRank}`
-                                            : 'Unranked'
-                                    }\``
-                                ].join('\n'),
-
-                            inline:
-                                true
-                        },
-
-                        {
-                            name:
-                                '♜・STANDING',
-
-                            value:
-                                [
-                                    `**Progression Role:** ${progressionRole}`,
-                                    `**Highest Role:** ${
-                                        member.roles.highest.id ===
-                                        interaction.guild.id
-                                            ? 'None'
-                                            : member.roles.highest
-                                    }`
-                                ].join('\n'),
-
-                            inline:
-                                true
-                        }
-                    ]
-                });
-
-            embed.setAuthor({
-                name:
-                    'Evelynn • THE Ⅹ SINS',
-
-                iconURL:
-                    botAvatar
+                        inline: true
+                    },
+                    {
+                        name: '♜・STANDING',
+                        value: [
+                            `**Progression Role:** ${progressionRole}`,
+                            `**Highest Role:** ${highestRole}`
+                        ].join('\n'),
+                        inline: true
+                    }
+                ],
+                author: {
+                    name: 'Evelynn • THE Ⅹ SINS',
+                    iconURL: botAvatar
+                },
+                footer: {
+                    text: `TTS • Requested by ${interaction.user.username}`,
+                    iconURL: botAvatar
+                }
             });
 
-            embed.setFooter({
-                text:
-                    `TTS • Requested by ${interaction.user.username}`,
-
-                iconURL:
-                    botAvatar
-            });
-
-            if (
-                bannerURL
-            ) {
-                embed.setImage(
-                    bannerURL
-                );
-            }
-
-            const mediaRow =
-                new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setLabel(
-                                'Avatar'
-                            )
-                            .setEmoji(
-                                '🖼️'
-                            )
-                            .setStyle(
-                                ButtonStyle.Link
-                            )
-                            .setURL(
-                                avatarURL
-                            )
-                    );
-
-            if (
-                bannerURL
-            ) {
-                mediaRow.addComponents(
-                    new ButtonBuilder()
-                        .setLabel(
-                            'Banner'
-                        )
-                        .setEmoji(
-                            '🌌'
-                        )
-                        .setStyle(
-                            ButtonStyle.Link
-                        )
-                        .setURL(
-                            bannerURL
-                        )
-                );
+            if (bannerURL) {
+                embed.setImage(bannerURL);
             }
 
             await interaction.editReply({
-                embeds: [
-                    embed
-                ],
-
+                embeds: [embed],
                 components: [
-                    mediaRow
+                    buildMediaRow(
+                        avatarURL,
+                        bannerURL
+                    )
                 ]
             });
         } catch (error) {
@@ -535,62 +256,11 @@ async function getProgressionRole(
                 error
             );
 
-            const errorEmbed =
-                createErrorEmbed(
-                    '❌ Profile Unavailable',
-                    'Evelynn could not open this profile.'
-                );
-
-            if (
-                interaction.deferred
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (
-                interaction.replied
-            ) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await sendProfileError(
+                interaction,
+                '❌ Profile Unavailable',
+                'Evelynn could not open this profile.'
+            );
         }
     }
 };
