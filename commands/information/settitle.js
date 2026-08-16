@@ -14,7 +14,8 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    TITLE_CATEGORIES
+    TITLE_CATEGORIES,
+    TITLE_DEFINITIONS
 } = require('../../config/titles');
 
 const {
@@ -22,42 +23,19 @@ const {
         titleDatabase
 } = require('../../database');
 
-/**
- * THE Ⅹ SINS silver embed color.
- */
-const SINS_TITLE_COLOR =
-    '#E8E8E8';
-
-/**
- * Active Title gold color.
- */
-const ACTIVE_TITLE_COLOR =
-    '#D4AF37';
-
-/**
- * Title selection menu identifier.
- */
 const TITLE_SELECT_MENU_ID =
     'settitle_select_title';
 
-/**
- * Available Title categories.
- */
+const MENU_TIMEOUT =
+    3 * 60 * 1000;
+
+const TITLE_COLOR =
+    '#E8E8E8';
+
+const ACTIVE_TITLE_COLOR =
+    '#D4AF37';
+
 const CATEGORY_CHOICES = [
-    {
-        name:
-            '🌑 General',
-
-        value:
-            TITLE_CATEGORIES.GENERAL
-    },
-    {
-        name:
-            '⭐ Progression',
-
-        value:
-            TITLE_CATEGORIES.LEVEL
-    },
     {
         name:
             '🏆 Achievement',
@@ -65,13 +43,7 @@ const CATEGORY_CHOICES = [
         value:
             TITLE_CATEGORIES.ACHIEVEMENT
     },
-    {
-        name:
-            '👁️ Hollow Evolution',
 
-        value:
-            TITLE_CATEGORIES.EVOLUTION
-    },
     {
         name:
             '⚔️ Sin Ranks',
@@ -79,126 +51,76 @@ const CATEGORY_CHOICES = [
         value:
             TITLE_CATEGORIES.SIN_RANK
     },
+
     {
         name:
             '🛡️ High Command',
 
         value:
             TITLE_CATEGORIES.STAFF
-    },
-    {
-        name:
-            '🎮 Event',
-
-        value:
-            TITLE_CATEGORIES.EVENT
-    },
-    {
-        name:
-            '🌙 Legendary',
-
-        value:
-            TITLE_CATEGORIES.LEGENDARY
     }
 ];
 
-/**
- * Title rarity visual information.
- */
 const RARITY_DETAILS = {
     Common: {
+        emoji: '⚪',
+        label: 'Common'
+    },
+
+    Uncommon: {
+        emoji: '🟢',
+        label: 'Uncommon'
+    },
+
+    Rare: {
+        emoji: '🔵',
+        label: 'Rare'
+    },
+
+    Epic: {
+        emoji: '🟣',
+        label: 'Epic'
+    },
+
+    Legendary: {
+        emoji: '🟡',
+        label: 'Legendary'
+    },
+
+    Mythic: {
+        emoji: '🔴',
+        label: 'Mythic'
+    }
+};
+
+const TITLE_DEFINITION_MAP =
+    new Map(
+        TITLE_DEFINITIONS.map(
+            title => [
+                title.id,
+                title
+            ]
+        )
+    );
+
+function getRarityDetails(rarity) {
+    return RARITY_DETAILS[rarity] ?? {
         emoji:
             '⚪',
 
         label:
-            'Common'
-    },
-
-    Uncommon: {
-        emoji:
-            '🟢',
-
-        label:
-            'Uncommon'
-    },
-
-    Rare: {
-        emoji:
-            '🔵',
-
-        label:
-            'Rare'
-    },
-
-    Epic: {
-        emoji:
-            '🟣',
-
-        label:
-            'Epic'
-    },
-
-    Legendary: {
-        emoji:
-            '🟡',
-
-        label:
-            'Legendary'
-    },
-
-    Mythic: {
-        emoji:
-            '🔴',
-
-        label:
-            'Mythic'
-    }
-};
-
-/**
- * Get readable rarity information.
- *
- * @param {string|null|undefined} rarity
- * @returns {{emoji: string, label: string}}
- */
-function getRarityDetails(
-    rarity
-) {
-    return (
-        RARITY_DETAILS[
-            rarity
-        ] || {
-            emoji:
-                '⚪',
-
-            label:
-                rarity ||
-                'Unknown'
-        }
-    );
+            rarity || 'Unknown'
+    };
 }
 
-/**
- * Format a Discord timestamp.
- *
- * @param {Date|string|number|null|undefined} value
- * @returns {string}
- */
-function formatDiscordDate(
-    value
-) {
-    if (!value) {
-        return 'Not recorded';
-    }
-
+function formatDiscordDate(value) {
     const date =
         value instanceof Date
             ? value
-            : new Date(
-                value
-            );
+            : new Date(value);
 
     if (
+        !value ||
         Number.isNaN(
             date.getTime()
         )
@@ -206,60 +128,48 @@ function formatDiscordDate(
         return 'Not recorded';
     }
 
-    const unixTimestamp =
+    const timestamp =
         Math.floor(
-            date.getTime() /
-            1000
+            date.getTime() / 1000
         );
 
     return (
-        `<t:${unixTimestamp}:F>\n` +
-        `-# <t:${unixTimestamp}:R>`
+        `<t:${timestamp}:F>\n` +
+        `-# <t:${timestamp}:R>`
     );
 }
 
-/**
- * Create a safe Select Menu label.
- *
- * @param {string} value
- * @returns {string}
- */
-function createSafeLabel(
-    value
+function normalizeUnlockedTitles(
+    unlockedTitles
 ) {
-    return String(
-        value ||
-        'Unknown Title'
-    ).slice(
-        0,
-        100
-    );
+    if (
+        !Array.isArray(
+            unlockedTitles
+        )
+    ) {
+        return [];
+    }
+
+    return unlockedTitles
+        .filter(
+            title =>
+                TITLE_DEFINITION_MAP.has(
+                    title.titleId
+                )
+        )
+        .map(
+            title => ({
+                ...title,
+                ...TITLE_DEFINITION_MAP.get(
+                    title.titleId
+                ),
+
+                titleId:
+                    title.titleId
+            })
+        );
 }
 
-/**
- * Create a safe Select Menu description.
- *
- * @param {string} value
- * @returns {string}
- */
-function createSafeDescription(
-    value
-) {
-    return String(
-        value ||
-        'Unlocked Title'
-    ).slice(
-        0,
-        100
-    );
-}/**
- * Create the unlocked Title selection menu.
- *
- * @param {Object[]} unlockedTitles
- * @param {string|null} activeTitleId
- * @param {boolean} disabled
- * @returns {ActionRowBuilder}
- */
 function createTitleSelectMenu(
     unlockedTitles,
     activeTitleId,
@@ -271,13 +181,7 @@ function createTitleSelectMenu(
                 TITLE_SELECT_MENU_ID
             )
             .setPlaceholder(
-                'Select an active Chronicle Title'
-            )
-            .setMinValues(
-                1
-            )
-            .setMaxValues(
-                1
+                'Select an active Title'
             )
             .setDisabled(
                 disabled
@@ -298,13 +202,17 @@ function createTitleSelectMenu(
         menu.addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    createSafeLabel(
-                        title.name
+                    String(
+                        title.displayName
+                    ).slice(
+                        0,
+                        100
                     )
                 )
                 .setDescription(
-                    createSafeDescription(
-                        `${rarity.label} • ${title.description}`
+                    `${rarity.label} • ${title.description}`.slice(
+                        0,
+                        100
                     )
                 )
                 .setEmoji(
@@ -326,12 +234,6 @@ function createTitleSelectMenu(
         );
 }
 
-/**
- * Create the Chronicle Title selection embed.
- *
- * @param {Object} options
- * @returns {import('discord.js').EmbedBuilder}
- */
 function createSelectionEmbed({
     interaction,
     member,
@@ -348,7 +250,7 @@ function createSelectionEmbed({
                 false
         });
 
-    const availableTitleDisplay =
+    const titleList =
         unlockedTitles
             .map(
                 title => {
@@ -373,29 +275,18 @@ function createSelectionEmbed({
 
     return createEmbed({
         title:
-            '🏷️ Select Chronicle Title',
+            '🏷️ Select Title',
 
-        description:
-            [
-                `${member}, select one unlocked Title from the menu below.`,
-
-                '',
-
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-
-                '',
-
-                `**Archive Category:** ${category}`,
-
-                '',
-
-                '*The selected designation will appear inside your official Soul Record.*'
-            ].join('\n'),
+        description: [
+            `${member}, select one unlocked Title from the menu below.`,
+            '',
+            `**Category:** ${category}`
+        ].join('\n'),
 
         color:
             activeTitle
                 ? ACTIVE_TITLE_COLOR
-                : SINS_TITLE_COLOR,
+                : TITLE_COLOR,
 
         thumbnail:
             avatarURL,
@@ -407,11 +298,8 @@ function createSelectionEmbed({
 
                 value:
                     activeTitle
-                        ? [
-                            `**${activeTitle.displayName}**`,
-                            `-# ${activeTitle.rarity} • ${activeTitle.category}`
-                        ].join('\n')
-                        : '🌑 No active Title is currently selected.',
+                        ? `**${activeTitle.displayName}**`
+                        : 'No active Title selected.',
 
                 inline:
                     false
@@ -422,7 +310,10 @@ function createSelectionEmbed({
                     `📚 Unlocked ${category} Titles`,
 
                 value:
-                    availableTitleDisplay,
+                    titleList.slice(
+                        0,
+                        1024
+                    ),
 
                 inline:
                     false
@@ -431,7 +322,7 @@ function createSelectionEmbed({
 
         footer: {
             text:
-                `THE Ⅹ SINS • Chronicle Titles • Requested by ${interaction.user.username}`,
+                `THE Ⅹ SINS • Titles • Requested by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -444,15 +335,7 @@ function createSelectionEmbed({
                     })
         }
     });
-}
-
-/**
- * Create the successful Title activation embed.
- *
- * @param {Object} options
- * @returns {import('discord.js').EmbedBuilder}
- */
-function createTitleActivatedEmbed({
+}function createActivatedEmbed({
     interaction,
     member,
     activatedTitle
@@ -464,98 +347,131 @@ function createTitleActivatedEmbed({
 
     const embed =
         createSuccessEmbed(
-            '👑 Chronicle Title Activated',
-            [
-                `${member} has selected a new active designation within the Soul Archives.`,
-
-                '',
-
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-            ].join('\n')
+            '👑 Title Activated',
+            `${member} selected a new active Title.`
         );
 
-    embed.setColor(
-        ACTIVE_TITLE_COLOR
-    );
+    embed
+        .setColor(
+            ACTIVE_TITLE_COLOR
+        )
+        .setThumbnail(
+            member.user.displayAvatarURL({
+                size:
+                    1024,
 
-    embed.setThumbnail(
-        member.user.displayAvatarURL({
-            size:
-                1024,
+                forceStatic:
+                    false
+            })
+        )
+        .addFields(
+            {
+                name:
+                    '🏷️ Active Title',
 
-            forceStatic:
-                false
-        })
-    );
+                value:
+                    `**${activatedTitle.displayName}**`,
 
-    embed.addFields(
-        {
-            name:
-                '🏷️ Active Title',
+                inline:
+                    false
+            },
 
-            value:
-                `**${activatedTitle.displayName}**`,
+            {
+                name:
+                    '📚 Classification',
 
-            inline:
-                false
-        },
-
-        {
-            name:
-                '📚 Classification',
-
-            value:
-                [
+                value: [
                     `**Category:** ${activatedTitle.category}`,
                     `**Rarity:** ${rarity.emoji} ${rarity.label}`
                 ].join('\n'),
 
-            inline:
-                true
-        },
+                inline:
+                    true
+            },
 
-        {
-            name:
-                '🕒 Activated At',
+            {
+                name:
+                    '🕒 Activated At',
 
-            value:
-                formatDiscordDate(
-                    activatedTitle.activatedAt
-                ),
+                value:
+                    formatDiscordDate(
+                        activatedTitle.activatedAt
+                    ),
 
-            inline:
-                true
-        },
+                inline:
+                    true
+            },
 
-        {
-            name:
-                '📖 Chronicle Description',
+            {
+                name:
+                    '📖 Description',
 
-            value:
-                activatedTitle.description,
+                value:
+                    activatedTitle.description,
 
-            inline:
-                false
-        }
-    );
+                inline:
+                    false
+            }
+        )
+        .setFooter({
+            text:
+                `THE Ⅹ SINS • Titles • Activated by ${interaction.user.username}`,
 
-    embed.setFooter({
-        text:
-            `THE Ⅹ SINS • Chronicle Titles • Activated by ${interaction.user.username}`,
+            iconURL:
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            128,
 
-        iconURL:
-            interaction.client.user
-                .displayAvatarURL({
-                    size:
-                        128,
-
-                    forceStatic:
-                        false
-                })
-    });
+                        forceStatic:
+                            false
+                    })
+        });
 
     return embed;
-}module.exports = {
+}
+
+async function sendCommandError(
+    interaction,
+    embed
+) {
+    const payload = {
+        embeds: [
+            embed
+        ],
+
+        components:
+            []
+    };
+
+    if (
+        interaction.deferred ||
+        interaction.replied
+    ) {
+        await interaction
+            .editReply(
+                payload
+            )
+            .catch(
+                () => null
+            );
+
+        return;
+    }
+
+    await interaction
+        .reply({
+            ...payload,
+
+            flags:
+                MessageFlags.Ephemeral
+        })
+        .catch(
+            () => null
+        );
+}
+
+module.exports = {
     category:
         'information',
 
@@ -565,7 +481,7 @@ function createTitleActivatedEmbed({
                 'settitle'
             )
             .setDescription(
-                'Select one of your unlocked Chronicle Titles.'
+                'Select one of your unlocked Titles.'
             )
             .addStringOption(
                 option =>
@@ -587,12 +503,6 @@ function createTitleActivatedEmbed({
                 false
             ),
 
-    /**
-     * Execute /settitle.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
@@ -623,40 +533,20 @@ function createTitleActivatedEmbed({
             const member =
                 interaction.member;
 
-            if (!member) {
-                await interaction.editReply({
-                    embeds: [
-                        createErrorEmbed(
-                            '❌ Soul Not Found',
-                            'The server could not access your Soul Record.'
-                        )
-                    ],
-
-                    components:
-                        []
-                });
-
-                return;
-            }
-
             const selectedCategory =
                 interaction.options.getString(
                     'category',
                     true
                 );
 
-            await titleDatabase
-                .ensureDefaultSoulTitle(
-                    interaction.guild.id,
-                    member.id
-                );
-
             const unlockedTitles =
-                await titleDatabase
-                    .getSoulTitles(
-                        interaction.guild.id,
-                        member.id
-                    );
+                normalizeUnlockedTitles(
+                    await titleDatabase
+                        .getSoulTitles(
+                            interaction.guild.id,
+                            member.id
+                        )
+                );
 
             const categoryTitles =
                 unlockedTitles.filter(
@@ -669,7 +559,7 @@ function createTitleActivatedEmbed({
                 unlockedTitles.find(
                     title =>
                         title.isActive
-                ) ||
+                ) ??
                 null;
 
             if (
@@ -681,11 +571,9 @@ function createTitleActivatedEmbed({
                         createErrorEmbed(
                             '❌ No Titles Unlocked',
                             [
-                                `You have not unlocked any Titles from the **${selectedCategory}** category.`,
-
+                                `You have not unlocked any **${selectedCategory}** Titles.`,
                                 '',
-
-                                'Use `/titles` to view available Chronicle Titles and their requirements.'
+                                'Use `/titles` to view their requirements.'
                             ].join('\n')
                         )
                     ],
@@ -697,27 +585,27 @@ function createTitleActivatedEmbed({
                 return;
             }
 
-            const selectionEmbed =
-                createSelectionEmbed({
-                    interaction,
-                    member,
-                    category:
-                        selectedCategory,
-                    unlockedTitles:
-                        categoryTitles,
-                    activeTitle
-                });
-
             const replyMessage =
                 await interaction.editReply({
                     embeds: [
-                        selectionEmbed
+                        createSelectionEmbed({
+                            interaction,
+                            member,
+
+                            category:
+                                selectedCategory,
+
+                            unlockedTitles:
+                                categoryTitles,
+
+                            activeTitle
+                        })
                     ],
 
                     components: [
                         createTitleSelectMenu(
                             categoryTitles,
-                            activeTitle?.titleId ||
+                            activeTitle?.titleId ??
                                 null
                         )
                     ],
@@ -733,13 +621,12 @@ function createTitleActivatedEmbed({
                             ComponentType.StringSelect,
 
                         time:
-                            3 * 60 * 1000
+                            MENU_TIMEOUT
                     });
 
             collector.on(
                 'collect',
-                async menuInteraction => {
-                    try {
+                async menuInteraction => {                    try {
                         if (
                             menuInteraction.user.id !==
                             interaction.user.id
@@ -748,7 +635,7 @@ function createTitleActivatedEmbed({
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Private Title Selection',
-                                        'Only the Soul who opened this menu may use it.'
+                                        'Only the member who opened this menu may use it.'
                                     )
                                 ],
 
@@ -774,15 +661,14 @@ function createTitleActivatedEmbed({
                                 title =>
                                     title.titleId ===
                                     selectedTitleId
-                            ) ||
-                            null;
+                            );
 
                         if (!selectedTitle) {
                             await menuInteraction.reply({
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Title Not Found',
-                                        'The selected Chronicle Title could not be located.'
+                                        'The selected Title could not be found.'
                                     )
                                 ],
 
@@ -801,7 +687,7 @@ function createTitleActivatedEmbed({
                                 embeds: [
                                     createErrorEmbed(
                                         '❌ Title Already Active',
-                                        `**${selectedTitle.displayName}** is already your active Chronicle Title.`
+                                        `**${selectedTitle.displayName}** is already active.`
                                     )
                                 ],
 
@@ -812,7 +698,8 @@ function createTitleActivatedEmbed({
                             return;
                         }
 
-                        await menuInteraction.deferUpdate();
+                        await menuInteraction
+                            .deferUpdate();
 
                         const activatedTitle =
                             await titleDatabase
@@ -828,7 +715,7 @@ function createTitleActivatedEmbed({
                                     embeds: [
                                         createErrorEmbed(
                                             '❌ Title Activation Failed',
-                                            'The selected Chronicle Title could not be activated.'
+                                            'The selected Title could not be activated.'
                                         )
                                     ],
 
@@ -840,16 +727,24 @@ function createTitleActivatedEmbed({
                                 );
 
                             return;
-                        }                        collector.stop(
+                        }
+
+                        collector.stop(
                             'title_selected'
                         );
 
                         await interaction.editReply({
                             embeds: [
-                                createTitleActivatedEmbed({
+                                createActivatedEmbed({
                                     interaction,
                                     member,
-                                    activatedTitle
+
+                                    activatedTitle: {
+                                        ...activatedTitle,
+                                        ...TITLE_DEFINITION_MAP.get(
+                                            selectedTitleId
+                                        )
+                                    }
                                 })
                             ],
 
@@ -865,7 +760,7 @@ function createTitleActivatedEmbed({
                         const errorEmbed =
                             createErrorEmbed(
                                 '❌ Title Activation Failed',
-                                'The Chronicle Title could not be activated.'
+                                'The selected Title could not be activated.'
                             );
 
                         if (
@@ -922,7 +817,7 @@ function createTitleActivatedEmbed({
                             components: [
                                 createTitleSelectMenu(
                                     categoryTitles,
-                                    activeTitle?.titleId ||
+                                    activeTitle?.titleId ??
                                         null,
                                     true
                                 )
@@ -939,44 +834,13 @@ function createTitleActivatedEmbed({
                 error
             );
 
-            const errorEmbed =
+            await sendCommandError(
+                interaction,
                 createErrorEmbed(
-                    '❌ Chronicle Title Error',
-                    'The Chronicle Title selection menu could not be opened.'
-                );
-
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        components:
-                            []
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+                    '❌ Title Error',
+                    'The Title selection menu could not be opened.'
+                )
+            );
         }
     }
 };

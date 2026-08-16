@@ -3,8 +3,7 @@ const {
     MessageFlags,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder,
-    ComponentType
+    StringSelectMenuOptionBuilder
 } = require('discord.js');
 
 const {
@@ -12,8 +11,7 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-const embedConfig =
-    require('../../config/embed');
+const embedConfig = require('../../config/embed');
 
 const {
     TITLE_CATEGORIES,
@@ -21,133 +19,37 @@ const {
     TITLE_UNLOCK_TYPES
 } = require('../../config/titles');
 
-const {
-    titles:
-        titleDatabase
-} = require('../../database');
+const { titles: titleDatabase } = require('../../database');
 
-/**
- * Chronicle Title category menu.
- */
-const TITLE_CATEGORY_MENU_ID =
-    'titles_category_menu';
+const TITLE_MENU_PREFIX = 'titles_category_menu';
+const OVERVIEW_PAGE_ID = 'titles_overview';
 
-/**
- * Collection overview page.
- */
-const OVERVIEW_PAGE_ID =
-    'titles_overview';
-
-/**
- * Category display order.
- */
 const TITLE_CATEGORY_ORDER = [
-    TITLE_CATEGORIES.GENERAL,
-    TITLE_CATEGORIES.LEVEL,
     TITLE_CATEGORIES.ACHIEVEMENT,
-    TITLE_CATEGORIES.EVOLUTION,
     TITLE_CATEGORIES.SIN_RANK,
-    TITLE_CATEGORIES.STAFF,
-    TITLE_CATEGORIES.EVENT,
-    TITLE_CATEGORIES.LEGENDARY
+    TITLE_CATEGORIES.STAFF
 ];
 
-/**
- * Category display information.
- */
 const CATEGORY_DETAILS = {
-    [TITLE_CATEGORIES.GENERAL]: {
-        emoji:
-            '🌑',
-
-        label:
-            'General',
-
-        description:
-            'General Soul designations'
-    },
-
-    [TITLE_CATEGORIES.LEVEL]: {
-        emoji:
-            '⭐',
-
-        label:
-            'Progression',
-
-        description:
-            'Level and spiritual growth Titles'
-    },
-
     [TITLE_CATEGORIES.ACHIEVEMENT]: {
-        emoji:
-            '🏆',
-
-        label:
-            'Achievements',
-
-        description:
-            'Titles unlocked through Soul Achievements'
-    },
-
-    [TITLE_CATEGORIES.EVOLUTION]: {
-        emoji:
-            '👁️',
-
-        label:
-            'Evolution',
-
-        description:
-            'Hollow Evolution Titles'
+        emoji: '🏆',
+        label: 'Achievements',
+        description: 'Titles earned through Soul Achievements'
     },
 
     [TITLE_CATEGORIES.SIN_RANK]: {
-        emoji:
-            '⚔️',
-
-        label:
-            'Sin Ranks',
-
-        description:
-            'Titles belonging to the Ten Sins'
+        emoji: '⚔️',
+        label: 'Sin Ranks',
+        description: 'Dominion and the Ten Sins'
     },
 
     [TITLE_CATEGORIES.STAFF]: {
-        emoji:
-            '🛡️',
-
-        label:
-            'High Command',
-
-        description:
-            'Leadership and staff Titles'
-    },
-
-    [TITLE_CATEGORIES.EVENT]: {
-        emoji:
-            '🎮',
-
-        label:
-            'Events',
-
-        description:
-            'Titles earned through official events'
-    },
-
-    [TITLE_CATEGORIES.LEGENDARY]: {
-        emoji:
-            '🌙',
-
-        label:
-            'Legendary',
-
-        description:
-            'Rare and manually granted Titles'
+        emoji: '🛡️',
+        label: 'High Command',
+        description: 'Titles held by THE Ⅹ SINS leadership'
     }
 };
 
-/**
- * Rarity display order.
- */
 const RARITY_ORDER = [
     'Common',
     'Uncommon',
@@ -157,112 +59,55 @@ const RARITY_ORDER = [
     'Mythic'
 ];
 
-/**
- * Rarity display information.
- */
 const RARITY_DETAILS = {
     Common: {
-        emoji:
-            '⚪',
-
-        label:
-            'Common',
-
-        color:
-            '#B8B8B8'
+        emoji: '⚪',
+        label: 'Common'
     },
 
     Uncommon: {
-        emoji:
-            '🟢',
-
-        label:
-            'Uncommon',
-
-        color:
-            '#57F287'
+        emoji: '🟢',
+        label: 'Uncommon'
     },
 
     Rare: {
-        emoji:
-            '🔵',
-
-        label:
-            'Rare',
-
-        color:
-            '#5865F2'
+        emoji: '🔵',
+        label: 'Rare'
     },
 
     Epic: {
-        emoji:
-            '🟣',
-
-        label:
-            'Epic',
-
-        color:
-            '#9B59B6'
+        emoji: '🟣',
+        label: 'Epic'
     },
 
     Legendary: {
-        emoji:
-            '🟡',
-
-        label:
-            'Legendary',
-
-        color:
-            '#D4AF37'
+        emoji: '🟡',
+        label: 'Legendary'
     },
 
     Mythic: {
-        emoji:
-            '🔴',
-
-        label:
-            'Mythic',
-
-        color:
-            '#ED4245'
+        emoji: '🔴',
+        label: 'Mythic'
     }
 };
 
-/**
- * Format a number with readable
- * thousands separators.
- *
- * @param {number|string|null|undefined} value
- * @returns {string}
- */
-function formatNumber(
-    value
-) {
-    const numericValue =
-        Number(
-            value
-        );
+const TITLE_DEFINITION_MAP = new Map(
+    TITLE_DEFINITIONS.map(
+        title => [
+            title.id,
+            title
+        ]
+    )
+);
 
-    if (
-        !Number.isFinite(
-            numericValue
-        )
-    ) {
-        return '0';
-    }
+function formatNumber(value) {
+    const number = Number(value);
 
-    return numericValue.toLocaleString(
-        'en-US'
-    );
+    return Number.isFinite(number)
+        ? number.toLocaleString('en-US')
+        : '0';
 }
 
-/**
- * Format a Discord timestamp.
- *
- * @param {Date|string|number|null|undefined} value
- * @param {string} style
- * @returns {string}
- */
 function formatDiscordDate(
     value,
     style = 'D'
@@ -271,188 +116,101 @@ function formatDiscordDate(
         return 'Not recorded';
     }
 
-    const date =
-        value instanceof Date
-            ? value
-            : new Date(
-                value
-            );
+    const date = value instanceof Date
+        ? value
+        : new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
         return 'Not recorded';
     }
 
-    const unixTimestamp =
-        Math.floor(
-            date.getTime() /
-            1000
-        );
-
-    return `<t:${unixTimestamp}:${style}>`;
+    return `<t:${Math.floor(date.getTime() / 1000)}:${style}>`;
 }
 
-/**
- * Create a visual progress bar.
- *
- * @param {number} percentage
- * @param {number} length
- * @returns {string}
- */
 function createProgressBar(
     percentage,
     length = 16
 ) {
-    const safePercentage =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                Number(
-                    percentage
-                ) ||
-                0
-            )
-        );
+    const safePercentage = Math.min(
+        100,
+        Math.max(
+            0,
+            Number(percentage) || 0
+        )
+    );
 
-    const filledBlocks =
-        Math.round(
-            (
-                safePercentage /
-                100
-            ) *
-            length
-        );
-
-    const emptyBlocks =
-        length -
-        filledBlocks;
+    const filled = Math.round(
+        (safePercentage / 100) *
+        length
+    );
 
     return (
-        '▰'.repeat(
-            filledBlocks
-        ) +
-        '▱'.repeat(
-            emptyBlocks
+        '▰'.repeat(filled) +
+        '▱'.repeat(length - filled)
+    );
+}
+
+function calculateCompletion(
+    unlocked,
+    total
+) {
+    if (total <= 0) {
+        return 0;
+    }
+
+    return Math.min(
+        100,
+        Math.round(
+            (unlocked / total) *
+            100
         )
     );
 }
 
-/**
- * Get rarity display information.
- *
- * @param {string|null|undefined} rarity
- * @returns {{
- *     emoji: string,
- *     label: string,
- *     color: string
- * }}
- */
-function getRarityDetails(
-    rarity
-) {
-    return (
-        RARITY_DETAILS[
-            rarity
-        ] || {
-            emoji:
-                '⚪',
-
-            label:
-                rarity ||
-                'Unknown',
-
-            color:
-                embedConfig.colors.title
-        }
-    );
+function getRarityDetails(rarity) {
+    return RARITY_DETAILS[rarity] ?? {
+        emoji: '⚪',
+        label: rarity || 'Unknown'
+    };
 }
 
-/**
- * Convert unlocked Soul Titles
- * into a Set containing their IDs.
- *
- * @param {Object[]} unlockedTitles
- * @returns {Set<string>}
- */
-function createUnlockedTitleIdSet(
+function normalizeUnlockedTitles(
+    unlockedTitles
+) {
+    if (!Array.isArray(unlockedTitles)) {
+        return [];
+    }
+
+    return unlockedTitles
+        .filter(
+            title =>
+                TITLE_DEFINITION_MAP.has(
+                    title.titleId
+                )
+        )
+        .map(
+            title => ({
+                ...title,
+                ...TITLE_DEFINITION_MAP.get(
+                    title.titleId
+                ),
+                titleId:
+                    title.titleId
+            })
+        );
+}
+
+function getUnlockedTitleIds(
     unlockedTitles
 ) {
     return new Set(
         unlockedTitles.map(
-            title =>
-                title.titleId
+            title => title.titleId
         )
     );
 }
 
-/**
- * Find the active Title.
- *
- * @param {Object[]} unlockedTitles
- * @returns {Object|null}
- */
-function findActiveTitle(
-    unlockedTitles
-) {
-    return (
-        unlockedTitles.find(
-            title =>
-                title.isActive
-        ) ||
-        null
-    );
-}
-
-/**
- * Find the most recently unlocked Title.
- *
- * @param {Object[]} unlockedTitles
- * @returns {Object|null}
- */
-function findLatestUnlockedTitle(
-    unlockedTitles
-) {
-    if (
-        !Array.isArray(
-            unlockedTitles
-        ) ||
-        unlockedTitles.length === 0
-    ) {
-        return null;
-    }
-
-    return [...unlockedTitles]
-        .sort(
-            (
-                firstTitle,
-                secondTitle
-            ) =>
-                new Date(
-                    secondTitle.unlockedAt ||
-                    0
-                ).getTime() -
-                new Date(
-                    firstTitle.unlockedAt ||
-                    0
-                ).getTime()
-        )[0] ||
-        null;
-}
-
-/**
- * Get every configured Title
- * belonging to one category.
- *
- * @param {string} category
- * @returns {Object[]}
- */
-function getCategoryTitles(
-    category
-) {
+function getCategoryTitles(category) {
     return TITLE_DEFINITIONS.filter(
         title =>
             title.category ===
@@ -460,238 +218,104 @@ function getCategoryTitles(
     );
 }
 
-/**
- * Count unlocked Titles belonging
- * to one category.
- *
- * @param {string} category
- * @param {Set<string>} unlockedTitleIds
- * @returns {number}
- */
-function countUnlockedCategoryTitles(
-    category,
-    unlockedTitleIds
+function findActiveTitle(
+    unlockedTitles
 ) {
-    return getCategoryTitles(
-        category
-    ).filter(
-        title =>
-            unlockedTitleIds.has(
-                title.id
-            )
-    ).length;
-}
-
-/**
- * Count total Titles belonging
- * to one rarity.
- *
- * @param {string} rarity
- * @returns {number}
- */
-function countTotalRarityTitles(
-    rarity
-) {
-    return TITLE_DEFINITIONS.filter(
-        title =>
-            title.rarity ===
-            rarity
-    ).length;
-}
-
-/**
- * Count unlocked Titles belonging
- * to one rarity.
- *
- * @param {string} rarity
- * @param {Set<string>} unlockedTitleIds
- * @returns {number}
- */
-function countUnlockedRarityTitles(
-    rarity,
-    unlockedTitleIds
-) {
-    return TITLE_DEFINITIONS.filter(
-        title =>
-            title.rarity ===
-                rarity &&
-            unlockedTitleIds.has(
-                title.id
-            )
-    ).length;
-}
-
-/**
- * Calculate collection completion.
- *
- * @param {number} unlocked
- * @param {number} total
- * @returns {number}
- */
-function calculateCompletion(
-    unlocked,
-    total
-) {
-    if (
-        total <=
-        0
-    ) {
-        return 0;
-    }
-
-    return Math.min(
-        100,
-        Math.round(
-            (
-                unlocked /
-                total
-            ) *
-            100
-        )
+    return (
+        unlockedTitles.find(
+            title => title.isActive
+        ) ??
+        null
     );
-}/**
- * Create readable unlock requirement text.
- *
- * @param {Object} title
- * @returns {string}
- */
-function formatUnlockRequirement(
-    title
+}
+
+function findLatestTitle(
+    unlockedTitles
 ) {
-    const unlock =
-        title?.unlock ||
-        {};
+    return [...unlockedTitles].sort(
+        (
+            first,
+            second
+        ) =>
+            new Date(
+                second.unlockedAt || 0
+            ).getTime() -
+            new Date(
+                first.unlockedAt || 0
+            ).getTime()
+    )[0] ?? null;
+}
 
-    switch (
-        unlock.type
-    ) {
-        case TITLE_UNLOCK_TYPES.DEFAULT:
-            return (
-                'Automatically granted to every recorded Soul.'
-            );
+function formatUnlockRequirement(title) {
+    const unlock = title.unlock ?? {};
 
-        case TITLE_UNLOCK_TYPES.LEVEL:
-            return (
-                `Reach Soul Level **${formatNumber(unlock.level)}**.`
-            );
-
+    switch (unlock.type) {
         case TITLE_UNLOCK_TYPES.ACHIEVEMENT:
             return (
-                `Unlock the Achievement \`${unlock.achievementId}\`.`
-            );
-
-        case TITLE_UNLOCK_TYPES.EVOLUTION:
-            return (
-                `Reach the Hollow Evolution stage **${unlock.roleName}**.`
+                `Earn the **${title.displayName}** Achievement.`
             );
 
         case TITLE_UNLOCK_TYPES.SIN_RANK:
             return (
-                `Receive the Sin Rank **${unlock.rankName}**.`
+                `Receive the **${unlock.rankName}** rank.`
             );
 
         case TITLE_UNLOCK_TYPES.STAFF_ROLE:
             return (
-                `Hold the High Command role **${unlock.roleName}**.`
-            );
-
-        case TITLE_UNLOCK_TYPES.EVENT:
-            if (
-                unlock.eventRequirement ===
-                'WINNER'
-            ) {
-                return (
-                    'Win an official THE Ⅹ SINS event.'
-                );
-            }
-
-            return (
-                'Participate in an official THE Ⅹ SINS event.'
-            );
-
-        case TITLE_UNLOCK_TYPES.MANUAL:
-            return (
-                'Receive this Title directly from the High Command.'
+                `Hold the **${unlock.roleName}** role.`
             );
 
         default:
             return (
-                'The unlock requirement is currently unavailable.'
+                'Unlock requirement unavailable.'
             );
     }
 }
 
-/**
- * Create the category selection menu.
- *
- * @param {string} selectedPage
- * @param {boolean} disabled
- * @returns {ActionRowBuilder<StringSelectMenuBuilder>}
- */
 function createCategoryMenu(
-    selectedPage,
-    disabled = false
+    memberId,
+    selectedPage
 ) {
-    const menu =
-        new StringSelectMenuBuilder()
-            .setCustomId(
-                TITLE_CATEGORY_MENU_ID
-            )
-            .setPlaceholder(
-                'Select a Chronicle Title archive'
-            )
-            .setMinValues(
-                1
-            )
-            .setMaxValues(
-                1
-            )
-            .setDisabled(
-                disabled
-            );
-
-    menu.addOptions(
-        new StringSelectMenuOptionBuilder()
-            .setLabel(
-                'Collection Overview'
-            )
-            .setDescription(
-                'View active Title and collection progress'
-            )
-            .setEmoji(
-                '📖'
-            )
-            .setValue(
-                OVERVIEW_PAGE_ID
-            )
-            .setDefault(
-                selectedPage ===
-                OVERVIEW_PAGE_ID
-            )
-    );
-
-    for (
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId(
+            `${TITLE_MENU_PREFIX}:${memberId}`
+        )
+        .setPlaceholder(
+            'Select a Title archive'
+        )
+        .addOptions(
+            new StringSelectMenuOptionBuilder()
+                .setLabel(
+                    'Collection Overview'
+                )
+                .setDescription(
+                    'View the complete Title collection'
+                )
+                .setEmoji('📖')
+                .setValue(
+                    OVERVIEW_PAGE_ID
+                )
+                .setDefault(
+                    selectedPage ===
+                    OVERVIEW_PAGE_ID
+                )
+        );    for (
         const category
         of TITLE_CATEGORY_ORDER
     ) {
         const details =
-            CATEGORY_DETAILS[
-                category
-            ];
+            CATEGORY_DETAILS[category];
 
         menu.addOptions(
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    details?.label ||
-                    category
+                    details.label
                 )
                 .setDescription(
-                    details?.description ||
-                    `${category} Titles`
+                    details.description
                 )
                 .setEmoji(
-                    details?.emoji ||
-                    '📜'
+                    details.emoji
                 )
                 .setValue(
                     category
@@ -709,23 +333,11 @@ function createCategoryMenu(
         );
 }
 
-/**
- * Create the shared Chronicle Title Embed.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {string} title
- * @param {string} description
- * @param {string} color
- * @returns {import('discord.js').EmbedBuilder}
- */
 function createTitlesEmbed(
     interaction,
     member,
     title,
-    description,
-    color =
-        embedConfig.colors.title
+    description
 ) {
     const avatarURL =
         member.user.displayAvatarURL({
@@ -742,29 +354,23 @@ function createTitlesEmbed(
     return createEmbed({
         title,
 
-        description:
-            [
-                description,
+        description: [
+            description,
+            '',
+            embedConfig.branding.divider,
+            '',
+            '*Every earned designation is preserved within the Soul Archives.*'
+        ].join('\n'),
 
-                '',
-
-                embedConfig
-                    .branding
-                    .divider,
-
-                '',
-
-                '*Every earned designation is preserved permanently within the Soul Archives.*'
-            ].join('\n'),
-
-        color,
+        color:
+            embedConfig.colors.title,
 
         thumbnail:
             avatarURL,
 
         author: {
             name:
-                `${member.displayName} • Chronicle Title Archives`,
+                `${member.displayName} • Title Archives`,
 
             iconURL:
                 avatarURL
@@ -772,7 +378,7 @@ function createTitlesEmbed(
 
         footer: {
             text:
-                `THE Ⅹ SINS • Chronicle Titles • Opened by ${interaction.user.username}`,
+                `THE Ⅹ SINS • Titles • Opened by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -790,108 +396,83 @@ function createTitlesEmbed(
     });
 }
 
-/**
- * Format one rarity collection row.
- *
- * @param {string} rarity
- * @param {Set<string>} unlockedTitleIds
- * @returns {string}
- */
-function formatRarityProgress(
-    rarity,
-    unlockedTitleIds
-) {
-    const details =
-        getRarityDetails(
-            rarity
-        );
-
-    const total =
-        countTotalRarityTitles(
-            rarity
-        );
-
-    const unlocked =
-        countUnlockedRarityTitles(
-            rarity,
-            unlockedTitleIds
-        );
-
-    const percentage =
-        calculateCompletion(
-            unlocked,
-            total
-        );
-
-    return [
-        `${details.emoji} **${details.label}**`,
-        `\`${createProgressBar(percentage, 10)}\` **${percentage}%**`,
-        `-# ${formatNumber(unlocked)} / ${formatNumber(total)} Titles unlocked`
-    ].join('\n');
-}
-
-/**
- * Format one category collection row.
- *
- * @param {string} category
- * @param {Set<string>} unlockedTitleIds
- * @returns {string}
- */
 function formatCategoryProgress(
     category,
     unlockedTitleIds
 ) {
     const details =
-        CATEGORY_DETAILS[
-            category
-        ] || {
-            emoji:
-                '📜',
+        CATEGORY_DETAILS[category];
 
-            label:
-                category,
+    const titles =
+        getCategoryTitles(category);
 
-            description:
-                `${category} Titles`
-        };
+    const unlocked =
+        titles.filter(
+            title =>
+                unlockedTitleIds.has(
+                    title.id
+                )
+        ).length;
 
-    const categoryTitles =
-        getCategoryTitles(
-            category
-        );
-
-    const unlockedCount =
-        countUnlockedCategoryTitles(
-            category,
-            unlockedTitleIds
-        );
-
-    const percentage =
+    const completion =
         calculateCompletion(
-            unlockedCount,
-            categoryTitles.length
+            unlocked,
+            titles.length
         );
 
     return [
         `${details.emoji} **${details.label}**`,
-        `\`${createProgressBar(percentage, 8)}\` **${percentage}%**`,
-        `-# ${formatNumber(unlockedCount)} / ${formatNumber(categoryTitles.length)} unlocked`
+        `\`${createProgressBar(completion, 8)}\` **${completion}%**`,
+        `-# ${unlocked} / ${titles.length} unlocked`
     ].join('\n');
-}/**
- * Build the Collection Overview page.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object[]} unlockedTitles
- * @returns {import('discord.js').EmbedBuilder}
- */
+}
+
+function formatRarityProgress(
+    rarity,
+    unlockedTitleIds
+) {
+    const details =
+        getRarityDetails(rarity);
+
+    const titles =
+        TITLE_DEFINITIONS.filter(
+            title =>
+                title.rarity ===
+                rarity
+        );
+
+    if (titles.length === 0) {
+        return null;
+    }
+
+    const unlocked =
+        titles.filter(
+            title =>
+                unlockedTitleIds.has(
+                    title.id
+                )
+        ).length;
+
+    const completion =
+        calculateCompletion(
+            unlocked,
+            titles.length
+        );
+
+    return [
+        `${details.emoji} **${details.label}**`,
+        `\`${createProgressBar(completion, 8)}\` **${completion}%**`,
+        `-# ${unlocked} / ${titles.length} unlocked`
+    ].join('\n');
+}
+
 function buildOverviewPage(
     interaction,
     member,
     unlockedTitles
 ) {
     const unlockedTitleIds =
-        createUnlockedTitleIdSet(
+        getUnlockedTitleIds(
             unlockedTitles
         );
 
@@ -901,20 +482,14 @@ function buildOverviewPage(
         );
 
     const latestTitle =
-        findLatestUnlockedTitle(
+        findLatestTitle(
             unlockedTitles
         );
 
-    const totalTitles =
-        TITLE_DEFINITIONS.length;
-
-    const unlockedCount =
-        unlockedTitles.length;
-
     const completion =
         calculateCompletion(
-            unlockedCount,
-            totalTitles
+            unlockedTitles.length,
+            TITLE_DEFINITIONS.length
         );
 
     const categoryProgress =
@@ -937,74 +512,61 @@ function buildOverviewPage(
                         unlockedTitleIds
                     )
             )
+            .filter(Boolean)
             .join('\n\n');
 
     return createTitlesEmbed(
         interaction,
         member,
-
-        '📖 Chronicle Title Archives',
-
+        '📖 Title Archives',
         [
-            `A record of every designation earned by **${member.displayName}**.`,
-
+            `Every designation earned by **${member.displayName}**.`,
             '',
+            '**Active Title**',
 
-            `**Active Title**`,
             activeTitle
-                ? `> ${activeTitle.displayName || activeTitle.name}`
+                ? `> ${activeTitle.displayName}`
                 : '> *No active Title*',
 
             '',
-
-            `**Collection Progress**`,
+            '**Collection Progress**',
             `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
-            `-# ${formatNumber(unlockedCount)} / ${formatNumber(totalTitles)} Titles unlocked`,
-
+            `-# ${unlockedTitles.length} / ${TITLE_DEFINITIONS.length} Titles unlocked`,
             '',
+            '**Latest Unlock**',
 
-            `**Latest Unlock**`,
             latestTitle
-                ? `> ${latestTitle.displayName || latestTitle.name} • ${formatDiscordDate(latestTitle.unlockedAt, 'R')}`
+                ? `> ${latestTitle.displayName} • ${formatDiscordDate(
+                    latestTitle.unlockedAt,
+                    'R'
+                )}`
                 : '> *No Titles unlocked yet.*'
-        ].join('\n'),
+        ].join('\n')
+    ).addFields(
+        {
+            name:
+                '📚 Title Categories',
 
-        embedConfig.colors.title
-    )
-        .addFields(
-            {
-                name:
-                    '📚 Title Categories',
+            value:
+                categoryProgress,
 
-                value:
-                    categoryProgress,
+            inline:
+                false
+        },
 
-                inline:
-                    false
-            },
+        {
+            name:
+                '💎 Rarity Collection',
 
-            {
-                name:
-                    '💎 Rarity Collection',
+            value:
+                rarityProgress,
 
-                value:
-                    rarityProgress,
-
-                inline:
-                    false
-            }
-        );
+            inline:
+                false
+        }
+    );
 }
 
-/**
- * Build a category page.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object[]} unlockedTitles
- * @param {string} category
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildCategoryPage(
     interaction,
     member,
@@ -1012,241 +574,98 @@ function buildCategoryPage(
     category
 ) {
     const details =
-        CATEGORY_DETAILS[
-            category
-        ] || {
-            emoji:
-                '📜',
-            label:
-                category,
-            description:
-                `${category} Titles`
-        };
+        CATEGORY_DETAILS[category];
 
-    const categoryTitles =
-        getCategoryTitles(
-            category
-        );
+    const titles =
+        getCategoryTitles(category);
 
     const unlockedTitleIds =
-        createUnlockedTitleIdSet(
+        getUnlockedTitleIds(
             unlockedTitles
         );
 
     const unlockedCount =
-        countUnlockedCategoryTitles(
-            category,
-            unlockedTitleIds
-        );
+        titles.filter(
+            title =>
+                unlockedTitleIds.has(
+                    title.id
+                )
+        ).length;
 
     const completion =
         calculateCompletion(
             unlockedCount,
-            categoryTitles.length
+            titles.length
         );
 
     const fields =
-        categoryTitles.length > 0
-            ? categoryTitles.map(
-                title => {
-                    const unlocked =
-                        unlockedTitleIds.has(
-                            title.id
-                        );
+        titles.map(
+            title => {
+                const unlocked =
+                    unlockedTitleIds.has(
+                        title.id
+                    );
 
-                    const rarity =
-                        getRarityDetails(
-                            title.rarity
-                        );
+                const rarity =
+                    getRarityDetails(
+                        title.rarity
+                    );
 
-                    return {
-                        name:
-                            [
-                                unlocked
-                                    ? '✅'
-                                    : '🔒',
-                                rarity.emoji,
-                                title.displayName ||
-                                    title.name
-                            ].join(' ')
-                                .slice(
-                                    0,
-                                    256
-                                ),
+                return {
+                    name: [
+                        unlocked
+                            ? '✅'
+                            : '🔒',
 
-                        value:
-                            [
-                                title.description,
-                                unlocked
-                                    ? '✅ Unlocked'
-                                    : `🔒 ${formatUnlockRequirement(
-                                        title
-                                    )}`
-                            ].join('\n')
-                                .slice(
-                                    0,
-                                    1024
-                                ),
+                        rarity.emoji,
+                        title.displayName
+                    ].join(' ')
+                        .slice(
+                            0,
+                            256
+                        ),
 
-                        inline:
-                            false
-                    };
-                }
-            )
-            : [
-                {
-                    name:
-                        '📜 Chronicle Records',
-                    value:
-                        'No Titles are currently configured in this archive.',
+                    value: [
+                        title.description,
+
+                        unlocked
+                            ? '✅ Unlocked'
+                            : `🔒 ${formatUnlockRequirement(
+                                title
+                            )}`
+                    ].join('\n')
+                        .slice(
+                            0,
+                            1024
+                        ),
+
                     inline:
                         false
-                }
-            ];
+                };
+            }
+        );
 
     return createTitlesEmbed(
         interaction,
         member,
-        `${details.emoji} ${details.label} Titles`,
+        `${details.emoji} ${details.label}`,
         [
             details.description,
             '',
-            `\`${createProgressBar(
-                completion,
-                18
-            )}\` **${completion}%**`,
-            `-# ${formatNumber(
-                unlockedCount
-            )} / ${formatNumber(
-                categoryTitles.length
-            )} unlocked`
-        ].join('\n'),
-        embedConfig.colors.title
+            `\`${createProgressBar(completion, 18)}\` **${completion}%**`,
+            `-# ${unlockedCount} / ${titles.length} unlocked`
+        ].join('\n')
     ).addFields(
         fields
     );
 }
-/**
- * Build the user's unlocked Title archive.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object[]} unlockedTitles
- * @returns {import('discord.js').EmbedBuilder}
- */
-function buildUnlockedTitlesPage(
-    interaction,
-    member,
-    unlockedTitles
-) {
-    const activeTitle =
-        findActiveTitle(
-            unlockedTitles
-        );
 
-    const sortedTitles =
-        [...unlockedTitles]
-            .sort(
-                (
-                    firstTitle,
-                    secondTitle
-                ) =>
-                    new Date(
-                        secondTitle.unlockedAt ||
-                        0
-                    ).getTime() -
-                    new Date(
-                        firstTitle.unlockedAt ||
-                        0
-                    ).getTime()
-            );
-
-    const rows =
-        sortedTitles.length > 0
-            ? sortedTitles
-                .map(
-                    title => {
-                        const definition =
-                            TITLE_DEFINITIONS.find(
-                                configuredTitle =>
-                                    configuredTitle.id ===
-                                    title.titleId
-                            );
-
-                        const rarity =
-                            getRarityDetails(
-                                definition?.rarity
-                            );
-
-                        const active =
-                            activeTitle?.titleId ===
-                            title.titleId;
-
-                        return [
-                            `${active ? '⭐' : '📜'} ${rarity.emoji} **${title.displayName || title.name}**`,
-                            `-# ${formatDiscordDate(title.unlockedAt, 'R')}`
-                        ].join('\n');
-                    }
-                )
-                .join('\n\n')
-            : '*This Soul has not unlocked any Chronicle Titles yet.*';
-
-    return createTitlesEmbed(
-        interaction,
-        member,
-
-        '📜 Unlocked Chronicle Titles',
-
-        [
-            `**${member.displayName}** has unlocked **${formatNumber(unlockedTitles.length)}** Chronicle Title${unlockedTitles.length === 1 ? '' : 's'}.`,
-
-            '',
-
-            activeTitle
-                ? `**Active:** ${activeTitle.displayName || activeTitle.name}`
-                : '**Active:** *None*'
-        ].join('\n'),
-
-        embedConfig.colors.title
-    )
-        .addFields({
-            name:
-                'Soul Archive',
-
-            value:
-                rows,
-
-            inline:
-                false
-        });
-}
-
-/**
- * Resolve the requested archive page.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object[]} unlockedTitles
- * @param {string} page
- * @returns {import('discord.js').EmbedBuilder}
- */
 function buildTitlesPage(
     interaction,
     member,
     unlockedTitles,
     page
 ) {
-    if (
-        page ===
-        OVERVIEW_PAGE_ID
-    ) {
-        return buildOverviewPage(
-            interaction,
-            member,
-            unlockedTitles
-        );
-    }
-
     if (
         TITLE_CATEGORY_ORDER.includes(
             page
@@ -1265,94 +684,69 @@ function buildTitlesPage(
         member,
         unlockedTitles
     );
-}
-
-/**
- * Create the final response payload.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {import('discord.js').GuildMember} member
- * @param {Object[]} unlockedTitles
- * @param {string} page
- * @returns {{
- *     embeds: import('discord.js').EmbedBuilder[],
- *     components: ActionRowBuilder[]
- * }}
- */
-function createTitlesResponse(
+}function createTitlesResponse(
     interaction,
     member,
     unlockedTitles,
     page
 ) {
+    const knownTitles =
+        normalizeUnlockedTitles(
+            unlockedTitles
+        );
+
     return {
         embeds: [
             buildTitlesPage(
                 interaction,
                 member,
-                unlockedTitles,
+                knownTitles,
                 page
             )
         ],
 
         components: [
             createCategoryMenu(
+                member.id,
                 page
             )
         ]
     };
-}/**
- * Get the requested member.
- *
- * Falls back to the command user when
- * no user option was provided.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @returns {Promise<import('discord.js').GuildMember|null>}
- */
+}
+
 async function resolveTargetMember(
     interaction
 ) {
-    const requestedUser =
+    const user =
         interaction.options.getUser(
             'user'
         );
 
-    if (!requestedUser) {
+    if (!user) {
         return interaction.member;
     }
 
-    try {
-        return await interaction.guild
-            .members
-            .fetch(
-                requestedUser.id
-            );
-    } catch {
-        return null;
-    }
+    return interaction.guild
+        .members
+        .fetch(
+            user.id
+        )
+        .catch(
+            () => null
+        );
 }
 
-/**
- * Send a safe error response.
- *
- * @param {import('discord.js').ChatInputCommandInteraction} interaction
- * @param {string} message
- * @returns {Promise<void>}
- */
 async function sendTitlesError(
     interaction,
     message
 ) {
     const embed =
         createErrorEmbed(
-            'Chronicle Titles',
+            'Title Archives',
             message
         );
 
-    if (
-        interaction.deferred
-    ) {
+    if (interaction.deferred) {
         await interaction.editReply({
             embeds: [
                 embed
@@ -1365,9 +759,7 @@ async function sendTitlesError(
         return;
     }
 
-    if (
-        interaction.replied
-    ) {
+    if (interaction.replied) {
         await interaction.followUp({
             flags:
                 MessageFlags.Ephemeral,
@@ -1390,6 +782,78 @@ async function sendTitlesError(
     });
 }
 
+async function handleTitlesInteraction(
+    interaction
+) {
+    if (
+        !interaction.isStringSelectMenu() ||
+        !interaction.customId.startsWith(
+            `${TITLE_MENU_PREFIX}:`
+        )
+    ) {
+        return false;
+    }
+
+    try {
+        const memberId =
+            interaction.customId.slice(
+                TITLE_MENU_PREFIX.length +
+                1
+            );
+
+        const member =
+            await interaction.guild
+                .members
+                .fetch(
+                    memberId
+                );
+
+        const unlockedTitles =
+            await titleDatabase
+                .getSoulTitles(
+                    interaction.guild.id,
+                    member.id
+                );
+
+        const selectedPage =
+            interaction.values?.[0] ??
+            OVERVIEW_PAGE_ID;
+
+        await interaction.update(
+            createTitlesResponse(
+                interaction,
+                member,
+                unlockedTitles,
+                selectedPage
+            )
+        );
+
+        return true;
+    } catch (error) {
+        console.error(
+            '❌ THE Ⅹ SINS Titles interaction error:',
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+            await interaction.reply({
+                flags:
+                    MessageFlags.Ephemeral,
+
+                content:
+                    '❌ The Title archive could not be updated.'
+            }).catch(
+                () => null
+            );
+        }
+
+        return true;
+    }
+}
+
 module.exports = {
     category:
         'information',
@@ -1400,7 +864,7 @@ module.exports = {
                 'titles'
             )
             .setDescription(
-                'View Chronicle Titles and Soul progression.'
+                'View THE Ⅹ SINS Titles and collection progress.'
             )
             .addUserOption(
                 option =>
@@ -1409,7 +873,7 @@ module.exports = {
                             'user'
                         )
                         .setDescription(
-                            'View another Soul\'s Chronicle Titles.'
+                            'View another member\'s Titles.'
                         )
                         .setRequired(
                             false
@@ -1419,12 +883,6 @@ module.exports = {
                 false
             ),
 
-    /**
-     * Execute /titles.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
@@ -1448,7 +906,7 @@ module.exports = {
             if (!member) {
                 await sendTitlesError(
                     interaction,
-                    'The requested Soul could not be found.'
+                    'The requested member could not be found.'
                 );
 
                 return;
@@ -1461,16 +919,13 @@ module.exports = {
                         member.id
                     );
 
-            const response =
+            await interaction.reply(
                 createTitlesResponse(
                     interaction,
                     member,
                     unlockedTitles,
                     OVERVIEW_PAGE_ID
-                );
-
-            await interaction.reply(
-                response
+                )
             );
         } catch (error) {
             console.error(
@@ -1480,97 +935,12 @@ module.exports = {
 
             await sendTitlesError(
                 interaction,
-                'The Chronicle Title archive could not be opened.'
+                'The Title archive could not be opened.'
             ).catch(
                 () => null
             );
         }
-    }
+    },
+
+    handleTitlesInteraction
 };
-
-/**
- * Handle Chronicle Title category
- * selection menus.
- *
- * This listener is intentionally exported
- * so index.js can route the interaction
- * through the central interaction handler.
- *
- * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<boolean>}
- */
-async function handleTitlesInteraction(
-    interaction
-) {
-    if (
-        !interaction.isStringSelectMenu()
-    ) {
-        return false;
-    }
-
-    if (
-        interaction.customId !==
-        TITLE_CATEGORY_MENU_ID
-    ) {
-        return false;
-    }
-
-    try {
-        const member =
-            await interaction.guild
-                .members
-                .fetch(
-                    interaction.user.id
-                );
-
-        const unlockedTitles =
-            await titleDatabase
-                .getSoulTitles(
-                    interaction.guild.id,
-                    member.id
-                );
-
-        const selectedPage =
-            interaction.values?.[0] ||
-            OVERVIEW_PAGE_ID;
-
-        const response =
-            createTitlesResponse(
-                interaction,
-                member,
-                unlockedTitles,
-                selectedPage
-            );
-
-        await interaction.update(
-            response
-        );
-
-        return true;
-    } catch (error) {
-        console.error(
-            '❌ THE Ⅹ SINS Chronicle Titles interaction error:',
-            error
-        );
-
-        if (
-            !interaction.replied &&
-            !interaction.deferred
-        ) {
-            await interaction.reply({
-                flags:
-                    MessageFlags.Ephemeral,
-
-                content:
-                    '❌ The Chronicle Title archive could not be updated.'
-            }).catch(
-                () => null
-            );
-        }
-
-        return true;
-    }
-}
-
-module.exports.handleTitlesInteraction =
-    handleTitlesInteraction;

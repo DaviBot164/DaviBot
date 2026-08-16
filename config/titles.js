@@ -1,49 +1,24 @@
 const rankConfig = require('./ranks');
 
 /**
- * THE Ⅹ SINS Title System.
- *
- * Titles are internal Soul Record rewards.
- * They are not Discord roles.
- *
- * Unlock types:
- * - DEFAULT
- * - LEVEL
- * - ACHIEVEMENT
- * - EVOLUTION
- * - SIN_RANK
- * - STAFF_ROLE
- * - MANUAL
- * - EVENT
+ * Title categories currently used by
+ * THE Ⅹ SINS.
  */
-
-const TITLE_CATEGORIES = {
-    GENERAL:
-        'General',
-
-    LEVEL:
-        'Progression',
-
+const TITLE_CATEGORIES = Object.freeze({
     ACHIEVEMENT:
         'Achievement',
-
-    EVOLUTION:
-        'Hollow Evolution',
 
     SIN_RANK:
         'Sin Rank',
 
     STAFF:
-        'High Command',
+        'High Command'
+});
 
-    EVENT:
-        'Event',
-
-    LEGENDARY:
-        'Legendary'
-};
-
-const TITLE_RARITIES = {
+/**
+ * Title rarity levels.
+ */
+const TITLE_RARITIES = Object.freeze({
     COMMON:
         'Common',
 
@@ -61,68 +36,99 @@ const TITLE_RARITIES = {
 
     MYTHIC:
         'Mythic'
-};
+});
 
-const TITLE_UNLOCK_TYPES = {
-    DEFAULT:
-        'DEFAULT',
-
-    LEVEL:
-        'LEVEL',
-
+/**
+ * Supported title unlock methods.
+ */
+const TITLE_UNLOCK_TYPES = Object.freeze({
     ACHIEVEMENT:
         'ACHIEVEMENT',
-
-    EVOLUTION:
-        'EVOLUTION',
 
     SIN_RANK:
         'SIN_RANK',
 
     STAFF_ROLE:
-        'STAFF_ROLE',
+        'STAFF_ROLE'
+});
 
-    MANUAL:
-        'MANUAL',
+/**
+ * Achievement title IDs remain unchanged
+ * for database compatibility.
+ */
+const ACHIEVEMENT_TITLES = Object.freeze([
+    {
+        id:
+            'first_voice',
 
-    EVENT:
-        'EVENT'
-};
+        name:
+            'SIN AWAKENED',
 
-const ACHIEVEMENT_TITLE_DETAILS = Object.freeze([
-    {
-        id: 'first_voice',
-        name: 'SIN AWAKENED',
-        achievementId: 'first_words',
-        rarity: TITLE_RARITIES.COMMON
+        achievementId:
+            'first_words',
+
+        rarity:
+            TITLE_RARITIES.COMMON
     },
+
     {
-        id: 'chronicle_awakened',
-        name: 'SINBOUND',
-        achievementId: 'awakened_soul',
-        rarity: TITLE_RARITIES.UNCOMMON
+        id:
+            'chronicle_awakened',
+
+        name:
+            'SINBOUND',
+
+        achievementId:
+            'awakened_soul',
+
+        rarity:
+            TITLE_RARITIES.UNCOMMON
     },
+
     {
-        id: 'chronicle_riser',
-        name: 'SIN ASCENDANT',
-        achievementId: 'rising_soul',
-        rarity: TITLE_RARITIES.RARE
+        id:
+            'chronicle_riser',
+
+        name:
+            'SIN ASCENDANT',
+
+        achievementId:
+            'rising_soul',
+
+        rarity:
+            TITLE_RARITIES.RARE
     },
+
     {
-        id: 'keeper_of_crimson_chronicles',
-        name: 'SIN SOVEREIGN',
-        achievementId: 'crimson_soul',
-        rarity: TITLE_RARITIES.EPIC
+        id:
+            'keeper_of_crimson_chronicles',
+
+        name:
+            'SIN SOVEREIGN',
+
+        achievementId:
+            'crimson_soul',
+
+        rarity:
+            TITLE_RARITIES.EPIC
     },
+
     {
-        id: 'eternal_chronicle_keeper',
-        name: 'ETERNAL SIN',
-        achievementId: 'eternal_soul',
-        rarity: TITLE_RARITIES.LEGENDARY
+        id:
+            'eternal_chronicle_keeper',
+
+        name:
+            'ETERNAL SIN',
+
+        achievementId:
+            'eternal_soul',
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY
     }
 ]);
 
-const SIN_RANK_TITLE_KEYS = Object.freeze([
+const SIN_RANK_KEYS = Object.freeze([
     'dominion',
     'pride',
     'wrath',
@@ -136,30 +142,96 @@ const SIN_RANK_TITLE_KEYS = Object.freeze([
     'vengeance'
 ]);
 
+const HIGH_COMMAND_TITLES = Object.freeze([
+    {
+        id:
+            'sin_sovereign',
+
+        name:
+            '👑・SOVEREIGN',
+
+        roleName:
+            '👑・SOVEREIGN',
+
+        rarity:
+            TITLE_RARITIES.MYTHIC
+    },
+
+    {
+        id:
+            'head_captain',
+
+        name:
+            '⚜️・HEAD CAPTAIN',
+
+        roleName:
+            '⚜️・HEAD CAPTAIN',
+
+        rarity:
+            TITLE_RARITIES.LEGENDARY
+    },
+
+    {
+        id:
+            'captain',
+
+        name:
+            '🛡️・CAPTAIN',
+
+        roleName:
+            '🛡️・CAPTAIN',
+
+        rarity:
+            TITLE_RARITIES.EPIC
+    },
+
+    {
+        id:
+            'lieutenant',
+
+        name:
+            '⚔️・LIEUTENANT',
+
+        roleName:
+            '⚔️・LIEUTENANT',
+
+        rarity:
+            TITLE_RARITIES.RARE
+    }
+]);
+
 function createAchievementTitles() {
-    return ACHIEVEMENT_TITLE_DETAILS.map(
+    return ACHIEVEMENT_TITLES.map(
         title => ({
-            id: title.id,
-            name: title.name,
-            displayName: title.name,
+            id:
+                title.id,
+
+            name:
+                title.name,
+
+            displayName:
+                title.name,
+
             description:
-                `Unlocked by earning the ${title.name} Achievement.`,
+                `Unlocked by earning the ${title.name} achievement.`,
+
             category:
                 TITLE_CATEGORIES.ACHIEVEMENT,
+
             rarity:
                 title.rarity,
+
             unlock: {
                 type:
                     TITLE_UNLOCK_TYPES.ACHIEVEMENT,
+
                 achievementId:
                     title.achievementId
             }
         })
     );
-}
-
-function createSinRankTitles() {
-    return SIN_RANK_TITLE_KEYS.map(
+}function createSinRankTitles() {
+    return SIN_RANK_KEYS.map(
         (
             rankKey,
             index
@@ -169,880 +241,113 @@ function createSinRankTitles() {
                     rankKey
                 ];
 
-            const name =
-                rank.name.replace(
-                    /^.*?SIN OF /,
-                    'SIN OF '
-                );
-
             return {
                 id:
                     `sin_of_${rankKey}`,
-                name,
+
+                name:
+                    rank.name,
+
                 displayName:
                     rank.name,
+
                 description:
-                    `Unlocked by receiving the ${name} rank.`,
+                    `Unlocked by receiving the ${rank.name} rank.`,
+
                 category:
                     TITLE_CATEGORIES.SIN_RANK,
+
                 rarity:
-                    index < 2
+                    index === 0
                         ? TITLE_RARITIES.MYTHIC
                         : TITLE_RARITIES.LEGENDARY,
+
                 unlock: {
                     type:
                         TITLE_UNLOCK_TYPES.SIN_RANK,
+
                     rankName:
-                        rank.name
+                        rank.name,
+
+                    roleId:
+                        rank.id
                 }
             };
         }
     );
 }
-/**
- * Every Title available inside
- * THE Ⅹ SINS.
- */
-const TITLE_DEFINITIONS = [
-    /*
-     * ======================================================
-     * General Titles
-     * ======================================================
-     */
-    {
-        id:
-            'nameless_soul',
 
-        name:
-            'Nameless Soul',
-
-        displayName:
-            '🌑 Nameless Soul',
-
-        description:
-            'The default designation of every newly recorded Soul.',
-
-        category:
-            TITLE_CATEGORIES.GENERAL,
-
-        rarity:
-            TITLE_RARITIES.COMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.DEFAULT
-        }
-    },
-
-    {
-        id:
-            'resident_of_las_noches',
-
-        name:
-            'Resident of THE Ⅹ SINS',
-
-        displayName:
-            '✦ Resident of THE Ⅹ SINS',
-
-        description:
-            'A recognized Soul who has begun their journey within THE Ⅹ SINS.',
-
-        category:
-            TITLE_CATEGORIES.GENERAL,
-
-        rarity:
-            TITLE_RARITIES.COMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                1
-        }
-    },
-
-    {
-        id:
-            'soul_of_the_white_sands',
-
-        name:
-            'Soul of the White Sands',
-
-        displayName:
-            '🏜️ Soul of the White Sands',
-
-        description:
-            'A Soul whose presence has become known across the endless sands.',
-
-        category:
-            TITLE_CATEGORIES.GENERAL,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                3
-        }
-    },
-
-    {
-        id:
-            'moonlit_wanderer',
-
-        name:
-            'Moonlit Wanderer',
-
-        displayName:
-            '🌘 Moonlit Wanderer',
-
-        description:
-            'A wandering Soul guided by the quiet light of the night.',
-
-        category:
-            TITLE_CATEGORIES.GENERAL,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                7
-        }
-    },
-
-    /*
-     * ======================================================
-     * Level and Progression Titles
-     * ======================================================
-     */
-    {
-        id:
-            'awakened_soul',
-
-        name:
-            'The Awakened',
-
-        displayName:
-            '🌒 The Awakened',
-
-        description:
-            'Awarded to a Soul who reaches Level 5.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                5
-        }
-    },
-
-    {
-        id:
-            'rising_soul',
-
-        name:
-            'Rising Soul',
-
-        displayName:
-            '⭐ Rising Soul',
-
-        description:
-            'Awarded to a Soul who reaches Level 10.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                10
-        }
-    },
-
-    {
-        id:
-            'spiritual_ascendant',
-
-        name:
-            'Spiritual Ascendant',
-
-        displayName:
-            '✨ Spiritual Ascendant',
-
-        description:
-            'Awarded to a Soul who reaches Level 15.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                15
-        }
-    },
-
-    {
-        id:
-            'crimson_soul',
-
-        name:
-            'Crimson Soul',
-
-        displayName:
-            '🌔 Crimson Soul',
-
-        description:
-            'Awarded to a Soul who reaches Level 25.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                25
-        }
-    },
-
-    {
-        id:
-            'moon_forged',
-
-        name:
-            'Moon-Forged',
-
-        displayName:
-            '🌙 Moon-Forged',
-
-        description:
-            'Awarded to a Soul who reaches Level 35.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                35
-        }
-    },
-
-    {
-        id:
-            'eternal_soul',
-
-        name:
-            'The Eternal Soul',
-
-        displayName:
-            '🌕 The Eternal Soul',
-
-        description:
-            'Awarded to a Soul who reaches Level 50.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                50
-        }
-    },
-
-    {
-        id:
-            'transcendent_soul',
-
-        name:
-            'The Transcendent',
-
-        displayName:
-            '🌌 The Transcendent',
-
-        description:
-            'Awarded to a Soul who reaches Level 75.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                75
-        }
-    },
-
-    {
-        id:
-            'limitless_reiatsu',
-
-        name:
-            'Limitless Reiatsu',
-
-        displayName:
-            '💠 Limitless Reiatsu',
-
-        description:
-            'Awarded to a Soul who reaches Level 100.',
-
-        category:
-            TITLE_CATEGORIES.LEVEL,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.LEVEL,
-
-            level:
-                100
-        }
-    },
-
-    /*
-     * ======================================================
-     * Achievement Titles
-     * ======================================================
-     */
-    ...createAchievementTitles(),
-    /*
-     * ======================================================
-     * Hollow Evolution Titles
-     * ======================================================
-     */
-    {
-        id:
-            'hollow_born',
-
-        name:
-            'Hollow Born',
-
-        displayName:
-            '👁️ Hollow Born',
-
-        description:
-            'Unlocked by reaching the Hollow Evolution stage.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.COMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '👁️ Hollow'
-        }
-    },
-
-    {
-        id:
-            'menos_colossus',
-
-        name:
-            'Menos Colossus',
-
-        displayName:
-            '🦴 Menos Colossus',
-
-        description:
-            'Unlocked by evolving into a Menos Grande.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '🦴 Menos Grande'
-        }
-    },
-
-    {
-        id:
-            'gillian_of_the_void',
-
-        name:
-            'Gillian of the Void',
-
-        displayName:
-            '⚪ Gillian of the Void',
-
-        description:
-            'Unlocked by evolving into a Gillian.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '⚪ Gillian'
-        }
-    },
-
-    {
-        id:
-            'adjuchas_predator',
-
-        name:
-            'Adjuchas Predator',
-
-        displayName:
-            '🐺 Adjuchas Predator',
-
-        description:
-            'Unlocked by evolving into an Adjuchas.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '🐺 Adjuchas'
-        }
-    },
-
-    {
-        id:
-            'vasto_lorde',
-
-        name:
-            'Vasto Lorde',
-
-        displayName:
-            '👑 Vasto Lorde',
-
-        description:
-            'Unlocked by reaching the Vasto Lorde evolution stage.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '👑 Vasto Lorde'
-        }
-    },
-
-    {
-        id:
-            'evolution_apex',
-
-        name:
-            'Apex of Evolution',
-
-        displayName:
-            '🌑 Apex of Evolution',
-
-        description:
-            'A Soul who has reached the highest known Hollow Evolution stage.',
-
-        category:
-            TITLE_CATEGORIES.EVOLUTION,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVOLUTION,
-
-            roleName:
-                '👑 Vasto Lorde'
-        }
-    },
-
-    /*
-     * ======================================================
-     * Sin Rank Titles
-     * ======================================================
-     */
-    ...createSinRankTitles(),
-    /*
-     * ======================================================
-     * High Command Titles
-     * ======================================================
-     */    {
-        id:
+function createHighCommandTitles() {
+    const stableIds = {
+        sin_sovereign:
             'sin_heir',
 
-        name:
-            'Sin Heir',
-
-        displayName:
-            '👑 Sin Heir',
-
-        description:
-            'A chosen heir entrusted with authority within THE Ⅹ SINS.',
-
-        category:
-            TITLE_CATEGORIES.STAFF,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.STAFF_ROLE,
-
-            roleName:
-                '👑 Ruler of THE Ⅹ SINS'
-        }
-    },
-
-    {
-        id:
+        head_captain:
             'head_of_sins',
 
-        name:
-            'Head of Sins',
-
-        displayName:
-            '⚜️ Head of Sins',
-
-        description:
-            'A high-ranking authority trusted to assist in governing THE Ⅹ SINS.',
-
-        category:
-            TITLE_CATEGORIES.STAFF,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.STAFF_ROLE,
-
-            roleName:
-                '⚜️ Head Captain'
-        }
-    },
-
-    {
-        id:
+        captain:
             'captain_of_sins',
 
-        name:
-            'Captain of Sins',
-
-        displayName:
-            '🛡️ Captain of Sins',
-
-        description:
-            'A captain entrusted with maintaining order and protecting the Sins.',
-
-        category:
-            TITLE_CATEGORIES.STAFF,
-
-        rarity:
-            TITLE_RARITIES.EPIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.STAFF_ROLE,
-
-            roleName:
-                '🛡️ Captain'
-        }
-    },
-
-    {
-        id:
-            'sin_lieutenant',
-
-        name:
-            'Sin Lieutenant',
-
-        displayName:
-            '⚔️ Sin Lieutenant',
-
-        description:
-            'A trusted officer responsible for assisting the High Command.',
-
-        category:
-            TITLE_CATEGORIES.STAFF,
-
-        rarity:
-            TITLE_RARITIES.RARE,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.STAFF_ROLE,
-
-            roleName:
-                '⚔️ Lieutenant'
-        }
-    },
-
-    /*
-     * ======================================================
-     * Event Titles
-     * ======================================================
-     */    {
-        id:
-            'event_participant',
-
-        name:
-            'Realm Challenger',
-
-        displayName:
-            '🎮 Realm Challenger',
-
-        description:
-            'Awarded for participation in an official THE Ⅹ SINS event.',
-
-        category:
-            TITLE_CATEGORIES.EVENT,
-
-        rarity:
-            TITLE_RARITIES.UNCOMMON,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVENT,
-
-            eventRequirement:
-                'PARTICIPATION'
-        }
-    },
-
-    {
-        id:
-            'event_champion',
-
-        name:
-            'Champion of the Sins',
-
-        displayName:
-            '🏆 Champion of the Sins',
-
-        description:
-            'Awarded to the winner of an official THE Ⅹ SINS event.',
-
-        category:
-            TITLE_CATEGORIES.EVENT,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.EVENT,
-
-            eventRequirement:
-                'WINNER'
-        }
-    },
-
-    /*
-     * ======================================================
-     * Manual and Legendary Titles
-     * ======================================================
-     */
-    {
-        id:
-            'moon_chosen',
-
-        name:
-            'The Chosen',
-
-        displayName:
-            '✦ The Chosen',
-
-        description:
-            'A rare Title personally granted by the High Command.',
-
-        category:
-            TITLE_CATEGORIES.LEGENDARY,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.MANUAL
-        }
-    },
-
-    {
-        id:
-            'silent_blade',
-
-        name:
-            'The Silent Blade',
-
-        displayName:
-            '🗡️ The Silent Blade',
-
-        description:
-            'A special Title granted to a disciplined and deadly Soul.',
-
-        category:
-            TITLE_CATEGORIES.LEGENDARY,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.MANUAL
-        }
-    },
-
-    {
-        id:
-            'unbroken_soul',
-
-        name:
-            'The Unbroken',
-
-        displayName:
-            '⛓️ The Unbroken',
-
-        description:
-            'A legendary Title for a Soul who refuses to fall.',
-
-        category:
-            TITLE_CATEGORIES.LEGENDARY,
-
-        rarity:
-            TITLE_RARITIES.LEGENDARY,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.MANUAL
-        }
-    },
-
-    {
-        id:
-            'witness_of_evolution',
-
-        name:
-            'Witness of Evolution',
-
-        displayName:
-            '👁️ Witness of Evolution',
-
-        description:
-            'A special Title for a Soul who has witnessed extraordinary spiritual growth.',
-
-        category:
-            TITLE_CATEGORIES.LEGENDARY,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.MANUAL
-        }
-    },
-
-    {
-        id:
-            'guardian_of_the_sins',
-
-        name:
-            'Guardian of the Sins',
-
-        displayName:
-            '🛡️ Guardian of the Sins',
-
-        description:
-            'A unique designation reserved for the guardian of THE Ⅹ SINS.',
-
-        category:
-            TITLE_CATEGORIES.LEGENDARY,
-
-        rarity:
-            TITLE_RARITIES.MYTHIC,
-
-        unlock: {
-            type:
-                TITLE_UNLOCK_TYPES.MANUAL
-        }
-    }
-];/**
- * Get one Title definition by ID.
- *
- * @param {string} titleId
- * @returns {Object|null}
+        lieutenant:
+            'sin_lieutenant'
+    };
+
+    const roleIds = {
+        sin_sovereign:
+            rankConfig.highCommand.ruler,
+
+        head_captain:
+            rankConfig.highCommand.headCaptain,
+
+        captain:
+            rankConfig.highCommand.captain
+    };
+
+    return HIGH_COMMAND_TITLES.map(
+        title => ({
+            id:
+                stableIds[title.id],
+
+            name:
+                title.name,
+
+            displayName:
+                title.name,
+
+            description:
+                `Unlocked by holding the ${title.roleName} role.`,
+
+            category:
+                TITLE_CATEGORIES.STAFF,
+
+            rarity:
+                title.rarity,
+
+            unlock: {
+                type:
+                    TITLE_UNLOCK_TYPES.STAFF_ROLE,
+
+                roleName:
+                    title.roleName,
+
+                roleId:
+                    roleIds[title.id] ??
+                    null
+            }
+        })
+    );
+}
+
+/**
+ * Every active Title available inside
+ * THE Ⅹ SINS.
  */
+const TITLE_DEFINITIONS = Object.freeze([
+    ...createAchievementTitles(),
+    ...createSinRankTitles(),
+    ...createHighCommandTitles()
+]);
+
 function getTitleDefinition(
     titleId
 ) {
@@ -1055,18 +360,11 @@ function getTitleDefinition(
             title =>
                 title.id ===
                 titleId
-        ) ||
+        ) ??
         null
     );
 }
 
-/**
- * Get every Title belonging to
- * one category.
- *
- * @param {string} category
- * @returns {Object[]}
- */
 function getTitlesByCategory(
     category
 ) {
@@ -1081,13 +379,6 @@ function getTitlesByCategory(
     );
 }
 
-/**
- * Get every Title that can be
- * unlocked through one unlock type.
- *
- * @param {string} unlockType
- * @returns {Object[]}
- */
 function getTitlesByUnlockType(
     unlockType
 ) {
@@ -1102,28 +393,6 @@ function getTitlesByUnlockType(
     );
 }
 
-/**
- * Check whether a Title ID exists.
- *
- * @param {string} titleId
- * @returns {boolean}
- */
-function isValidTitleId(
-    titleId
-) {
-    return Boolean(
-        getTitleDefinition(
-            titleId
-        )
-    );
-}
-
-/**
- * Return a safe copy of every
- * configured Title definition.
- *
- * @returns {Object[]}
- */
 function getAllTitleDefinitions() {
     return TITLE_DEFINITIONS.map(
         title => ({
@@ -1133,6 +402,16 @@ function getAllTitleDefinitions() {
                 ...title.unlock
             }
         })
+    );
+}
+
+function isValidTitleId(
+    titleId
+) {
+    return Boolean(
+        getTitleDefinition(
+            titleId
+        )
     );
 }
 

@@ -75,8 +75,6 @@ const HELP_CATEGORIES = [
             'titles',
             'settitle',
             'removetitle',
-            'granttitle',
-            'revoketitle'
         ]
     },
 

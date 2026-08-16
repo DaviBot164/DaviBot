@@ -137,11 +137,6 @@ async function getActiveTitle(
     userId
 ) {
     try {
-        await titleDatabase
-            .ensureDefaultSoulTitle(
-                guildId,
-                userId
-            );
 
         const titles =
             await titleDatabase

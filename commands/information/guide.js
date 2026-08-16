@@ -512,34 +512,6 @@ const GUIDE_COMMANDS = {
             ACCESS_LEVELS.self
     },
 
-    granttitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/granttitle user title reason [activate]',
-
-        summary:
-            'Grant a Chronicle Title to a member.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
-    revoketitle: {
-        page:
-            GUIDE_PAGES.titles,
-
-        syntax:
-            '/revoketitle user title reason',
-
-        summary:
-            'Revoke a manually granted Chronicle Title.',
-
-        access:
-            ACCESS_LEVELS.highCommand
-    },
-
     /*
      * ======================================================
      * Progression

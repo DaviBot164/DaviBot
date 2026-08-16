@@ -57,32 +57,29 @@ const DEFAULT_SOUL_DATA = {
 };
 
 /**
- * Create a safe fallback Title record.
- *
- * This is used only if PostgreSQL or the
- * Title System is temporarily unavailable.
+ * Create an empty active Title state.
  *
  * @returns {Object}
  */
-function createDefaultTitleRecord() {
+function createEmptyTitleRecord() {
     return {
         id:
-            'nameless_soul',
+            null,
 
         name:
-            'Nameless Soul',
+            null,
 
         displayName:
-            '🌑 Nameless Soul',
+            'No active Title',
 
         description:
-            'The default designation of every newly recorded Soul.',
+            null,
 
         category:
-            'General',
+            null,
 
         rarity:
-            'Common',
+            null,
 
         unlockedAt:
             null,
@@ -308,11 +305,7 @@ async function getRecentSoulAchievements(
 }
 
 /**
- * Ensure and load a Soul's active Title.
- *
- * Every Soul receives Nameless Soul as
- * the default active Title when no other
- * active Title has been selected.
+ * Load one Soul's active Title state.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -322,15 +315,10 @@ async function getSoulTitle(
     guildId,
     userId
 ) {
-    const fallbackTitle =
-        createDefaultTitleRecord();
+    const emptyTitle =
+        createEmptyTitleRecord();
 
     try {
-        await titles.ensureDefaultSoulTitle(
-            guildId,
-            userId
-        );
-
         const [
             activeTitle,
             totalUnlocked
@@ -349,7 +337,7 @@ async function getSoulTitle(
 
         if (!activeTitle) {
             return {
-                ...fallbackTitle,
+                ...emptyTitle,
 
                 totalUnlocked:
                     Number(
@@ -390,10 +378,13 @@ async function getSoulTitle(
         };
     } catch (error) {
         console.warn(
-            `⚠️ Soul Title unavailable for ${userId}: ${error.message}`
+            'Soul Title unavailable for ' +
+            userId +
+            ': ' +
+            error.message
         );
 
-        return fallbackTitle;
+        return emptyTitle;
     }
 }
 
@@ -652,7 +643,6 @@ async function soulRecordExists(
  * This currently guarantees:
  *
  * - A Level record
- * - The default Nameless Soul Title
  * - A complete Soul Record response
  *
  * @param {string} guildId
@@ -675,17 +665,10 @@ async function ensureSoulRecord(
         );
     }
 
-    await Promise.all([
-        levels.ensureUserLevel(
-            guildId,
-            userId
-        ),
-
-        titles.ensureDefaultSoulTitle(
-            guildId,
-            userId
-        )
-    ]);
+    await levels.ensureUserLevel(
+        guildId,
+        userId
+    );
 
     return getSoulRecord(
         guildId,
@@ -696,7 +679,7 @@ async function ensureSoulRecord(
 module.exports = {
     DEFAULT_SOUL_DATA,
 
-    createDefaultTitleRecord,
+    createEmptyTitleRecord,
     createDefaultLevelRecord,
     createDefaultSoulData,
 
