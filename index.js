@@ -1374,7 +1374,32 @@ client.once(
 client.on(
     Events.InteractionCreate,
 
-    async interaction => {        if (
+    async interaction => {
+        if (
+            interaction.isStringSelectMenu()
+        ) {
+            const titlesCommand =
+                client.commands.get(
+                    'titles'
+                );
+
+            if (
+                typeof titlesCommand
+                    ?.handleTitlesInteraction ===
+                    'function'
+            ) {
+                const handled =
+                    await titlesCommand
+                        .handleTitlesInteraction(
+                            interaction
+                        );
+
+                if (handled) {
+                    return;
+                }
+            }
+        }
+        if (
             !interaction.isChatInputCommand()
         ) {
             return;
