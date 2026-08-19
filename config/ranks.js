@@ -1,12 +1,11 @@
 /**
- * THE Ⅹ SINS Rank Configuration
+ * Lunar Seireitei Rank Configuration
  *
- * This is the central source of truth for
- * manually managed Sin ranks.
+ * Central source of truth for manually
+ * managed Captain ranks.
  *
- * All rank systems should use these IDs
- * and names instead of hard-coded Discord
- * role names.
+ * Internal hierarchy keys remain stable
+ * for database compatibility.
  */
 
 module.exports = {
@@ -16,7 +15,7 @@ module.exports = {
                 '1533107284392017991',
 
             name:
-                '◈・SIN OF DOMINION'
+                'Ø・CAPTAIN'
         },
 
         pride: {
@@ -24,7 +23,7 @@ module.exports = {
                 '1533107338251075704',
 
             name:
-                '♛・SIN OF PRIDE'
+                'Ⅰ・CAPTAIN'
         },
 
         wrath: {
@@ -32,7 +31,7 @@ module.exports = {
                 '1533107390923280606',
 
             name:
-                '🩸・SIN OF WRATH'
+                'Ⅱ・CAPTAIN'
         },
 
         envy: {
@@ -40,7 +39,7 @@ module.exports = {
                 '1533107458367684608',
 
             name:
-                '🐍・SIN OF ENVY'
+                'Ⅲ・CAPTAIN'
         },
 
         greed: {
@@ -48,7 +47,7 @@ module.exports = {
                 '1533107509060178080',
 
             name:
-                '💰・SIN OF GREED'
+                'Ⅳ・CAPTAIN'
         },
 
         lust: {
@@ -56,7 +55,7 @@ module.exports = {
                 '1533107545630183554',
 
             name:
-                '🖤・SIN OF LUST'
+                'Ⅴ・CAPTAIN'
         },
 
         gluttony: {
@@ -64,7 +63,7 @@ module.exports = {
                 '1533107588588372048',
 
             name:
-                '🍷・SIN OF GLUTTONY'
+                'Ⅵ・CAPTAIN'
         },
 
         sloth: {
@@ -72,7 +71,7 @@ module.exports = {
                 '1533107624415854753',
 
             name:
-                '💤・SIN OF SLOTH'
+                'Ⅶ・CAPTAIN'
         },
 
         ruin: {
@@ -80,7 +79,7 @@ module.exports = {
                 '1533107699196104795',
 
             name:
-                '☠️・SIN OF RUIN'
+                'Ⅷ・CAPTAIN'
         },
 
         heresy: {
@@ -88,7 +87,7 @@ module.exports = {
                 '1533107740912910358',
 
             name:
-                '⛧・SIN OF HERESY'
+                'Ⅸ・CAPTAIN'
         },
 
         vengeance: {
@@ -96,7 +95,7 @@ module.exports = {
                 '1533149977138696293',
 
             name:
-                '⚔️・SIN OF VENGEANCE'
+                'Ⅹ・CAPTAIN'
         },
 
         unranked: {

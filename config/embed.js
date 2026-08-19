@@ -1,36 +1,62 @@
+const brand =
+    require('./brand');
+
 module.exports = {
     colors: {
-        primary: '#B026FF',
-        accent: '#FF2BD6',
-        success: '#57F287',
-        error: '#ED4245',
-        warning: '#FFB000',
-        moderation: '#FF2BD6',
-        archive: '#22D3EE',
-        rank: '#FFB000',
-        title: '#FF2BD6',
-        guardian: '#B026FF',
-        event: '#22D3EE',
-        support: '#B026FF'
+        primary:
+            brand.themeColor,
+
+        accent:
+            '#9B6DFF',
+
+        success:
+            '#57F287',
+
+        error:
+            '#ED4245',
+
+        warning:
+            '#E7C66A',
+
+        moderation:
+            '#E53945',
+
+        archive:
+            '#AFC6E9',
+
+        rank:
+            '#E7C66A',
+
+        title:
+            '#9B6DFF',
+
+        guardian:
+            '#6C7CFF',
+
+        event:
+            '#75A7E8',
+
+        support:
+            '#2FBF8F'
     },
 
     footer: {
         text:
-            'Ⅹ Evelynn • THE Ⅹ SINS'
+            `☾ ${brand.botName} • ${brand.serverName}`
     },
 
     branding: {
         botName:
-            'Evelynn',
+            brand.botName,
 
         serverName:
-            'THE Ⅹ SINS',
+            brand.serverName,
 
         subtitle:
-            'Guardian of THE Ⅹ SINS',
+            `${brand.botTitle} of ${brand.shortName}`,
 
         archiveName:
-            'TTS Archives',
+            'Lunar Archives',
 
         divider:
             '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'

@@ -145,7 +145,7 @@ function buildVerificationGuideEmbed(
             [
                 'Verify your Roblox account through **Bloxlink** to enter **THE Ⅹ SINS**.',
                 '',
-                '**◇・UNSWORN** → **✦・SWORN**'
+                '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
             ].join('\n'),
 
         color:
@@ -184,7 +184,7 @@ function buildVerificationGuideEmbed(
                     '◆・AFTER VERIFICATION',
 
                 value:
-                    '**✦・SWORN** access will be granted and community channels will unlock.',
+                    '**✦・SOUL REAPER** access will be granted and community channels will unlock.',
 
                 inline:
                     false

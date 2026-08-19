@@ -2,6 +2,9 @@ const {
     query
 } = require('./connection');
 
+const brand =
+    require('../config/brand');
+
 /**
  * Built-in Achievement definitions.
  *
@@ -14,10 +17,10 @@ const ACHIEVEMENT_DEFINITIONS = [
             'first_words',
 
         name:
-            'SIN AWAKENED',
+            'SOUL AWAKENED',
 
         description:
-            'Send your first recorded message inside THE Ⅹ SINS.',
+            `Send your first recorded message inside ${brand.serverName}.`,
 
         icon:
             '🌑',
@@ -31,10 +34,10 @@ const ACHIEVEMENT_DEFINITIONS = [
             'awakened_soul',
 
         name:
-            'SINBOUND',
+            'SOULBOUND',
 
         description:
-            'Reach Level 5 and begin your ascent.',
+            'Reach Level 5 and bind your soul to Seireitei.',
 
         icon:
             '🌒',
@@ -48,7 +51,7 @@ const ACHIEVEMENT_DEFINITIONS = [
             'rising_soul',
 
         name:
-            'SIN ASCENDANT',
+            'SOUL ASCENDANT',
 
         description:
             'Reach Level 10 and rise beyond the awakened.',
@@ -65,10 +68,10 @@ const ACHIEVEMENT_DEFINITIONS = [
             'crimson_soul',
 
         name:
-            'SIN SOVEREIGN',
+            'SOUL SOVEREIGN',
 
         description:
-            'Reach Level 25 and establish your authority.',
+            'Reach Level 25 and establish your authority beneath the moon.',
 
         icon:
             '🌔',
@@ -82,10 +85,10 @@ const ACHIEVEMENT_DEFINITIONS = [
             'eternal_soul',
 
         name:
-            'ETERNAL SIN',
+            'ETERNAL SOUL',
 
         description:
-            'Reach Level 50 and become an eternal presence.',
+            'Reach Level 50 and become an eternal presence within Seireitei.',
 
         icon:
             '🌕',
@@ -237,7 +240,9 @@ async function initializeAchievements() {
     return (
         ACHIEVEMENT_DEFINITIONS.length
     );
-}/**
+}
+
+/**
  * Get one Achievement definition.
  *
  * @param {string} achievementId
@@ -312,9 +317,7 @@ async function countAllAchievements() {
         result.rows[0]
             ?.achievement_count || 0
     );
-}
-
-/**
+}/**
  * Check whether a Soul has already
  * unlocked an Achievement.
  *
@@ -464,7 +467,9 @@ async function unlockAchievement(
                     )
             }
     };
-}/**
+}
+
+/**
  * Get every Achievement unlocked
  * by one Soul.
  *

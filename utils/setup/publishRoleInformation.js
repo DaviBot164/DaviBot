@@ -8,11 +8,14 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
 const setupChannels =
     require('../../config/setupChannels');
 
 const ROLE_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
  * Get the role information channel.
@@ -111,7 +114,7 @@ async function getRoleInformationChannel(
 
 /**
  * Publish the official
- * THE Ⅹ SINS role hierarchy.
+ * Lunar Seireitei role hierarchy.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -151,13 +154,13 @@ async function publishRoleInformation(
     const roleEmbed =
         createEmbed({
             title:
-                'Ⅹ・ROLE HIERARCHY',
+                '☾・ROLE HIERARCHY',
 
             description:
                 [
-                    '**Every role has a purpose.**',
+                    '**Every soul has a place beneath the moon.**',
                     '',
-                    'Authority, rank and progression are separate systems inside **THE Ⅹ SINS**.'
+                    `Authority, Captain rank and progression are separate systems inside **${brand.serverName}**.`
                 ].join('\n'),
 
             color:
@@ -176,16 +179,17 @@ async function publishRoleInformation(
             fields: [
                 {
                     name:
-                        '♛・STAFF',
+                        '♔・HIGH COMMAND',
 
                     value:
                         [
-                            '**♛・SOVEREIGN** — Highest authority',
-                            '**⚜️・HEAD CAPTAIN** — Senior leadership',
-                            '**🛡️・CAPTAIN** — Administration',
-                            '**⚔️・LIEUTENANT** — Moderation',
+                            '**♔・LUNAR SOVEREIGN** — Highest authority',
+                            '**🌙・MOON SPIRIT** — Voice of Seireitei',
+                            '**⚔・CAPTAIN-COMMANDER** — Senior leadership',
+                            '**🛡・CAPTAIN** — Administration',
+                            '**◇・LIEUTENANT** — Moderation',
                             '',
-                            '-# Only Staff roles grant moderation authority.'
+                            '-# Only High Command roles grant moderation authority.'
                         ].join('\n'),
 
                     inline:
@@ -194,17 +198,22 @@ async function publishRoleInformation(
 
                 {
                     name:
-                        'Ⅹ・THE TEN SINS',
+                        '⚔・CAPTAIN RANKS',
 
                     value:
                         [
-                            '**♛ Pride**　**🩸 Wrath**',
-                            '**🐍 Envy**　**💰 Greed**',
-                            '**🖤 Lust**　**🍷 Gluttony**',
-                            '**💤 Sloth**　**☠️ Ruin**',
-                            '**⛧ Heresy**　**⚔️ Vengeance**',
+                            '**Ø・CAPTAIN** — Highest ranked position',
                             '',
-                            'The Ten are earned through rank competition.'
+                            '**Ⅰ・CAPTAIN**　 **Ⅱ・CAPTAIN**',
+                            '**Ⅲ・CAPTAIN**　 **Ⅳ・CAPTAIN**',
+                            '**Ⅴ・CAPTAIN**　 **Ⅵ・CAPTAIN**',
+                            '**Ⅶ・CAPTAIN**　 **Ⅷ・CAPTAIN**',
+                            '**Ⅸ・CAPTAIN**　 **Ⅹ・CAPTAIN**',
+                            '',
+                            '**◇・UNRANKED** — No Captain rank',
+                            '',
+                            '-# Captain Ranks are earned through official Captain Trials.',
+                            '-# Captain Ranks do not grant Staff permissions.'
                         ].join('\n'),
 
                     inline:
@@ -213,35 +222,16 @@ async function publishRoleInformation(
 
                 {
                     name:
-                        'Ø・SIN OF DOMINION',
+                        '✦・SOUL PROGRESSION',
 
                     value:
                         [
-                            '**The throne above the Ten.**',
-                            '',
-                            'A singular position of supreme standing within the hierarchy.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '◆・PROGRESSION',
-
-                    value:
-                        [
-                            '**🕯️・SIN HEIR**',
-                            '**⚔️・SINBOUND**',
-                            '**🗡️・ASCENDANT**',
-                            '**◇・UNRANKED**',
-                            '**⛓️・OATHBOUND**',
-                            '**♜・WARLORD**',
-                            '**🐺・REAVER**',
-                            '**⚔️・VANGUARD**',
-                            '**🛡️・LEGIONARY**',
-                            '**◆・INITIATE**',
+                            '**✦・ETERNAL SOUL**',
+                            '**♔・SOUL SOVEREIGN**',
+                            '**☾・SOUL ASCENDANT**',
+                            '**◇・SOUL AWAKENED**',
+                            '**✧・SOULBOUND**',
+                            '**◆・SOUL INITIATE**',
                             '',
                             '-# Progression reflects activity and advancement.'
                         ].join('\n'),
@@ -252,12 +242,12 @@ async function publishRoleInformation(
 
                 {
                     name:
-                        '✦・VERIFICATION',
+                        '◇・VERIFICATION',
 
                     value:
                         [
-                            '**✦・SWORN** — Verified',
-                            '**◇・UNSWORN** — Awaiting verification'
+                            '**✦・SOUL REAPER** — Verified',
+                            '**◇・WANDERING SOUL** — Awaiting verification'
                         ].join('\n'),
 
                     inline:
@@ -267,7 +257,7 @@ async function publishRoleInformation(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    `${brand.botName} • ${brand.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -275,7 +265,7 @@ async function publishRoleInformation(
 
             footer: {
                 text:
-                    'TTS • Role Hierarchy',
+                    `${brand.serverName} • Role Hierarchy`,
 
                 iconURL:
                     guildIcon
@@ -306,7 +296,7 @@ async function publishRoleInformation(
     });
 
     console.log(
-        `Ⅹ Role hierarchy published in #${channel.name} by ${interaction.user.tag}.`
+        `${brand.serverName} role hierarchy published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

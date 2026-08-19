@@ -1,15 +1,18 @@
-const rankConfig = require('./ranks');
+const rankConfig =
+    require('./ranks');
 
 /**
- * Title categories currently used by
- * THE Ⅹ SINS.
+ * Public Title categories.
+ *
+ * SIN_RANK remains as an internal key
+ * for compatibility.
  */
 const TITLE_CATEGORIES = Object.freeze({
     ACHIEVEMENT:
         'Achievement',
 
     SIN_RANK:
-        'Sin Rank',
+        'Captain Rank',
 
     STAFF:
         'High Command'
@@ -39,7 +42,10 @@ const TITLE_RARITIES = Object.freeze({
 });
 
 /**
- * Supported title unlock methods.
+ * Supported Title unlock methods.
+ *
+ * SIN_RANK remains unchanged because
+ * existing systems may store this value.
  */
 const TITLE_UNLOCK_TYPES = Object.freeze({
     ACHIEVEMENT:
@@ -53,7 +59,7 @@ const TITLE_UNLOCK_TYPES = Object.freeze({
 });
 
 /**
- * Achievement title IDs remain unchanged
+ * Achievement Title IDs remain unchanged
  * for database compatibility.
  */
 const ACHIEVEMENT_TITLES = Object.freeze([
@@ -62,7 +68,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'first_voice',
 
         name:
-            'SIN AWAKENED',
+            'SOUL AWAKENED',
 
         achievementId:
             'first_words',
@@ -76,7 +82,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'chronicle_awakened',
 
         name:
-            'SINBOUND',
+            'SOULBOUND',
 
         achievementId:
             'awakened_soul',
@@ -90,7 +96,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'chronicle_riser',
 
         name:
-            'SIN ASCENDANT',
+            'SOUL ASCENDANT',
 
         achievementId:
             'rising_soul',
@@ -104,7 +110,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'keeper_of_crimson_chronicles',
 
         name:
-            'SIN SOVEREIGN',
+            'SOUL SOVEREIGN',
 
         achievementId:
             'crimson_soul',
@@ -118,7 +124,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'eternal_chronicle_keeper',
 
         name:
-            'ETERNAL SIN',
+            'ETERNAL SOUL',
 
         achievementId:
             'eternal_soul',
@@ -128,7 +134,11 @@ const ACHIEVEMENT_TITLES = Object.freeze([
     }
 ]);
 
-const SIN_RANK_KEYS = Object.freeze([
+/**
+ * Legacy hierarchy keys remain unchanged
+ * because Rank History may store them.
+ */
+const CAPTAIN_RANK_KEYS = Object.freeze([
     'dominion',
     'pride',
     'wrath',
@@ -145,13 +155,13 @@ const SIN_RANK_KEYS = Object.freeze([
 const HIGH_COMMAND_TITLES = Object.freeze([
     {
         id:
-            'sin_sovereign',
+            'lunar_sovereign',
 
         name:
-            '👑・SOVEREIGN',
+            '♔・LUNAR SOVEREIGN',
 
         roleName:
-            '👑・SOVEREIGN',
+            '♔・LUNAR SOVEREIGN',
 
         rarity:
             TITLE_RARITIES.MYTHIC
@@ -159,13 +169,13 @@ const HIGH_COMMAND_TITLES = Object.freeze([
 
     {
         id:
-            'head_captain',
+            'captain_commander',
 
         name:
-            '⚜️・HEAD CAPTAIN',
+            '⚔・CAPTAIN-COMMANDER',
 
         roleName:
-            '⚜️・HEAD CAPTAIN',
+            '⚔・CAPTAIN-COMMANDER',
 
         rarity:
             TITLE_RARITIES.LEGENDARY
@@ -176,10 +186,10 @@ const HIGH_COMMAND_TITLES = Object.freeze([
             'captain',
 
         name:
-            '🛡️・CAPTAIN',
+            '🛡・CAPTAIN',
 
         roleName:
-            '🛡️・CAPTAIN',
+            '🛡・CAPTAIN',
 
         rarity:
             TITLE_RARITIES.EPIC
@@ -190,10 +200,10 @@ const HIGH_COMMAND_TITLES = Object.freeze([
             'lieutenant',
 
         name:
-            '⚔️・LIEUTENANT',
+            '◇・LIEUTENANT',
 
         roleName:
-            '⚔️・LIEUTENANT',
+            '◇・LIEUTENANT',
 
         rarity:
             TITLE_RARITIES.RARE
@@ -230,8 +240,10 @@ function createAchievementTitles() {
             }
         })
     );
-}function createSinRankTitles() {
-    return SIN_RANK_KEYS.map(
+}
+
+function createCaptainRankTitles() {
+    return CAPTAIN_RANK_KEYS.map(
         (
             rankKey,
             index
@@ -242,6 +254,10 @@ function createAchievementTitles() {
                 ];
 
             return {
+                /**
+                 * Stable legacy ID retained for
+                 * existing database records.
+                 */
                 id:
                     `sin_of_${rankKey}`,
 
@@ -279,10 +295,10 @@ function createAchievementTitles() {
 
 function createHighCommandTitles() {
     const stableIds = {
-        sin_sovereign:
+        lunar_sovereign:
             'sin_heir',
 
-        head_captain:
+        captain_commander:
             'head_of_sins',
 
         captain:
@@ -293,11 +309,12 @@ function createHighCommandTitles() {
     };
 
     const roleIds = {
-        sin_sovereign:
+        lunar_sovereign:
             rankConfig.highCommand.ruler,
 
-        head_captain:
-            rankConfig.highCommand.headCaptain,
+        captain_commander:
+            rankConfig.highCommand
+                .headCaptain,
 
         captain:
             rankConfig.highCommand.captain
@@ -340,11 +357,11 @@ function createHighCommandTitles() {
 
 /**
  * Every active Title available inside
- * THE Ⅹ SINS.
+ * Lunar Seireitei.
  */
 const TITLE_DEFINITIONS = Object.freeze([
     ...createAchievementTitles(),
-    ...createSinRankTitles(),
+    ...createCaptainRankTitles(),
     ...createHighCommandTitles()
 ]);
 

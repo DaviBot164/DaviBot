@@ -1,0 +1,91 @@
+[35mcommands/events/event.js[m[36m:[m[32m42[m[36m:[m                eventData.[1;31mchannelId[m
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1037[m[36m:[m        `**Channel:** <#${rankTrialConfig.[1;31mchannelId[m}>`,
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1317[m[36m:[m    const [1;31mlocation[m =
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1320[m[36m:[m            ?.[1;31mlocation[m ??
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1321[m[36m:[m        record?.event[1;31mLocation[m ??
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1324[m[36m:[m            .[1;31mlocation[m;
+[35mcommands/events/ranktrials.js[m[36m:[m[32m1395[m[36m:[m                [1;31mlocation[m ||
+[35mconfig/automod.js[m[36m:[m[32m10[m[36m:[m    log[1;31mChannelId[m: '1530901922855256104',
+[35mconfig/channels.js[m[36m:[m[32m5[m[36m:[m    welcome[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m8[m[36m:[m    verify[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m11[m[36m:[m    information[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m14[m[36m:[m    decrees[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m20[m[36m:[m    eclipseChat[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m26[m[36m:[m    ticketGuide[1;31mChannelId[m:
+[35mconfig/channels.js[m[36m:[m[32m29[m[36m:[m    createTicket[1;31mChannelId[m:
+[35mconfig/kingdomFeed.js[m[36m:[m[32m17[m[36m:[m    [1;31mchannelId[m:
+[35mconfig/rankTrials.js[m[36m:[m[32m29[m[36m:[m    [1;31mchannelId[m:
+[35mconfig/rankTrials.js[m[36m:[m[32m110[m[36m:[m         * External Event [1;31mlocation[m displayed
+[35mconfig/rankTrials.js[m[36m:[m[32m113[m[36m:[m        [1;31mlocation[m:
+[35mconfig/rankTrials.js[m[36m:[m[32m143[m[36m:[m         * name, times, [1;31mlocation[m or description
+[35mconfig/setupChannels.js[m[36m:[m[32m9[m[36m:[m    information[1;31mChannelId[m:
+[35mconfig/setupChannels.js[m[36m:[m[32m18[m[36m:[m    sacredLaws[1;31mChannelId[m:
+[35mconfig/titles.js[m[36m:[m[32m62[m[36m:[m            'first_[1;31mvoice[m',
+[35mdatabase/rankTrialEventSchema.js[m[36m:[m[32m43[m[36m:[m            event_[1;31mlocation[m VARCHAR(100) NOT NULL,
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m36[m[36m:[m        event[1;31mLocation[m:
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m37[m[36m:[m            row.event_[1;31mlocation[m,
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m144[m[36m:[m                    event_[1;31mlocation[m,
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m171[m[36m:[m                eventData.event[1;31mLocation[m,
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m251[m[36m:[m                    event_[1;31mlocation[m = $6,
+[35mdatabase/rankTrialEvents.js[m[36m:[m[32m273[m[36m:[m                eventData.event[1;31mLocation[m,
+[35mdatabase/rankTrials.js[m[36m:[m[32m30[m[36m:[m        [1;31mchannelId[m:
+[35mdatabase/rankTrials.js[m[36m:[m[32m160[m[36m:[m * @param {string} publicationData.[1;31mchannelId[m
+[35mdatabase/rankTrials.js[m[36m:[m[32m196[m[36m:[m                publicationData.[1;31mchannelId[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m2[m[36m:[m    [1;31mGuildScheduledEvent[m[1;31mEntityType[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m3[m[36m:[m    [1;31mGuildScheduledEvent[mPrivacyLevel,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m4[m[36m:[m    [1;31mGuildScheduledEvent[mStatus,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m34[m[36m:[m * Maximum External Event [1;31mlocation[m length.
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m38[m[36m:[mconst EVENT_[1;31mLOCATION[m_MAX_LENGTH =
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m220[m[36m:[m * Build the configured External Event [1;31mlocation[m.
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m224[m[36m:[mfunction buildRankTrialEvent[1;31mLocation[m() {
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m228[m[36m:[m            .[1;31mlocation[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m229[m[36m:[m        EVENT_[1;31mLOCATION[m_MAX_LENGTH
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m272[m[36m:[m *     event[1;31mLocation[m: string,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m300[m[36m:[m        event[1;31mLocation[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m301[m[36m:[m            buildRankTrialEvent[1;31mLocation[m(),
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m390[m[36m:[m * [1;31mGuildScheduledEvent[mManager#create.
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m393[m[36m:[m * [1;31mvoice[m or stage channel is required.
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m396[m[36m:[m * @returns {import('discord.js').[1;31mGuildScheduledEvent[mCreateOptions}
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m415[m[36m:[m            [1;31mGuildScheduledEvent[mPrivacyLevel
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m418[m[36m:[m        [1;31mentityType[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m419[m[36m:[m            [1;31mGuildScheduledEvent[m[1;31mEntityType[m
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m423[m[36m:[m            [1;31mlocation[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m424[m[36m:[m                expectedEvent.event[1;31mLocation[m
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m437[m[36m:[m * @returns {Promise<import('discord.js').[1;31mGuildScheduledEvent[m|null>}
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m493[m[36m:[m * Read the External Event [1;31mlocation[m from a
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m496[m[36m:[m * @param {import('discord.js').[1;31mGuildScheduledEvent[m} discordEvent
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m499[m[36m:[mfunction getDiscordEvent[1;31mLocation[m(
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m505[m[36m:[m            ?.[1;31mlocation[m ??
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m514[m[36m:[m * @param {import('discord.js').[1;31mGuildScheduledEvent[m} discordEvent
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m532[m[36m:[m        getDiscordEvent[1;31mLocation[m(
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m535[m[36m:[m            expectedEvent.event[1;31mLocation[m &&
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m547[m[36m:[m        discordEvent.[1;31mentityType[m ===
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m548[m[36m:[m            [1;31mGuildScheduledEvent[m[1;31mEntityType[m
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m557[m[36m:[m * @param {[1;31mGuildScheduledEvent[mStatus} discordStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m566[m[36m:[m        case [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m572[m[36m:[m        case [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m578[m[36m:[m        case [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m584[m[36m:[m        case [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m603[m[36m:[m *     discordEvent?: import('discord.js').[1;31mGuildScheduledEvent[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m768[m[36m:[m                event[1;31mLocation[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m769[m[36m:[m                    expectedEvent.event[1;31mLocation[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m902[m[36m:[m * [1;31mGuildScheduledEvent[mManager#edit.
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m905[m[36m:[m * @returns {import('discord.js').[1;31mGuildScheduledEvent[mEditOptions}
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m924[m[36m:[m            [1;31mlocation[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m925[m[36m:[m                expectedEvent.event[1;31mLocation[m
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m942[m[36m:[m * @param {import('discord.js').[1;31mGuildScheduledEvent[m} discordEvent
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m944[m[36m:[m * @returns {Promise<import('discord.js').[1;31mGuildScheduledEvent[m>}
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m953[m[36m:[m            [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m956[m[36m:[m            [1;31mGuildScheduledEvent[mStatus
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m983[m[36m:[m * @param {import('discord.js').[1;31mGuildScheduledEvent[m} discordEvent
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1012[m[36m:[m            event[1;31mLocation[m:
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1013[m[36m:[m                getDiscordEvent[1;31mLocation[m(
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1016[m[36m:[m                expectedEvent.event[1;31mLocation[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1057[m[36m:[m *     discordEvent?: import('discord.js').[1;31mGuildScheduledEvent[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1541[m[36m:[m    buildRankTrialEvent[1;31mLocation[m,
+[35mutils/rankTrials/eventManager.js[m[36m:[m[32m1549[m[36m:[m    getDiscordEvent[1;31mLocation[m,
+[35mutils/rankTrials/publisher.js[m[36m:[m[32m88[m[36m:[m                rankTrialConfig.[1;31mchannelId[m
+[35mutils/rankTrials/publisher.js[m[36m:[m[32m435[m[36m:[m            `❌ Configured Channel ID: ${rankTrialConfig.[1;31mchannelId[m}`
+[35mutils/rankTrials/publisher.js[m[36m:[m[32m510[m[36m:[m                [1;31mchannelId[m:
+[35mutils/rankTrials/publisher.js[m[36m:[m[32m807[m[36m:[m            `❌ Configured Channel ID: ${rankTrialConfig.[1;31mchannelId[m}`
+[35mutils/rankTrials/scheduler.js[m[36m:[m[32m1227[m[36m:[m        `📍 Channel ID: ${rankTrialConfig.[1;31mchannelId[m}`

@@ -178,7 +178,7 @@ async function publishFAQ(
                         [
                             'Verify your Roblox account through **Bloxlink**.',
                             '',
-                            '**◇・UNSWORN** → **✦・SWORN**'
+                            '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
                         ].join('\n'),
 
                     inline:

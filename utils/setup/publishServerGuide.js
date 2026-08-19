@@ -193,7 +193,7 @@ async function publishServerGuide(
                         [
                             'Verify through **Bloxlink**.',
                             '',
-                            '**◇・UNSWORN** → **✦・SWORN**'
+                            '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
                         ].join('\n'),
 
                     inline:
