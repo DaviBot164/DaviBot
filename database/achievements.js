@@ -17,7 +17,7 @@ const ACHIEVEMENT_DEFINITIONS = [
             'first_words',
 
         name:
-            'SOUL AWAKENED',
+            'SOULBOUND',
 
         description:
             `Send your first recorded message inside ${brand.serverName}.`,
@@ -34,7 +34,7 @@ const ACHIEVEMENT_DEFINITIONS = [
             'awakened_soul',
 
         name:
-            'SOULBOUND',
+            'SOUL AWAKENED',
 
         description:
             'Reach Level 5 and bind your soul to Seireitei.',

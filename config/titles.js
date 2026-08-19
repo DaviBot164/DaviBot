@@ -68,7 +68,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'first_voice',
 
         name:
-            'SOUL AWAKENED',
+            'SOULBOUND',
 
         achievementId:
             'first_words',
@@ -82,7 +82,7 @@ const ACHIEVEMENT_TITLES = Object.freeze([
             'chronicle_awakened',
 
         name:
-            'SOULBOUND',
+            'SOUL AWAKENED',
 
         achievementId:
             'awakened_soul',

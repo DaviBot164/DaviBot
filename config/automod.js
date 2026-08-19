@@ -9,7 +9,7 @@ module.exports = {
      */
     logChannelId: '1530901922855256104',
 
-    logChannelName: '📄・umbra-logs',
+    logChannelName: '🛡️・moderation',
 
     /**
      * ამ უფლებების მქონე წევრებს
