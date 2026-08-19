@@ -3,7 +3,7 @@ const rankTrialConfig =
 
 /**
  * Convert one Date into local calendar parts
- * for the configured Rank Trial timezone.
+ * for the configured Captain Trial timezone.
  *
  * @param {Date} date
  * @param {string} timezone
@@ -293,7 +293,7 @@ function getDaysInMonth(
 /**
  * Find the final configured weekday of a month.
  *
- * The Rank Trial config currently uses:
+ * The Captain Trial config currently uses:
  *
  * 6 = Saturday
  *
@@ -356,12 +356,12 @@ function getLastWeekdayOfMonth(
     }
 
     throw new Error(
-        'Evelynn could not calculate the final Rank Trial weekday.'
+        'Evelynn could not calculate the final Captain Trial weekday.'
     );
 }
 
 /**
- * Calculate the official Rank Trial battle
+ * Calculate the official Captain Trial battle
  * start for one year and month.
  *
  * @param {number} year
@@ -509,7 +509,7 @@ function buildAnnouncementDate(
 
 /**
  * Build the complete publication schedule
- * for one monthly Rank Trial.
+ * for one monthly Captain Trial.
  *
  * @param {number} year
  * @param {number} month
@@ -644,7 +644,7 @@ function buildMonthlyRankTrialSchedule(
 
 /**
  * Return the current year and month inside
- * the configured THE Ⅹ SINS timezone.
+ * the configured LUNAR SEIREITEI timezone.
  *
  * @param {Date} now
  * @returns {{
@@ -708,7 +708,7 @@ function getNextMonth(
 }
 
 /**
- * Return the currently relevant Rank Trial
+ * Return the currently relevant Captain Trial
  * schedule.
  *
  * Before the current month's closing notice,

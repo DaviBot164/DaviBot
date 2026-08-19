@@ -73,9 +73,9 @@ const SOUL_PAGE_DETAILS = {
 
     [SOUL_PAGES.ranks]: {
         emoji: '⚔️',
-        label: 'Sin Rank',
+        label: 'Captain Rank',
         description:
-            'Current Sin Rank and rank history'
+            'Current Captain Rank and rank history'
     },
 
     [SOUL_PAGES.collection]: {
@@ -289,7 +289,7 @@ function getServerStanding(
     }
 
     if (member.user.bot) {
-        return '🌑 Guardian of THE Ⅹ SINS';
+        return '🌑 Moon Spirit of Seireitei';
     }
 
     return '◇・MEMBER';
@@ -650,7 +650,7 @@ function createSoulEmbed({
 
         footer: {
             text:
-                `Evelynn • THE Ⅹ SINS • Requested by ${interaction.user.username}`,
+                `Evelynn • LUNAR SEIREITEI • Requested by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -691,7 +691,7 @@ function buildOverviewPage({
                 `📖 ${member.displayName}'s Soul Record`,
 
             description:
-                'A compact member record within **THE Ⅹ SINS**.',
+                'A compact member record within **LUNAR SEIREITEI**.',
 
             color:
                 embedConfig.colors.accent
@@ -723,7 +723,7 @@ function buildOverviewPage({
                 '⚔️ Position',
 
             value: [
-                `**Sin Rank:** ${
+                `**Captain Rank:** ${
                     getSinRank(member)
                 }`,
                 `**Highest Role:** ${
@@ -895,7 +895,7 @@ function buildRankPage({
                 )
                 .join('\n\n')
             : (
-                'No Sin Rank history ' +
+                'No Captain Rank history ' +
                 'has been recorded yet.'
             );
 
@@ -905,10 +905,10 @@ function buildRankPage({
             member,
 
             title:
-                '⚔️ Sin Rank Record',
+                '⚔️ Captain Rank Record',
 
             description:
-                'Current Sin Rank and recent changes.',
+                'Current Captain Rank and recent changes.',
 
             color:
                 embedConfig.colors.accent
@@ -917,7 +917,7 @@ function buildRankPage({
     return embed.addFields(
         {
             name:
-                '⚔️ Current Sin Rank',
+                '⚔️ Current Captain Rank',
 
             value:
                 getSinRank(member)
@@ -1275,7 +1275,7 @@ module.exports = {
             if (!interaction.inGuild()) {
                 await sendSoulError(
                     interaction,
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;

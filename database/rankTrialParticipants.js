@@ -3,7 +3,7 @@ const {
 } = require('./connection');
 
 /**
- * Official Rank Trials 2.0 participant
+ * Official Captain Trials 2.0 participant
  * states stored inside PostgreSQL.
  */
 const PARTICIPANT_STATUS = Object.freeze({
@@ -113,7 +113,7 @@ function mapRankTrialParticipantRow(
 
 /**
  * Validate one permanent monthly
- * Rank Trial identifier.
+ * Captain Trial identifier.
  *
  * Expected format:
  *
@@ -138,7 +138,7 @@ function normalizeTrialKey(
             )
     ) {
         throw new TypeError(
-            'Invalid Rank Trial key.'
+            'Invalid Captain Trial key.'
         );
     }
 
@@ -180,7 +180,7 @@ function normalizeReviewReason(
 
 /**
  * Get one participant from one
- * monthly Rank Trial.
+ * monthly Captain Trial.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -228,7 +228,7 @@ async function getParticipant(
 
 /**
  * Register one Soul for a monthly
- * Rank Trial.
+ * Captain Trial.
  *
  * A brand-new participant creates a row.
  *
@@ -404,7 +404,7 @@ async function registerParticipant({
     };
 }/**
  * Withdraw one registered Soul from
- * the selected monthly Rank Trial.
+ * the selected monthly Captain Trial.
  *
  * Only REGISTERED participants may
  * withdraw themselves.
@@ -505,7 +505,7 @@ async function moveRegisteredToReview(
 
 /**
  * Get the full participant roster for
- * one monthly Rank Trial.
+ * one monthly Captain Trial.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -544,7 +544,7 @@ async function getTrialParticipants(
 
 /**
  * Get participants with one selected
- * Rank Trial status.
+ * Captain Trial status.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -577,7 +577,7 @@ async function getTrialParticipantsByStatus(
         )
     ) {
         throw new TypeError(
-            'Invalid Rank Trial participant status.'
+            'Invalid Captain Trial participant status.'
         );
     }
 
@@ -607,7 +607,7 @@ async function getTrialParticipantsByStatus(
 
 /**
  * Count all participants for one
- * monthly Rank Trial.
+ * monthly Captain Trial.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -644,7 +644,7 @@ async function countTrialParticipants(
 
 /**
  * Count participants with one selected
- * Rank Trial status.
+ * Captain Trial status.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -677,7 +677,7 @@ async function countTrialParticipantsByStatus(
         )
     ) {
         throw new TypeError(
-            'Invalid Rank Trial participant status.'
+            'Invalid Captain Trial participant status.'
         );
     }
 
@@ -704,7 +704,7 @@ async function countTrialParticipantsByStatus(
 }
 
 /**
- * Get one Soul's permanent Rank Trial
+ * Get one Soul's permanent Captain Trial
  * participation history.
  *
  * @param {string} guildId
@@ -758,8 +758,8 @@ async function getParticipantHistory(
  * the Staff Review flow.
  *
  * This does not directly change the
- * Sin Rank. Promotion execution is
- * handled by the Rank Trials 2.0 service.
+ * Captain Rank. Promotion execution is
+ * handled by the Captain Trials 2.0 service.
  *
  * @param {Object} reviewData
  * @param {string} reviewData.guildId
@@ -924,7 +924,7 @@ async function rejectParticipant({
  * Mark an approved participant as
  * successfully promoted.
  *
- * Call this only after the Sin Rank
+ * Call this only after the Captain Rank
  * System has completed the real rank
  * assignment successfully.
  *
@@ -1118,7 +1118,7 @@ async function getPendingReviewParticipants(
 
 /**
  * Return compact statistics for one
- * monthly Rank Trial.
+ * monthly Captain Trial.
  *
  * @param {string} guildId
  * @param {string} trialKey

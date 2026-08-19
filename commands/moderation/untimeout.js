@@ -65,8 +65,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -96,7 +96,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of THE Ⅹ SINS.'
+                            'This Soul is not currently a member of LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -194,10 +194,10 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌙 THE Ⅹ SINS Status',
+                    '🌙 LUNAR SEIREITEI Status',
 
                 value:
-                    'This Soul may communicate within THE Ⅹ SINS again.',
+                    'This Soul may communicate within LUNAR SEIREITEI again.',
 
                 inline:
                     false
@@ -227,10 +227,10 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
-                            'This Soul may communicate within THE Ⅹ SINS again.',
+                            'This Soul may communicate within LUNAR SEIREITEI again.',
 
                         inline:
                             false

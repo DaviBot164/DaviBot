@@ -82,8 +82,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -176,7 +176,7 @@ async function removeSingleWarning(
             embeds: [
                 createErrorEmbed(
                     '❌ Warning Record Not Found',
-                    `No warning with ID **#${warningId}** exists within THE Ⅹ SINS.`
+                    `No warning with ID **#${warningId}** exists within LUNAR SEIREITEI.`
                 )
             ]
         });
@@ -381,7 +381,7 @@ async function removeAllWarnings(
             embeds: [
                 createErrorEmbed(
                     '❌ No Warning Records Found',
-                    `${user.tag} has no warnings within THE Ⅹ SINS.`
+                    `${user.tag} has no warnings within LUNAR SEIREITEI.`
                 )
             ]
         });
@@ -404,7 +404,7 @@ async function removeAllWarnings(
                 [
                     `All warning records for ${user} were removed successfully.`,
                     '',
-                    '*Evelynn has cleared this Soul’s Guardian record within THE Ⅹ SINS.*'
+                    '*Evelynn has cleared this Soul’s Guardian record within LUNAR SEIREITEI.*'
                 ].join('\n'),
 
             thumbnail:
@@ -451,7 +451,7 @@ async function removeAllWarnings(
                 },
                 {
                     name:
-                        '🌙 THE Ⅹ SINS Status',
+                        '🌙 LUNAR SEIREITEI Status',
 
                     value:
                         '🟢 Warning record cleared',
@@ -496,7 +496,7 @@ async function removeAllWarnings(
             interaction.user,
 
         reason:
-            'All warning records were cleared by a THE Ⅹ SINS moderator.',
+            'All warning records were cleared by a LUNAR SEIREITEI moderator.',
 
         fields: [
             {
@@ -511,7 +511,7 @@ async function removeAllWarnings(
             },
             {
                 name:
-                    '🌙 THE Ⅹ SINS Status',
+                    '🌙 LUNAR SEIREITEI Status',
 
                 value:
                     '🟢 Warning record cleared',

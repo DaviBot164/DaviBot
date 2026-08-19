@@ -21,7 +21,7 @@ const {
 
 /**
  * Check whether a member can manage
- * THE Ⅹ SINS Rank system.
+ * LUNAR SEIREITEI Rank system.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -59,7 +59,7 @@ function canManageRanks(
 }
 
 /**
- * Get all configured Sin Rank roles.
+ * Get all configured Captain Rank roles.
  *
  * Dominion is included here because it is a
  * managed hierarchy role and must be removed
@@ -145,7 +145,7 @@ function getRemovedRankName(
         roles.first();
 
     if (!role) {
-        return 'Unknown Sin Rank';
+        return 'Unknown Captain Rank';
     }
 
     return (
@@ -176,11 +176,11 @@ function createRankRemovalEmbed({
 
     return createEmbed({
         title:
-            '⚔️ Sin Rank Removed',
+            '⚔️ Captain Rank Removed',
 
         description:
             [
-                `${member} no longer holds a manually assigned Sin Rank.`,
+                `${member} no longer holds a manually assigned Captain Rank.`,
                 '',
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
                 '',
@@ -284,7 +284,7 @@ function createRankRemovalEmbed({
 
         footer: {
             text:
-                'THE Ⅹ SINS • Rank Archive'
+                'LUNAR SEIREITEI • Rank Archive'
         }
     });
 }module.exports = {
@@ -297,7 +297,7 @@ function createRankRemovalEmbed({
                 'removerank'
             )
             .setDescription(
-                'Remove a Soul’s assigned Sin Rank.'
+                'Remove a Soul’s assigned Captain Rank.'
             )
 
             .addUserOption(
@@ -321,7 +321,7 @@ function createRankRemovalEmbed({
                             'reason'
                         )
                         .setDescription(
-                            'Reason for removing the Sin Rank.'
+                            'Reason for removing the Captain Rank.'
                         )
                         .setMinLength(
                             2
@@ -359,7 +359,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -384,7 +384,7 @@ function createRankRemovalEmbed({
                             '❌ High Command Required',
 
                             [
-                                'Only THE Ⅹ SINS High Command may remove Sin Ranks.',
+                                'Only LUNAR SEIREITEI High Command may remove Captain Ranks.',
                                 '',
                                 'Required standing:',
                                 '• 👑 Ruler',
@@ -417,7 +417,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside THE Ⅹ SINS.'
+                            'The selected Soul is not currently inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -435,7 +435,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Invalid Soul',
-                            'Sin Ranks cannot be removed from Discord bots.'
+                            'Captain Ranks cannot be removed from Discord bots.'
                         )
                     ],
 
@@ -456,7 +456,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Protected Soul',
-                            'Only the server owner may change the owner’s Sin Rank.'
+                            'Only the server owner may change the owner’s Captain Rank.'
                         )
                     ],
 
@@ -495,7 +495,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Manage Roles Required',
-                            'Evelynn needs **Manage Roles** to remove Sin Rank roles.'
+                            'Evelynn needs **Manage Roles** to remove Captain Rank roles.'
                         )
                     ],
 
@@ -526,7 +526,7 @@ function createRankRemovalEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ No Rank Assigned',
-                            `${member} does not currently have an assigned Sin Rank.`
+                            `${member} does not currently have an assigned Captain Rank.`
                         )
                     ],
 
@@ -559,7 +559,7 @@ function createRankRemovalEmbed({
                             [
                                 `Evelynn cannot remove ${unmanageableRole}.`,
                                 '',
-                                'Make sure Evelynn is above the Sin Rank roles and has **Manage Roles**.'
+                                'Make sure Evelynn is above the Captain Rank roles and has **Manage Roles**.'
                             ].join('\n')
                         )
                     ],
@@ -586,12 +586,12 @@ function createRankRemovalEmbed({
                 ) {
                     await member.roles.remove(
                         currentRankRoles,
-                        `Sin Rank removed by ${interaction.user.tag}: ${reason}`
+                        `Captain Rank removed by ${interaction.user.tag}: ${reason}`
                     );
                 }
             } catch (roleError) {
                 console.error(
-                    '❌ Sin Rank role removal failed:',
+                    '❌ Captain Rank role removal failed:',
                     roleError
                 );
 
@@ -601,9 +601,9 @@ function createRankRemovalEmbed({
                             '❌ Rank Removal Failed',
 
                             [
-                                'Evelynn could not remove the Discord Sin Rank role.',
+                                'Evelynn could not remove the Discord Captain Rank role.',
                                 '',
-                                'Check **Manage Roles** and make sure Evelynn is above the Sin Rank roles.'
+                                'Check **Manage Roles** and make sure Evelynn is above the Captain Rank roles.'
                             ].join('\n')
                         )
                     ]
@@ -630,7 +630,7 @@ function createRankRemovalEmbed({
                     });
             } catch (databaseError) {
                 console.error(
-                    '❌ Sin Rank archive failed:',
+                    '❌ Captain Rank archive failed:',
                     databaseError
                 );
 
@@ -644,12 +644,12 @@ function createRankRemovalEmbed({
                     await member.roles
                         .add(
                             currentRankRoles,
-                            'Sin Rank archive failed; restoring previous role.'
+                            'Captain Rank archive failed; restoring previous role.'
                         )
                         .catch(
                             restoreError =>
                                 console.error(
-                                    '❌ Sin Rank role restoration failed:',
+                                    '❌ Captain Rank role restoration failed:',
                                     restoreError
                                 )
                         );
@@ -736,14 +736,14 @@ function createRankRemovalEmbed({
                 });
             } catch (feedError) {
                 console.error(
-                    '⚠️ Sin Rank Feed publication failed:',
+                    '⚠️ Captain Rank Feed publication failed:',
                     feedError
                 );
             }
 
             console.log(
                 [
-                    '⚔️ Sin Rank removed:',
+                    '⚔️ Captain Rank removed:',
                     member.user.tag,
                     '→',
                     finalRemovedRank,
@@ -761,7 +761,7 @@ function createRankRemovalEmbed({
                     '❌ Rank Removal Failed',
 
                     [
-                        'Evelynn could not complete the Sin Rank removal.',
+                        'Evelynn could not complete the Captain Rank removal.',
                         '',
                         'Check the Rank configuration, database connection and Discord role hierarchy.'
                     ].join('\n')

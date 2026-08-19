@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 
 /**
- * Build the THE Ⅹ SINS Event creation modal.
+ * Build the LUNAR SEIREITEI Event creation modal.
  *
  * @param {string} userId
  * @returns {ModalBuilder}
@@ -32,7 +32,7 @@ function buildEventModal(
                 'Event Title'
             )
             .setPlaceholder(
-                'Example: THE Ⅹ SINS PvP Tournament'
+                'Example: LUNAR SEIREITEI PvP Tournament'
             )
             .setStyle(
                 TextInputStyle.Short
@@ -104,7 +104,7 @@ function buildEventModal(
                 'Event Reward'
             )
             .setPlaceholder(
-                'Example: THE Ⅹ SINS Champion role'
+                'Example: LUNAR SEIREITEI Champion role'
             )
             .setStyle(
                 TextInputStyle.Short

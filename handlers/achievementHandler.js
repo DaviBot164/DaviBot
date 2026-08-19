@@ -169,7 +169,7 @@ const MESSAGE_ACHIEVEMENT_RULES = [
 ];
 
 /**
- * TTS Achievement palette.
+ * Lunar Achievement palette.
  */
 const ACHIEVEMENT_CATEGORY_COLORS = {
     Activity:

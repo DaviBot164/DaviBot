@@ -25,7 +25,7 @@ const {
 } = require('../database');
 
 /*
- * Official TTS Events channel.
+ * Official Lunar Seireitei Events channel.
  *
  * Keep this ID stable unless the
  * Discord channel itself changes.
@@ -311,7 +311,7 @@ async function handleCreateModal(
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'TTS Events can only be created inside a server.'
+                    'Lunar Seireitei Events can only be created inside a server.'
                 )
             ],
 
@@ -601,7 +601,7 @@ async function handleEventButton(
             embeds: [
                 createErrorEmbed(
                     '❌ Server Only Action',
-                    'TTS Event controls can only be used inside a server.'
+                    'Lunar Seireitei Event controls can only be used inside a server.'
                 )
             ],
 

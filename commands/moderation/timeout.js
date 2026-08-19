@@ -158,7 +158,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'This Soul is not currently a member of THE Ⅹ SINS.'
+                            'This Soul is not currently a member of LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -306,10 +306,10 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 THE Ⅹ SINS Status',
+                        '🌙 LUNAR SEIREITEI Status',
 
                     value:
-                        'This Soul has temporarily lost the ability to communicate within THE Ⅹ SINS.',
+                        'This Soul has temporarily lost the ability to communicate within LUNAR SEIREITEI.',
 
                     inline:
                         false
@@ -361,10 +361,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
-                            'This Soul has temporarily lost the ability to communicate within THE Ⅹ SINS.',
+                            'This Soul has temporarily lost the ability to communicate within LUNAR SEIREITEI.',
 
                         inline:
                             false

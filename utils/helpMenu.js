@@ -80,7 +80,7 @@ const HELP_CATEGORIES = [
 
     {
         id: 'ranks',
-        label: 'Sin Ranks',
+        label: 'Captain Ranks',
         emoji: '⚔️',
         description:
             'The Ten Sins ranking system.',
@@ -149,7 +149,7 @@ const HELP_CATEGORIES = [
         label: 'Administration',
         emoji: '⚙️',
         description:
-            'THE Ⅹ SINS setup and configuration.',
+            'LUNAR SEIREITEI setup and configuration.',
 
         commands: [
             'setup',
@@ -258,7 +258,7 @@ function formatCommand(
 
         author: {
             name:
-                'Evelynn • THE Ⅹ SINS',
+                'Evelynn • LUNAR SEIREITEI',
 
             iconURL:
                 getBotAvatar(
@@ -268,7 +268,7 @@ function formatCommand(
 
         footer: {
             text:
-                `TTS • Opened by ${interaction.user.username}`,
+                `Lunar Seireitei • Opened by ${interaction.user.username}`,
 
             iconURL:
                 getBotAvatar(
@@ -335,7 +335,7 @@ function createHelpCategoryEmbed(
 
         footer: {
             text:
-                `TTS • Requested by ${interaction.user.username}`,
+                `Lunar Seireitei • Requested by ${interaction.user.username}`,
 
             iconURL:
                 getBotAvatar(

@@ -28,7 +28,7 @@ const {
 
 /**
  * Build the correct Embed for one
- * Rank Trial publication type.
+ * Captain Trial publication type.
  *
  * @param {string} publicationKey
  * @param {Object} schedule
@@ -68,13 +68,13 @@ function buildPublicationEmbed(
 
         default:
             throw new TypeError(
-                `Unknown Rank Trial publication key: ${publicationKey}`
+                `Unknown Captain Trial publication key: ${publicationKey}`
             );
     }
 }
 
 /**
- * Fetch the configured Rank Trials channel.
+ * Fetch the configured Captain Trials channel.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -103,7 +103,7 @@ async function fetchRankTrialChannel(
 
 /**
  * Check whether Evelynn has all required
- * permissions in the Rank Trials channel.
+ * permissions in the Captain Trials channel.
  *
  * @param {import('discord.js').Guild} guild
  * @param {import('discord.js').TextBasedChannel} channel
@@ -178,7 +178,7 @@ function getPublicationLabel(
             return 'Closing Notice';
 
         default:
-            return 'Unknown Rank Trial Publication';
+            return 'Unknown Captain Trial Publication';
     }
 }
 
@@ -275,7 +275,7 @@ async function synchronizeScheduledEventAfterPublication(
             );
 
             console.log(
-                '📅 Rank Trial Scheduled Event Ready'
+                '📅 Captain Trial Scheduled Event Ready'
             );
 
             console.log(
@@ -303,7 +303,7 @@ async function synchronizeScheduledEventAfterPublication(
             );
 
             console.warn(
-                '⚠️ Rank Trial announcement was published, but the Scheduled Event was not prepared.'
+                '⚠️ Captain Trial announcement was published, but the Scheduled Event was not prepared.'
             );
 
             console.warn(
@@ -345,7 +345,7 @@ async function synchronizeScheduledEventAfterPublication(
         );
 
         console.error(
-            '❌ Rank Trial Scheduled Event integration failed.'
+            '❌ Captain Trial Scheduled Event integration failed.'
         );
 
         console.error(
@@ -380,7 +380,7 @@ async function synchronizeScheduledEventAfterPublication(
         };
     }
 }/**
- * Publish one monthly Rank Trial announcement.
+ * Publish one monthly Captain Trial announcement.
  *
  * PostgreSQL reservation happens before the
  * Discord message is sent.
@@ -448,7 +448,7 @@ async function publishRankTrialAnnouncement(
                 'failed',
 
             reason:
-                'Rank Trials channel was not found.'
+                'Captain Trials channel was not found.'
         };
     }
 
@@ -516,7 +516,7 @@ async function publishRankTrialAnnouncement(
 
     if (!reservation) {
         console.log(
-            `ℹ️ Rank Trial ${publicationLabel} already exists for ${schedule.trialKey}.`
+            `ℹ️ Captain Trial ${publicationLabel} already exists for ${schedule.trialKey}.`
         );
 
         return {
@@ -613,7 +613,7 @@ async function publishRankTrialAnnouncement(
             !completedPublication
         ) {
             throw new Error(
-                'Rank Trial publication was sent, but PostgreSQL completion failed.'
+                'Captain Trial publication was sent, but PostgreSQL completion failed.'
             );
         }
 
@@ -629,7 +629,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.log(
-            '⚔️ Automatic Rank Trial Announcement Published'
+            '⚔️ Automatic Captain Trial Announcement Published'
         );
 
         console.log(
@@ -712,7 +712,7 @@ async function publishRankTrialAnnouncement(
             .catch(
                 releaseError => {
                     console.error(
-                        '⚠️ Failed to release Rank Trial publication reservation:',
+                        '⚠️ Failed to release Captain Trial publication reservation:',
                         releaseError
                     );
                 }
@@ -723,7 +723,7 @@ async function publishRankTrialAnnouncement(
         );
 
         console.error(
-            `❌ Rank Trial publication failed: ${publicationLabel}`
+            `❌ Captain Trial publication failed: ${publicationLabel}`
         );
 
         console.error(
@@ -756,7 +756,7 @@ async function publishRankTrialAnnouncement(
     }
 }/**
  * Republish one already-published monthly
- * Rank Trial announcement.
+ * Captain Trial announcement.
  *
  * This function intentionally does NOT create
  * or modify a PostgreSQL publication record.
@@ -820,7 +820,7 @@ async function republishRankTrialAnnouncement(
                 'failed',
 
             reason:
-                'Rank Trials channel was not found.'
+                'Captain Trials channel was not found.'
         };
     }
 
@@ -939,7 +939,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.log(
-            '🔄 Rank Trial Announcement Republished'
+            '🔄 Captain Trial Announcement Republished'
         );
 
         console.log(
@@ -991,7 +991,7 @@ async function republishRankTrialAnnouncement(
         );
 
         console.error(
-            '❌ Rank Trial announcement republish failed.'
+            '❌ Captain Trial announcement republish failed.'
         );
 
         console.error(
@@ -1026,7 +1026,7 @@ async function republishRankTrialAnnouncement(
 
 /**
  * Publish one announcement in every active
- * configured THE Ⅹ SINS guild.
+ * configured LUNAR SEIREITEI guild.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {Object} schedule

@@ -17,7 +17,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('avatar')
         .setDescription(
-            'View the avatar of a THE Ⅹ SINS member.'
+            'View the avatar of a LUNAR SEIREITEI member.'
         )
 
         .addUserOption(option =>
@@ -43,8 +43,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -85,7 +85,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of THE Ⅹ SINS.'
+                            'This user is not currently a member of LUNAR SEIREITEI.'
                         )
                     ]
                 });
@@ -121,7 +121,7 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🖼️ THE Ⅹ SINS Avatar',
+                        '🖼️ LUNAR SEIREITEI Avatar',
 
                     description:
                         `Avatar record for ${user}.`,
@@ -166,7 +166,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `Evelynn • Guardian of THE Ⅹ SINS • Requested by ${interaction.user.username}`,
+                    `Evelynn • Moon Spirit of Seireitei • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     interaction.client.user
@@ -237,7 +237,7 @@ module.exports = {
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Avatar Unavailable',
-                    'Evelynn could not retrieve this THE Ⅹ SINS avatar.'
+                    'Evelynn could not retrieve this LUNAR SEIREITEI avatar.'
                 );
 
             if (interaction.deferred) {

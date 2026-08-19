@@ -3,7 +3,7 @@ const {
 } = require('./connection');
 
 /**
- * Convert one Rank Trial publication row
+ * Convert one Captain Trial publication row
  * into the format used by Evelynn.
  *
  * @param {Object} row
@@ -58,7 +58,7 @@ function mapPublicationRow(
 
 /**
  * Build the permanent identifier used for
- * one monthly Rank Trial.
+ * one monthly Captain Trial.
  *
  * Example:
  *
@@ -93,7 +93,7 @@ function buildTrialKey(
         safeMonth > 12
     ) {
         throw new TypeError(
-            'Invalid Rank Trial year or month.'
+            'Invalid Captain Trial year or month.'
         );
     }
 
@@ -109,7 +109,7 @@ function buildTrialKey(
 }
 
 /**
- * Check whether one monthly Rank Trial
+ * Check whether one monthly Captain Trial
  * publication already exists.
  *
  * @param {string} guildId
@@ -146,7 +146,7 @@ async function hasPublication(
 }
 
 /**
- * Atomically reserve one Rank Trial
+ * Atomically reserve one Captain Trial
  * publication before sending it to Discord.
  *
  * This protects Evelynn from duplicate posts
@@ -286,7 +286,7 @@ async function releasePublication(
 }
 
 /**
- * Get one Rank Trial publication.
+ * Get one Captain Trial publication.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -329,7 +329,7 @@ async function getPublication(
 
 /**
  * Get all publication history for one
- * monthly Rank Trial.
+ * monthly Captain Trial.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -360,7 +360,7 @@ async function getTrialPublications(
 }
 
 /**
- * Get recent Rank Trial publication history.
+ * Get recent Captain Trial publication history.
  *
  * @param {string} guildId
  * @param {number} limit

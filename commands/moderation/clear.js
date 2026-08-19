@@ -55,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -106,7 +106,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only a THE Ⅹ SINS moderator with **Manage Messages** may use this command.'
+                            'Only a LUNAR SEIREITEI moderator with **Manage Messages** may use this command.'
                         )
                     ],
 
@@ -169,7 +169,7 @@ module.exports = {
                                     : 's'
                             } from ${interaction.channel}.`,
                             '',
-                            '*The channel has been cleansed beneath the moon of THE Ⅹ SINS.*'
+                            '*The channel has been cleansed beneath the moon of LUNAR SEIREITEI.*'
                         ].join('\n'),
 
                     fields: [
@@ -210,7 +210,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Evelynn • Guardian of THE Ⅹ SINS',
+                    'Evelynn • Moon Spirit of Seireitei',
 
                 iconURL:
                     interaction.client.user

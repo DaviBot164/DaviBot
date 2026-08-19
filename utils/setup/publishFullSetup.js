@@ -3,6 +3,9 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
 const {
     publishVerificationGuide
 } = require('./publishVerificationGuide');
@@ -27,8 +30,11 @@ const {
     publishTicketGuide
 } = require('./publishTicketGuide');
 
+const PUBLICATION_DELAY_MS =
+    750;
+
 /**
- * Wait between publications.
+ * Wait briefly between publications.
  *
  * @param {number} milliseconds
  * @returns {Promise<void>}
@@ -49,7 +55,7 @@ function wait(
 
 /**
  * Publish the complete
- * THE Ⅹ SINS setup.
+ * LUNAR SEIREITEI information system.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -61,16 +67,16 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    'Ⅹ Setup Started',
+                    '☾ Setup Started',
                     [
-                        'Evelynn is publishing the official server information.',
+                        `${brand.botName} is publishing the official **${brand.serverName}** information.`,
                         '',
                         '✦ Verification Guide',
-                        '📜 Code of Sins',
-                        '📖 Sin Codex',
+                        '📜 Sacred Laws',
+                        '📖 Soul Codex',
                         '♛ Role Hierarchy',
                         '❓ FAQ',
-                        '🎫 Support Guide'
+                        '🎫 Soul Sanctuary'
                     ].join('\n')
                 )
             ],
@@ -80,61 +86,48 @@ async function publishFullSetup(
         });
 
         console.log(
-            `Ⅹ Full setup started by ${interaction.user.tag}.`
+            `Full setup started by ${interaction.user.tag}.`
         );
 
-        await publishVerificationGuide(
-            interaction
-        );
+        const publications = [
+            publishVerificationGuide,
+            publishSacredLaws,
+            publishServerGuide,
+            publishRoleInformation,
+            publishFAQ,
+            publishTicketGuide
+        ];
 
-        await wait(
-            750
-        );
+        for (
+            const [
+                index,
+                publish
+            ] of publications.entries()
+        ) {
+            await publish(
+                interaction
+            );
 
-        await publishSacredLaws(
-            interaction
-        );
-
-        await wait(
-            750
-        );
-
-        await publishServerGuide(
-            interaction
-        );
-
-        await wait(
-            750
-        );
-
-        await publishRoleInformation(
-            interaction
-        );
-
-        await wait(
-            750
-        );
-
-        await publishFAQ(
-            interaction
-        );
-
-        await wait(
-            750
-        );
-
-        await publishTicketGuide(
-            interaction
-        );
+            if (
+                index <
+                publications.length - 1
+            ) {
+                await wait(
+                    PUBLICATION_DELAY_MS
+                );
+            }
+        }
 
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
                     '✅ Setup Complete',
                     [
-                        'All setup sections were published successfully.',
+                        'All information sections were published successfully.',
                         '',
-                        '**THE Ⅹ SINS information system is ready.**'
+                        `**${brand.serverName} is ready.**`,
+                        '',
+                        `-# ${brand.motto}`
                     ].join('\n')
                 )
             ],
@@ -144,11 +137,11 @@ async function publishFullSetup(
         });
 
         console.log(
-            `✅ Full setup completed by ${interaction.user.tag}.`
+            `Full setup completed by ${interaction.user.tag}.`
         );
     } catch (error) {
         console.error(
-            '❌ Evelynn full setup error:',
+            'Evelynn full setup error:',
             error
         );
 
@@ -157,10 +150,10 @@ async function publishFullSetup(
                 createErrorEmbed(
                     '❌ Setup Failed',
                     [
-                        'Evelynn could not complete the full setup.',
+                        `${brand.botName} could not complete the full setup.`,
                         '',
                         'Some sections may already have been published.',
-                        'Check channel IDs, permissions and logs.'
+                        'Check the configured channel IDs, permissions and bot logs.'
                     ].join('\n')
                 )
             ],
@@ -172,5 +165,6 @@ async function publishFullSetup(
 }
 
 module.exports = {
+    PUBLICATION_DELAY_MS,
     publishFullSetup
 };

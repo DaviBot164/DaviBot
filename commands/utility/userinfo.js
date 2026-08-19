@@ -61,7 +61,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -102,7 +102,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of THE Ⅹ SINS.'
+                            'This user is not currently a member of LUNAR SEIREITEI.'
                         )
                     ]
                 });
@@ -253,7 +253,7 @@ module.exports = {
                     ]
                 });            embed.setAuthor({
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    'Evelynn • LUNAR SEIREITEI',
 
                 iconURL:
                     botAvatar
@@ -261,7 +261,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `TTS • Requested by ${interaction.user.username}`,
+                    `Lunar Seireitei • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar

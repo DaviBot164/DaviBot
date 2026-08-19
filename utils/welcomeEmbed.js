@@ -2,6 +2,9 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
+const brand =
+    require('../config/brand');
+
 const channels =
     require('../config/channels');
 
@@ -9,10 +12,10 @@ const WELCOME_BANNER_NAME =
     'welcome-banner.png';
 
 const WELCOME_EMBED_COLOR =
-    '#C8A45D';
+    brand.themeColor;
 
 /**
- * Create the THE Ⅹ SINS
+ * Create the Lunar Seireitei
  * Welcome Embed.
  *
  * @param {import('discord.js').GuildMember} member
@@ -48,8 +51,8 @@ function createWelcomeEmbed(
 
     const verificationText =
         verifyChannel?.isTextBased()
-            ? `Verify in ${verifyChannel} to unlock the server.`
-            : 'Complete verification to unlock the server.';
+            ? `Verify in ${verifyChannel} to enter Soul Society as a **Soul Reaper**.`
+            : 'Complete verification to enter Soul Society as a **Soul Reaper**.';
 
     return new EmbedBuilder()
         .setColor(
@@ -58,7 +61,7 @@ function createWelcomeEmbed(
 
         .setAuthor({
             name:
-                'Evelynn • THE Ⅹ SINS',
+                `${brand.botName} • ${brand.serverName}`,
 
             iconURL:
                 botAvatar
@@ -66,9 +69,12 @@ function createWelcomeEmbed(
 
         .setDescription(
             [
-                `Welcome, ${member}.`,
+                `Welcome to **${brand.serverName}**, ${member}.`,
                 '',
-                verificationText
+                'You have arrived as a **Wandering Soul**.',
+                verificationText,
+                '',
+                `*${brand.motto}*`
             ].join('\n')
         )
 
@@ -82,7 +88,7 @@ function createWelcomeEmbed(
 
         .setFooter({
             text:
-                'THE Ⅹ SINS • Welcome'
+                `${brand.serverName} • Welcome`
         })
 
         .setTimestamp();

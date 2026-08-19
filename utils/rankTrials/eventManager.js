@@ -83,7 +83,7 @@ function limitText(
 }
 
 /**
- * Convert a Rank Trial month number into
+ * Convert a Captain Trial month number into
  * its English month name.
  *
  * @param {number} month
@@ -120,7 +120,7 @@ function getMonthName(
  *
  * Example:
  *
- * ⚔️ Monthly Rank Trials — August 2026
+ * ⚔️ Monthly Captain Trials — August 2026
  *
  * @param {Object} schedule
  * @returns {string}
@@ -175,11 +175,11 @@ function buildRankTrialEventDescription(
 ) {
     const rawDescription =
         [
-            '⚔️ Monthly Rank Trials',
+            '⚔️ Monthly Captain Trials',
             '',
-            'The Monthly Rank Trials are now open.',
+            'Registration for the Monthly Captain Trials is now open.',
             '',
-            'If you wish to earn a higher Sin Rank, this is your opportunity to prove yourself.',
+            'Challenge for a numbered Captain Rank and prove your place beneath the eternal moon.',
             '',
             'Promotion is based on:',
             '',
@@ -187,11 +187,11 @@ function buildRankTrialEventDescription(
             '• Activity',
             '• Behavior',
             '• Loyalty',
-            '• Contribution to the Server',
+            '• Contribution to the Community',
             '',
             'Winning battles alone does not guarantee a promotion.',
             '',
-            'The final decision will always be made by THE Ⅹ SINS Leadership.',
+            'The final decision will always be made by LUNAR SEIREITEI High Command.',
             '',
             'Good luck to everyone participating.'
         ].join('\n');
@@ -261,7 +261,7 @@ function buildRankTrialEventEnd(
 
 /**
  * Build all expected Discord Event data
- * from one monthly Rank Trial schedule.
+ * from one monthly Captain Trial schedule.
  *
  * @param {Object} schedule
  * @returns {{
@@ -389,7 +389,7 @@ function getScheduledEventPermissions(
  * Build the options accepted by
  * GuildScheduledEventManager#create.
  *
- * Rank Trials use an External Event so no
+ * Captain Trials use an External Event so no
  * voice or stage channel is required.
  *
  * @param {Object} expectedEvent
@@ -425,7 +425,7 @@ function buildDiscordEventCreateOptions(
         },
 
         reason:
-            `Evelynn Monthly Rank Trials Event Manager • ${expectedEvent.trialKey}`
+            `Evelynn Monthly Captain Trials Event Manager • ${expectedEvent.trialKey}`
     };
 }
 
@@ -619,7 +619,7 @@ async function createRankTrialScheduledEvent(
                 'disabled',
 
             reason:
-                'Rank Trial Scheduled Events are disabled.'
+                'Captain Trial Scheduled Events are disabled.'
         };
     }
 
@@ -821,7 +821,7 @@ async function createRankTrialScheduledEvent(
         );
 
         console.log(
-            '📅 Rank Trial Discord Event Created'
+            '📅 Captain Trial Discord Event Created'
         );
 
         console.log(
@@ -866,7 +866,7 @@ async function createRankTrialScheduledEvent(
             .catch(
                 releaseError => {
                     console.error(
-                        '❌ Failed to release Rank Trial Event reservation:'
+                        '❌ Failed to release Captain Trial Event reservation:'
                     );
 
                     console.error(
@@ -876,7 +876,7 @@ async function createRankTrialScheduledEvent(
             );
 
         console.error(
-            '❌ Rank Trial Discord Event creation failed:'
+            '❌ Captain Trial Discord Event creation failed:'
         );
 
         console.error(
@@ -926,7 +926,7 @@ function buildDiscordEventEditOptions(
         },
 
         reason:
-            `Evelynn Monthly Rank Trials synchronization • ${expectedEvent.trialKey}`
+            `Evelynn Monthly Captain Trials synchronization • ${expectedEvent.trialKey}`
     };
 }
 
@@ -1029,7 +1029,7 @@ async function saveDiscordEventState(
                 )
         });
 }/**
- * Synchronize the monthly Rank Trial Event
+ * Synchronize the monthly Captain Trial Event
  * between PostgreSQL and Discord.
  *
  * Behavior:
@@ -1074,7 +1074,7 @@ async function synchronizeRankTrialScheduledEvent(
                 'disabled',
 
             reason:
-                'Rank Trial Scheduled Events are disabled.'
+                'Captain Trial Scheduled Events are disabled.'
         };
     }
 
@@ -1237,7 +1237,7 @@ async function synchronizeRankTrialScheduledEvent(
             );
 
             console.log(
-                '🔄 Rank Trial Discord Event Updated'
+                '🔄 Captain Trial Discord Event Updated'
             );
 
             console.log(
@@ -1276,7 +1276,7 @@ async function synchronizeRankTrialScheduledEvent(
         );
 
         console.error(
-            '❌ Rank Trial Event synchronization failed.'
+            '❌ Captain Trial Event synchronization failed.'
         );
 
         console.error(
@@ -1357,7 +1357,7 @@ async function countRankTrialEventSubscribers(
 }
 
 /**
- * Load the current Rank Trial Event state.
+ * Load the current Captain Trial Event state.
  *
  * @param {import('discord.js').Guild} guild
  * @param {Object} schedule
@@ -1466,7 +1466,7 @@ async function refreshRankTrialEventStatus(
 }
 
 /**
- * Synchronize Rank Trial Events
+ * Synchronize Captain Trial Events
  * for multiple guilds.
  *
  * @param {import('discord.js').Client<true>} client

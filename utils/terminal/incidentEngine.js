@@ -1127,7 +1127,7 @@ const UMBRA_SERVICES = {
             'rank_trials',
 
         name:
-            'Rank Trials'
+            'Captain Trials'
     },
 
     TICKET_SYSTEM: {
@@ -1183,7 +1183,7 @@ const UMBRA_SERVICES = {
             'sin_ranks',
 
         name:
-            'Sin Ranks'
+            'Captain Ranks'
     },
 
     EVENTS: {

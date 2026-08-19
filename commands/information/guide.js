@@ -83,9 +83,9 @@ const PAGE_DETAILS = {
 
     [GUIDE_PAGES.ranks]: {
         emoji: '⚔️',
-        label: 'Sin Ranks',
+        label: 'Captain Ranks',
         description:
-            'Sin hierarchy and Rank management'
+            'Captain hierarchy and Rank management'
     },
 
     [GUIDE_PAGES.titles]: {
@@ -106,7 +106,7 @@ const PAGE_DETAILS = {
         emoji: 'Ⅹ',
         label: 'Server',
         description:
-            'THE Ⅹ SINS server records'
+            'LUNAR SEIREITEI server records'
     },
 
     [GUIDE_PAGES.support]: {
@@ -256,26 +256,26 @@ const COMMAND_GUIDE = [
         ACCESS.moderator
     ],
 
-    // Sin Ranks
+    // Captain Ranks
     [
         'setrank',
         GUIDE_PAGES.ranks,
         '/setrank user rank reason',
-        'Assign or replace a Sin Rank.',
+        'Assign or replace a Captain Rank.',
         ACCESS.highCommand
     ],
     [
         'removerank',
         GUIDE_PAGES.ranks,
         '/removerank user reason',
-        'Remove a member’s Sin Rank.',
+        'Remove a member’s Captain Rank.',
         ACCESS.highCommand
     ],
     [
         'rankhistory',
         GUIDE_PAGES.ranks,
         '/rankhistory [user] [limit]',
-        'View recorded Sin Rank history.',
+        'View recorded Captain Rank history.',
         ACCESS.everyone
     ],
 
@@ -335,7 +335,7 @@ const COMMAND_GUIDE = [
         'leaderboard',
         GUIDE_PAGES.progression,
         '/leaderboard',
-        'Open THE Ⅹ SINS leaderboards.',
+        'Open LUNAR SEIREITEI leaderboards.',
         ACCESS.everyone
     ],
 
@@ -406,7 +406,7 @@ const COMMAND_GUIDE = [
         'setuprules',
         GUIDE_PAGES.administration,
         '/setuprules',
-        'Publish the Code of Sins.',
+        'Publish the Sacred Laws.',
         ACCESS.administrator
     ],
     [
@@ -464,7 +464,7 @@ const COMMAND_GUIDE = [
         'serverinfo',
         GUIDE_PAGES.information,
         '/serverinfo',
-        'View THE Ⅹ SINS server information.',
+        'View LUNAR SEIREITEI server information.',
         ACCESS.everyone
     ]
 );
@@ -584,7 +584,7 @@ function buildSinHierarchyText() {
                 ) {
                     return (
                         `◇ **${rank.name}** — ` +
-                        'No assigned Sin Rank'
+                        'No assigned Captain Rank'
                     );
                 }
 
@@ -594,7 +594,7 @@ function buildSinHierarchyText() {
                 ) {
                     return [
                         `**${rank.name}**`,
-                        '-# Special authority above the standard Sin hierarchy'
+                        '-# Special authority above the standard Captain hierarchy'
                     ].join('\n');
                 }
 
@@ -626,7 +626,7 @@ function createGuideEmbed(
 
         author: {
             name:
-                'Evelynn • THE Ⅹ SINS',
+                'Evelynn • LUNAR SEIREITEI',
 
             iconURL:
                 botAvatar
@@ -634,7 +634,7 @@ function createGuideEmbed(
 
         footer: {
             text:
-                'THE Ⅹ SINS • Command Guide',
+                'LUNAR SEIREITEI • Command Guide',
 
             iconURL:
                 botAvatar
@@ -733,7 +733,7 @@ function buildOverviewPage(interaction) {
             [
                 `Welcome, ${interaction.user}.`,
                 '',
-                'Explore THE Ⅹ SINS commands using the menu below.',
+                'Explore LUNAR SEIREITEI commands using the menu below.',
                 '',
                 `**Loaded Commands:** \`${
                     interaction.client.commands
@@ -794,9 +794,9 @@ function buildRankPage(interaction) {
     const embed =
         createGuideEmbed(
             interaction,
-            '⚔️・SIN RANKS',
+            '⚔️・CAPTAIN RANKS',
             [
-                'The official Sin Rank hierarchy of THE Ⅹ SINS.',
+                'The official Captain Rank hierarchy of LUNAR SEIREITEI.',
                 '',
                 buildSinHierarchyText()
             ].join('\n')
@@ -939,7 +939,7 @@ module.exports = {
                 await sendGuideError(
                     interaction,
                     '❌ Server Only Command',
-                    'The Command Guide can only be opened inside THE Ⅹ SINS.'
+                    'The Command Guide can only be opened inside LUNAR SEIREITEI.'
                 );
 
                 return;

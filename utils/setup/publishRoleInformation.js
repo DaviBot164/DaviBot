@@ -231,7 +231,6 @@ async function publishRoleInformation(
                             '**☾・SOUL ASCENDANT**',
                             '**◇・SOUL AWAKENED**',
                             '**✧・SOULBOUND**',
-                            '**◆・SOUL INITIATE**',
                             '',
                             '-# Progression reflects activity and advancement.'
                         ].join('\n'),

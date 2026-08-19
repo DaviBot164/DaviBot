@@ -4,7 +4,7 @@ const {
 
 /**
  * Create the PostgreSQL table and indexes
- * required by the Rank Trials Scheduled
+ * required by the Captain Trials Scheduled
  * Event Manager.
  *
  * This schema remains separate from the
@@ -16,11 +16,11 @@ const {
 async function initializeRankTrialEventSchema() {
     /*
      * ======================================================
-     * Evelynn Rank Trials Discord Event Manager
+     * Evelynn Captain Trials Discord Event Manager
      * ======================================================
      *
      * Stores one Discord Scheduled Event for
-     * each monthly Rank Trial cycle.
+     * each monthly Captain Trial cycle.
      *
      * The unique guild/trial constraint prevents
      * duplicate Discord Events after restart,
@@ -92,7 +92,7 @@ async function initializeRankTrialEventSchema() {
 
     /*
      * A Discord Scheduled Event ID must belong
-     * to only one Rank Trial record.
+     * to only one Captain Trial record.
      *
      * Rows may temporarily have no Event ID
      * while creation is being reserved.
@@ -106,7 +106,7 @@ async function initializeRankTrialEventSchema() {
     `);
 
     /*
-     * Quickly loads one monthly Rank Trial Event.
+     * Quickly loads one monthly Captain Trial Event.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_events_cycle_index
@@ -118,7 +118,7 @@ async function initializeRankTrialEventSchema() {
 
     /*
      * Used when loading current Scheduled
-     * or Active Rank Trial Events.
+     * or Active Captain Trial Events.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_events_guild_status_index

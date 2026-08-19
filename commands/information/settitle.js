@@ -33,7 +33,7 @@ const CATEGORY_CHOICES = [
         value: TITLE_CATEGORIES.ACHIEVEMENT
     },
     {
-        name: '⚔️ Sin Ranks',
+        name: '⚔️ Captain Ranks',
         value: TITLE_CATEGORIES.SIN_RANK
     },
     {
@@ -208,7 +208,7 @@ function createSelectionEmbed(
 
         footer: {
             text:
-                `THE Ⅹ SINS • Titles • Requested by ${interaction.user.username}`,
+                `LUNAR SEIREITEI • Titles • Requested by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -298,7 +298,7 @@ function createActivatedEmbed(
         )
         .setFooter({
             text:
-                `THE Ⅹ SINS • Titles • Activated by ${interaction.user.username}`,
+                `LUNAR SEIREITEI • Titles • Activated by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -367,8 +367,8 @@ module.exports = {
             if (!interaction.inGuild()) {
                 await sendError(
                     interaction,
-                    '❌ THE Ⅹ SINS Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    '❌ LUNAR SEIREITEI Only Command',
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -569,7 +569,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ THE Ⅹ SINS /settitle command error:',
+                '❌ LUNAR SEIREITEI /settitle command error:',
                 error
             );
 

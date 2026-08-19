@@ -12,22 +12,29 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-const SETUP_COLOR =
-    '#B026FF';
+const brand =
+    require('../../config/brand');
 
+const SETUP_COLOR =
+    brand.themeColor;
+
+/**
+ * Keep this ID stable because the
+ * interaction router depends on it.
+ */
 const SETUP_MENU_ID =
     'umbra:setup:select';
 
-const SETUP_OPTIONS = [
+const SETUP_OPTIONS = Object.freeze([
     {
         label:
             'Verification Guide',
 
         description:
-            'Publish verification instructions',
+            'Publish the Soul Reaper verification guide',
 
         emoji:
-            '🔐',
+            '✦',
 
         value:
             'verification-guide'
@@ -35,10 +42,10 @@ const SETUP_OPTIONS = [
 
     {
         label:
-            'Code of Sins',
+            'Sacred Laws',
 
         description:
-            'Publish the server rules',
+            'Publish the official server rules',
 
         emoji:
             '📜',
@@ -49,10 +56,10 @@ const SETUP_OPTIONS = [
 
     {
         label:
-            'Sin Codex',
+            'Soul Codex',
 
         description:
-            'Publish the server guide',
+            'Publish the complete server guide',
 
         emoji:
             '📖',
@@ -66,10 +73,10 @@ const SETUP_OPTIONS = [
             'Role Hierarchy',
 
         description:
-            'Publish roles and hierarchy',
+            'Publish command, captain and soul roles',
 
         emoji:
-            '👑',
+            '♛',
 
         value:
             'role-information'
@@ -91,10 +98,10 @@ const SETUP_OPTIONS = [
 
     {
         label:
-            'Support Guide',
+            'Soul Sanctuary',
 
         description:
-            'Publish ticket instructions',
+            'Publish private support instructions',
 
         emoji:
             '🎫',
@@ -108,15 +115,15 @@ const SETUP_OPTIONS = [
             'Full Setup',
 
         description:
-            'Publish every setup module',
+            'Publish every information module',
 
         emoji:
-            '⚙️',
+            '☾',
 
         value:
             'full-setup'
     }
-];
+]);
 
 function buildSetupMenu() {
     return new StringSelectMenuBuilder()
@@ -124,7 +131,7 @@ function buildSetupMenu() {
             SETUP_MENU_ID
         )
         .setPlaceholder(
-            'Choose a setup module...'
+            'Choose an information module...'
         )
         .addOptions(
             SETUP_OPTIONS.map(
@@ -146,8 +153,10 @@ function buildSetupMenu() {
         );
 }
 
-function buildSetupEmbed(interaction) {
-    const avatar =
+function buildSetupEmbed(
+    interaction
+) {
+    const botAvatar =
         interaction.client.user
             .displayAvatarURL({
                 size:
@@ -157,41 +166,52 @@ function buildSetupEmbed(interaction) {
                     false
             });
 
+    const guildIcon =
+        interaction.guild.iconURL({
+            size:
+                512,
+
+            forceStatic:
+                false
+        }) ??
+        botAvatar;
+
     const modules =
         SETUP_OPTIONS.map(
             option =>
-                `${option.emoji} ${option.label}`
+                `${option.emoji} **${option.label}**`
         );
 
     return createEmbed({
         title:
-            'Ⅹ・SETUP',
+            '☾・SEIREITEI SETUP',
 
-        description: [
-            `Welcome, ${interaction.user}.`,
-            '',
-            'Choose what Evelynn should publish.',
-            '',
-            ...modules
-        ].join('\n'),
+        description:
+            [
+                `Welcome, ${interaction.user}.`,
+                '',
+                `Choose what ${brand.botName} should publish in **${brand.serverName}**.`,
+                '',
+                ...modules
+            ].join('\n'),
 
         color:
             SETUP_COLOR,
 
         thumbnail:
-            avatar,
+            guildIcon,
 
         author: {
             name:
-                'Evelynn • THE Ⅹ SINS',
+                `${brand.botName} • ${brand.botTitle}`,
 
             iconURL:
-                avatar
+                botAvatar
         },
 
         footer: {
             text:
-                'THE Ⅹ SINS • Setup'
+                `${brand.serverName} • Setup Center`
         }
     });
 }
@@ -258,7 +278,7 @@ module.exports = {
                 'setup'
             )
             .setDescription(
-                'Open the server setup menu.'
+                'Open the LUNAR SEIREITEI setup center.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.Administrator
@@ -267,7 +287,9 @@ module.exports = {
                 false
             ),
 
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         try {
             if (
                 !interaction.inGuild()
@@ -275,7 +297,7 @@ module.exports = {
                 return sendSetupError(
                     interaction,
                     '❌ Server Only Command',
-                    'The Setup Menu can only be opened inside THE Ⅹ SINS.'
+                    'The Setup Center can only be opened inside a server.'
                 );
             }
 
@@ -288,7 +310,7 @@ module.exports = {
                 return sendSetupError(
                     interaction,
                     '❌ Permission Denied',
-                    'Only Administrators can use the Setup Menu.'
+                    'Only Administrators can use the Setup Center.'
                 );
             }
 
@@ -311,14 +333,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn /setup failed:',
+                'Evelynn /setup failed:',
                 error
             );
 
             await sendSetupError(
                 interaction,
                 '❌ Setup Unavailable',
-                'Evelynn could not open the Setup Menu.'
+                `${brand.botName} could not open the Setup Center.`
             );
         }
     }

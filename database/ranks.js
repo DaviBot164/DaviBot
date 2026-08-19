@@ -6,7 +6,7 @@ const rankConfig =
     require('../config/ranks');
 
 /**
- * Official THE Ⅹ SINS ranks.
+ * Official LUNAR SEIREITEI ranks.
  *
  * Rank IDs and names are taken from
  * the central rank configuration.
@@ -53,7 +53,7 @@ function isValidRank(
 
 /**
  * Get the current manually assigned
- * Sin Rank of a Soul.
+ * Captain Rank of a Soul.
  *
  * @param {string} guildId
  * @param {string} userId
@@ -93,7 +93,7 @@ async function getCurrentRank(
 
 /**
  * Assign or replace a Soul's
- * current Sin Rank.
+ * current Captain Rank.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -116,7 +116,7 @@ async function setRank({
         )
     ) {
         throw new Error(
-            `Invalid Sin Rank: ${rankName}`
+            `Invalid Captain Rank: ${rankName}`
         );
     }
 
@@ -263,7 +263,7 @@ async function setRank({
         0
     ) {
         throw new Error(
-            'The Sin Rank could not be saved.'
+            'The Captain Rank could not be saved.'
         );
     }
 
@@ -271,7 +271,7 @@ async function setRank({
 }
 
 /**
- * Remove the current Sin Rank.
+ * Remove the current Captain Rank.
  *
  * The removed rank is preserved in history.
  *
@@ -410,7 +410,7 @@ async function getRankHistory(
 }
 
 /**
- * Get all current Sin Ranks in a server.
+ * Get all current Captain Ranks in a server.
  *
  * @param {string} guildId
  * @returns {Promise<Array>}
@@ -444,7 +444,7 @@ async function getGuildRanks(
 
 /**
  * Find members currently holding
- * a specific Sin Rank.
+ * a specific Captain Rank.
  *
  * @param {string} guildId
  * @param {string} rankName

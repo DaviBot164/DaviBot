@@ -62,7 +62,7 @@ const PAGE_DETAILS = {
         emoji: '🏛️',
         label: 'Overview',
         description:
-            'Central status of THE Ⅹ SINS'
+            'Central status of LUNAR SEIREITEI'
     },
 
     [DASHBOARD_PAGES.command]: {
@@ -88,9 +88,9 @@ const PAGE_DETAILS = {
 
     [DASHBOARD_PAGES.ranks]: {
         emoji: '⚔️',
-        label: 'Sin Ranks',
+        label: 'Captain Ranks',
         description:
-            'Sin Rank occupancy and hierarchy'
+            'Captain Rank occupancy and hierarchy'
     },
 
     [DASHBOARD_PAGES.collection]: {
@@ -358,7 +358,7 @@ function createDashboardEmbed({
 
         footer: {
             text:
-                `Evelynn • THE Ⅹ SINS • ${interaction.user.username}`,
+                `Evelynn • LUNAR SEIREITEI • ${interaction.user.username}`,
 
             iconURL:
                 botAvatar
@@ -619,7 +619,7 @@ function buildOverviewPage({
             interaction,
 
             title:
-                '🏛️ THE Ⅹ SINS Dashboard',
+                '🏛️ LUNAR SEIREITEI Dashboard',
 
             description:
                 'Central server, progression and hierarchy overview.',
@@ -706,7 +706,7 @@ function buildOverviewPage({
 
         {
             name:
-                '⚔️ Sin Rank Occupancy',
+                '⚔️ Captain Rank Occupancy',
 
             value: [
                 `\`${createProgressBar(
@@ -788,7 +788,7 @@ function buildOverviewPage({
             '`/leaderboard` — rankings',
             '`/rank` — progression rank',
             '`/titles` — Title collection',
-            '`/rankhistory` — Sin Rank history'
+            '`/rankhistory` — Captain Rank history'
         ].join('\n')
     });
 
@@ -809,7 +809,7 @@ function buildOverviewPage({
             interaction,
 
             title:
-                '👑 THE Ⅹ SINS High Command',
+                '👑 LUNAR SEIREITEI High Command',
 
             description:
                 'Leadership and staff structure.',
@@ -999,10 +999,10 @@ function buildPopulationPage({
             interaction,
 
             title:
-                '👥 THE Ⅹ SINS Population',
+                '👥 LUNAR SEIREITEI Population',
 
             description:
-                'Member records and Sin Rank distribution.',
+                'Member records and Captain Rank distribution.',
 
             color:
                 embedConfig.colors.support
@@ -1028,7 +1028,7 @@ function buildPopulationPage({
 
         {
             name:
-                '⚔️ Sin Rank Distribution',
+                '⚔️ Captain Rank Distribution',
 
             value:
                 rankLines
@@ -1041,7 +1041,7 @@ function buildPopulationPage({
                 '📊 Population Summary',
 
             value: [
-                `**Sin Rank Holders:** \`${formatNumber(rankStatus.uniqueHolders)}\``,
+                `**Captain Rank Holders:** \`${formatNumber(rankStatus.uniqueHolders)}\``,
                 `**High Command Members:** \`${formatNumber(countHighCommandMembers(guild))}\``,
                 `**Occupied Ranks:** \`${formatNumber(rankStatus.occupied)}\``,
                 `**Vacant Ranks:** \`${formatNumber(rankStatus.vacant)}\``,
@@ -1054,7 +1054,7 @@ function buildPopulationPage({
                 '📖 Notes',
 
             value: [
-                'Sin Ranks are manually assigned positions.',
+                'Captain Ranks are manually assigned positions.',
                 'High Command roles are counted separately.',
                 '',
                 '-# Members may appear in more than one administrative group.'
@@ -1116,7 +1116,7 @@ function buildProgressionPage({
             interaction,
 
             title:
-                '📈 THE Ⅹ SINS Progression',
+                '📈 LUNAR SEIREITEI Progression',
 
             description:
                 'Levels, XP and message activity.',
@@ -1268,10 +1268,10 @@ function buildProgressionPage({
             interaction,
 
             title:
-                '⚔️ THE Ⅹ SINS — Sin Ranks',
+                '⚔️ LUNAR SEIREITEI — Captain Ranks',
 
             description:
-                'Current manually assigned Sin Rank hierarchy.',
+                'Current manually assigned Captain Rank hierarchy.',
 
             color:
                 embedConfig.colors.rank
@@ -1279,7 +1279,7 @@ function buildProgressionPage({
 
     embed.addFields({
         name:
-            '📊 Sin Rank Overview',
+            '📊 Captain Rank Overview',
 
         value: [
             `**Configured Ranks:** \`${formatNumber(SIN_RANKS.length)}\``,
@@ -1334,7 +1334,7 @@ function buildProgressionPage({
                     `**${
                         record.rankName ??
                         record.rank ??
-                        'Sin Rank'
+                        'Captain Rank'
                     }**`,
                     record.assignedAt
                         ? formatDiscordDate(
@@ -1349,7 +1349,7 @@ function buildProgressionPage({
 
         embed.addFields({
             name:
-                '📜 Recent Sin Rank Activity',
+                '📜 Recent Captain Rank Activity',
 
             value:
                 lines
@@ -1360,11 +1360,11 @@ function buildProgressionPage({
 
     embed.addFields({
         name:
-            '📖 Sin Rank Rules',
+            '📖 Captain Rank Rules',
 
         value: [
-            'Sin Ranks are manually assigned through the Rank system.',
-            'A member should hold only their intended Sin Rank.',
+            'Captain Ranks are manually assigned through the Rank system.',
+            'A member should hold only their intended Captain Rank.',
             '',
             '-# Rank definitions are loaded from `config/ranks.js`.'
         ].join('\n')
@@ -1414,7 +1414,7 @@ function buildCollectionPage({
                 '🏆 Achievements & Titles',
 
             description:
-                'Achievement and Title records across THE Ⅹ SINS.',
+                'Achievement and Title records across LUNAR SEIREITEI.',
 
             color:
                 embedConfig.colors.gold
@@ -1548,7 +1548,7 @@ function buildActivityPage({
                 '📊 Recent Server Activity',
 
             description:
-                'Recent progression, Achievement, Title and Sin Rank activity.',
+                'Recent progression, Achievement, Title and Captain Rank activity.',
 
             color:
                 embedConfig.colors.primary
@@ -1644,7 +1644,7 @@ function buildActivityPage({
                 } received **${
                     record.rankName ??
                     record.rank ??
-                    'Sin Rank'
+                    'Captain Rank'
                 }** ${
                     formatDiscordDate(
                         record.assignedAt,
@@ -1686,12 +1686,12 @@ function buildActivityPage({
 
         {
             name:
-                '⚔️ Recent Sin Ranks',
+                '⚔️ Recent Captain Ranks',
 
             value:
                 rankLines.length
                     ? rankLines.join('\n')
-                    : 'No recent Sin Rank activity.'
+                    : 'No recent Captain Rank activity.'
         }
     );
 }function buildDashboardPage(
@@ -1812,7 +1812,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('dashboard')
             .setDescription(
-                'Open THE Ⅹ SINS Server Dashboard.'
+                'Open LUNAR SEIREITEI Server Dashboard.'
             )
             .setDMPermission(false),
 
@@ -1821,8 +1821,8 @@ module.exports = {
             if (!interaction.inGuild()) {
                 await sendDashboardError(
                     interaction,
-                    '❌ THE Ⅹ SINS Only Command',
-                    'The Server Dashboard can only be opened inside THE Ⅹ SINS.'
+                    '❌ LUNAR SEIREITEI Only Command',
+                    'The Server Dashboard can only be opened inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -2015,7 +2015,7 @@ module.exports = {
             await sendDashboardError(
                 interaction,
                 '❌ Server Dashboard Unavailable',
-                'Evelynn could not open THE Ⅹ SINS Server Dashboard.'
+                'Evelynn could not open LUNAR SEIREITEI Server Dashboard.'
             );
         }
     }

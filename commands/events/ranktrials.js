@@ -433,7 +433,7 @@ function addAnnouncementOption(
     new SlashCommandBuilder()
         .setName('ranktrials')
         .setDescription(
-            'Manage the monthly TTS Rank Trials system.'
+            'Manage the monthly Captain Trials system.'
         )
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
@@ -444,7 +444,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('status')
                 .setDescription(
-                    'View the current Rank Trial schedule and system status.'
+                    'View the current Captain Trial schedule and system status.'
                 )
         )
 
@@ -452,7 +452,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('registration')
                 .setDescription(
-                    'Open the current Rank Trial registration panel.'
+                    'Open the current Captain Trial registration panel.'
                 )
         )
 
@@ -460,7 +460,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('testregistration')
                 .setDescription(
-                    'Open the Rank Trial registration test panel.'
+                    'Open the Captain Trial registration test panel.'
                 )
         )
 
@@ -468,7 +468,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('review')
                 .setDescription(
-                    'Review one Rank Trial participant.'
+                    'Review one Captain Trial participant.'
                 )
                 .addUserOption(option =>
                     option
@@ -485,7 +485,7 @@ function addAnnouncementOption(
                 subcommand
                     .setName('preview')
                     .setDescription(
-                        'Preview a Rank Trial announcement.'
+                        'Preview a Captain Trial announcement.'
                     ),
                 'Select the announcement to preview'
             )
@@ -496,7 +496,7 @@ function addAnnouncementOption(
                 subcommand
                     .setName('publish')
                     .setDescription(
-                        'Manually publish a Rank Trial announcement.'
+                        'Manually publish a Captain Trial announcement.'
                     ),
                 'Select the announcement to publish'
             )
@@ -514,7 +514,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('history')
                 .setDescription(
-                    'View recent Rank Trial publication history.'
+                    'View recent Captain Trial publication history.'
                 )
                 .addIntegerOption(option =>
                     option
@@ -531,7 +531,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('event')
                 .setDescription(
-                    'View the current Rank Trial Discord Event.'
+                    'View the current Captain Trial Discord Event.'
                 )
         )
 
@@ -539,7 +539,7 @@ function addAnnouncementOption(
             subcommand
                 .setName('sync')
                 .setDescription(
-                    'Create or synchronize the Rank Trial Discord Event.'
+                    'Create or synchronize the Captain Trial Discord Event.'
                 )
         );async function handleStatus(interaction) {
     await interaction.deferReply({
@@ -596,11 +596,11 @@ function addAnnouncementOption(
             interaction,
             createEmbed({
                 title:
-                    '⚔️ Monthly Rank Trials Status',
+                    '⚔️ Monthly Captain Trials Status',
 
                 description:
                     [
-                        'Evelynn Rank Trials System',
+                        'Evelynn Captain Trials System',
                         '',
                         `**System:** \`${rankTrialConfig.enabled ? 'ENABLED' : 'DISABLED'}\``,
                         `**Scheduler:** \`${isRankTrialSchedulerRunning() ? 'RUNNING' : 'STOPPED'}\``,
@@ -636,7 +636,7 @@ function addAnnouncementOption(
                         interaction
                     )
             }),
-            'Evelynn • Rank Trials Control'
+            'Evelynn • Captain Trials Control'
         );
 
     await interaction.editReply({
@@ -695,7 +695,7 @@ async function handleRegistration(
     const embed =
         createEmbed({
             title:
-                '⚔️ Rank Trial Registration',
+                '⚔️ Captain Trial Registration',
 
             description:
                 [
@@ -756,7 +756,7 @@ async function handleTestRegistration(
         embeds: [
             createEmbed({
                 title:
-                    '🧪 Rank Trial Runtime Test',
+                    '🧪 Captain Trial Runtime Test',
 
                 description:
                     [
@@ -811,7 +811,7 @@ async function handleReview(interaction) {
             interaction,
             '❌ Participant Not Found',
             [
-                `${targetUser} has no participant record for this Rank Trial.`,
+                `${targetUser} has no participant record for this Captain Trial.`,
                 `**Cycle:** \`${schedule.trialKey}\``
             ].join('\n')
         );
@@ -837,7 +837,7 @@ async function handleReview(interaction) {
         embeds: [
             createEmbed({
                 title:
-                    '🔎 Rank Trial Staff Review',
+                    '🔎 Captain Trial Staff Review',
 
                 description:
                     `**Cycle:** \`${schedule.trialKey}\``,
@@ -1025,7 +1025,7 @@ async function handlePublish(
             interaction,
             '❌ Publication Failed',
             result.reason ??
-                'Evelynn could not publish this Rank Trial announcement.'
+                'Evelynn could not publish this Captain Trial announcement.'
         );
     }
 
@@ -1077,7 +1077,7 @@ async function handlePublish(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Rank Trial Announcement Published',
+                '✅ Captain Trial Announcement Published',
                 lines.join('\n')
             )
         ],
@@ -1132,11 +1132,11 @@ async function handleCheck(
         embeds: [
             failed
                 ? createErrorEmbed(
-                    '⚠️ Rank Trial Check Completed',
+                    '⚠️ Captain Trial Check Completed',
                     lines.join('\n')
                 )
                 : createSuccessEmbed(
-                    '✅ Rank Trial Check Completed',
+                    '✅ Captain Trial Check Completed',
                     lines.join('\n')
                 )
         ],
@@ -1167,12 +1167,12 @@ async function handleHistory(
     const embed =
         createEmbed({
             title:
-                '📜 Rank Trial Publication History',
+                '📜 Captain Trial Publication History',
 
             description:
                 history.length
                     ? `Latest \`${history.length}\` publication record(s).`
-                    : 'No Rank Trial publications have been recorded yet.',
+                    : 'No Captain Trial publications have been recorded yet.',
 
             fields:
                 history.map(
@@ -1202,7 +1202,7 @@ async function handleHistory(
     applyRankTrialBranding(
         interaction,
         embed,
-        'Evelynn • Rank Trials Archive'
+        'Evelynn • Captain Trials Archive'
     );
 
     await interaction.editReply({
@@ -1243,7 +1243,7 @@ async function handleHistory(
                 interaction,
                 createEmbed({
                     title:
-                        '📅 Rank Trial Scheduled Event',
+                        '📅 Captain Trial Scheduled Event',
 
                     description: [
                         `No Discord Scheduled Event exists for cycle \`${schedule.trialKey}\`.`,
@@ -1280,7 +1280,7 @@ async function handleHistory(
                             interaction
                         )
                 }),
-                'Evelynn • Rank Trial Event Manager'
+                'Evelynn • Captain Trial Event Manager'
             );
 
         return interaction.editReply({
@@ -1302,7 +1302,7 @@ async function handleHistory(
     const eventName =
         discordEvent?.name ??
         record?.eventName ??
-        'Monthly Rank Trials';
+        'Monthly Captain Trials';
 
     const startsAt =
         discordEvent?.scheduledStartAt ??
@@ -1451,7 +1451,7 @@ async function handleHistory(
             interaction,
             createEmbed({
                 title:
-                    '📅 Rank Trial Scheduled Event',
+                    '📅 Captain Trial Scheduled Event',
 
                 description: [
                     description,
@@ -1468,7 +1468,7 @@ async function handleHistory(
                         interaction
                     )
             }),
-            'Evelynn • Rank Trial Event Manager'
+            'Evelynn • Captain Trial Event Manager'
         );
 
     await interaction.editReply({
@@ -1530,16 +1530,16 @@ async function handleSync(
 
         const title = {
             created:
-                '✅ Rank Trial Event Created',
+                '✅ Captain Trial Event Created',
 
             recreated:
-                '✅ Rank Trial Event Recreated',
+                '✅ Captain Trial Event Recreated',
 
             updated:
-                '✅ Rank Trial Event Updated',
+                '✅ Captain Trial Event Updated',
 
             synchronized:
-                '✅ Rank Trial Event Synchronized'
+                '✅ Captain Trial Event Synchronized'
         }[result.status];
 
         return interaction.editReply({
@@ -1578,7 +1578,7 @@ async function handleSync(
             interaction,
             '⚠️ Scheduled Events Disabled',
             result.reason ??
-                'Rank Trial Scheduled Events are disabled.'
+                'Captain Trial Scheduled Events are disabled.'
         );
     }
 
@@ -1650,7 +1650,7 @@ module.exports = {
                 return sendError(
                     interaction,
                     '❌ Server Only Command',
-                    'The Rank Trials System can only be managed inside THE Ⅹ SINS.'
+                    'The Captain Trials System can only be managed inside LUNAR SEIREITEI.'
                 );
             }
 
@@ -1662,7 +1662,7 @@ module.exports = {
                 return sendError(
                     interaction,
                     '❌ Permission Denied',
-                    'Only Administrators may manage the TTS Rank Trials System.'
+                    'Only Administrators may manage the Captain Trials System.'
                 );
             }
 
@@ -1676,8 +1676,8 @@ module.exports = {
             if (!handler) {
                 return sendError(
                     interaction,
-                    '❌ Unknown Rank Trial Action',
-                    'Evelynn could not recognize this Rank Trials action.'
+                    '❌ Unknown Captain Trial Action',
+                    'Evelynn could not recognize this Captain Trials action.'
                 );
             }
 
@@ -1692,12 +1692,12 @@ module.exports = {
 
             await sendError(
                 interaction,
-                '❌ Rank Trials Command Failed',
-                'Evelynn could not complete this Rank Trials action.'
+                '❌ Captain Trials Command Failed',
+                'Evelynn could not complete this Captain Trials action.'
             ).catch(
                 responseError =>
                     console.error(
-                        '❌ Rank Trials error response failed:',
+                        '❌ Captain Trials error response failed:',
                         responseError
                     )
             );

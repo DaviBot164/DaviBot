@@ -123,13 +123,13 @@ async function initializeDatabase() {
         );
 
         /*
-         * Initialize the isolated Rank Trials
+         * Initialize the isolated Captain Trials
          * Discord Scheduled Event schema.
          */
         await initializeRankTrialEventSchema();
 
         console.log(
-            '✅ Rank Trial Event Manager schema initialized.'
+            '✅ Captain Trial Event Manager schema initialized.'
         );
 
         console.log(
@@ -161,7 +161,7 @@ async function initializeDatabase() {
         );
 
         console.log(
-            '✅ Sin Rank database initialized.'
+            '✅ Captain Rank database initialized.'
         );
 
         console.log(
@@ -169,15 +169,15 @@ async function initializeDatabase() {
         );
 
         console.log(
-            '✅ Monthly Rank Trials database initialized.'
+            '✅ Monthly Captain Trials database initialized.'
         );
 
         console.log(
-            '✅ Rank Trials 2.0 Participant Registry initialized.'
+            '✅ Captain Trials 2.0 Participant Registry initialized.'
         );
 
         console.log(
-            '✅ Rank Trials Scheduled Event Manager initialized.'
+            '✅ Captain Trials Scheduled Event Manager initialized.'
         );
 
         console.log(

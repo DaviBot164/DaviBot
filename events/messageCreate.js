@@ -734,7 +734,7 @@ async function sendAutoModLog(
             )
             .setFooter({
                 text:
-                    'TTS • AutoMod'
+                    'Lunar Seireitei • AutoMod'
             })
             .setTimestamp();
 

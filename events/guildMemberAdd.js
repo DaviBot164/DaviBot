@@ -269,7 +269,7 @@ async function sendRaidDetectedLog(
             )
             .setFooter({
                 text:
-                    'TTS • Raid Shield'
+                    'Lunar Seireitei • Raid Shield'
             })
             .setTimestamp();
 
@@ -361,7 +361,7 @@ async function sendRaidEndedLog(
             )
             .setFooter({
                 text:
-                    'TTS • Raid Shield'
+                    'Lunar Seireitei • Raid Shield'
             })
             .setTimestamp();
 

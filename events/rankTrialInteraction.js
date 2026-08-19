@@ -177,8 +177,8 @@ function buildReviewReasonModal(
         )
         .setTitle(
             approving
-                ? 'Approve Rank Trial'
-                : 'Reject Rank Trial'
+                ? 'Approve Captain Trial'
+                : 'Reject Captain Trial'
         )
         .addComponents(
             new ActionRowBuilder()
@@ -254,7 +254,7 @@ async function replySuccess(
         return replyWarning(
             interaction,
             '⚔️ Registration Not Open',
-            'Rank Trial registration has not opened yet.'
+            'Captain Trial registration has not opened yet.'
         );
     }
 
@@ -262,7 +262,7 @@ async function replySuccess(
         return replyWarning(
             interaction,
             '🔒 Registration Closed',
-            'Registration for this Rank Trial has already closed.'
+            'Registration for this Captain Trial has already closed.'
         );
     }
 
@@ -271,7 +271,7 @@ async function replySuccess(
             interaction,
             '⚠️ Already Registered',
             [
-                'You are already registered for this Rank Trial.',
+                'You are already registered for this Captain Trial.',
                 `🗓️ Cycle: \`${result.schedule.trialKey}\``
             ].join('\n')
         );
@@ -284,11 +284,11 @@ async function replySuccess(
         interaction,
         restored
             ? '⚔️ Registration Restored'
-            : '⚔️ Rank Trial Registered',
+            : '⚔️ Captain Trial Registered',
         [
             restored
                 ? 'Your registration has been restored.'
-                : 'You are registered for the upcoming Rank Trial.',
+                : 'You are registered for the upcoming Captain Trial.',
             `🗓️ Cycle: \`${result.schedule.trialKey}\``,
             `📖 Rank: \`${previousRank ?? 'Unranked'}\``
         ].join('\n')
@@ -300,7 +300,7 @@ async function handleTestRegister(interaction) {
         return replyError(
             interaction,
             '❌ Test Access Denied',
-            'Only an Administrator may use Rank Trial test controls.'
+            'Only an Administrator may use Captain Trial test controls.'
         );
     }
 
@@ -358,7 +358,7 @@ async function handleWithdraw(interaction) {
         return replyWarning(
             interaction,
             '⚔️ Registration Not Open',
-            'Rank Trial registration has not opened yet.'
+            'Captain Trial registration has not opened yet.'
         );
     }
 
@@ -375,7 +375,7 @@ async function handleWithdraw(interaction) {
             interaction,
             '⚠️ Not Registered',
             [
-                'You are not registered for this Rank Trial.',
+                'You are not registered for this Captain Trial.',
                 `🗓️ Cycle: \`${result.schedule.trialKey}\``
             ].join('\n')
         );
@@ -383,9 +383,9 @@ async function handleWithdraw(interaction) {
 
     return replySuccess(
         interaction,
-        '🚪 Rank Trial Withdrawn',
+        '🚪 Captain Trial Withdrawn',
         [
-            'You have withdrawn from the upcoming Rank Trial.',
+            'You have withdrawn from the upcoming Captain Trial.',
             `🗓️ Cycle: \`${result.schedule.trialKey}\``
         ].join('\n')
     );
@@ -396,7 +396,7 @@ async function handleTestWithdraw(interaction) {
         return replyError(
             interaction,
             '❌ Test Access Denied',
-            'Only an Administrator may use Rank Trial test controls.'
+            'Only an Administrator may use Captain Trial test controls.'
         );
     }
 
@@ -450,7 +450,7 @@ async function handleTestWithdraw(interaction) {
         await replyError(
             interaction,
             '❌ Review Access Denied',
-            `Only an Administrator may ${action} Rank Trial participants.`
+            `Only an Administrator may ${action} Captain Trial participants.`
         );
 
         return null;
@@ -465,7 +465,7 @@ async function handleTestWithdraw(interaction) {
             interaction,
             '⚠️ Stale Review Panel',
             [
-                'This review panel belongs to a different Rank Trial cycle.',
+                'This review panel belongs to a different Captain Trial cycle.',
                 `🗓️ Cycle: \`${reviewData.trialKey}\``,
                 'Open a fresh `/ranktrials review` panel.'
             ].join('\n')
@@ -562,7 +562,7 @@ async function handleReviewReopen(
         return replyError(
             interaction,
             '❌ Review Access Denied',
-            'Only an Administrator may reopen a Rank Trial review.'
+            'Only an Administrator may reopen a Captain Trial review.'
         );
     }
 
@@ -575,7 +575,7 @@ async function handleReviewReopen(
             interaction,
             '⚠️ Stale Review Panel',
             [
-                'This review panel belongs to a different Rank Trial cycle.',
+                'This review panel belongs to a different Captain Trial cycle.',
                 `🗓️ Cycle: \`${reviewData.trialKey}\``
             ].join('\n')
         );
@@ -706,7 +706,7 @@ async function handleReviewModalSubmit(
         return replyError(
             interaction,
             '❌ Review Access Denied',
-            'Only an Administrator may complete a Rank Trial Staff Review.'
+            'Only an Administrator may complete a Captain Trial Staff Review.'
         );
     }
 
@@ -719,7 +719,7 @@ async function handleReviewModalSubmit(
             interaction,
             '⚠️ Stale Review Modal',
             [
-                'This review form belongs to a different Rank Trial cycle.',
+                'This review form belongs to a different Captain Trial cycle.',
                 `🗓️ Cycle: \`${reviewData.trialKey}\``,
                 'Open a fresh `/ranktrials review` panel.'
             ].join('\n')
@@ -841,7 +841,7 @@ async function handleRankTrialButton(
         return replyWarning(
             interaction,
             '🔒 Registration Closed',
-            'Rank Trial registration is already closed.'
+            'Captain Trial registration is already closed.'
         );
     }
 
@@ -853,8 +853,8 @@ async function handleRankTrialButton(
     if (!handler) {
         return replyError(
             interaction,
-            '❌ Unknown Rank Trial Action',
-            'Evelynn could not identify this Rank Trial action.'
+            '❌ Unknown Captain Trial Action',
+            'Evelynn could not identify this Captain Trial action.'
         );
     }
 
@@ -956,15 +956,15 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ Evelynn Rank Trial failed:',
+                '❌ Evelynn Captain Trial failed:',
                 error
             );
 
             await sendInteractionError(
                 interaction,
                 createErrorEmbed(
-                    '❌ Rank Trial Action Failed',
-                    'Evelynn could not complete this Rank Trial action.'
+                    '❌ Captain Trial Action Failed',
+                    'Evelynn could not complete this Captain Trial action.'
                 )
             );
         } finally {

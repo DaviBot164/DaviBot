@@ -13,7 +13,7 @@ const {
 } = require('../../utils/embeds');
 
 /**
- * Official THE Ⅹ SINS Community Events channel.
+ * Official LUNAR SEIREITEI Community Events channel.
  *
  * Events and Giveaways are published
  * inside the same shared activity channel.
@@ -167,7 +167,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('giveaway')
             .setDescription(
-                'Create and manage THE Ⅹ SINS giveaways.'
+                'Create and manage LUNAR SEIREITEI giveaways.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -178,7 +178,7 @@ module.exports = {
                 subcommand
                     .setName('create')
                     .setDescription(
-                        'Open the THE Ⅹ SINS Giveaway creation form.'
+                        'Open the LUNAR SEIREITEI Giveaway creation form.'
                     )
             ),
 

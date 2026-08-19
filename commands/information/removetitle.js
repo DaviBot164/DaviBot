@@ -45,7 +45,7 @@ function createTitleRemovedEmbed(
         })
         .setFooter({
             text:
-                `Evelynn • THE Ⅹ SINS • Removed by ${interaction.user.username}`,
+                `Evelynn • LUNAR SEIREITEI • Removed by ${interaction.user.username}`,
             iconURL:
                 interaction.client.user.displayAvatarURL({
                     size: 128,
@@ -108,8 +108,8 @@ module.exports = {
             if (!interaction.inGuild()) {
                 await sendError(
                     interaction,
-                    '❌ THE Ⅹ SINS Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    '❌ LUNAR SEIREITEI Only Command',
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;

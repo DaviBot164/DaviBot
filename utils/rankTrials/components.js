@@ -5,7 +5,7 @@ const {
 } = require('discord.js');
 
 /**
- * Official Rank Trials 2.0 interaction IDs.
+ * Official Captain Trials 2.0 interaction IDs.
  *
  * Keep these values stable because
  * interaction routing depends on them.
@@ -29,7 +29,7 @@ const RANK_TRIAL_COMPONENT_IDS =
     });
 
 /**
- * Build the active Rank Trials
+ * Build the active Captain Trials
  * registration controls.
  *
  * Used while registration is open.
@@ -95,7 +95,7 @@ function buildClosedRegistrationComponents() {
 }
 
 /**
- * Build the Administrator-only Rank Trials
+ * Build the Administrator-only Captain Trials
  * 2.0 runtime test controls.
  *
  * These buttons deliberately use separate
@@ -137,7 +137,7 @@ function buildTestRegistrationComponents() {
 
 /**
  * Build the correct component row for one
- * Rank Trial publication.
+ * Captain Trial publication.
  *
  * Opening and Registration Reminder:
  * registration controls remain active.

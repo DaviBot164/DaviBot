@@ -56,8 +56,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -90,7 +90,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ No Warnings Found',
-                            `${user.tag} does not have any warnings within THE Ⅹ SINS.`
+                            `${user.tag} does not have any warnings within LUNAR SEIREITEI.`
                         )
                     ]
                 });
@@ -141,7 +141,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 THE Ⅹ SINS Status',
+                        '🌙 LUNAR SEIREITEI Status',
 
                     value:
                         '🟢 Warning record cleared',
@@ -195,7 +195,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
                             '🟢 Warning record cleared',

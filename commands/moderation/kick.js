@@ -197,7 +197,7 @@ module.exports = {
                     '🌑 Order Status',
 
                 value:
-                    'The Soul has been removed from THE Ⅹ SINS.',
+                    'The Soul has been removed from LUNAR SEIREITEI.',
 
                 inline:
                     false
@@ -230,7 +230,7 @@ module.exports = {
                             '🌑 Order Status',
 
                         value:
-                            'The Soul was removed from THE Ⅹ SINS.',
+                            'The Soul was removed from LUNAR SEIREITEI.',
 
                         inline:
                             false

@@ -7,7 +7,7 @@ module.exports = {
 
         description:
             [
-                'Need help from TTS Staff?',
+                'Need help from High Command?',
                 '',
                 'Open a private ticket below and describe your issue clearly.',
                 '',
@@ -23,7 +23,7 @@ module.exports = {
 
     ticket: {
         title:
-            '🎫 THE Ⅹ SINS Support',
+            '🎫 LUNAR SEIREITEI Support',
 
         description:
             [
@@ -31,7 +31,7 @@ module.exports = {
                 '',
                 'Describe your issue and include any relevant details.',
                 '',
-                'TTS Staff will assist you as soon as possible.'
+                'High Command will assist you as soon as possible.'
             ].join('\n'),
 
         closeButtonLabel:

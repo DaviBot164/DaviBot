@@ -147,7 +147,7 @@ function canSendToKingdomFeed(
 }
 
 /**
- * Create a shared TTS feed embed.
+ * Create a shared Seireitei feed embed.
  *
  * @param {Object} options
  * @param {import('discord.js').Guild} options.guild
@@ -329,7 +329,7 @@ function formatUnlockedTitles(
 }
 
 /**
- * Format a configured Sin Rank name.
+ * Format a configured Captain Rank name.
  *
  * @param {string|null|undefined} rank
  * @returns {string}
@@ -622,7 +622,7 @@ function classifyRankChange(
 
     return 'change';
 }/**
- * Send a Sin Rank change.
+ * Send a Captain Rank change.
  *
  * @param {Object} options
  * @param {import('discord.js').GuildMember} options.member
@@ -662,7 +662,7 @@ async function sendRankFeed({
 
     const titles = {
         assignment:
-            '⚔️・SIN RANK ASSIGNED',
+            '⚔️・CAPTAIN RANK ASSIGNED',
 
         promotion:
             '♛・SIN PROMOTION',
@@ -671,10 +671,10 @@ async function sendRankFeed({
             '⬇️・SIN DEMOTION',
 
         change:
-            '⚔️・SIN RANK CHANGED',
+            '⚔️・CAPTAIN RANK CHANGED',
 
         revocation:
-            '◇・SIN RANK REMOVED'
+            '◇・CAPTAIN RANK REMOVED'
     };
 
     const color =
@@ -780,8 +780,8 @@ async function sendRankFeed({
 
             description:
                 revoked
-                    ? `${member} no longer holds a Sin Rank.`
-                    : `${member} received a new position within **THE Ⅹ SINS**.`,
+                    ? `${member} no longer holds a Captain Rank.`
+                    : `${member} received a new position within **LUNAR SEIREITEI**.`,
 
             color,
 

@@ -96,7 +96,7 @@ function buildEventEmbed(
                 '',
                 '━━━━━━━━━━━━━━━━━━━━',
                 '',
-                '*Every battle becomes part of the chronicles of THE Ⅹ SINS.*'
+                '*Every battle becomes part of the chronicles of LUNAR SEIREITEI.*'
             ].join('\n'),
 
         thumbnail:

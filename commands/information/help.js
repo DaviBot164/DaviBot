@@ -94,7 +94,7 @@ module.exports = {
                 await sendHelpError(
                     interaction,
                     '❌ Server Only Command',
-                    'The command menu can only be opened inside THE Ⅹ SINS.'
+                    'The command menu can only be opened inside LUNAR SEIREITEI.'
                 );
 
                 return;

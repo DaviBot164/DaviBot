@@ -8,6 +8,9 @@ const {
     createErrorEmbed
 } = require('../utils/embeds');
 
+const brand =
+    require('../config/brand');
+
 const {
     publishSacredLaws
 } = require('../utils/setup/publishSacredLaws');
@@ -37,7 +40,37 @@ const {
 } = require('../utils/setup/publishFullSetup');
 
 /**
- * Send a Setup error safely.
+ * Keep this ID stable because it is also
+ * used by the /setup command.
+ */
+const SETUP_MENU_ID =
+    'umbra:setup:select';
+
+const SETUP_MODULES = Object.freeze({
+    'verification-guide':
+        publishVerificationGuide,
+
+    'sacred-laws':
+        publishSacredLaws,
+
+    'server-guide':
+        publishServerGuide,
+
+    'role-information':
+        publishRoleInformation,
+
+    faq:
+        publishFAQ,
+
+    'ticket-guide':
+        publishTicketGuide,
+
+    'full-setup':
+        publishFullSetup
+});
+
+/**
+ * Send a Setup Center error safely.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @param {string} title
@@ -49,34 +82,29 @@ async function sendSetupError(
     title,
     description
 ) {
-    const errorEmbed =
-        createErrorEmbed(
-            title,
-            description
+    const payload = {
+        embeds: [
+            createErrorEmbed(
+                title,
+                description
+            )
+        ],
+
+        components:
+            []
+    };
+
+    if (interaction.deferred) {
+        await interaction.editReply(
+            payload
         );
-
-    if (
-        interaction.deferred
-    ) {
-        await interaction.editReply({
-            embeds: [
-                errorEmbed
-            ],
-
-            components:
-                []
-        });
 
         return;
     }
 
-    if (
-        interaction.replied
-    ) {
+    if (interaction.replied) {
         await interaction.followUp({
-            embeds: [
-                errorEmbed
-            ],
+            ...payload,
 
             flags:
                 MessageFlags.Ephemeral
@@ -86,9 +114,7 @@ async function sendSetupError(
     }
 
     await interaction.reply({
-        embeds: [
-            errorEmbed
-        ],
+        ...payload,
 
         flags:
             MessageFlags.Ephemeral
@@ -103,7 +129,7 @@ module.exports = {
         false,
 
     /**
-     * Handle Setup Menu interactions.
+     * Handle Setup Center menu interactions.
      *
      * @param {import('discord.js').Interaction} interaction
      * @returns {Promise<void>}
@@ -114,7 +140,7 @@ module.exports = {
         if (
             !interaction.isStringSelectMenu() ||
             interaction.customId !==
-                'umbra:setup:select'
+                SETUP_MENU_ID
         ) {
             return;
         }
@@ -126,7 +152,7 @@ module.exports = {
                 await sendSetupError(
                     interaction,
                     '❌ Server Only Action',
-                    'The Setup Menu can only be used inside THE Ⅹ SINS.'
+                    'The Setup Center can only be used inside a server.'
                 );
 
                 return;
@@ -141,7 +167,25 @@ module.exports = {
                 await sendSetupError(
                     interaction,
                     '❌ Permission Denied',
-                    'Only Administrators can use the Setup Menu.'
+                    'Only Administrators can use the Setup Center.'
+                );
+
+                return;
+            }
+
+            const selectedModule =
+                interaction.values[0];
+
+            const publishModule =
+                SETUP_MODULES[
+                    selectedModule
+                ];
+
+            if (!publishModule) {
+                await sendSetupError(
+                    interaction,
+                    '❌ Unknown Module',
+                    'The selected setup module is not supported.'
                 );
 
                 return;
@@ -149,87 +193,27 @@ module.exports = {
 
             await interaction.deferUpdate();
 
-            const selectedModule =
-                interaction.values[0];
-
-            switch (
-                selectedModule
-            ) {
-                case 'verification-guide':
-                    await publishVerificationGuide(
-                        interaction
-                    );
-                    break;
-
-                case 'sacred-laws':
-                    await publishSacredLaws(
-                        interaction
-                    );
-                    break;
-
-                case 'server-guide':
-                    await publishServerGuide(
-                        interaction
-                    );
-                    break;
-
-                case 'role-information':
-                    await publishRoleInformation(
-                        interaction
-                    );
-                    break;
-
-                case 'faq':
-                    await publishFAQ(
-                        interaction
-                    );
-                    break;
-
-                case 'ticket-guide':
-                    await publishTicketGuide(
-                        interaction
-                    );
-                    break;
-
-                case 'full-setup':
-                    await publishFullSetup(
-                        interaction
-                    );
-                    break;
-
-                default:
-                    await interaction.editReply({
-                        embeds: [
-                            createErrorEmbed(
-                                '❌ Unknown Module',
-                                'The selected setup module is not supported.'
-                            )
-                        ],
-
-                        components:
-                            []
-                    });
-            }
+            await publishModule(
+                interaction
+            );
         } catch (error) {
             console.error(
-                '❌ Evelynn Setup interaction failed:',
+                'Evelynn Setup interaction failed:',
                 error
             );
 
-            try {
-                await sendSetupError(
-                    interaction,
-                    '❌ Setup Failed',
-                    'Evelynn could not complete the selected setup action.'
-                );
-            } catch (
-                responseError
-            ) {
-                console.error(
-                    '❌ Setup error response failed:',
-                    responseError
-                );
-            }
+            await sendSetupError(
+                interaction,
+                '❌ Setup Failed',
+                `${brand.botName} could not complete the selected setup action.`
+            ).catch(
+                responseError => {
+                    console.error(
+                        'Setup error response failed:',
+                        responseError
+                    );
+                }
+            );
         }
     }
 };

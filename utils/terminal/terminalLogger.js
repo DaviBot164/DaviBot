@@ -302,7 +302,7 @@ function buildTerminalEmbed({
             )
             .setFooter({
                 text:
-                    'Evelynn • Guardian of THE Ⅹ SINS'
+                    'Evelynn • Moon Spirit of Seireitei'
             })
             .setTimestamp();
 

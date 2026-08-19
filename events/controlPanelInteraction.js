@@ -204,7 +204,7 @@ function buildModuleEmbed({
             iconURL: botAvatar
         })
         .setFooter({
-            text: 'THE Ⅹ SINS • Administration',
+            text: 'LUNAR SEIREITEI • Administration',
             iconURL: guildIcon
         })
         .setTimestamp();
@@ -298,7 +298,7 @@ function buildSystemOverviewEmbed(
                 inline: true
             },
             {
-                name: 'Ⅹ THE Ⅹ SINS',
+                name: '☾ LUNAR SEIREITEI',
                 value: [
                     `**Members:** \`${interaction.guild.memberCount}\``,
                     `**Commands:** \`${snapshot.commandCount}\``
@@ -557,8 +557,8 @@ function buildIncidentCenterEmbed(
 function buildRankTrialsEmbed(interaction) {
     return buildStaticModule(
         interaction,
-        '⚔️ Rank Trials',
-        'Manage the monthly Rank Trials system.',
+        '⚔️ Captain Trials',
+        'Manage the monthly Captain Trials system.',
         [
             {
                 name: '📊 Status',
@@ -628,8 +628,8 @@ function buildTicketsEmbed(interaction) {
 function buildSinRanksEmbed(interaction) {
     return buildStaticModule(
         interaction,
-        '👑 TTS Rank Control',
-        'Manage THE Ⅹ SINS rank hierarchy.',
+        '👑 Captain Rank Control',
+        'Manage LUNAR SEIREITEI rank hierarchy.',
         [
             {
                 name: '⚔️ Assign',
@@ -659,8 +659,8 @@ function buildSinRanksEmbed(interaction) {
 function buildSetupCenterEmbed(interaction) {
     return buildStaticModule(
         interaction,
-        '📚 TTS Setup Center',
-        'Publish and update THE Ⅹ SINS guides.',
+        '📚 Seireitei Setup Center',
+        'Publish and update LUNAR SEIREITEI guides.',
         [
             {
                 name: '⚙️ Setup',
@@ -1054,7 +1054,7 @@ module.exports = {
                 await sendControlPanelError(
                     interaction,
                     '❌ Server Only Action',
-                    'The Evelynn Control Panel can only be used inside THE Ⅹ SINS.'
+                    'The Evelynn Control Panel can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;

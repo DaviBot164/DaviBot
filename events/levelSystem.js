@@ -773,7 +773,7 @@ async function sendLevelUpMessage(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    'Evelynn • LUNAR SEIREITEI',
 
                 iconURL:
                     message.client.user
@@ -788,7 +788,7 @@ async function sendLevelUpMessage(
 
             footer: {
                 text:
-                    'TTS • Progression'
+                    'Lunar Seireitei • Progression'
             }
         });
 

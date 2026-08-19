@@ -199,7 +199,7 @@ function hasEventPermissions(
         new SlashCommandBuilder()
             .setName('event')
             .setDescription(
-                'Create and manage TTS events.'
+                'Create and manage Lunar Seireitei events.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -250,7 +250,7 @@ function hasEventPermissions(
                 return sendError(
                     interaction,
                     '❌ Server Only Command',
-                    'The Event System can only be used inside THE Ⅹ SINS.'
+                    'The Event System can only be used inside LUNAR SEIREITEI.'
                 );
             }
 

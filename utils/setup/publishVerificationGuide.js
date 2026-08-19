@@ -8,11 +8,17 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
+const channels =
+    require('../../config/channels');
+
 const VERIFY_CHANNEL_ID =
-    '1528402259699044352';
+    channels.verifyChannelId;
 
 const VERIFICATION_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
  * Get the verification channel.
@@ -139,11 +145,11 @@ function buildVerificationGuideEmbed(
 
     return createEmbed({
         title:
-            'Ⅹ・TAKE THE OATH',
+            '☾・TAKE THE OATH',
 
         description:
             [
-                'Verify your Roblox account through **Bloxlink** to enter **THE Ⅹ SINS**.',
+                'Verify your Roblox account through **Bloxlink** to enter **Soul Society**.',
                 '',
                 '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
             ].join('\n'),
@@ -198,7 +204,7 @@ function buildVerificationGuideEmbed(
                     [
                         '• Never share passwords or login codes.',
                         '• Confirm the correct Roblox account is connected.',
-                        '• Evelynn and Staff will never ask for your login credentials.'
+                        '• Evelynn and High Command will never ask for your login credentials.'
                     ].join('\n'),
 
                 inline:
@@ -219,7 +225,7 @@ function buildVerificationGuideEmbed(
 
         author: {
             name:
-                'Evelynn • THE Ⅹ SINS',
+                `${brand.botName} • ${brand.serverName}`,
 
             iconURL:
                 botAvatar
@@ -227,7 +233,7 @@ function buildVerificationGuideEmbed(
 
         footer: {
             text:
-                'TTS • Verification',
+                `${brand.serverName} • Verification`,
 
             iconURL:
                 guildIcon
@@ -279,7 +285,7 @@ async function publishVerificationGuide(
     });
 
     console.log(
-        `Ⅹ Verification guide published in #${channel.name} by ${interaction.user.tag}.`
+        `Verification guide published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

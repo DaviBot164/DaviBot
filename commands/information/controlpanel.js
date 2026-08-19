@@ -373,10 +373,10 @@ function buildControlPanelMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Rank Trials'
+                    'Captain Trials'
                 )
                 .setDescription(
-                    'View Monthly Rank Trials controls'
+                    'View Monthly Captain Trials controls'
                 )
                 .setEmoji(
                     '⚔️'
@@ -401,7 +401,7 @@ function buildControlPanelMenu() {
 
             new StringSelectMenuOptionBuilder()
                 .setLabel(
-                    'Sin Ranks'
+                    'Captain Ranks'
                 )
                 .setDescription(
                     'View hierarchy management controls'

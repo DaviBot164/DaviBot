@@ -127,7 +127,7 @@ module.exports = {
                 await sendProfileError(
                     interaction,
                     '❌ Server Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -199,7 +199,7 @@ module.exports = {
                 description: [
                     `**${member.displayName}**`,
                     '',
-                    `⚔️ **Sin Rank:** ${currentRank?.rank_name ?? 'Unranked'}`,
+                    `⚔️ **Captain Rank:** ${currentRank?.rank_name ?? 'Unranked'}`,
                     `🏷️ **Title:** ${activeTitle?.displayName ?? 'None'}`
                 ].join('\n'),
                 color: PROFILE_COLOR,
@@ -228,11 +228,11 @@ module.exports = {
                     }
                 ],
                 author: {
-                    name: 'Evelynn • THE Ⅹ SINS',
+                    name: 'Evelynn • LUNAR SEIREITEI',
                     iconURL: botAvatar
                 },
                 footer: {
-                    text: `TTS • Requested by ${interaction.user.username}`,
+                    text: `Lunar Seireitei • Requested by ${interaction.user.username}`,
                     iconURL: botAvatar
                 }
             });

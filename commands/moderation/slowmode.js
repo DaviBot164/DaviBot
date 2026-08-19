@@ -66,8 +66,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -127,7 +127,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Evelynn Unavailable',
-                            'Evelynn could not access its THE Ⅹ SINS member information.'
+                            'Evelynn could not access its LUNAR SEIREITEI member information.'
                         )
                     ],
 
@@ -244,7 +244,7 @@ module.exports = {
                 },
                 {
                     name:
-                        '🌙 THE Ⅹ SINS Status',
+                        '🌙 LUNAR SEIREITEI Status',
 
                     value:
                         statusText,
@@ -286,7 +286,7 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
                             statusText,

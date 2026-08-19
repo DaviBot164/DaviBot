@@ -203,7 +203,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Ban Failed',
-                            'The Ruler of THE Ⅹ SINS cannot be banned.'
+                            'The Lunar Sovereign cannot be banned.'
                         )
                     ],
 
@@ -340,10 +340,10 @@ module.exports = {
                     },
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
-                            'This Soul has been banished from THE Ⅹ SINS.',
+                            'This Soul has been banished from LUNAR SEIREITEI.',
 
                         inline:
                             false

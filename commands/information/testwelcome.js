@@ -70,7 +70,7 @@ module.exports = {
                 'testwelcome'
             )
             .setDescription(
-                'Preview the current THE Ⅹ SINS Welcome message.'
+                'Preview the current LUNAR SEIREITEI Welcome message.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -88,7 +88,7 @@ module.exports = {
             ) {
                 await sendWelcomeError(
                     interaction,
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;

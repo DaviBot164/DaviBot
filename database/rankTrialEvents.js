@@ -3,7 +3,7 @@ const {
 } = require('./connection');
 
 /**
- * Convert one Rank Trial Scheduled Event row
+ * Convert one Captain Trial Scheduled Event row
  * into the format used by Evelynn.
  *
  * @param {Object} row
@@ -84,7 +84,7 @@ function mapRankTrialEventRow(
 }
 
 /**
- * Get one Rank Trial Scheduled Event record.
+ * Get one Captain Trial Scheduled Event record.
  *
  * @param {string} guildId
  * @param {string} trialKey
@@ -122,7 +122,7 @@ async function getRankTrialEvent(
 }
 
 /**
- * Reserve one monthly Rank Trial Event record.
+ * Reserve one monthly Captain Trial Event record.
  *
  * Only one record may exist for each guild
  * and monthly trial cycle.
@@ -317,7 +317,7 @@ async function updateRankTrialEventStatus(
         )
     ) {
         throw new TypeError(
-            'Invalid Rank Trial Event status.'
+            'Invalid Captain Trial Event status.'
         );
     }
 
@@ -357,7 +357,7 @@ async function updateRankTrialEventStatus(
         result.rows[0]
     );
 }/**
- * Mark a Rank Trial Event as deleted and
+ * Mark a Captain Trial Event as deleted and
  * remove its Discord Event ID.
  *
  * This allows Evelynn to recreate the Event
@@ -482,7 +482,7 @@ async function getActiveRankTrialEvents(
 }
 
 /**
- * Get recent Rank Trial Event records.
+ * Get recent Captain Trial Event records.
  *
  * @param {string} guildId
  * @param {number} limit

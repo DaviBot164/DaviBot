@@ -145,7 +145,7 @@ function mapRecentTitleRow(
 }
 
 /**
- * Map a recent Sin Rank history row.
+ * Map a recent Captain Rank history row.
  *
  * @param {Object|null} row
  * @returns {Object|null}
@@ -710,7 +710,7 @@ async function getTitleRarityStatistics(
 }
 
 /**
- * Get active Sin Rank statistics.
+ * Get active Captain Rank statistics.
  *
  * @param {string} guildId
  * @returns {Promise<Object>}
@@ -840,7 +840,7 @@ async function getRankStatistics(
 }
 
 /**
- * Get Sin Rank history statistics.
+ * Get Captain Rank history statistics.
  *
  * @param {string} guildId
  * @returns {Promise<Object>}
@@ -1058,7 +1058,7 @@ async function getRecentKingdomTitles(
 }
 
 /**
- * Get the most recent Sin Rank
+ * Get the most recent Captain Rank
  * hierarchy actions.
  *
  * @param {string} guildId
@@ -1431,7 +1431,7 @@ async function getKingdomLeaderboards(
 
 /**
  * Get the complete Kingdom statistics
- * required by the THE Ⅹ SINS Dashboard.
+ * required by the LUNAR SEIREITEI Dashboard.
  *
  * @param {string} guildId
  * @param {Object} options

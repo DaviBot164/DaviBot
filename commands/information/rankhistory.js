@@ -51,28 +51,28 @@ const HISTORY_PAGE_DETAILS = {
         label: 'Overview',
         emoji: '📜',
         description:
-            'Current Sin Rank and recent history'
+            'Current Captain Rank and recent history'
     },
 
     [HISTORY_PAGES.promotions]: {
         label: 'Promotions',
         emoji: '⬆️',
         description:
-            'Previous Sin Rank assignments'
+            'Previous Captain Rank assignments'
     },
 
     [HISTORY_PAGES.removals]: {
         label: 'Removals',
         emoji: '⬇️',
         description:
-            'Previous Sin Rank removals'
+            'Previous Captain Rank removals'
     },
 
     [HISTORY_PAGES.complete]: {
         label: 'Complete Archive',
         emoji: '🗃️',
         description:
-            'Complete recorded Sin Rank history'
+            'Complete recorded Captain Rank history'
     }
 };
 
@@ -312,7 +312,7 @@ function createRankHistoryEmbed({
 
         author: {
             name:
-                `${member.displayName} • Sin Rank History`,
+                `${member.displayName} • Captain Rank History`,
 
             iconURL:
                 avatarURL
@@ -320,7 +320,7 @@ function createRankHistoryEmbed({
 
         footer: {
             text:
-                `THE Ⅹ SINS • Opened by ${interaction.user.username}`,
+                `LUNAR SEIREITEI • Opened by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -574,10 +574,10 @@ function buildOverviewPage(context) {
             member,
 
             title:
-                '📖 Sin Rank Career',
+                '📖 Captain Rank Career',
 
             description:
-                `${member} • recorded Sin Rank history.`
+                `${member} • recorded Captain Rank history.`
         });
 
     embed.addFields(
@@ -694,18 +694,18 @@ function buildOverviewPage(context) {
 
             title:
                 isPromotion
-                    ? '⬆️ Sin Rank Promotions'
-                    : '◇ Sin Rank Removals',
+                    ? '⬆️ Captain Rank Promotions'
+                    : '◇ Captain Rank Removals',
 
             description:
                 isPromotion
                     ? (
                         `${context.member} • previous ` +
-                        'Sin Rank assignments.'
+                        'Captain Rank assignments.'
                     )
                     : (
                         `${context.member} • previous ` +
-                        'Sin Rank removals.'
+                        'Captain Rank removals.'
                     ),
 
             color:
@@ -732,11 +732,11 @@ function buildOverviewPage(context) {
             value:
                 isPromotion
                     ? (
-                        'No previous Sin Rank ' +
+                        'No previous Captain Rank ' +
                         'assignments have been recorded.'
                     )
                     : (
-                        'No previous Sin Rank ' +
+                        'No previous Captain Rank ' +
                         'removals have been recorded.'
                     )
         });
@@ -761,10 +761,10 @@ function buildCompletePage(context) {
                 context.member,
 
             title:
-                '🗃️ Complete Sin Rank Archive',
+                '🗃️ Complete Captain Rank Archive',
 
             description:
-                `${context.member} • complete recorded Sin Rank history.`
+                `${context.member} • complete recorded Captain Rank history.`
         });
 
     embed.addFields({
@@ -783,7 +783,7 @@ function buildCompletePage(context) {
                 '◇ Empty Archive',
 
             value:
-                'No Sin Rank history has been recorded for this member.'
+                'No Captain Rank history has been recorded for this member.'
         });
 
         return embed;
@@ -792,7 +792,7 @@ function buildCompletePage(context) {
     return addHistoryFields(
         embed,
         context.history,
-        '📜 Sin Rank Records'
+        '📜 Captain Rank Records'
     );
 }
 
@@ -979,13 +979,13 @@ async function sendRankHistoryError(
         new SlashCommandBuilder()
             .setName('rankhistory')
             .setDescription(
-                'View a member’s Sin Rank history.'
+                'View a member’s Captain Rank history.'
             )
             .addUserOption(option =>
                 option
                     .setName('user')
                     .setDescription(
-                        'Member whose Sin Rank history you want to inspect.'
+                        'Member whose Captain Rank history you want to inspect.'
                     )
                     .setRequired(false)
             )
@@ -1007,7 +1007,7 @@ async function sendRankHistoryError(
                 await sendRankHistoryError(
                     interaction,
                     '❌ Server Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -1022,7 +1022,7 @@ async function sendRankHistoryError(
                 await sendRankHistoryError(
                     interaction,
                     '❌ Member Not Found',
-                    'The selected member could not be found inside THE Ⅹ SINS.'
+                    'The selected member could not be found inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -1038,7 +1038,7 @@ async function sendRankHistoryError(
                     interaction,
                     '❌ Archive Access Denied',
                     [
-                        'You may only inspect your own Sin Rank history.',
+                        'You may only inspect your own Captain Rank history.',
                         '',
                         'High Command may inspect another member’s archive.'
                     ].join('\n')
@@ -1236,7 +1236,7 @@ async function sendRankHistoryError(
             await sendRankHistoryError(
                 interaction,
                 '❌ Rank History Failed',
-                'Evelynn could not load the Sin Rank archive.'
+                'Evelynn could not load the Captain Rank archive.'
             );
         }
     }

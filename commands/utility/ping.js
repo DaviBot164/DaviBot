@@ -64,7 +64,7 @@ module.exports = {
                         '🌙 Evelynn Status',
 
                     description:
-                        '**Guardian of THE Ⅹ SINS is online.**',
+                        '**Moon Spirit of Seireitei is online.**',
 
                     color:
                         '#6F42C1',
@@ -108,7 +108,7 @@ module.exports = {
 
             embed.setAuthor({
                 name:
-                    'Evelynn • Guardian of THE Ⅹ SINS',
+                    'Evelynn • Moon Spirit of Seireitei',
 
                 iconURL:
                     botAvatar
@@ -116,7 +116,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `THE Ⅹ SINS System Check • Requested by ${interaction.user.username}`,
+                    `LUNAR SEIREITEI System Check • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar

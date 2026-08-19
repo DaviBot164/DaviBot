@@ -1,7 +1,7 @@
 {
   "name": "evelynn",
   "version": "1.0.0",
-  "description": "Evelynn — the official Discord bot of THE Ⅹ SINS",
+  "description": "Evelynn — the official Discord bot of LUNAR SEIREITEI",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -8,11 +8,14 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
 const setupChannels =
     require('../../config/setupChannels');
 
 const FAQ_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
  * Get the FAQ channel.
@@ -111,7 +114,7 @@ async function getFAQChannel(
 
 /**
  * Publish the official
- * THE Ⅹ SINS FAQ.
+ * Lunar Seireitei FAQ.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -151,7 +154,7 @@ async function publishFAQ(
     const faqEmbed =
         createEmbed({
             title:
-                'Ⅹ・FAQ',
+                '☾・FAQ',
 
             description:
                 '**Quick answers to common questions.**',
@@ -190,7 +193,7 @@ async function publishFAQ(
                         '📜・WHERE ARE THE RULES?',
 
                     value:
-                        'Read the **Code of Sins** in the information section.',
+                        'Read the **Sacred Laws** in the information section.',
 
                     inline:
                         false
@@ -224,10 +227,10 @@ async function publishFAQ(
 
                 {
                     name:
-                        '🤖・WHO IS EVELYNN?',
+                        '🌙・WHO IS EVELYNN?',
 
                     value:
-                        '**Evelynn** is the guardian and companion of **THE Ⅹ SINS**.',
+                        `**Evelynn** is the Moon Spirit and companion of **${brand.serverName}**.`,
 
                     inline:
                         false
@@ -261,9 +264,9 @@ async function publishFAQ(
 
                     value:
                         [
-                            'Stay active to earn Levels, Achievements, Titles and progression roles.',
+                            'Stay active to earn Levels, Achievements, Titles and Soul Progression roles.',
                             '',
-                            'Sin ranks are earned separately through competition.'
+                            'Numbered **Captain Ranks** are earned separately through the official **Captain Trials**.'
                         ].join('\n'),
 
                     inline:
@@ -272,7 +275,7 @@ async function publishFAQ(
 
                 {
                     name:
-                        'Ⅹ・STILL NEED HELP?',
+                        '✦・STILL NEED HELP?',
 
                     value:
                         'For private or moderation-related matters, open a support ticket.',
@@ -284,7 +287,7 @@ async function publishFAQ(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    `${brand.botName} • ${brand.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -292,7 +295,7 @@ async function publishFAQ(
 
             footer: {
                 text:
-                    'TTS • FAQ',
+                    `${brand.serverName} • FAQ`,
 
                 iconURL:
                     guildIcon
@@ -323,7 +326,7 @@ async function publishFAQ(
     });
 
     console.log(
-        `Ⅹ FAQ published in #${channel.name} by ${interaction.user.tag}.`
+        `FAQ published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

@@ -1,45 +1,39 @@
+const brand =
+    require('./brand');
+
 /**
- * ======================================================
- * Evelynn Automatic Rank Trials Configuration
- * ======================================================
+ * Evelynn Automatic Captain Trials.
  *
- * Controls the monthly Ten Sins Rank Trials,
- * announcements and Discord Scheduled Event.
+ * Controls monthly announcements and
+ * the Discord Scheduled Event.
  *
- * Publication and Event history are stored
- * permanently inside PostgreSQL.
+ * Publication and Event history are
+ * stored permanently inside PostgreSQL.
  */
 
 module.exports = {
     /**
-     * Main Rank Trials system switch.
-     *
-     * false disables automatic announcements
-     * and Discord Scheduled Event management.
+     * Main Captain Trials system switch.
      */
     enabled:
         true,
 
     /**
-     * Official Rank Trials text channel.
-     *
-     * Current channel:
-     * ⚔️・rank-trials
+     * Official channel:
+     * 🗡️・captain-trials
      */
     channelId:
         '1531706846531031060',
 
     /**
-     * Timezone used for every Rank Trial date.
+     * Timezone used for every Trial date.
      */
     timezone:
         'Asia/Tbilisi',
 
     /**
-     * Rank Trials occur on the final Saturday
-     * of every month.
-     *
-     * JavaScript weekday numbers:
+     * Captain Trials occur on the final
+     * Saturday of every month.
      *
      * 0 = Sunday
      * 1 = Monday
@@ -53,10 +47,8 @@ module.exports = {
         6,
 
     /**
-     * Official battle start time.
-     *
-     * Current setting:
-     * 20:00 — 8:00 PM Georgia time.
+     * Battle start:
+     * 20:00 Georgia time.
      */
     battleStartHour:
         20,
@@ -71,89 +63,67 @@ module.exports = {
         5 * 60 * 1000,
 
     /**
-     * Recently missed announcements may be
-     * recovered for up to 24 hours.
+     * Recently missed announcements may
+     * be recovered for up to 24 hours.
      */
     recoveryWindowMs:
         24 * 60 * 60 * 1000,
 
     /**
-     * ======================================================
-     * Discord Scheduled Event
-     * ======================================================
+     * Discord Scheduled Event.
      */
     scheduledEvent: {
-        /**
-         * Enables automatic creation and
-         * synchronization of the Discord Event.
-         */
         enabled:
             true,
 
         /**
-         * Create the Discord Event when the
-         * Opening Announcement is published.
+         * Create the Event with the
+         * Opening Announcement.
          */
         createWithOpeningAnnouncement:
             true,
 
         /**
-         * Event duration after battle start.
-         *
-         * Current setting:
-         * Three hours.
+         * Three-hour Event duration.
          */
         durationMinutes:
             180,
 
-        /**
-         * External Event location displayed
-         * inside Discord.
-         */
         location:
-            'Ten Sins Arena • Battle Room',
+            'Lunar Arena • Combat Grounds',
 
         /**
-         * Event name format.
-         *
-         * The manager adds the month and year.
+         * Month and year are appended
+         * automatically.
          */
         namePrefix:
-            '⚔️ Monthly Rank Trials',
+            `⚔️ Monthly ${brand.trialSystemName}`,
 
-        /**
-         * Event description limit safeguard.
-         *
-         * Discord currently allows longer text,
-         * but Evelynn keeps it compact.
-         */
         descriptionMaxLength:
             900,
 
         /**
-         * If the Event is deleted manually,
-         * automatic sync may recreate it.
+         * Recreate an Event that was
+         * deleted manually.
          */
         recreateIfDeleted:
             true,
 
         /**
-         * When true, Evelynn updates an existing
-         * Scheduled Event if its configured
-         * name, times, location or description
-         * no longer match.
+         * Synchronize changed Event details.
          */
         updateExistingEvent:
             true
-    },    /**
+    },
+
+    /**
      * Announcement schedule.
      *
-     * All times are based on battle start.
+     * All times are relative to battle start.
      */
     announcements: {
         /**
-         * Registration opens two weeks before
-         * the final Saturday.
+         * Registration opens two weeks before.
          */
         opening: {
             enabled:
@@ -258,23 +228,25 @@ module.exports = {
      */
     evaluationCriteria: [
         'Combat performance',
-        'Loyalty to THE Ⅹ SINS',
+        `Loyalty to ${brand.serverName}`,
         'Behavior and discipline',
         'Server activity',
         'Contribution to the community',
-        'Leadership trust'
-    ],    /**
-     * Core branding.
+        'High Command trust'
+    ],
+
+    /**
+     * Public branding.
      */
     branding: {
         authorName:
-            'Evelynn • THE Ⅹ SINS',
+            `${brand.botName} • ${brand.serverName}`,
 
         authorityName:
-            '♛ THE Ⅹ SINS Authority',
+            `♔ ${brand.serverName} High Command`,
 
         footerText:
-            'Evelynn • Monthly Rank Trials',
+            `${brand.botName} • ${brand.trialSystemName}`,
 
         defaultEmoji:
             '⚔️'
@@ -283,8 +255,7 @@ module.exports = {
     /**
      * PostgreSQL publication identifiers.
      *
-     * Do not rename these values after
-     * publication history has been created.
+     * These values are permanent.
      */
     publicationTypes: {
         opening:
@@ -306,7 +277,7 @@ module.exports = {
     /**
      * PostgreSQL Scheduled Event states.
      *
-     * These values are stored permanently.
+     * These values are permanent.
      */
     eventStatuses: {
         scheduled:

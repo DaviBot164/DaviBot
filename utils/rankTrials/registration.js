@@ -12,7 +12,7 @@ const {
 
 /**
  * Return one publication entry from a
- * monthly Rank Trial schedule.
+ * monthly Captain Trial schedule.
  *
  * @param {Object} schedule
  * @param {string} publicationKey
@@ -43,7 +43,7 @@ function getSchedulePublication(
 
 /**
  * Build the registration window for one
- * monthly Rank Trial schedule.
+ * monthly Captain Trial schedule.
  *
  * Registration opens with the Opening
  * Announcement and closes with the
@@ -74,7 +74,7 @@ function getRegistrationWindow(
         !openingPublication?.scheduledFor
     ) {
         throw new Error(
-            'Rank Trial Opening Announcement schedule is unavailable.'
+            'Captain Trial Opening Announcement schedule is unavailable.'
         );
     }
 
@@ -82,7 +82,7 @@ function getRegistrationWindow(
         !finalReminderPublication?.scheduledFor
     ) {
         throw new Error(
-            'Rank Trial Final Reminder schedule is unavailable.'
+            'Captain Trial Final Reminder schedule is unavailable.'
         );
     }
 
@@ -105,7 +105,7 @@ function getRegistrationWindow(
         )
     ) {
         throw new Error(
-            'Rank Trial registration window contains an invalid date.'
+            'Captain Trial registration window contains an invalid date.'
         );
     }
 
@@ -114,7 +114,7 @@ function getRegistrationWindow(
         opensAt.getTime()
     ) {
         throw new Error(
-            'Rank Trial registration close time must occur after registration opens.'
+            'Captain Trial registration close time must occur after registration opens.'
         );
     }
 
@@ -188,7 +188,7 @@ function getRegistrationState(
 
 /**
  * Check whether registration is currently
- * open for one Rank Trial schedule.
+ * open for one Captain Trial schedule.
  *
  * @param {Object} schedule
  * @param {Date} now
@@ -209,7 +209,7 @@ function isRegistrationOpen(
 }
 
 /**
- * Return the currently relevant Rank Trial
+ * Return the currently relevant Captain Trial
  * schedule and its registration state.
  *
  * @param {Date} now
@@ -242,7 +242,7 @@ function getCurrentRegistrationContext(
     };
 }/**
  * Register one Soul for the currently
- * relevant monthly Rank Trial.
+ * relevant monthly Captain Trial.
  *
  * Registration is accepted only while the
  * registration window is OPEN.
@@ -336,7 +336,7 @@ async function registerForCurrentRankTrial({
 
 /**
  * Withdraw one Soul from the currently
- * relevant monthly Rank Trial.
+ * relevant monthly Captain Trial.
  *
  * Withdrawal is allowed only while the
  * registration window is OPEN.
@@ -479,7 +479,7 @@ async function getCurrentParticipant({
 
 /**
  * Get the full participant roster for
- * the currently relevant Rank Trial.
+ * the currently relevant Captain Trial.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -517,7 +517,7 @@ async function getCurrentTrialRoster({
     };
 }/**
  * Close registration for one selected
- * monthly Rank Trial.
+ * monthly Captain Trial.
  *
  * Every currently REGISTERED participant
  * is moved into UNDER_REVIEW.
@@ -544,7 +544,7 @@ async function closeRegistrationForSchedule({
         !schedule.trialKey
     ) {
         throw new TypeError(
-            'A valid Rank Trial schedule is required.'
+            'A valid Captain Trial schedule is required.'
         );
     }
 
@@ -574,7 +574,7 @@ async function closeRegistrationForSchedule({
 
 /**
  * Close registration for the currently
- * relevant Rank Trial only when its
+ * relevant Captain Trial only when its
  * configured registration window has ended.
  *
  * @param {Object} options
@@ -645,7 +645,7 @@ async function closeCurrentRegistrationIfDue({
 
 /**
  * Return compact registration statistics
- * for the currently relevant Rank Trial.
+ * for the currently relevant Captain Trial.
  *
  * @param {Object} options
  * @param {string} options.guildId
@@ -684,11 +684,11 @@ async function getCurrentRegistrationStatistics({
 }
 
 /**
- * Return whether Rank Trials registration
+ * Return whether Captain Trials registration
  * is enabled at the configuration level.
  *
- * Rank Trials 2.0 currently follows the
- * main Rank Trials system switch.
+ * Captain Trials 2.0 currently follows the
+ * main Captain Trials system switch.
  *
  * @returns {boolean}
  */

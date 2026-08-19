@@ -106,6 +106,6 @@ module.exports = {
      */
     footer: {
         text:
-            '🌙 Evelynn • Soul Records of THE Ⅹ SINS'
+            '🌙 Evelynn • Soul Records of LUNAR SEIREITEI'
     }
 };

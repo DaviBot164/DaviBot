@@ -44,7 +44,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Menu',
-                            'The command menu can only be used inside THE Ⅹ SINS.'
+                            'The command menu can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 

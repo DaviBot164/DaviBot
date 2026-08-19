@@ -8,11 +8,14 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
 const setupChannels =
     require('../../config/setupChannels');
 
 const GUIDE_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
  * Get the server guide channel.
@@ -89,7 +92,7 @@ async function getServerGuideChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish the Sin Codex in ${channel}.`,
+                        `Evelynn cannot publish the Soul Codex in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -111,7 +114,7 @@ async function getServerGuideChannel(
 
 /**
  * Publish the official
- * THE Ⅹ SINS server guide.
+ * Lunar Seireitei server guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -151,13 +154,15 @@ async function publishServerGuide(
     const guideEmbed =
         createEmbed({
             title:
-                'Ⅹ・SIN CODEX',
+                '☾・SOUL CODEX',
 
             description:
                 [
                     '**Your path begins here.**',
                     '',
-                    'A quick guide to **THE Ⅹ SINS**.'
+                    `A quick guide to **${brand.serverName}**.`,
+                    '',
+                    `*${brand.motto}*`
                 ].join('\n'),
 
             color:
@@ -179,7 +184,7 @@ async function publishServerGuide(
                         'Ⅰ・READ THE CODE',
 
                     value:
-                        'Read the **Code of Sins** and follow the server rules.',
+                        'Read the **Sacred Laws** and respect every Soul within Seireitei.',
 
                     inline:
                         false
@@ -187,11 +192,11 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅱ・TAKE THE OATH',
+                        'Ⅱ・ENTER SOUL SOCIETY',
 
                     value:
                         [
-                            'Verify through **Bloxlink**.',
+                            'Verify through **Bloxlink** to unlock the community.',
                             '',
                             '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
                         ].join('\n'),
@@ -202,10 +207,10 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅲ・EXPLORE',
+                        'Ⅲ・FIND YOUR PLACE',
 
                     value:
-                        'Chat, find players and take part in community activities.',
+                        'Meet other Souls, find players and take part in community activities.',
 
                     inline:
                         false
@@ -213,10 +218,10 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅳ・PROGRESS',
+                        'Ⅳ・AWAKEN YOUR SOUL',
 
                     value:
-                        'Earn Levels, Achievements, Titles and progression roles.',
+                        'Earn Levels, Achievements, Titles and Soul Progression roles through activity.',
 
                     inline:
                         false
@@ -224,25 +229,25 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅴ・SUPPORT',
-
-                    value:
-                        'Use the Ticket System for reports, appeals or private assistance.',
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        'Ⅹ・REMEMBER',
+                        'Ⅴ・RISE AS A CAPTAIN',
 
                     value:
                         [
-                            'Respect the Code.',
-                            'Earn your place.',
-                            'Make your name known.'
+                            'Compete in the official **Captain Trials**.',
+                            '',
+                            'Rise from **◇・UNRANKED** through the numbered **Captain Ranks**.'
                         ].join('\n'),
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        'Ⅵ・SEEK SUPPORT',
+
+                    value:
+                        'Use the Ticket System for reports, appeals or private assistance.',
 
                     inline:
                         false
@@ -251,7 +256,7 @@ async function publishServerGuide(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    `${brand.botName} • ${brand.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -259,7 +264,7 @@ async function publishServerGuide(
 
             footer: {
                 text:
-                    'TTS • Sin Codex',
+                    `${brand.serverName} • Soul Codex`,
 
                 iconURL:
                     guildIcon
@@ -280,8 +285,8 @@ async function publishServerGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Sin Codex Published',
-                `The Sin Codex was published in ${channel}.`
+                '✅ Soul Codex Published',
+                `The Soul Codex was published in ${channel}.`
             )
         ],
 
@@ -290,7 +295,7 @@ async function publishServerGuide(
     });
 
     console.log(
-        `Ⅹ Sin Codex published in #${channel.name} by ${interaction.user.tag}.`
+        `Soul Codex published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

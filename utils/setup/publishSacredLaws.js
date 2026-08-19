@@ -8,15 +8,18 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
 const setupChannels =
     require('../../config/setupChannels');
 
 const RULES_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
- * Get the THE Ⅹ SINS
- * rules channel.
+ * Get the Lunar Seireitei
+ * Sacred Laws channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -90,7 +93,7 @@ async function getSacredLawsChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish the Code of Sins in ${channel}.`,
+                        `Evelynn cannot publish the Sacred Laws in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -112,7 +115,7 @@ async function getSacredLawsChannel(
 
 /**
  * Publish the official
- * THE Ⅹ SINS rules.
+ * Lunar Seireitei Sacred Laws.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -152,13 +155,13 @@ async function publishSacredLaws(
     const rulesEmbed =
         createEmbed({
             title:
-                'Ⅹ・CODE OF SINS',
+                '☾・SACRED LAWS',
 
             description:
                 [
                     '**Respect the server. Respect its members. Play fair.**',
                     '',
-                    'These rules apply to everyone within **THE Ⅹ SINS**.'
+                    `These laws apply to everyone within **${brand.serverName}**.`
                 ].join('\n'),
 
             color:
@@ -226,16 +229,16 @@ async function publishSacredLaws(
 
                 {
                     name:
-                        'Ⅳ・STAFF & MODERATION',
+                        'Ⅳ・HIGH COMMAND & MODERATION',
 
                     value:
                         [
-                            '• Respect Staff decisions.',
+                            '• Respect High Command decisions.',
                             '• Do not evade moderation actions.',
                             '• Do not start public arguments over punishments.',
                             '• Use tickets for appeals or disputes.',
                             '',
-                            '-# The Code of Sins applies to Staff as well.'
+                            '-# The Sacred Laws apply to High Command as well.'
                         ].join('\n'),
 
                     inline:
@@ -298,11 +301,11 @@ async function publishSacredLaws(
 
                 {
                     name:
-                        'Ⅹ・FINAL NOTICE',
+                        '☾・FINAL NOTICE',
 
                     value:
                         [
-                            'By remaining in **THE Ⅹ SINS**, you agree to follow this code.',
+                            `By remaining in **${brand.serverName}**, you agree to follow these laws.`,
                             '',
                             '**Respect is required. Fair play is expected.**'
                         ].join('\n'),
@@ -314,7 +317,7 @@ async function publishSacredLaws(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    `${brand.botName} • ${brand.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -322,7 +325,7 @@ async function publishSacredLaws(
 
             footer: {
                 text:
-                    'TTS • Code of Sins',
+                    `${brand.serverName} • Sacred Laws`,
 
                 iconURL:
                     guildIcon
@@ -343,8 +346,8 @@ async function publishSacredLaws(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Code of Sins Published',
-                `The Code of Sins was published in ${channel}.`
+                '✅ Sacred Laws Published',
+                `The Sacred Laws were published in ${channel}.`
             )
         ],
 
@@ -353,7 +356,7 @@ async function publishSacredLaws(
     });
 
     console.log(
-        `Ⅹ Code of Sins published in #${channel.name} by ${interaction.user.tag}.`
+        `Sacred Laws published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

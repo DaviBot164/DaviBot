@@ -1697,7 +1697,7 @@ async function processComponentTransitions(
                                 '• Levels',
                                 '• Achievements',
                                 '• Chronicle Titles',
-                                '• Sin Ranks',
+                                '• Captain Ranks',
                                 '• Kingdom Records'
                             ].join('\n'),
 

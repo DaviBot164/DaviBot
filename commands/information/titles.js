@@ -46,7 +46,7 @@ const CATEGORY_DETAILS = {
 
     [TITLE_CATEGORIES.SIN_RANK]: {
         emoji: '⚔️',
-        label: 'Sin Ranks',
+        label: 'Captain Ranks',
         description:
             'Dominion and the Ten Sins'
     },
@@ -55,7 +55,7 @@ const CATEGORY_DETAILS = {
         emoji: '🛡️',
         label: 'High Command',
         description:
-            'Titles held by THE Ⅹ SINS leadership'
+            'Titles held by LUNAR SEIREITEI leadership'
     }
 };
 
@@ -348,7 +348,7 @@ function createTitlesEmbed(
 
         footer: {
             text:
-                `THE Ⅹ SINS • Titles • Opened by ${interaction.user.username}`,
+                `LUNAR SEIREITEI • Titles • Opened by ${interaction.user.username}`,
 
             iconURL:
                 interaction.client.user
@@ -800,7 +800,7 @@ async function handleTitlesInteraction(
         return true;
     } catch (error) {
         console.error(
-            '❌ THE Ⅹ SINS Titles interaction error:',
+            '❌ LUNAR SEIREITEI Titles interaction error:',
             error
         );
 
@@ -830,7 +830,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('titles')
             .setDescription(
-                'View THE Ⅹ SINS Titles and collection progress.'
+                'View LUNAR SEIREITEI Titles and collection progress.'
             )
             .addUserOption(option =>
                 option
@@ -847,7 +847,7 @@ module.exports = {
             if (!interaction.inGuild()) {
                 await sendTitlesError(
                     interaction,
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -884,7 +884,7 @@ module.exports = {
             );
         } catch (error) {
             console.error(
-                '❌ THE Ⅹ SINS /titles command error:',
+                '❌ LUNAR SEIREITEI /titles command error:',
                 error
             );
 

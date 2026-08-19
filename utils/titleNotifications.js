@@ -240,7 +240,7 @@ function createTitleUnlockEmbed({
         )
         .setFooter({
             text:
-                'TTS • Titles'
+                'Lunar Seireitei • Titles'
         })
         .setTimestamp();
 }

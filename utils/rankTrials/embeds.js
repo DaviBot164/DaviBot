@@ -2,6 +2,9 @@ const {
     EmbedBuilder
 } = require('discord.js');
 
+const brand =
+    require('../../config/brand');
+
 const rankTrialConfig =
     require('../../config/rankTrials');
 
@@ -10,8 +13,7 @@ const {
 } = require('./calendar');
 
 /**
- * Build the common footer used by every
- * Rank Trial announcement.
+ * Build the shared Captain Trial footer.
  *
  * @returns {string}
  */
@@ -22,8 +24,8 @@ function buildFooter() {
 }
 
 /**
- * Convert evaluation criteria into a
- * Discord bullet list.
+ * Convert evaluation criteria into
+ * a Discord bullet list.
  *
  * @returns {string}
  */
@@ -38,7 +40,7 @@ function buildCriteriaList() {
 }
 
 /**
- * Create the common Rank Trial embed.
+ * Create a Captain Trial embed.
  *
  * @param {Object} options
  * @returns {EmbedBuilder}
@@ -49,7 +51,7 @@ function createRankTrialEmbed(
     const embed =
         new EmbedBuilder()
             .setColor(
-                0x5B0E2D
+                brand.themeColor
             )
             .setTitle(
                 options.title
@@ -63,9 +65,7 @@ function createRankTrialEmbed(
                     buildFooter()
             });
 
-    if (
-        options.fields
-    ) {
+    if (options.fields) {
         embed.addFields(
             options.fields
         );
@@ -85,15 +85,15 @@ function buildOpeningEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '⚔️ Monthly Rank Trials Registration',
+            '⚔️ Monthly Captain Trials Registration',
 
         description:
             [
-                'The gates of THE Ⅹ SINS are now open.',
+                'The gates to the Lunar Arena are now open.',
                 '',
-                'Registration for this month\'s Rank Trials is now available.',
+                'Registration for this month’s **Captain Trials** is now available.',
                 '',
-                'Those seeking greater power may step forward.'
+                'Any eligible Soul may step forward and challenge for a numbered Captain Rank.'
             ].join('\n'),
 
         fields: [
@@ -112,7 +112,21 @@ function buildOpeningEmbed(
             },
             {
                 name:
-                    '⚔️ Promotion Evaluation',
+                    '☾ Captain Hierarchy',
+
+                value:
+                    [
+                        '**Ø・CAPTAIN** — Highest position',
+                        '**Ⅰ–Ⅹ・CAPTAIN** — Ranked positions',
+                        '**◇・UNRANKED** — No Captain Rank'
+                    ].join('\n'),
+
+                inline:
+                    false
+            },
+            {
+                name:
+                    '⚔️ Evaluation',
 
                 value:
                     buildCriteriaList(),
@@ -122,13 +136,13 @@ function buildOpeningEmbed(
             },
             {
                 name:
-                    '✦ Important',
+                    '✦ Final Decision',
 
                 value:
                     [
                         'Winning battles alone does **not** guarantee promotion.',
                         '',
-                        'THE Ⅹ SINS Leadership makes the final decision.'
+                        `${rankTrialConfig.branding.authorityName} makes the final decision.`
                     ].join('\n'),
 
                 inline:
@@ -136,7 +150,9 @@ function buildOpeningEmbed(
             }
         ]
     });
-}/**
+}
+
+/**
  * Registration reminder.
  *
  * @param {Object} schedule
@@ -147,13 +163,13 @@ function buildRegistrationReminderEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '⏳ Rank Trial Registration Reminder',
+            '⏳ Captain Trials Registration Reminder',
 
         description:
             [
-                'There is still time to prepare.',
+                'There is still time to enter the Trials.',
                 '',
-                'If you wish to challenge for a higher Sin Rank, make sure you are ready.'
+                'If you intend to challenge for a higher Captain Rank, prepare yourself before registration closes.'
             ].join('\n'),
 
         fields: [
@@ -185,16 +201,16 @@ function buildFinalReminderEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '✦ Final Reminder',
+            '✦ Final Captain Trials Reminder',
 
         description:
             [
-                'Tomorrow, the arena will decide who is worthy.',
+                'Tomorrow, the Lunar Arena will decide who is worthy.',
                 '',
                 'Prepare your spirit.',
                 'Sharpen your blade.',
                 '',
-                'THE Ⅹ SINS is watching.'
+                `${brand.serverName} is watching.`
             ].join('\n'),
 
         fields: [
@@ -226,16 +242,16 @@ function buildBattleStartEmbed(
 ) {
     return createRankTrialEmbed({
         title:
-            '⚔️ Rank Trials Have Begun',
+            '⚔️ Captain Trials Have Begun',
 
         description:
             [
-                'The Monthly Rank Trials are now officially underway.',
+                'The Monthly Captain Trials are officially underway.',
                 '',
                 'Fight with honor.',
                 'Fight with discipline.',
                 '',
-                'May only the strongest rise.'
+                'May only the strongest rise beneath the eternal moon.'
             ].join('\n'),
 
         fields: [
@@ -261,15 +277,15 @@ function buildBattleStartEmbed(
 function buildClosingEmbed() {
     return createRankTrialEmbed({
         title:
-            '✦ Rank Trials Concluded',
+            '✦ Captain Trials Concluded',
 
         description:
             [
-                'The Monthly Rank Trials have ended.',
+                'The Monthly Captain Trials have ended.',
                 '',
-                'Leadership will now review every participant.',
+                'High Command will now review every participant and determine the final placements.',
                 '',
-                'Promotion announcements will be published separately.'
+                'Captain Rank announcements will be published separately.'
             ].join('\n')
     });
 }

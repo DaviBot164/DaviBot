@@ -22,7 +22,7 @@ const ANNOUNCEMENT_TYPES = {
             'Server Update',
 
         authority:
-            'An official update from THE Ⅹ SINS.'
+            'An official update from LUNAR SEIREITEI.'
     },
 
     event: {
@@ -33,7 +33,7 @@ const ANNOUNCEMENT_TYPES = {
             'Community Event',
 
         authority:
-            'An official THE Ⅹ SINS community event.'
+            'An official LUNAR SEIREITEI community event.'
     },
 
     giveaway: {
@@ -44,7 +44,7 @@ const ANNOUNCEMENT_TYPES = {
             'Giveaway',
 
         authority:
-            'An official giveaway hosted by THE Ⅹ SINS.'
+            'An official giveaway hosted by LUNAR SEIREITEI.'
     },
 
     maintenance: {
@@ -55,7 +55,7 @@ const ANNOUNCEMENT_TYPES = {
             'Maintenance Notice',
 
         authority:
-            'An official THE Ⅹ SINS maintenance notice.'
+            'An official LUNAR SEIREITEI maintenance notice.'
     },
 
     important: {
@@ -77,7 +77,7 @@ const ANNOUNCEMENT_TYPES = {
             'Official Decree',
 
         authority:
-            'An official decree from THE Ⅹ SINS.'
+            'An official decree from LUNAR SEIREITEI.'
     }
 };
 
@@ -225,7 +225,7 @@ function buildAnnouncementEmbed({
             fields: [
                 {
                     name:
-                        'Ⅹ・THE Ⅹ SINS AUTHORITY',
+                        '☾・LUNAR SEIREITEI AUTHORITY',
 
                     value:
                         type.authority,
@@ -237,7 +237,7 @@ function buildAnnouncementEmbed({
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    'Evelynn • LUNAR SEIREITEI',
 
                 iconURL:
                     botAvatar
@@ -245,7 +245,7 @@ function buildAnnouncementEmbed({
 
             footer: {
                 text:
-                    `THE Ⅹ SINS • ${type.label}`,
+                    `LUNAR SEIREITEI • ${type.label}`,
 
                 iconURL:
                     serverIcon
@@ -270,7 +270,7 @@ function buildAnnouncementEmbed({
                 'announce'
             )
             .setDescription(
-                'Publish an official THE Ⅹ SINS announcement.'
+                'Publish an official LUNAR SEIREITEI announcement.'
             )
             .addStringOption(
                 option =>
@@ -361,7 +361,7 @@ function buildAnnouncementEmbed({
                 await sendAnnouncementError(
                     interaction,
                     '❌ Server Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;

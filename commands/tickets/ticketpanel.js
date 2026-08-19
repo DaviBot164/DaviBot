@@ -82,7 +82,7 @@ module.exports = {
                 option
                     .setName('staff_role')
                     .setDescription(
-                        'TTS Staff role that can manage tickets'
+                        'High Command role that can manage tickets'
                     )
                     .setRequired(true)
             ),
@@ -97,7 +97,7 @@ module.exports = {
             return errorReply(
                 interaction,
                 '❌ Server Only Command',
-                'This command can only be used inside THE Ⅹ SINS.'
+                'This command can only be used inside LUNAR SEIREITEI.'
             );
         }
 
@@ -149,7 +149,7 @@ module.exports = {
             return errorReply(
                 interaction,
                 '❌ Invalid Staff Role',
-                'Select a normal server role for TTS Staff.'
+                'Select a normal server role for High Command.'
             );
         }
 
@@ -217,7 +217,7 @@ module.exports = {
             })
                 .setAuthor({
                     name:
-                        'Evelynn • TTS Support',
+                        'Evelynn • Seireitei Support',
 
                     iconURL:
                         interaction.client.user
@@ -248,7 +248,7 @@ module.exports = {
                         [
                             `Panel sent to ${panelChannel}.`,
                             `**Ticket Category:** ${ticketCategory.name}`,
-                            `**TTS Staff Role:** ${staffRole}`
+                            `**High Command Role:** ${staffRole}`
                         ].join('\n')
                     )
                 ]

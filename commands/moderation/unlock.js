@@ -24,7 +24,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unlock')
         .setDescription(
-            'Unlock the current channel for THE Ⅹ SINS.'
+            'Unlock the current channel for LUNAR SEIREITEI.'
         )
 
         .addStringOption(option =>
@@ -55,8 +55,8 @@ module.exports = {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ THE Ⅹ SINS Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            '❌ LUNAR SEIREITEI Only Command',
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -113,7 +113,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Evelynn Unavailable',
-                            'Evelynn could not access its THE Ⅹ SINS member information.'
+                            'Evelynn could not access its LUNAR SEIREITEI member information.'
                         )
                     ],
 
@@ -209,7 +209,7 @@ module.exports = {
 
             embed.addFields({
                 name:
-                    '🌙 THE Ⅹ SINS Status',
+                    '🌙 LUNAR SEIREITEI Status',
 
                 value:
                     orderStatus,
@@ -241,7 +241,7 @@ module.exports = {
                 fields: [
                     {
                         name:
-                            '🌙 THE Ⅹ SINS Status',
+                            '🌙 LUNAR SEIREITEI Status',
 
                         value:
                             orderStatus,

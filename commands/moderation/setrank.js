@@ -29,7 +29,7 @@ const {
 } = require('../../utils/kingdomFeed');
 
 /**
- * Return all assignable Sin ranks.
+ * Return all assignable Captain ranks.
  *
  * Dominion is a special position and is not
  * assignable through /setrank.
@@ -60,7 +60,7 @@ function getAssignableRanks() {
 
 /**
  * Check whether a member can manage
- * the THE Ⅹ SINS rank system.
+ * the LUNAR SEIREITEI rank system.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {boolean}
@@ -268,7 +268,7 @@ function createPromotionEmbed({
 
         {
             name:
-                '⚔️ New Sin Rank',
+                '⚔️ New Captain Rank',
 
             value:
                 newRank,
@@ -332,11 +332,11 @@ function createPromotionEmbed({
 
     return createEmbed({
         title:
-            '⚔️ Sin Rank Proclamation',
+            '⚔️ Captain Rank Proclamation',
 
         description:
             [
-                `${member} has received a new position within THE Ⅹ SINS.`,
+                `${member} has received a new position within LUNAR SEIREITEI.`,
 
                 '',
 
@@ -363,7 +363,7 @@ function createPromotionEmbed({
 
         footer: {
             text:
-                'THE Ⅹ SINS • Rank Archive'
+                'LUNAR SEIREITEI • Rank Archive'
         }
     });
 }module.exports = {
@@ -376,7 +376,7 @@ function createPromotionEmbed({
                 'setrank'
             )
             .setDescription(
-                'Assign an official Sin Rank to a Soul.'
+                'Assign an official Captain Rank to a Soul.'
             )
 
             .addUserOption(
@@ -400,7 +400,7 @@ function createPromotionEmbed({
                             'rank'
                         )
                         .setDescription(
-                            'Select the Sin Rank to assign.'
+                            'Select the Captain Rank to assign.'
                         )
                         .setRequired(
                             true
@@ -468,7 +468,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'This command can only be used inside THE Ⅹ SINS.'
+                            'This command can only be used inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -493,10 +493,10 @@ function createPromotionEmbed({
                             '❌ High Command Required',
 
                             [
-                                'Only THE Ⅹ SINS High Command may assign Sin Ranks.',
+                                'Only LUNAR SEIREITEI High Command may assign Captain Ranks.',
                                 '',
                                 'Required standing:',
-                                '• 👑 Ruler of THE Ⅹ SINS',
+                                '• 👑 Lunar Sovereign',
                                 '• ⚜️ Head Captain',
                                 '• 🛡️ Captain'
                             ].join('\n')
@@ -532,7 +532,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Soul Not Found',
-                            'The selected Soul is not currently inside THE Ⅹ SINS.'
+                            'The selected Soul is not currently inside LUNAR SEIREITEI.'
                         )
                     ],
 
@@ -550,7 +550,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Invalid Soul',
-                            'Sin Ranks cannot be assigned to Discord bots.'
+                            'Captain Ranks cannot be assigned to Discord bots.'
                         )
                     ],
 
@@ -571,7 +571,7 @@ function createPromotionEmbed({
                     embeds: [
                         createErrorEmbed(
                             '❌ Protected Soul',
-                            'Only the server owner may change the owner’s Sin Rank.'
+                            'Only the server owner may change the owner’s Captain Rank.'
                         )
                     ],
 
@@ -593,8 +593,8 @@ function createPromotionEmbed({
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ Invalid Sin Rank',
-                            'The selected Rank is not configured inside THE Ⅹ SINS hierarchy.'
+                            '❌ Invalid Captain Rank',
+                            'The selected Rank is not configured inside LUNAR SEIREITEI hierarchy.'
                         )
                     ],
 
@@ -720,7 +720,7 @@ function createPromotionEmbed({
                             [
                                 `Evelynn cannot manage the current Rank role **${roleToRemove.name}**.`,
                                 '',
-                                'Move Evelynn’s highest role above the Sin Rank roles and try again.'
+                                'Move Evelynn’s highest role above the Captain Rank roles and try again.'
                             ].join('\n')
                         )
                     ],
@@ -743,7 +743,7 @@ function createPromotionEmbed({
                             [
                                 `Evelynn cannot manage **${selectedRole.name}**.`,
                                 '',
-                                'Move Evelynn’s highest role above the Sin Rank roles and try again.'
+                                'Move Evelynn’s highest role above the Captain Rank roles and try again.'
                             ].join('\n')
                         )
                     ],
@@ -788,17 +788,17 @@ function createPromotionEmbed({
                 ) {
                     await member.roles.remove(
                         roleToRemove,
-                        `Sin Rank replaced by ${rankName}`
+                        `Captain Rank replaced by ${rankName}`
                     );
                 }
 
                 await member.roles.add(
                     selectedRole,
-                    `Sin Rank assigned: ${rankName}`
+                    `Captain Rank assigned: ${rankName}`
                 );
             } catch (roleError) {
                 console.error(
-                    '❌ Sin Rank role update failed:',
+                    '❌ Captain Rank role update failed:',
                     roleError
                 );
 
@@ -845,7 +845,7 @@ function createPromotionEmbed({
                     rollbackError
                 ) {
                     console.error(
-                        '❌ Sin Rank database rollback failed:',
+                        '❌ Captain Rank database rollback failed:',
                         rollbackError
                     );
                 }
@@ -981,7 +981,7 @@ function createPromotionEmbed({
 
             console.log(
                 [
-                    '⚔️ Sin Rank assigned:',
+                    '⚔️ Captain Rank assigned:',
                     member.user.tag,
                     '→',
                     rankName,
@@ -999,7 +999,7 @@ function createPromotionEmbed({
                     '❌ Rank Assignment Failed',
 
                     [
-                        'Evelynn could not complete the Sin Rank assignment.',
+                        'Evelynn could not complete the Captain Rank assignment.',
                         '',
                         'No further changes were made.',
                         '',

@@ -1033,7 +1033,7 @@ async function resetSoulTitles(
  *
  * Useful for automatic checks after
  * Level, Achievement, Evolution or
- * Sin Rank updates.
+ * Captain Rank updates.
  *
  * @param {Object} options
  * @param {string} options.guildId

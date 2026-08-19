@@ -78,7 +78,7 @@ module.exports = {
                 'setuprules'
             )
             .setDescription(
-                'Publish the official Code of Sins.'
+                'Publish the official Sacred Laws.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.Administrator
@@ -95,7 +95,7 @@ module.exports = {
                 await sendSetupRulesError(
                     interaction,
                     '❌ Server Only Command',
-                    'This command can only be used inside THE Ⅹ SINS.'
+                    'This command can only be used inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -110,7 +110,7 @@ module.exports = {
                 await sendSetupRulesError(
                     interaction,
                     '❌ Permission Denied',
-                    'Only Administrators may publish the Code of Sins.'
+                    'Only Administrators may publish the Sacred Laws.'
                 );
 
                 return;
@@ -132,8 +132,8 @@ module.exports = {
 
             await sendSetupRulesError(
                 interaction,
-                '❌ Code of Sins Failed',
-                'Evelynn could not publish the Code of Sins.'
+                '❌ Sacred Laws Failed',
+                'Evelynn could not publish the Sacred Laws.'
             );
         }
     }

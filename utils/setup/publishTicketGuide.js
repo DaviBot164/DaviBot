@@ -8,14 +8,21 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
+const brand =
+    require('../../config/brand');
+
+const setupChannels =
+    require('../../config/setupChannels');
+
 const TICKET_GUIDE_CHANNEL_ID =
+    setupChannels.ticketGuideChannelId ??
     '1530989678553989261';
 
 const SUPPORT_EMBED_COLOR =
-    '#B026FF';
+    brand.themeColor;
 
 /**
- * Get the support channel.
+ * Get the configured support guide channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').TextBasedChannel|null>}
@@ -41,7 +48,7 @@ async function getTicketGuideChannel(
             embeds: [
                 createErrorEmbed(
                     '❌ Support Channel Missing',
-                    'The configured support channel could not be found.'
+                    'The configured support guide channel could not be found.'
                 )
             ],
 
@@ -88,7 +95,7 @@ async function getTicketGuideChannel(
                 createErrorEmbed(
                     '❌ Missing Permissions',
                     [
-                        `Evelynn cannot publish support information in ${channel}.`,
+                        `Evelynn cannot publish the support guide in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -109,8 +116,8 @@ async function getTicketGuideChannel(
 }
 
 /**
- * Publish the THE Ⅹ SINS
- * support guide.
+ * Publish the official
+ * LUNAR SEIREITEI support guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -150,16 +157,20 @@ async function publishTicketGuide(
     const guideEmbed =
         createEmbed({
             title:
-                'Ⅹ・SUPPORT',
+                '☾・SOUL SANCTUARY',
 
             description:
-                '**Private help when you need it.**',
+                [
+                    '**Private guidance beneath the eternal moon.**',
+                    '',
+                    `The Soul Sanctuary provides confidential support for members of **${brand.serverName}**.`
+                ].join('\n'),
 
             color:
                 SUPPORT_EMBED_COLOR,
 
             thumbnail:
-                botAvatar,
+                guildIcon,
 
             fields: [
                 {
@@ -170,10 +181,10 @@ async function publishTicketGuide(
                         [
                             '• Member reports',
                             '• Moderation appeals',
-                            '• Verification issues',
-                            '• Server or bot problems',
-                            '• Private evidence',
-                            '• Serious rule violations'
+                            '• Verification problems',
+                            '• Server or bot issues',
+                            '• Private or sensitive evidence',
+                            '• Serious violations of the Sacred Laws'
                         ].join('\n'),
 
                     inline:
@@ -186,10 +197,11 @@ async function publishTicketGuide(
 
                     value:
                         [
-                            '• Spam or jokes',
+                            '• Spam, jokes or test tickets',
                             '• General conversation',
-                            '• Promotion requests',
-                            '• Questions already answered in the FAQ'
+                            '• Captain Rank or promotion requests',
+                            '• Questions already answered in the FAQ',
+                            '• Matters that can be handled in public channels'
                         ].join('\n'),
 
                     inline:
@@ -198,14 +210,14 @@ async function publishTicketGuide(
 
                 {
                     name:
-                        '📝・MAKE IT CLEAR',
+                        '📝・PREPARE YOUR REPORT',
 
                     value:
                         [
-                            'Explain the issue clearly.',
-                            'Include usernames, details and evidence when available.',
+                            'Explain what happened clearly and honestly.',
+                            'Include usernames, dates and relevant evidence when available.',
                             '',
-                            '**Never falsify evidence.**'
+                            '**Never edit, conceal or falsify evidence.**'
                         ].join('\n'),
 
                     inline:
@@ -218,8 +230,10 @@ async function publishTicketGuide(
 
                     value:
                         [
-                            'Keep ticket discussions private.',
-                            'Never share passwords, login codes or unrelated personal information.'
+                            'Ticket discussions must remain private.',
+                            '',
+                            'Never share passwords, login codes or unrelated personal information.',
+                            'Evelynn and the High Command will never request your credentials.'
                         ].join('\n'),
 
                     inline:
@@ -232,10 +246,11 @@ async function publishTicketGuide(
 
                     value:
                         [
-                            '1. Explain the issue.',
-                            '2. Staff reviews it.',
-                            '3. More evidence may be requested.',
-                            '4. A decision or solution is provided.'
+                            '1. Open a ticket and explain the issue.',
+                            '2. A High Command member reviews the case.',
+                            '3. Additional details or evidence may be requested.',
+                            '4. A decision, answer or solution is provided.',
+                            '5. The ticket is closed when the matter is resolved.'
                         ].join('\n'),
 
                     inline:
@@ -244,10 +259,14 @@ async function publishTicketGuide(
 
                 {
                     name:
-                        'Ⅹ・OPEN A TICKET',
+                        '☾・ENTER THE SANCTUARY',
 
                     value:
-                        'Use the **Open Ticket** button and keep only one active ticket unless Staff asks otherwise.',
+                        [
+                            'Use the **Open Ticket** button to begin.',
+                            '',
+                            'Keep only one active ticket unless the High Command instructs otherwise.'
+                        ].join('\n'),
 
                     inline:
                         false
@@ -256,7 +275,7 @@ async function publishTicketGuide(
 
             author: {
                 name:
-                    'Evelynn • THE Ⅹ SINS',
+                    `${brand.botName} • ${brand.botTitle}`,
 
                 iconURL:
                     botAvatar
@@ -264,7 +283,7 @@ async function publishTicketGuide(
 
             footer: {
                 text:
-                    'TTS • Support',
+                    `${brand.serverName} • Soul Sanctuary`,
 
                 iconURL:
                     guildIcon
@@ -286,7 +305,7 @@ async function publishTicketGuide(
         embeds: [
             createSuccessEmbed(
                 '✅ Support Guide Published',
-                `The support guide was published in ${channel}.`
+                `The Soul Sanctuary guide was published in ${channel}.`
             )
         ],
 
@@ -295,12 +314,13 @@ async function publishTicketGuide(
     });
 
     console.log(
-        `Ⅹ Support guide published in #${channel.name} by ${interaction.user.tag}.`
+        `Soul Sanctuary guide published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
     TICKET_GUIDE_CHANNEL_ID,
     SUPPORT_EMBED_COLOR,
+    getTicketGuideChannel,
     publishTicketGuide
 };

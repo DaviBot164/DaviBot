@@ -153,10 +153,10 @@ async function initializeSchema() {
         );
     `);    /*
      * ======================================================
-     * Evelynn Monthly Rank Trials System
+     * Evelynn Monthly Captain Trials System
      * ======================================================
      *
-     * Stores every automatic Rank Trial
+     * Stores every automatic Captain Trial
      * announcement published by Evelynn.
      *
      * The unique constraint prevents duplicate
@@ -245,11 +245,11 @@ async function initializeSchema() {
 
     /*
      * ======================================================
-     * Rank Trials 2.0 Participant Registry
+     * Captain Trials 2.0 Participant Registry
      * ======================================================
      *
      * Stores every Soul who registers for
-     * one monthly THE Ⅹ SINS Rank Trial.
+     * one monthly LUNAR SEIREITEI Captain Trial.
      *
      * Registration, withdrawal, Staff Review
      * and final promotion decisions remain
@@ -353,7 +353,7 @@ async function initializeSchema() {
 
     /*
      * Quickly load the full participant roster
-     * for one monthly Rank Trial.
+     * for one monthly Captain Trial.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS rank_trial_participants_trial_index
@@ -379,7 +379,7 @@ async function initializeSchema() {
     `);
 
     /*
-     * Load the permanent Rank Trial history
+     * Load the permanent Captain Trial history
      * belonging to one Soul.
      */
     await query(`
@@ -421,7 +421,7 @@ async function initializeSchema() {
         WHERE promoted_at IS NOT NULL;
     `);    /*
      * ======================================================
-     * THE Ⅹ SINS Event System
+     * LUNAR SEIREITEI Event System
      * ======================================================
      */
     await query(`
@@ -542,7 +542,7 @@ async function initializeSchema() {
 
     /*
      * ======================================================
-     * THE Ⅹ SINS Giveaway System
+     * LUNAR SEIREITEI Giveaway System
      * ======================================================
      */
     await query(`
@@ -849,7 +849,7 @@ async function initializeSchema() {
      * Achievement Definitions
      *
      * Stores every Achievement available
-     * inside THE Ⅹ SINS.
+     * inside LUNAR SEIREITEI.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS achievements (
@@ -923,7 +923,7 @@ async function initializeSchema() {
         );
     `);    /*
      * ======================================================
-     * THE Ⅹ SINS Rank Migration
+     * LUNAR SEIREITEI Rank Migration
      * ======================================================
      *
      * Safely rename existing legacy Rank tables.
@@ -966,13 +966,13 @@ async function initializeSchema() {
 
     /*
      * ======================================================
-     * THE Ⅹ SINS Rank System
+     * LUNAR SEIREITEI Rank System
      * ======================================================
      */
 
     /*
      * Stores the current manually assigned
-     * Sin Rank of every Soul.
+     * Captain Rank of every Soul.
      */
     await query(`
         CREATE TABLE IF NOT EXISTS sin_ranks (
@@ -1015,7 +1015,7 @@ async function initializeSchema() {
     `);
 
     /*
-     * Sin Rank History
+     * Captain Rank History
      *
      * Stores every assignment, replacement
      * and removal.
@@ -1088,7 +1088,7 @@ async function initializeSchema() {
      * Title Definitions
      *
      * Stores every Title available inside
-     * THE Ⅹ SINS Soul Record system.
+     * LUNAR SEIREITEI Soul Record system.
      *
      * These Titles are not Discord roles.
      */
@@ -1242,7 +1242,7 @@ async function initializeSchema() {
 
     /*
      * Used when sorting the latest Title
-     * unlocks throughout THE Ⅹ SINS.
+     * unlocks throughout LUNAR SEIREITEI.
      */
     await query(`
         CREATE INDEX IF NOT EXISTS soul_titles_unlocked_at_index

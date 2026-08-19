@@ -59,7 +59,7 @@ const PAGE_DETAILS = {
         emoji: '🏆',
         label: 'Overview',
         description:
-            'View every THE Ⅹ SINS champion'
+            'View every LUNAR SEIREITEI champion'
     },
 
     [LEADERBOARD_PAGES.levels]: {
@@ -141,7 +141,7 @@ const RANKING_DETAILS = {
         title:
             '💬 Message Activity Leaderboard',
         description:
-            'The most active recorded members of THE Ⅹ SINS.',
+            'The most active recorded members of LUNAR SEIREITEI.',
         statusNote:
             'Only recorded messages contribute to this ranking.',
         fieldTitle:
@@ -360,7 +360,7 @@ function createLeaderboardEmbed({
                     LEADERBOARD_PAGE_ORDER.indexOf(
                         pageId
                     ) + 1
-                } / ${LEADERBOARD_PAGE_ORDER.length} • Evelynn • THE Ⅹ SINS`,
+                } / ${LEADERBOARD_PAGE_ORDER.length} • Evelynn • LUNAR SEIREITEI`,
 
             iconURL:
                 botAvatar
@@ -844,10 +844,10 @@ function buildOverviewPage({
                 LEADERBOARD_PAGES.overview,
 
             title:
-                '🏆 THE Ⅹ SINS Leaderboards',
+                '🏆 LUNAR SEIREITEI Leaderboards',
 
             description: [
-                'The strongest and most accomplished members of THE Ⅹ SINS.',
+                'The strongest and most accomplished members of LUNAR SEIREITEI.',
                 '',
                 'Choose a ranking from the menu below.'
             ].join('\n'),
@@ -1136,7 +1136,7 @@ async function sendLeaderboardError(
         new SlashCommandBuilder()
             .setName('leaderboard')
             .setDescription(
-                'Open THE Ⅹ SINS leaderboards.'
+                'Open LUNAR SEIREITEI leaderboards.'
             )
             .setDMPermission(false),
 
@@ -1145,8 +1145,8 @@ async function sendLeaderboardError(
             if (!interaction.inGuild()) {
                 await sendLeaderboardError(
                     interaction,
-                    '❌ THE Ⅹ SINS Only Command',
-                    'Leaderboards can only be opened inside THE Ⅹ SINS.'
+                    '❌ LUNAR SEIREITEI Only Command',
+                    'Leaderboards can only be opened inside LUNAR SEIREITEI.'
                 );
 
                 return;
@@ -1336,7 +1336,7 @@ async function sendLeaderboardError(
             await sendLeaderboardError(
                 interaction,
                 '❌ Leaderboards Unavailable',
-                'Evelynn could not open THE Ⅹ SINS leaderboards.'
+                'Evelynn could not open LUNAR SEIREITEI leaderboards.'
             );
         }
     }

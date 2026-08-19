@@ -29,7 +29,7 @@ const {
 } = require('./registration');
 
 /**
- * Active Rank Trials scheduler interval.
+ * Active Captain Trials scheduler interval.
  *
  * Only one interval may run inside the
  * current Evelynn process.
@@ -170,7 +170,7 @@ function isPublicationExpired(
 
 /**
  * Return the Opening publication belonging
- * to one monthly Rank Trial schedule.
+ * to one monthly Captain Trial schedule.
  *
  * @param {Object} schedule
  * @returns {Object|null}
@@ -190,7 +190,7 @@ function getOpeningPublication(
 
 /**
  * Return the final publication belonging
- * to one monthly Rank Trial schedule.
+ * to one monthly Captain Trial schedule.
  *
  * This is normally the Closing Notice.
  *
@@ -388,7 +388,7 @@ async function processScheduledEventSynchronization(
 }
 
 /**
- * Close Rank Trials 2.0 registration
+ * Close Captain Trials 2.0 registration
  * for one monthly cycle when its configured
  * registration window has ended.
  *
@@ -491,7 +491,7 @@ async function processRegistrationClose(
                 );
 
                 console.log(
-                    '🔒 Rank Trials 2.0 Registration Closed'
+                    '🔒 Captain Trials 2.0 Registration Closed'
                 );
 
                 console.log(
@@ -523,7 +523,7 @@ async function processRegistrationClose(
             );
 
             console.error(
-                '❌ Rank Trials 2.0 registration close failed.'
+                '❌ Captain Trials 2.0 registration close failed.'
             );
 
             console.error(
@@ -549,7 +549,7 @@ async function processRegistrationClose(
 
 /**
  * Publish all currently due announcements
- * from one monthly Rank Trial schedule.
+ * from one monthly Captain Trial schedule.
  *
  * @param {import('discord.js').Client<true>} client
  * @param {ReturnType<typeof buildMonthlyRankTrialSchedule>} schedule
@@ -650,7 +650,7 @@ async function processMonthlySchedule(
 
     return summary;
 }/**
- * Run one complete Rank Trials scheduler check.
+ * Run one complete Captain Trials scheduler check.
  *
  * PostgreSQL remains the final source of truth,
  * so repeated checks cannot publish duplicate
@@ -755,7 +755,7 @@ async function checkRankTrialSchedule(
         schedulerCheckInProgress
     ) {
         console.log(
-            'ℹ️ Rank Trials scheduler check skipped because another check is still running.'
+            'ℹ️ Captain Trials scheduler check skipped because another check is still running.'
         );
 
         return emptyResult;
@@ -779,7 +779,7 @@ async function checkRankTrialSchedule(
             0
         ) {
             console.warn(
-                '⚠️ Rank Trials scheduler found no configured Guild IDs.'
+                '⚠️ Captain Trials scheduler found no configured Guild IDs.'
             );
 
             return emptyResult;
@@ -810,7 +810,7 @@ async function checkRankTrialSchedule(
             0
         ) {
             console.warn(
-                `⚠️ Removed ${staleReservationsRemoved} stale Rank Trial publication reservation(s).`
+                `⚠️ Removed ${staleReservationsRemoved} stale Captain Trial publication reservation(s).`
             );
         }
 
@@ -819,7 +819,7 @@ async function checkRankTrialSchedule(
             0
         ) {
             console.warn(
-                `⚠️ Removed ${staleEventReservationsRemoved} stale Rank Trial Event reservation(s).`
+                `⚠️ Removed ${staleEventReservationsRemoved} stale Captain Trial Event reservation(s).`
             );
         }
 
@@ -913,7 +913,7 @@ async function checkRankTrialSchedule(
                 publicationSummary.expired;
 
             /*
-             * Rank Trials 2.0:
+             * Captain Trials 2.0:
              * close registration independently
              * from Discord announcement success.
              */
@@ -1002,7 +1002,7 @@ async function checkRankTrialSchedule(
             );
 
             console.log(
-                '⚔️ Rank Trials Scheduler Check Completed'
+                '⚔️ Captain Trials Scheduler Check Completed'
             );
 
             console.log(
@@ -1077,7 +1077,7 @@ async function checkRankTrialSchedule(
         );
 
         console.error(
-            '❌ Rank Trials scheduler check failed:'
+            '❌ Captain Trials scheduler check failed:'
         );
 
         console.error(
@@ -1151,7 +1151,7 @@ async function checkRankTrialSchedule(
             false;
     }
 }/**
- * Start the Automatic Rank Trials scheduler.
+ * Start the Automatic Captain Trials scheduler.
  *
  * Evelynn performs one immediate check so
  * recently missed announcements, registration
@@ -1168,7 +1168,7 @@ async function startRankTrialScheduler(
         !rankTrialConfig.enabled
     ) {
         console.log(
-            'ℹ️ Automatic Rank Trials are disabled in config/rankTrials.js.'
+            'ℹ️ Automatic Captain Trials are disabled in config/rankTrials.js.'
         );
 
         return false;
@@ -1178,7 +1178,7 @@ async function startRankTrialScheduler(
         schedulerInterval
     ) {
         console.log(
-            'ℹ️ Rank Trials scheduler is already running.'
+            'ℹ️ Captain Trials scheduler is already running.'
         );
 
         return false;
@@ -1188,7 +1188,7 @@ async function startRankTrialScheduler(
         !client.isReady()
     ) {
         console.warn(
-            '⚠️ Rank Trials scheduler could not start because Evelynn is not ready.'
+            '⚠️ Captain Trials scheduler could not start because Evelynn is not ready.'
         );
 
         return false;
@@ -1220,7 +1220,7 @@ async function startRankTrialScheduler(
     );
 
     console.log(
-        '⚔️ Automatic Rank Trials Scheduler Started'
+        '⚔️ Automatic Captain Trials Scheduler Started'
     );
 
     console.log(
@@ -1240,7 +1240,7 @@ async function startRankTrialScheduler(
     );
 
     console.log(
-        '🔒 Rank Trials 2.0 Registration Close: Final Reminder'
+        '🔒 Captain Trials 2.0 Registration Close: Final Reminder'
     );
 
     console.log(
@@ -1261,7 +1261,7 @@ async function startRankTrialScheduler(
 }
 
 /**
- * Stop the active Rank Trials scheduler.
+ * Stop the active Captain Trials scheduler.
  *
  * @returns {boolean}
  */
@@ -1283,7 +1283,7 @@ function stopRankTrialScheduler() {
         false;
 
     console.log(
-        '🛑 Automatic Rank Trials scheduler stopped.'
+        '🛑 Automatic Captain Trials scheduler stopped.'
     );
 
     return true;
