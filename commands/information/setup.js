@@ -34,7 +34,7 @@ const SETUP_OPTIONS = Object.freeze([
             'Publish the Soul Reaper verification guide',
 
         emoji:
-            '✦',
+            '🔐',
 
         value:
             'verification-guide'
@@ -76,7 +76,7 @@ const SETUP_OPTIONS = Object.freeze([
             'Publish command, captain and soul roles',
 
         emoji:
-            '♛',
+            '👑',
 
         value:
             'role-information'
@@ -118,7 +118,7 @@ const SETUP_OPTIONS = Object.freeze([
             'Publish every information module',
 
         emoji:
-            '☾',
+            '🌙',
 
         value:
             'full-setup'
