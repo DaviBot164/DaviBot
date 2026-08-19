@@ -631,6 +631,116 @@ async function getMessageLevelRecord(
  * @param {import('discord.js').Message} message
  * @returns {Promise<Object[]>}
  */
+const ACHIEVEMENT_ROLE_RECOVERY_COOLDOWN_MS =
+    15 * 60 * 1_000;
+
+const achievementRoleRecoveryChecks =
+    new Map();
+
+/**
+ * Restore missing Discord Roles for
+ * Achievements already unlocked in PostgreSQL.
+ *
+ * @param {import('discord.js').GuildMember|null} member
+ * @returns {Promise<number>}
+ */
+async function recoverAchievementRoles(
+    member
+) {
+    if (
+        !member ||
+        member.user.bot
+    ) {
+        return 0;
+    }
+
+    const recoveryKey =
+        `${member.guild.id}:${member.id}`;
+
+    const now =
+        Date.now();
+
+    const lastCheck =
+        achievementRoleRecoveryChecks.get(
+            recoveryKey
+        ) ??
+        0;
+
+    if (
+        now - lastCheck <
+        ACHIEVEMENT_ROLE_RECOVERY_COOLDOWN_MS
+    ) {
+        return 0;
+    }
+
+    achievementRoleRecoveryChecks.set(
+        recoveryKey,
+        now
+    );
+
+    try {
+        const achievements =
+            await achievementDatabase
+                .getSoulAchievements(
+                    member.guild.id,
+                    member.id
+                );
+
+        let restoredRoles =
+            0;
+
+        for (
+            const achievement
+            of achievements
+        ) {
+            const achievementId =
+                achievement.achievementId;
+
+            const roleId =
+                ACHIEVEMENT_ROLE_IDS[
+                    achievementId
+                ];
+
+            if (
+                !roleId ||
+                member.roles.cache.has(
+                    roleId
+                )
+            ) {
+                continue;
+            }
+
+            const assigned =
+                await assignAchievementRole(
+                    member,
+                    achievementId
+                );
+
+            if (assigned) {
+                restoredRoles +=
+                    1;
+            }
+        }
+
+        if (
+            restoredRoles >
+            0
+        ) {
+            console.log(
+                `♻️ Restored ${restoredRoles} Achievement Role(s) for ${member.user.tag}.`
+            );
+        }
+
+        return restoredRoles;
+    } catch (error) {
+        achievementRoleRecoveryChecks.delete(
+            recoveryKey
+        );
+
+        throw error;
+    }
+}
+
 async function checkMessageAchievements(
     message
 ) {
@@ -639,6 +749,17 @@ async function checkMessageAchievements(
         message.author.bot
     ) {
         return [];
+    }
+
+    try {
+        await recoverAchievementRoles(
+            message.member
+        );
+    } catch (error) {
+        console.error(
+            `❌ Achievement Role recovery failed for ${message.author.tag}:`,
+            error
+        );
     }
 
     const levelRecord =
