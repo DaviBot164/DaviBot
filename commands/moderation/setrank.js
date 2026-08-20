@@ -188,26 +188,9 @@ function getRankChannel(
  * @param {Object[]} titles
  * @returns {string|null}
  */
-function formatUnlockedTitles(
-    titles
-) {
-    if (
-        !Array.isArray(titles) ||
-        !titles.length
-    ) {
-        return null;
-    }
-
-    return titles
-        .map(
-            title =>
-                `• ${title.displayName}`
-        )
-        .join('\n');
-}
-
 /**
- * Build the official Sin promotion embed.
+ * Build a compact Captain appointment
+ * announcement for Hall of Honor.
  *
  * @param {Object} options
  * @returns {import('discord.js').EmbedBuilder}
@@ -217,134 +200,17 @@ function createPromotionEmbed({
     moderator,
     oldRank,
     newRank,
-    reason,
-    historyId,
-    unlockedTitles = []
+    reason
 }) {
-    const timestamp =
-        Math.floor(
-            Date.now() / 1000
-        );
-
-    const titleText =
-        formatUnlockedTitles(
-            unlockedTitles
-        );
-
-    const fields = [
-        {
-            name:
-                '🌙 Soul',
-
-            value:
-                `${member}\n\`${member.id}\``,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '👑 High Command',
-
-            value:
-                `${moderator}\n\`${moderator.id}\``,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '📜 Previous Rank',
-
-            value:
-                oldRank ||
-                'No previous Rank',
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '⚔️ New Captain Rank',
-
-            value:
-                newRank,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '🆔 Hierarchy Record',
-
-            value:
-                historyId
-                    ? `\`#${historyId}\``
-                    : 'Pending Archive',
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '🕒 Proclaimed At',
-
-            value:
-                `<t:${timestamp}:F>\n(<t:${timestamp}:R>)`,
-
-            inline:
-                true
-        },
-
-        {
-            name:
-                '📖 Reason',
-
-            value:
-                reason,
-
-            inline:
-                false
-        }
-    ];
-
-    if (titleText) {
-        fields.push({
-            name:
-                '🏷️ New Chronicle Titles',
-
-            value:
-                [
-                    titleText,
-                    '',
-                    '-# These Titles are now available through `/settitle`.'
-                ].join('\n'),
-
-            inline:
-                false
-        });
-    }
-
     return createEmbed({
         title:
-            '⚔️ Captain Rank Proclamation',
+            '⚔️・CAPTAIN APPOINTMENT',
 
         description:
             [
-                `${member} has received a new position within LUNAR SEIREITEI.`,
-
+                `${member} has been appointed to **${newRank}**.`,
                 '',
-
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-
-                '',
-
-                '*Evelynn has preserved this proclamation within the Soul Archives.*'
+                'Their place within the Captain hierarchy has been officially recognized.'
             ].join('\n'),
 
         color:
@@ -353,20 +219,65 @@ function createPromotionEmbed({
         thumbnail:
             member.user.displayAvatarURL({
                 size:
-                    1024,
+                    512,
 
                 forceStatic:
                     false
             }),
 
-        fields,
+        fields: [
+            {
+                name:
+                    '📜・PREVIOUS',
+
+                value:
+                    oldRank ||
+                    '◇・UNRANKED',
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    '⚔️・NEW RANK',
+
+                value:
+                    `**${newRank}**`,
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    '📖・REASON',
+
+                value:
+                    reason ||
+                    'No reason provided.',
+
+                inline:
+                    false
+            }
+        ],
 
         footer: {
             text:
-                'LUNAR SEIREITEI • Rank Archive'
+                `${moderator.displayName} • High Command`,
+
+            iconURL:
+                moderator.user.displayAvatarURL({
+                    size:
+                        128,
+
+                    forceStatic:
+                        false
+                })
         }
     });
-}module.exports = {
+}
+module.exports = {
     category:
         'moderation',
 
@@ -907,12 +818,7 @@ function createPromotionEmbed({
                     newRank:
                         rankName,
 
-                    reason,
-
-                    historyId:
-                        savedRank.history_id,
-
-                    unlockedTitles
+                    reason
                 });
 
             /*
