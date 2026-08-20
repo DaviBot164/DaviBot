@@ -665,10 +665,10 @@ async function sendRankFeed({
             '⚔️・CAPTAIN RANK ASSIGNED',
 
         promotion:
-            '♛・SIN PROMOTION',
+            '♛・CAPTAIN PROMOTION',
 
         demotion:
-            '⬇️・SIN DEMOTION',
+            '⬇️・CAPTAIN DEMOTION',
 
         change:
             '⚔️・CAPTAIN RANK CHANGED',
@@ -729,7 +729,7 @@ async function sendRankFeed({
             name:
                 revoked
                     ? '◇・CURRENT'
-                    : 'Ⅹ・NEW RANK',
+                    : '⚔️・NEW CAPTAIN RANK',
 
             value:
                 revoked

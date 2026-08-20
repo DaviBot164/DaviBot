@@ -916,18 +916,76 @@ function createPromotionEmbed({
                 });
 
             /*
-             * Publish the official Rank Feed.
+             * Publish the official announcement
+             * inside Hall of Honor.
              */
             try {
-                await sendRankFeed(
-                    interaction.guild,
-                    promotionEmbed
+                const rankChannel =
+                    getRankChannel(
+                        interaction.guild
+                    );
+
+                if (rankChannel) {
+                    await rankChannel.send({
+                        embeds: [
+                            promotionEmbed
+                        ],
+
+                        allowedMentions: {
+                            parse:
+                                []
+                        }
+                    });
+                } else {
+                    console.warn(
+                        '⚠️ Hall of Honor channel is unavailable.'
+                    );
+                }
+            } catch (
+                announcementError
+            ) {
+                console.error(
+                    '⚠️ Hall of Honor publication failed:',
+                    announcementError
                 );
+            }
+
+            /*
+             * Publish the Captain Rank activity
+             * inside Soul Progression.
+             */
+            try {
+                const feedPublished =
+                    await sendRankFeed({
+                        member,
+
+                        moderator:
+                            interaction.member,
+
+                        oldRank,
+
+                        newRank:
+                            rankName,
+
+                        reason,
+
+                        historyId:
+                            savedRank.history_id,
+
+                        revoked:
+                            false
+                    });
+
+                if (!feedPublished) {
+                    console.warn(
+                        '⚠️ Captain Rank Feed was not published. Check Feed configuration and permissions.'
+                    );
+                }
             } catch (
                 feedError
             ) {
                 console.error(
-                    '⚠️ Rank Feed publication failed:',
+                    '⚠️ Captain Rank Feed publication failed:',
                     feedError
                 );
             }
@@ -973,7 +1031,9 @@ function createPromotionEmbed({
                         notificationError
                     );
                 }
-            }            await interaction.editReply({
+            }
+
+            await interaction.editReply({
                 embeds: [
                     promotionEmbed
                 ]
