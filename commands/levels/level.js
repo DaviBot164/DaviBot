@@ -306,6 +306,30 @@ module.exports = {
             )
 
             /*
+             * /level reward-clear
+             */
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('reward-clear')
+                    .setDescription(
+                        'Remove every configured reward from one Level.'
+                    )
+
+                    .addIntegerOption(option =>
+                        option
+                            .setName('level')
+                            .setDescription(
+                                'The Level whose rewards will be cleared'
+                            )
+                            .setMinValue(1)
+                            .setMaxValue(
+                                MAX_LEVEL
+                            )
+                            .setRequired(true)
+                    )
+            )
+
+            /*
              * /level rewards
              */
             .addSubcommand(subcommand =>
@@ -870,6 +894,63 @@ module.exports = {
 
                 console.log(
                     `🗑️ Level ${requiredLevel} reward removed: ${rewardRole.name}`
+                );
+
+                return;
+            }
+
+            /*
+             * CLEAR LEVEL REWARDS
+             */
+            if (
+                subcommand ===
+                'reward-clear'
+            ) {
+                const requiredLevel =
+                    interaction.options
+                        .getInteger(
+                            'level',
+                            true
+                        );
+
+                const removedCount =
+                    await levelDatabase
+                        .removeLevelRewardsAtLevel(
+                            interaction.guild.id,
+                            requiredLevel
+                        );
+
+                if (
+                    removedCount ===
+                    0
+                ) {
+                    await interaction.editReply({
+                        embeds: [
+                            createErrorEmbed(
+                                '❌ Rewards Not Found',
+                                `No rewards are configured for Level \`${requiredLevel}\`.`
+                            )
+                        ]
+                    });
+
+                    return;
+                }
+
+                await interaction.editReply({
+                    embeds: [
+                        createWarningEmbed(
+                            '🗑️ Level Rewards Cleared',
+                            [
+                                `Removed \`${removedCount}\` reward(s) from Level \`${requiredLevel}\`.`,
+                                '',
+                                `🛡️ **Cleared By:** ${interaction.user}`
+                            ].join('\n')
+                        )
+                    ]
+                });
+
+                console.log(
+                    `🗑️ ${interaction.user.tag} cleared ${removedCount} reward(s) from Level ${requiredLevel}.`
                 );
 
                 return;

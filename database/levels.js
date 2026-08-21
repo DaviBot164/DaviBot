@@ -1166,6 +1166,35 @@ async function removeLevelReward(
 }
 
 /**
+ * Remove every configured reward
+ * from one Level.
+ *
+ * @param {string} guildId
+ * @param {number} level
+ * @returns {Promise<number>}
+ */
+async function removeLevelRewardsAtLevel(
+    guildId,
+    level
+) {
+    const result =
+        await query(
+            `
+                DELETE FROM level_rewards
+                WHERE guild_id = $1
+                  AND level = $2
+                RETURNING role_id;
+            `,
+            [
+                guildId,
+                level
+            ]
+        );
+
+    return result.rows.length;
+}
+
+/**
  * Get every configured Level reward.
  *
  * @param {string} guildId
@@ -1298,6 +1327,7 @@ module.exports = {
 
     addLevelReward,
     removeLevelReward,
+    removeLevelRewardsAtLevel,
     getLevelRewards,
     getEarnedLevelRewards
 };
