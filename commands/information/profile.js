@@ -20,6 +20,10 @@ const {
 const brand =
     require('../../config/brand');
 
+const {
+    ACHIEVEMENT_ROLE_IDS
+} = require('../../handlers/achievementHandler');
+
 function formatNumber(value) {
     const number =
         Number(value);
@@ -64,42 +68,22 @@ async function getActiveTitle(
         : null;
 }
 
-async function getProgressionRole(
-    member,
-    level
-) {
-    const rewards =
-        await loadSafely(
-            () =>
-                levelDatabase
-                    .getEarnedLevelRewards(
-                        member.guild.id,
-                        level
-                    ),
-            []
-        );
+function getSoulRole(member) {
+    const roleId =
+        Object.values(
+            ACHIEVEMENT_ROLE_IDS
+        )
+            .reverse()
+            .find(
+                id =>
+                    member.roles.cache.has(
+                        id
+                    )
+            );
 
-    return [...rewards]
-        .sort(
-            (first, second) =>
-                second.level -
-                first.level
-        )
-        .map(
-            reward =>
-                member.guild.roles.cache.get(
-                    reward.roleId
-                )
-        )
-        .find(
-            role =>
-                role &&
-                member.roles.cache.has(
-                    role.id
-                )
-        )
-        ?.toString() ??
-        'None';
+    return roleId
+        ? `<@&${roleId}>`
+        : 'None';
 }
 
 function buildMediaRow(
@@ -321,10 +305,9 @@ module.exports = {
                     0
                 );
 
-            const progressionRole =
-                await getProgressionRole(
-                    member,
-                    level
+            const soulRole =
+                getSoulRole(
+                    member
                 );
 
             const avatarURL =
@@ -410,7 +393,7 @@ module.exports = {
                                         ? `#${formatNumber(serverRank)}`
                                         : 'Unranked'
                                 }\``,
-                                `**Soul Role:** ${progressionRole}`
+                                `**Soul Role:** ${soulRole}`
                             ].join(
                                 '\n'
                             ),
