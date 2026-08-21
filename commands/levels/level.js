@@ -29,6 +29,9 @@ const MAX_XP_AMOUNT =
 const MAX_LEVEL =
     10_000;
 
+const INVALID_LEVEL_USER_MESSAGE =
+    'Bots cannot participate in the Level System.';
+
 /**
  * Format a number using separators.
  *
@@ -102,27 +105,6 @@ function isValidLevelUser(
     );
 }
 
-/**
- * Create a Level data summary.
- *
- * @param {import('discord.js').User} user
- * @param {Object} levelData
- * @returns {string}
- */
-function createLevelSummary(
-    user,
-    levelData
-) {
-    return [
-        `🌑 **Soul:** ${user}`,
-        `🆔 **Soul ID:** \`${user.id}\``,
-        '',
-        `🏆 **Level:** \`${levelData.level}\``,
-        `⭐ **Total XP:** \`${formatNumber(levelData.xp)}\``,
-        `💬 **Messages Recorded:** \`${formatNumber(levelData.messageCount)}\``
-    ].join('\n');
-}
-
 module.exports = {
     category:
         'levels',
@@ -131,7 +113,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('level')
             .setDescription(
-                'Manage the Crimson Eclipse Level System.'
+                'Manage the LUNAR SEIREITEI Level System.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.Administrator
@@ -367,7 +349,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Permission Denied',
-                            'Only an Administrator may manage the Crimson Eclipse Level System.'
+                            'Only an Administrator may manage the LUNAR SEIREITEI Level System.'
                         )
                     ],
 
@@ -414,7 +396,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Invalid Soul',
-                                'Bots cannot receive XP within the Crimson Eclipse Level System.'
+                                INVALID_LEVEL_USER_MESSAGE
                             )
                         ]
                     });
@@ -501,7 +483,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Invalid Soul',
-                                'Bots do not participate in the Crimson Eclipse Level System.'
+                                INVALID_LEVEL_USER_MESSAGE
                             )
                         ]
                     });
@@ -581,7 +563,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Invalid Soul',
-                                'Bots cannot receive a Level within the Crimson Eclipse Level System.'
+                                INVALID_LEVEL_USER_MESSAGE
                             )
                         ]
                     });
@@ -648,7 +630,7 @@ module.exports = {
                         embeds: [
                             createErrorEmbed(
                                 '❌ Invalid Soul',
-                                'Bots do not participate in the Crimson Eclipse Level System.'
+                                INVALID_LEVEL_USER_MESSAGE
                             )
                         ]
                     });
@@ -808,7 +790,7 @@ module.exports = {
                         createSuccessEmbed(
                             '🎖️ Level Reward Added',
                             [
-                                `${rewardRole} is now connected to the Crimson Eclipse progression system.`,
+                                `${rewardRole} is now a Level reward in LUNAR SEIREITEI.`,
                                 '',
                                 `🌑 **Required Level:** \`${requiredLevel}\``,
                                 `⭐ **Required Total XP:** \`${formatNumber(requiredXp)}\``,
@@ -913,7 +895,7 @@ module.exports = {
                         embeds: [
                             createEmbed({
                                 title:
-                                    '🎖️ Crimson Eclipse Level Rewards',
+                                    '☾・LEVEL REWARDS',
 
                                 description:
                                     [
@@ -979,11 +961,11 @@ module.exports = {
                     embeds: [
                         createEmbed({
                             title:
-                                '🎖️ Crimson Eclipse Level Rewards',
+                                '☾・LEVEL REWARDS',
 
                             description:
                                 [
-                                    'The rewards earned by Souls who continue their ascent beneath the crimson moon.',
+                                    'Progression rewards earned beneath the eternal moon.',
                                     '',
                                     '━━━━━━━━━━━━━━━━━━━━',
                                     '',
