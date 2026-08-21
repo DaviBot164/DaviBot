@@ -9,7 +9,8 @@ const {
 } = require('../../utils/embeds');
 
 const {
-    levels: levelDatabase
+    levels: levelDatabase,
+    ranks: rankDatabase
 } = require('../../database');
 
 const brand =
@@ -244,7 +245,8 @@ module.exports = {
 
             const [
                 rankPosition,
-                rewards
+                rewards,
+                captainRank
             ] =
                 await Promise.all([
                     levelDatabase
@@ -256,6 +258,12 @@ module.exports = {
                     levelDatabase
                         .getLevelRewards(
                             interaction.guild.id
+                        ),
+
+                    rankDatabase
+                        .getCurrentRank(
+                            interaction.guild.id,
+                            targetUser.id
                         )
                 ]);
 
@@ -388,7 +396,8 @@ module.exports = {
                                 '✦・CURRENT STANDING',
 
                             value: [
-                                `**Server Rank:** \`${serverRankDisplay}\``,
+                                `**Captain Rank:** ${captainRank?.rank_name ?? 'Unranked'}`,
+                                `**Level Rank:** \`${serverRankDisplay}\``,
                                 `**Level:** \`${formatNumber(levelData.level)}\``,
                                 `**Total XP:** \`${formatNumber(levelData.xp)}\``,
                                 `**Messages:** \`${formatNumber(levelData.messageCount)}\``,
