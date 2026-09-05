@@ -5,8 +5,9 @@ const {
 const brand =
     require('../config/brand');
 
-const channels =
-    require('../config/channels');
+const {
+    getGuildProfile
+} = require('../config/guildProfiles');
 
 const WELCOME_BANNER_NAME =
     'welcome-banner.png';
@@ -14,9 +15,19 @@ const WELCOME_BANNER_NAME =
 const WELCOME_EMBED_COLOR =
     brand.themeColor;
 
+function getWelcomeBannerName(
+    guildId
+) {
+    return (
+        getGuildProfile(guildId)
+            .assets
+            .welcomeBannerName ??
+        null
+    );
+}
+
 /**
- * Create the Lunar Seireitei
- * Welcome Embed.
+ * Create a server-aware Welcome Embed.
  *
  * @param {import('discord.js').GuildMember} member
  * @returns {EmbedBuilder}
@@ -24,6 +35,11 @@ const WELCOME_EMBED_COLOR =
 function createWelcomeEmbed(
     member
 ) {
+    const profile =
+        getGuildProfile(
+            member.guild.id
+        );
+
     const botAvatar =
         member.client.user
             .displayAvatarURL({
@@ -46,56 +62,78 @@ function createWelcomeEmbed(
 
     const verifyChannel =
         member.guild.channels.cache.get(
-            channels.verifyChannelId
+            profile.channels
+                .verifyChannelId
         );
+
+    const verifiedName =
+        profile.roles
+            .verifiedName;
+
+    const unverifiedName =
+        profile.roles
+            .unverifiedName;
 
     const verificationText =
         verifyChannel?.isTextBased()
-            ? `Verify in ${verifyChannel} to enter Soul Society as a **Soul Reaper**.`
-            : 'Complete verification to enter Soul Society as a **Soul Reaper**.';
+            ? `Verify in ${verifyChannel} to enter **${profile.shortName}** as **${verifiedName}**.`
+            : `Complete verification to enter **${profile.shortName}** as **${verifiedName}**.`;
 
-    return new EmbedBuilder()
-        .setColor(
-            WELCOME_EMBED_COLOR
-        )
+    const embed =
+        new EmbedBuilder()
+            .setColor(
+                profile.themeColor
+            )
 
-        .setAuthor({
-            name:
-                `${brand.botName} • ${brand.serverName}`,
+            .setAuthor({
+                name:
+                    `${profile.botName} • ${profile.serverName}`,
 
-            iconURL:
-                botAvatar
-        })
+                iconURL:
+                    botAvatar
+            })
 
-        .setDescription(
-            [
-                `Welcome to **${brand.serverName}**, ${member}.`,
-                '',
-                'You have arrived as a **Wandering Soul**.',
-                verificationText,
-                '',
-                `*${brand.motto}*`
-            ].join('\n')
-        )
+            .setDescription(
+                [
+                    `Welcome to **${profile.serverName}**, ${member}.`,
+                    '',
+                    `You have arrived as a **${unverifiedName}**.`,
+                    verificationText,
+                    '',
+                    `*${profile.motto}*`
+                ].join('\n')
+            )
 
-        .setThumbnail(
-            memberAvatar
-        )
+            .setThumbnail(
+                memberAvatar
+            )
 
-        .setImage(
-            `attachment://${WELCOME_BANNER_NAME}`
-        )
+            .setFooter({
+                text:
+                    `${profile.serverName} • Welcome`
+            })
 
-        .setFooter({
-            text:
-                `${brand.serverName} • Welcome`
-        })
+            .setTimestamp();
 
-        .setTimestamp();
+    const bannerName =
+        getWelcomeBannerName(
+            member.guild.id
+        );
+
+    if (
+        bannerName
+    ) {
+        embed.setImage(
+            `attachment://${bannerName}`
+        );
+    }
+
+    return embed;
 }
 
 module.exports = {
     WELCOME_BANNER_NAME,
     WELCOME_EMBED_COLOR,
+    getWelcomeBannerName,
     createWelcomeEmbed
 };

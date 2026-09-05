@@ -1,32 +1,34 @@
 /**
- * Lunar Seireitei public identity.
+ * Veldrath public identity.
  *
  * Internal database keys and component IDs
- * remain separate for compatibility.
+ * remain unchanged for compatibility.
  */
-
 module.exports = Object.freeze({
     serverName:
-        'LUNAR SEIREITEI',
+        'Veldrath',
 
     shortName:
-        'Seireitei',
+        'Veldrath',
 
     botName:
         'Evelynn',
 
     botTitle:
-        'Moon Spirit',
+        'Crown Keeper',
 
     rankSystemName:
-        'Captain Ranks',
+        'Dragon Knight Ranks',
 
     trialSystemName:
-        'Captain Trials',
+        'Dragon Trials',
 
     themeColor:
-        '#6C7CFF',
+        '#9B1C31',
+
+    accentColor:
+        '#C8A45D',
 
     motto:
-        'Under the eternal moon, every soul earns its place.'
+        'Forged in Shadow. Crowned by Flame.'
 });

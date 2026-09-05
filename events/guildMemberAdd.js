@@ -9,9 +9,13 @@ const path =
     require('path');
 
 const {
-    WELCOME_BANNER_NAME,
+    getWelcomeBannerName,
     createWelcomeEmbed
 } = require('../utils/welcomeEmbed');
+
+const {
+    getGuildProfile
+} = require('../config/guildProfiles');
 
 const automodConfig =
     require('../config/automod');
@@ -21,9 +25,6 @@ const {
     addMemberToRaidCase,
     closeRaidCase
 } = require('../database/raidCases');
-
-const WELCOME_CHANNEL_ID =
-    '1528401903438925906';
 
 const recentJoins =
     new Map();
@@ -656,9 +657,15 @@ async function processRaidDetection(
 function findWelcomeChannel(
     guild
 ) {
+    const profile =
+        getGuildProfile(
+            guild.id
+        );
+
     const channel =
         guild.channels.cache.get(
-            WELCOME_CHANNEL_ID
+            profile.channels
+                .welcomeChannelId
         );
 
     if (
@@ -736,38 +743,40 @@ async function sendWelcomeMessage(
             )
         ) {
             console.error(
-                `❌ Evelynn cannot send Welcome messages in #${welcomeChannel.name}.`
+                `⚠️ Missing Welcome channel permissions in ${member.guild.name}.`
             );
 
             return false;
         }
 
-        const welcomeBannerPath =
-            path.join(
-                __dirname,
-                '..',
-                'assets',
-                'images',
-                WELCOME_BANNER_NAME
+        const bannerName =
+            getWelcomeBannerName(
+                member.guild.id
             );
 
         let welcomeBanner =
             null;
 
-        try {
+        if (
+            bannerName
+        ) {
+            const welcomeBannerPath =
+                path.join(
+                    __dirname,
+                    '..',
+                    'assets',
+                    'images',
+                    bannerName
+                );
+
             welcomeBanner =
                 new AttachmentBuilder(
                     welcomeBannerPath,
                     {
                         name:
-                            WELCOME_BANNER_NAME
+                            bannerName
                     }
                 );
-        } catch (error) {
-            console.error(
-                `⚠️ Welcome banner unavailable: ${WELCOME_BANNER_NAME}`,
-                error
-            );
         }
 
         const payload = {
