@@ -9,9 +9,6 @@ const {
     getGuildProfile
 } = require('../config/guildProfiles');
 
-const WELCOME_BANNER_NAME =
-    'welcome-banner.png';
-
 const WELCOME_EMBED_COLOR =
     brand.themeColor;
 
@@ -132,7 +129,6 @@ function createWelcomeEmbed(
 }
 
 module.exports = {
-    WELCOME_BANNER_NAME,
     WELCOME_EMBED_COLOR,
     getWelcomeBannerName,
     createWelcomeEmbed

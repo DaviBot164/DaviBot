@@ -9,7 +9,7 @@ const {
 
 const {
     createWelcomeEmbed,
-    WELCOME_BANNER_NAME
+    getWelcomeBannerName
 } = require('../../utils/welcomeEmbed');
 
 async function sendWelcomeError(
@@ -70,7 +70,7 @@ module.exports = {
                 'testwelcome'
             )
             .setDescription(
-                'Preview the current LUNAR SEIREITEI Welcome message.'
+                'Preview the current server Welcome message.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageGuild
@@ -88,7 +88,21 @@ module.exports = {
             ) {
                 await sendWelcomeError(
                     interaction,
-                    'This command can only be used inside LUNAR SEIREITEI.'
+                    'This command can only be used inside a server.'
+                );
+
+                return;
+            }
+
+            const bannerName =
+                getWelcomeBannerName(
+                    interaction.guild.id
+                );
+
+            if (!bannerName) {
+                await sendWelcomeError(
+                    interaction,
+                    'No Welcome banner is configured for this server.'
                 );
 
                 return;
@@ -101,7 +115,7 @@ module.exports = {
                     '..',
                     'assets',
                     'images',
-                    WELCOME_BANNER_NAME
+                    bannerName
                 );
 
             await interaction.reply({
@@ -117,19 +131,19 @@ module.exports = {
                             bannerPath,
 
                         name:
-                            WELCOME_BANNER_NAME
+                            bannerName
                     }
                 ]
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn /testwelcome command error:',
+                '❌ Welcome preview command error:',
                 error
             );
 
             await sendWelcomeError(
                 interaction,
-                'Evelynn could not generate the Welcome preview.'
+                'The Welcome preview could not be generated.'
             );
         }
     }
