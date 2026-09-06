@@ -1,6 +1,5 @@
 const {
-    SlashCommandBuilder,
-    MessageFlags
+    SlashCommandBuilder
 } = require('discord.js');
 
 const {
@@ -8,23 +7,48 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
+function getStatus(
+    latency
+) {
+    if (latency < 150) {
+        return '🟢 Stable';
+    }
+
+    if (latency < 300) {
+        return '🟡 Delayed';
+    }
+
+    return '🔴 High Latency';
+}
+
 module.exports = {
-    category: 'general',
+    category:
+        'general',
 
-    data: new SlashCommandBuilder()
-        .setName('ping')
-        .setDescription(
-            'Check Evelynn’s current latency and status.'
-        )
-        .setDMPermission(false),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'ping'
+            )
+            .setDescription(
+                "Check the bot's current latency and status."
+            )
+            .setDMPermission(
+                false
+            ),
 
-    /**
-     * Execute the /ping command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         try {
             const apiLatency =
                 Math.max(
@@ -38,15 +62,8 @@ module.exports = {
                 Math.max(
                     0,
                     Date.now() -
-                    interaction.createdTimestamp
+                        interaction.createdTimestamp
                 );
-
-            const status =
-                apiLatency < 150
-                    ? '🟢 Stable'
-                    : apiLatency < 300
-                        ? '🟡 Delayed'
-                        : '🔴 High Latency';
 
             const botAvatar =
                 interaction.client.user
@@ -61,13 +78,13 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        '🌙 Evelynn Status',
+                        `⚡ ${profile.botName} Status`,
 
                     description:
-                        '**Moon Spirit of Seireitei is online.**',
+                        `**${profile.botName}, ${profile.botTitle} of ${profile.shortName}, is online.**`,
 
                     color:
-                        '#6F42C1',
+                        profile.themeColor,
 
                     thumbnail:
                         botAvatar,
@@ -75,40 +92,44 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '🌐 API Latency',
+                                '◆ Status',
 
                             value:
-                                `\`${apiLatency} ms\``,
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '⚡ Response Time',
-
-                            value:
-                                `\`${responseTime} ms\``,
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '🛡️ Status',
-
-                            value:
-                                status,
+                                getStatus(
+                                    apiLatency
+                                ),
 
                             inline:
                                 false
+                        },
+
+                        {
+                            name:
+                                'Gateway',
+
+                            value:
+                                `${apiLatency} ms`,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                'Response',
+
+                            value:
+                                `${responseTime} ms`,
+
+                            inline:
+                                true
                         }
                     ]
                 });
 
             embed.setAuthor({
                 name:
-                    'Evelynn • Moon Spirit of Seireitei',
+                    `${profile.botName} • ${profile.botTitle}`,
 
                 iconURL:
                     botAvatar
@@ -116,7 +137,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `LUNAR SEIREITEI System Check • Requested by ${interaction.user.username}`,
+                    `${profile.serverName} • System Check • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar
@@ -129,59 +150,18 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Evelynn /ping:',
+                '❌ Ping command error:',
                 error
             );
 
-            const errorEmbed =
-                createErrorEmbed(
-                    '❌ Evelynn Status Unavailable',
-                    'Evelynn could not calculate the current latency.'
-                );
-
-            if (interaction.deferred) {
-                await interaction
-                    .editReply({
-                        embeds: [
-                            errorEmbed
-                        ]
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            if (interaction.replied) {
-                await interaction
-                    .followUp({
-                        embeds: [
-                            errorEmbed
-                        ],
-
-                        flags:
-                            MessageFlags.Ephemeral
-                    })
-                    .catch(
-                        () => null
-                    );
-
-                return;
-            }
-
-            await interaction
-                .reply({
-                    embeds: [
-                        errorEmbed
-                    ],
-
-                    flags:
-                        MessageFlags.Ephemeral
-                })
-                .catch(
-                    () => null
-                );
+            await interaction.reply({
+                embeds: [
+                    createErrorEmbed(
+                        `❌ ${profile.botName} Status Unavailable`,
+                        `${profile.botName} could not calculate the current latency.`
+                    )
+                ]
+            });
         }
     }
 };
