@@ -1,5 +1,5 @@
 /**
- * Evelynn
+ * Server-aware
  * Command: /userinfo
  */
 
@@ -15,6 +15,10 @@ const {
     createEmbed,
     createErrorEmbed
 } = require('../../utils/embeds');
+
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
 module.exports = {
     category:
@@ -53,6 +57,11 @@ module.exports = {
     async execute(
         interaction
     ) {
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         try {
             if (
                 !interaction.inGuild()
@@ -61,7 +70,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'This command can only be used inside LUNAR SEIREITEI.'
+                            'This command can only be used inside a server.'
                         )
                     ],
 
@@ -102,7 +111,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of LUNAR SEIREITEI.'
+                            'This user is not currently a member of this server.'
                         )
                     ]
                 });
@@ -183,13 +192,13 @@ module.exports = {
             const embed =
                 createEmbed({
                     title:
-                        'Ⅹ・MEMBER INFORMATION',
+                        '◆・MEMBER INFORMATION',
 
                     description:
                         `Information for ${user}.`,
 
                     color:
-                        '#5B3A78',
+                        profile.themeColor,
 
                     thumbnail:
                         avatarURL,
@@ -227,7 +236,7 @@ module.exports = {
 
                         {
                             name:
-                                'Ⅹ・JOINED SERVER',
+                                '◆・JOINED SERVER',
 
                             value:
                                 joinedText,
@@ -253,7 +262,7 @@ module.exports = {
                     ]
                 });            embed.setAuthor({
                 name:
-                    'Evelynn • LUNAR SEIREITEI',
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -261,7 +270,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `Lunar Seireitei • Requested by ${interaction.user.username}`,
+                    `${profile.serverName} • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar
@@ -320,14 +329,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn /userinfo command error:',
+                '❌ User information command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Member Information Unavailable',
-                    'Evelynn could not retrieve this member information.'
+                    `${profile.botName} could not retrieve this member information.`
                 );
 
             if (
