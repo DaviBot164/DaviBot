@@ -11,11 +11,20 @@ const {
 const embedConfig =
     require('../config/embed');
 
+const {
+    getGuildProfile
+} = require('../config/guildProfiles');
+
 const HELP_MENU_ID =
     'umbra_help_category';
 
-const HELP_COLOR =
-    '#B026FF';
+function getProfile(
+    interaction
+) {
+    return getGuildProfile(
+        interaction.guildId
+    );
+}
 
 const HELP_CATEGORIES = [
     {
@@ -149,7 +158,7 @@ const HELP_CATEGORIES = [
         label: 'Administration',
         emoji: '⚙️',
         description:
-            'LUNAR SEIREITEI setup and configuration.',
+            'Server setup and configuration.',
 
         commands: [
             'setup',
@@ -232,7 +241,7 @@ function formatCommand(
 
     return createEmbed({
         title:
-            'Ⅹ・COMMAND MENU',
+            '◆・COMMAND MENU',
 
         description: [
             `Welcome, ${interaction.user}.`,
@@ -249,7 +258,9 @@ function formatCommand(
         ].join('\n'),
 
         color:
-            HELP_COLOR,
+            getProfile(
+                interaction
+            ).themeColor,
 
         thumbnail:
             getGuildIcon(
@@ -258,7 +269,7 @@ function formatCommand(
 
         author: {
             name:
-                'Evelynn • LUNAR SEIREITEI',
+                `${getProfile(interaction).botName} • ${getProfile(interaction).serverName}`,
 
             iconURL:
                 getBotAvatar(
@@ -268,7 +279,7 @@ function formatCommand(
 
         footer: {
             text:
-                `Lunar Seireitei • Opened by ${interaction.user.username}`,
+                `${getProfile(interaction).serverName} • Opened by ${interaction.user.username}`,
 
             iconURL:
                 getBotAvatar(
@@ -321,11 +332,13 @@ function createHelpCategoryEmbed(
         ].join('\n'),
 
         color:
-            HELP_COLOR,
+            getProfile(
+                interaction
+            ).themeColor,
 
         author: {
             name:
-                'Evelynn • Command Menu',
+                `${getProfile(interaction).botName} • Command Menu`,
 
             iconURL:
                 getBotAvatar(
@@ -335,7 +348,7 @@ function createHelpCategoryEmbed(
 
         footer: {
             text:
-                `Lunar Seireitei • Requested by ${interaction.user.username}`,
+                `${getProfile(interaction).serverName} • Requested by ${interaction.user.username}`,
 
             iconURL:
                 getBotAvatar(

@@ -12,6 +12,10 @@ const {
     createHelpSelectMenu
 } = require('../../utils/helpMenu');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
 async function sendHelpError(
     interaction,
     title,
@@ -78,7 +82,7 @@ module.exports = {
                 'help'
             )
             .setDescription(
-                'Open Evelynn’s interactive command menu.'
+                "Open the bot's interactive command menu."
             )
             .setDMPermission(
                 false
@@ -87,6 +91,11 @@ module.exports = {
     async execute(
         interaction
     ) {
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         try {
             if (
                 !interaction.inGuild()
@@ -94,7 +103,7 @@ module.exports = {
                 await sendHelpError(
                     interaction,
                     '❌ Server Only Command',
-                    'The command menu can only be opened inside LUNAR SEIREITEI.'
+                    'The command menu can only be opened inside a server.'
                 );
 
                 return;
@@ -129,14 +138,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn /help command error:',
+                '❌ Help command error:',
                 error
             );
 
             await sendHelpError(
                 interaction,
                 '❌ Command Menu Unavailable',
-                'Evelynn could not open the command menu.'
+                `${profile.botName} could not open the command menu.`
             );
         }
     }
