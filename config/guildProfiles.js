@@ -201,7 +201,7 @@ const GUILD_PROFILES =
 
                 assets: {
                     welcomeBannerName:
-                        'welcome-banner.png'
+                        'welcome-banner.gif'
                 }
             })
     });
