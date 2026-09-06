@@ -12,7 +12,7 @@ module.exports = Object.freeze({
         'Veldrath',
 
     botName:
-        'Evelynn',
+        'Vaelora',
 
     botTitle:
         'Crown Keeper',

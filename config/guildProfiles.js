@@ -77,7 +77,7 @@ const DEFAULT_GUILD_PROFILE =
             'Community',
 
         botName:
-            'Evelynn',
+            'Vaelora',
 
         botTitle:
             'Guardian',
@@ -151,7 +151,7 @@ const GUILD_PROFILES =
                                 '🐉・CROWN KEEPER',
 
                             description:
-                                'Evelynn, guardian of the Crown'
+                                'Vaelora, guardian of the Crown'
                         },
                         {
                             name:
