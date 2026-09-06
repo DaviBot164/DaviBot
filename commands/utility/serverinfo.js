@@ -9,13 +9,10 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
-/**
- * Count channels of a specific type.
- *
- * @param {import('discord.js').Guild} guild
- * @param {number} channelType
- * @returns {number}
- */
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
 function countChannelsByType(
     guild,
     channelType
@@ -26,13 +23,6 @@ function countChannelsByType(
     ).size;
 }
 
-/**
- * Format the server
- * verification level.
- *
- * @param {number} verificationLevel
- * @returns {string}
- */
 function formatVerificationLevel(
     verificationLevel
 ) {
@@ -69,21 +59,20 @@ module.exports = {
                 'serverinfo'
             )
             .setDescription(
-                'View information about LUNAR SEIREITEI.'
+                'View information about the current server.'
             )
             .setDMPermission(
                 false
             ),
 
-    /**
-     * Execute the /serverinfo command.
-     *
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
-     * @returns {Promise<void>}
-     */
     async execute(
         interaction
     ) {
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         try {
             const { guild } =
                 interaction;
@@ -93,7 +82,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Server Only Command',
-                            'This command can only be used inside LUNAR SEIREITEI.'
+                            'This command can only be used inside a server.'
                         )
                     ],
 
@@ -161,7 +150,7 @@ module.exports = {
             const createdTimestamp =
                 Math.floor(
                     guild.createdTimestamp /
-                    1_000
+                        1_000
                 );
 
             const botCount =
@@ -174,19 +163,19 @@ module.exports = {
                 Math.max(
                     0,
                     guild.memberCount -
-                    botCount
+                        botCount
                 );
 
             const embed =
                 createEmbed({
                     title:
-                        'Ⅹ・SERVER INFORMATION',
+                        '♛・SERVER INFORMATION',
 
                     description:
                         `Official information for **${guild.name}**.`,
 
                     color:
-                        '#5B3A78',
+                        profile.themeColor,
 
                     thumbnail:
                         serverIcon ||
@@ -253,9 +242,11 @@ module.exports = {
                                 false
                         }
                     ]
-                });            embed.setAuthor({
+                });
+
+            embed.setAuthor({
                 name:
-                    'Evelynn • LUNAR SEIREITEI',
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -263,7 +254,7 @@ module.exports = {
 
             embed.setFooter({
                 text:
-                    `Lunar Seireitei • Requested by ${interaction.user.username}`,
+                    `${profile.serverName} • Requested by ${interaction.user.username}`,
 
                 iconURL:
                     botAvatar
@@ -282,14 +273,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Evelynn /serverinfo command error:',
+                '❌ Server information command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Server Information Unavailable',
-                    'Evelynn could not retrieve the server information.'
+                    `${profile.botName} could not retrieve the server information.`
                 );
 
             if (
