@@ -11,31 +11,45 @@ const {
 const brand =
     require('../../config/brand');
 
-const setupChannels =
-    require('../../config/setupChannels');
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
+/*
+ * Legacy export kept for compatibility.
+ * Runtime color comes from the Guild Profile.
+ */
 const RULES_EMBED_COLOR =
     brand.themeColor;
 
 /**
- * Get the Lunar Seireitei
- * Sacred Laws channel.
+ * Get the configured Royal Laws channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getSacredLawsChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .sacredLawsChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                setupChannels
-                    .sacredLawsChannelId
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -45,8 +59,8 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Rules Channel Missing',
-                    'The configured rules channel could not be found.'
+                    'Royal Laws Channel Missing',
+                    'The configured Royal Laws channel could not be found.'
                 )
             ],
 
@@ -60,12 +74,14 @@ async function getSacredLawsChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -91,9 +107,9 @@ async function getSacredLawsChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish the Sacred Laws in ${channel}.`,
+                        `${profile.botName} cannot publish the Royal Laws in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -114,8 +130,9 @@ async function getSacredLawsChannel(
 }
 
 /**
- * Publish the official
- * Lunar Seireitei Sacred Laws.
+ * Publish the server-aware Royal Laws.
+ *
+ * The legacy function name remains unchanged.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -123,12 +140,19 @@ async function getSacredLawsChannel(
 async function publishSacredLaws(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const channel =
         await getSacredLawsChannel(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -155,17 +179,17 @@ async function publishSacredLaws(
     const rulesEmbed =
         createEmbed({
             title:
-                '☾・SACRED LAWS',
+                '⚖️・ROYAL LAWS',
 
             description:
                 [
-                    '**Respect the server. Respect its members. Play fair.**',
+                    '**Respect the kingdom. Respect its people. Fight with honor.**',
                     '',
-                    `These laws apply to everyone within **${brand.serverName}**.`
+                    `These laws bind everyone within **${profile.serverName}**.`
                 ].join('\n'),
 
             color:
-                RULES_EMBED_COLOR,
+                profile.themeColor,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -196,13 +220,13 @@ async function publishSacredLaws(
 
                 {
                     name:
-                        'Ⅱ・FAIR PLAY',
+                        'Ⅱ・HONORABLE COMBAT',
 
                     value:
                         [
                             '• No exploiting, scripting or cheating.',
-                            '• No unauthorized tools that provide an unfair advantage.',
-                            '• Do not intentionally abuse glitches against other players.',
+                            '• No tools that provide an unfair advantage.',
+                            '• Do not intentionally abuse glitches.',
                             '• Do not assist others in cheating.'
                         ].join('\n'),
 
@@ -220,7 +244,7 @@ async function publishSacredLaws(
                             '• No NSFW or disturbing content.',
                             '• No scams, phishing or malicious links.',
                             '• No unauthorized advertising.',
-                            '• Use channels for their intended purpose.'
+                            '• Use every channel for its intended purpose.'
                         ].join('\n'),
 
                     inline:
@@ -229,16 +253,16 @@ async function publishSacredLaws(
 
                 {
                     name:
-                        'Ⅳ・HIGH COMMAND & MODERATION',
+                        'Ⅳ・ROYAL AUTHORITY',
 
                     value:
                         [
-                            '• Respect High Command decisions.',
+                            '• Respect staff decisions.',
                             '• Do not evade moderation actions.',
                             '• Do not start public arguments over punishments.',
-                            '• Use tickets for appeals or disputes.',
+                            '• Use support tickets for appeals or disputes.',
                             '',
-                            '-# The Sacred Laws apply to High Command as well.'
+                            '-# The Royal Laws bind the server staff as well.'
                         ].join('\n'),
 
                     inline:
@@ -251,11 +275,11 @@ async function publishSacredLaws(
 
                     value:
                         [
-                            '• Open tickets only when help is genuinely needed.',
+                            '• Open a ticket only when help is needed.',
                             '• Explain the issue clearly.',
                             '• Provide evidence when possible.',
                             '• Do not create false or joke tickets.',
-                            '• Be patient while waiting for a response.'
+                            '• Wait patiently for a response.'
                         ].join('\n'),
 
                     inline:
@@ -271,7 +295,7 @@ async function publishSacredLaws(
                             '• Do not expose private information.',
                             '• Do not spread false accusations.',
                             '• Report serious violations when necessary.',
-                            '• Help keep the community safe and respectful.'
+                            '• Help keep the kingdom safe and respectful.'
                         ].join('\n'),
 
                     inline:
@@ -301,13 +325,13 @@ async function publishSacredLaws(
 
                 {
                     name:
-                        '☾・FINAL NOTICE',
+                        '🐉・FINAL DECREE',
 
                     value:
                         [
-                            `By remaining in **${brand.serverName}**, you agree to follow these laws.`,
+                            `By remaining in **${profile.serverName}**, you agree to obey these laws.`,
                             '',
-                            '**Respect is required. Fair play is expected.**'
+                            '**Respect is required. Honor is expected.**'
                         ].join('\n'),
 
                     inline:
@@ -317,7 +341,7 @@ async function publishSacredLaws(
 
             author: {
                 name:
-                    `${brand.botName} • ${brand.serverName}`,
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -325,7 +349,7 @@ async function publishSacredLaws(
 
             footer: {
                 text:
-                    `${brand.serverName} • Sacred Laws`,
+                    `${profile.serverName} • Royal Laws`,
 
                 iconURL:
                     guildIcon
@@ -346,8 +370,8 @@ async function publishSacredLaws(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Sacred Laws Published',
-                `The Sacred Laws were published in ${channel}.`
+                'Royal Laws Published',
+                `The Royal Laws were published in ${channel}.`
             )
         ],
 
@@ -356,7 +380,7 @@ async function publishSacredLaws(
     });
 
     console.log(
-        `Sacred Laws published in #${channel.name} by ${interaction.user.tag}.`
+        `Royal Laws published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

@@ -11,30 +11,45 @@ const {
 const brand =
     require('../../config/brand');
 
-const setupChannels =
-    require('../../config/setupChannels');
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
+/*
+ * Legacy export kept for compatibility.
+ * Runtime color comes from the Guild Profile.
+ */
 const ROLE_EMBED_COLOR =
     brand.themeColor;
 
 /**
- * Get the role information channel.
+ * Get the configured information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getRoleInformationChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .informationChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                setupChannels
-                    .informationChannelId
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -44,7 +59,7 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
+                    'Information Channel Missing',
                     'The configured information channel could not be found.'
                 )
             ],
@@ -59,12 +74,14 @@ async function getRoleInformationChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -90,9 +107,9 @@ async function getRoleInformationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish role information in ${channel}.`,
+                        `${profile.botName} cannot publish role information in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -112,9 +129,105 @@ async function getRoleInformationChannel(
     return channel;
 }
 
+function buildRoleFields(
+    profile
+) {
+    const fields =
+        [];
+
+    if (
+        profile.roles.authority.length
+    ) {
+        fields.push({
+            name:
+                '♛・ROYAL AUTHORITY',
+
+            value:
+                [
+                    ...profile.roles.authority.map(
+                        role =>
+                            `**${role.name}** — ${role.description}`
+                    ),
+                    '',
+                    '-# Only authority roles grant moderation permissions.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
+    if (
+        profile.roles.combatRanks.length
+    ) {
+        fields.push({
+            name:
+                `🐉・${profile.rankSystemName.toUpperCase()}`,
+
+            value:
+                [
+                    ...profile.roles.combatRanks.map(
+                        (
+                            rank,
+                            index
+                        ) =>
+                            index === 0
+                                ? `**${rank}** — Highest combat rank`
+                                : `**${rank}**`
+                    ),
+                    '',
+                    '**◇・UNRANKED** — No combat rank',
+                    '',
+                    `-# Ranks are earned through official ${profile.trialSystemName}.`,
+                    '-# Combat ranks do not grant staff permissions.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
+    if (
+        profile.roles.progression.length
+    ) {
+        fields.push({
+            name:
+                '✦・KINGDOM PROGRESSION',
+
+            value:
+                [
+                    ...profile.roles.progression.map(
+                        role =>
+                            `**${role}**`
+                    ),
+                    '',
+                    '-# Progression reflects activity and advancement.'
+                ].join('\n'),
+
+            inline:
+                false
+        });
+    }
+
+    fields.push({
+        name:
+            '◆・VERIFICATION',
+
+        value:
+            [
+                `**◆・${profile.roles.verifiedName.toUpperCase()}** — Verified`,
+                `**◇・${profile.roles.unverifiedName.toUpperCase()}** — Awaiting verification`
+            ].join('\n'),
+
+        inline:
+            false
+    });
+
+    return fields;
+}
+
 /**
- * Publish the official
- * Lunar Seireitei role hierarchy.
+ * Publish a server-aware role hierarchy.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -122,12 +235,19 @@ async function getRoleInformationChannel(
 async function publishRoleInformation(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const channel =
         await getRoleInformationChannel(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -154,17 +274,17 @@ async function publishRoleInformation(
     const roleEmbed =
         createEmbed({
             title:
-                '☾・ROLE HIERARCHY',
+                '♛・ROLE HIERARCHY',
 
             description:
                 [
-                    '**Every soul has a place beneath the moon.**',
+                    '**Every member has a place within the kingdom.**',
                     '',
-                    `Authority, Captain rank and progression are separate systems inside **${brand.serverName}**.`
+                    `Authority, combat rank and progression are separate systems inside **${profile.serverName}**.`
                 ].join('\n'),
 
             color:
-                ROLE_EMBED_COLOR,
+                profile.themeColor,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -176,87 +296,14 @@ async function publishRoleInformation(
                 }) ??
                 botAvatar,
 
-            fields: [
-                {
-                    name:
-                        '♔・HIGH COMMAND',
-
-                    value:
-                        [
-                            '**♔・LUNAR SOVEREIGN** — Highest authority',
-                            '**🌙・MOON SPIRIT** — Voice of Seireitei',
-                            '**⚔・CAPTAIN-COMMANDER** — Senior leadership',
-                            '**🛡・CAPTAIN** — Administration',
-                            '**◇・LIEUTENANT** — Moderation',
-                            '',
-                            '-# Only High Command roles grant moderation authority.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '⚔・CAPTAIN RANKS',
-
-                    value:
-                        [
-                            '**Ø・CAPTAIN** — Highest ranked position',
-                            '',
-                            '**Ⅰ・CAPTAIN**　 **Ⅱ・CAPTAIN**',
-                            '**Ⅲ・CAPTAIN**　 **Ⅳ・CAPTAIN**',
-                            '**Ⅴ・CAPTAIN**　 **Ⅵ・CAPTAIN**',
-                            '**Ⅶ・CAPTAIN**　 **Ⅷ・CAPTAIN**',
-                            '**Ⅸ・CAPTAIN**　 **Ⅹ・CAPTAIN**',
-                            '',
-                            '**◇・UNRANKED** — No Captain rank',
-                            '',
-                            '-# Captain Ranks are earned through official Captain Trials.',
-                            '-# Captain Ranks do not grant Staff permissions.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '✦・SOUL PROGRESSION',
-
-                    value:
-                        [
-                            '**✦・ETERNAL SOUL**',
-                            '**♔・SOUL SOVEREIGN**',
-                            '**☾・SOUL ASCENDANT**',
-                            '**◇・SOUL AWAKENED**',
-                            '**✧・SOULBOUND**',
-                            '',
-                            '-# Progression reflects activity and advancement.'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                },
-
-                {
-                    name:
-                        '◇・VERIFICATION',
-
-                    value:
-                        [
-                            '**✦・SOUL REAPER** — Verified',
-                            '**◇・WANDERING SOUL** — Awaiting verification'
-                        ].join('\n'),
-
-                    inline:
-                        false
-                }
-            ],
+            fields:
+                buildRoleFields(
+                    profile
+                ),
 
             author: {
                 name:
-                    `${brand.botName} • ${brand.serverName}`,
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -264,7 +311,7 @@ async function publishRoleInformation(
 
             footer: {
                 text:
-                    `${brand.serverName} • Role Hierarchy`,
+                    `${profile.serverName} • Role Hierarchy`,
 
                 iconURL:
                     guildIcon
@@ -285,7 +332,7 @@ async function publishRoleInformation(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Role Information Published',
+                'Role Information Published',
                 `Role information was published in ${channel}.`
             )
         ],
@@ -295,11 +342,12 @@ async function publishRoleInformation(
     });
 
     console.log(
-        `${brand.serverName} role hierarchy published in #${channel.name} by ${interaction.user.tag}.`
+        `${profile.serverName} role hierarchy published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 
 module.exports = {
     ROLE_EMBED_COLOR,
+    buildRoleFields,
     publishRoleInformation
 };

@@ -7,9 +7,26 @@ const channels =
 const VELDRATH_GUILD_ID =
     '1528399924218298368';
 
+function freezeRoleEntries(
+    entries = []
+) {
+    return Object.freeze(
+        entries.map(
+            entry =>
+                Object.freeze({
+                    ...entry
+                })
+        )
+    );
+}
+
 function createProfile(
     profile
 ) {
+    const roles =
+        profile.roles ??
+        {};
+
     return Object.freeze({
         ...profile,
 
@@ -20,7 +37,28 @@ function createProfile(
 
         roles:
             Object.freeze({
-                ...profile.roles
+                ...roles,
+
+                authority:
+                    freezeRoleEntries(
+                        roles.authority
+                    ),
+
+                combatRanks:
+                    Object.freeze([
+                        ...(
+                            roles.combatRanks ??
+                            []
+                        )
+                    ]),
+
+                progression:
+                    Object.freeze([
+                        ...(
+                            roles.progression ??
+                            []
+                        )
+                    ])
             }),
 
         assets:
@@ -67,7 +105,16 @@ const DEFAULT_GUILD_PROFILE =
                 'Newcomer',
 
             verifiedName:
-                'Member'
+                'Member',
+
+            authority:
+                [],
+
+            combatRanks:
+                [],
+
+            progression:
+                []
         },
 
         assets: {
@@ -89,7 +136,67 @@ const GUILD_PROFILES =
                         'Wanderer',
 
                     verifiedName:
-                        'Oathbound'
+                        'Oathbound',
+
+                    authority: [
+                        {
+                            name:
+                                '♛・SOVEREIGN',
+
+                            description:
+                                'Highest authority'
+                        },
+                        {
+                            name:
+                                '🐉・CROWN KEEPER',
+
+                            description:
+                                'Evelynn, guardian of the Crown'
+                        },
+                        {
+                            name:
+                                '♜・REGENT',
+
+                            description:
+                                'Second authority'
+                        },
+                        {
+                            name:
+                                '⚜・HIGH COUNCIL',
+
+                            description:
+                                'Administration'
+                        },
+                        {
+                            name:
+                                '🛡・ROYAL GUARD',
+
+                            description:
+                                'Moderation'
+                        }
+                    ],
+
+                    combatRanks: [
+                        'Ø・DRAGON KNIGHT',
+                        'I・DRAGON KNIGHT',
+                        'II・DRAGON KNIGHT',
+                        'III・DRAGON KNIGHT',
+                        'IV・DRAGON KNIGHT',
+                        'V・DRAGON KNIGHT',
+                        'VI・DRAGON KNIGHT',
+                        'VII・DRAGON KNIGHT',
+                        'VIII・DRAGON KNIGHT',
+                        'IX・DRAGON KNIGHT',
+                        'X・DRAGON KNIGHT'
+                    ],
+
+                    progression: [
+                        '✦・ETERNAL FLAME',
+                        '♔・DRAGONLORD',
+                        '☾・DRAGON ASCENDANT',
+                        '◇・DRAKEBORN',
+                        '✧・SCALEBOUND'
+                    ]
                 },
 
                 assets: {

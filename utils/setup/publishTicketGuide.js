@@ -11,12 +11,19 @@ const {
 const brand =
     require('../../config/brand');
 
-const setupChannels =
-    require('../../config/setupChannels');
+const channels =
+    require('../../config/channels');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
+/*
+ * Legacy exports kept for compatibility.
+ * Runtime values come from the Guild Profile.
+ */
 const TICKET_GUIDE_CHANNEL_ID =
-    setupChannels.ticketGuideChannelId ??
-    '1530989678553989261';
+    channels.ticketGuideChannelId;
 
 const SUPPORT_EMBED_COLOR =
     brand.themeColor;
@@ -25,19 +32,30 @@ const SUPPORT_EMBED_COLOR =
  * Get the configured support guide channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getTicketGuideChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .ticketGuideChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                TICKET_GUIDE_CHANNEL_ID
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -47,7 +65,7 @@ async function getTicketGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Support Channel Missing',
+                    'Support Channel Missing',
                     'The configured support guide channel could not be found.'
                 )
             ],
@@ -62,12 +80,14 @@ async function getTicketGuideChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -93,9 +113,9 @@ async function getTicketGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish the support guide in ${channel}.`,
+                        `${profile.botName} cannot publish the support guide in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -116,8 +136,7 @@ async function getTicketGuideChannel(
 }
 
 /**
- * Publish the official
- * LUNAR SEIREITEI support guide.
+ * Publish a server-aware support guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -125,12 +144,19 @@ async function getTicketGuideChannel(
 async function publishTicketGuide(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const channel =
         await getTicketGuideChannel(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -157,17 +183,17 @@ async function publishTicketGuide(
     const guideEmbed =
         createEmbed({
             title:
-                '☾・SOUL SANCTUARY',
+                '🛡️・ROYAL SANCTUARY',
 
             description:
                 [
-                    '**Private guidance beneath the eternal moon.**',
+                    '**Private guidance under the protection of the Crown.**',
                     '',
-                    `The Soul Sanctuary provides confidential support for members of **${brand.serverName}**.`
+                    `The Royal Sanctuary provides confidential support for members of **${profile.serverName}**.`
                 ].join('\n'),
 
             color:
-                SUPPORT_EMBED_COLOR,
+                profile.themeColor,
 
             thumbnail:
                 guildIcon,
@@ -184,7 +210,7 @@ async function publishTicketGuide(
                             '• Verification problems',
                             '• Server or bot issues',
                             '• Private or sensitive evidence',
-                            '• Serious violations of the Sacred Laws'
+                            '• Serious violations of the Royal Laws'
                         ].join('\n'),
 
                     inline:
@@ -199,7 +225,7 @@ async function publishTicketGuide(
                         [
                             '• Spam, jokes or test tickets',
                             '• General conversation',
-                            '• Captain Rank or promotion requests',
+                            `• ${profile.rankSystemName} or promotion requests`,
                             '• Questions already answered in the FAQ',
                             '• Matters that can be handled in public channels'
                         ].join('\n'),
@@ -210,7 +236,7 @@ async function publishTicketGuide(
 
                 {
                     name:
-                        '📝・PREPARE YOUR REPORT',
+                        '📜・PREPARE YOUR REPORT',
 
                     value:
                         [
@@ -233,7 +259,7 @@ async function publishTicketGuide(
                             'Ticket discussions must remain private.',
                             '',
                             'Never share passwords, login codes or unrelated personal information.',
-                            'Evelynn and the High Command will never request your credentials.'
+                            `${profile.botName} and the server staff will never request your credentials.`
                         ].join('\n'),
 
                     inline:
@@ -247,7 +273,7 @@ async function publishTicketGuide(
                     value:
                         [
                             '1. Open a ticket and explain the issue.',
-                            '2. A High Command member reviews the case.',
+                            '2. A staff member reviews the case.',
                             '3. Additional details or evidence may be requested.',
                             '4. A decision, answer or solution is provided.',
                             '5. The ticket is closed when the matter is resolved.'
@@ -259,13 +285,13 @@ async function publishTicketGuide(
 
                 {
                     name:
-                        '☾・ENTER THE SANCTUARY',
+                        '⚜・ENTER THE SANCTUARY',
 
                     value:
                         [
                             'Use the **Open Ticket** button to begin.',
                             '',
-                            'Keep only one active ticket unless the High Command instructs otherwise.'
+                            'Keep only one active ticket unless the staff instructs otherwise.'
                         ].join('\n'),
 
                     inline:
@@ -275,7 +301,7 @@ async function publishTicketGuide(
 
             author: {
                 name:
-                    `${brand.botName} • ${brand.botTitle}`,
+                    `${profile.botName} • ${profile.botTitle}`,
 
                 iconURL:
                     botAvatar
@@ -283,7 +309,7 @@ async function publishTicketGuide(
 
             footer: {
                 text:
-                    `${brand.serverName} • Soul Sanctuary`,
+                    `${profile.serverName} • Royal Sanctuary`,
 
                 iconURL:
                     guildIcon
@@ -304,8 +330,8 @@ async function publishTicketGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Support Guide Published',
-                `The Soul Sanctuary guide was published in ${channel}.`
+                'Support Guide Published',
+                `The Royal Sanctuary guide was published in ${channel}.`
             )
         ],
 
@@ -314,7 +340,7 @@ async function publishTicketGuide(
     });
 
     console.log(
-        `Soul Sanctuary guide published in #${channel.name} by ${interaction.user.tag}.`
+        `Royal Sanctuary guide published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

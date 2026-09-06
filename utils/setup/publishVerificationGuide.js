@@ -14,6 +14,14 @@ const brand =
 const channels =
     require('../../config/channels');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
+/*
+ * Legacy exports kept for compatibility.
+ * Runtime values come from the Guild Profile.
+ */
 const VERIFY_CHANNEL_ID =
     channels.verifyChannelId;
 
@@ -21,7 +29,7 @@ const VERIFICATION_EMBED_COLOR =
     brand.themeColor;
 
 /**
- * Get the verification channel.
+ * Get the configured verification channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
@@ -29,14 +37,25 @@ const VERIFICATION_EMBED_COLOR =
 async function getVerificationChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .verifyChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                VERIFY_CHANNEL_ID
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -46,7 +65,7 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Verification Channel Missing',
+                    'Verification Channel Missing',
                     'The configured verification channel could not be found.'
                 )
             ],
@@ -61,12 +80,14 @@ async function getVerificationChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -92,9 +113,9 @@ async function getVerificationChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish the verification guide in ${channel}.`,
+                        `${profile.botName} cannot publish the verification guide in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -115,7 +136,7 @@ async function getVerificationChannel(
 }
 
 /**
- * Build the verification guide.
+ * Build a server-aware verification guide.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {import('discord.js').EmbedBuilder}
@@ -123,6 +144,11 @@ async function getVerificationChannel(
 function buildVerificationGuideEmbed(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const botAvatar =
         interaction.client.user
             .displayAvatarURL({
@@ -143,19 +169,27 @@ function buildVerificationGuideEmbed(
         }) ??
         botAvatar;
 
+    const unverifiedName =
+        profile.roles
+            .unverifiedName;
+
+    const verifiedName =
+        profile.roles
+            .verifiedName;
+
     return createEmbed({
         title:
-            '☾・TAKE THE OATH',
+            '⛩️・TAKE THE OATH',
 
         description:
             [
-                'Verify your Roblox account through **Bloxlink** to enter **Soul Society**.',
+                `Verify your Roblox account through **Bloxlink** to enter **${profile.serverName}**.`,
                 '',
-                '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
+                `**◇・${unverifiedName.toUpperCase()}** → **◆・${verifiedName.toUpperCase()}**`
             ].join('\n'),
 
         color:
-            VERIFICATION_EMBED_COLOR,
+            profile.themeColor,
 
         thumbnail:
             interaction.guild.iconURL({
@@ -170,7 +204,7 @@ function buildVerificationGuideEmbed(
         fields: [
             {
                 name:
-                    '✦・VERIFY',
+                    '◆・VERIFY',
 
                 value:
                     [
@@ -187,10 +221,10 @@ function buildVerificationGuideEmbed(
 
             {
                 name:
-                    '◆・AFTER VERIFICATION',
+                    '⚜・AFTER VERIFICATION',
 
                 value:
-                    '**✦・SOUL REAPER** access will be granted and community channels will unlock.',
+                    `The **${verifiedName}** role will be granted and the kingdom will open to you.`,
 
                 inline:
                     false
@@ -203,8 +237,8 @@ function buildVerificationGuideEmbed(
                 value:
                     [
                         '• Never share passwords or login codes.',
-                        '• Confirm the correct Roblox account is connected.',
-                        '• Evelynn and High Command will never ask for your login credentials.'
+                        '• Confirm that the correct Roblox account is connected.',
+                        `• ${profile.botName} and the server staff will never request your login credentials.`
                     ].join('\n'),
 
                 inline:
@@ -225,7 +259,7 @@ function buildVerificationGuideEmbed(
 
         author: {
             name:
-                `${brand.botName} • ${brand.serverName}`,
+                `${profile.botName} • ${profile.serverName}`,
 
             iconURL:
                 botAvatar
@@ -233,7 +267,7 @@ function buildVerificationGuideEmbed(
 
         footer: {
             text:
-                `${brand.serverName} • Verification`,
+                `${profile.serverName} • Verification`,
 
             iconURL:
                 guildIcon
@@ -255,7 +289,9 @@ async function publishVerificationGuide(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -275,7 +311,7 @@ async function publishVerificationGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Verification Guide Published',
+                'Verification Guide Published',
                 `The verification guide was published in ${channel}.`
             )
         ],

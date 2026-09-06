@@ -3,8 +3,9 @@ const {
     createErrorEmbed
 } = require('../embeds');
 
-const brand =
-    require('../../config/brand');
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
 const {
     publishVerificationGuide
@@ -33,12 +34,52 @@ const {
 const PUBLICATION_DELAY_MS =
     750;
 
-/**
- * Wait briefly between publications.
- *
- * @param {number} milliseconds
- * @returns {Promise<void>}
- */
+const PUBLICATIONS =
+    Object.freeze([
+        {
+            name:
+                'Verification Guide',
+
+            publish:
+                publishVerificationGuide
+        },
+        {
+            name:
+                'Royal Laws',
+
+            publish:
+                publishSacredLaws
+        },
+        {
+            name:
+                'Kingdom Guide',
+
+            publish:
+                publishServerGuide
+        },
+        {
+            name:
+                'Role Hierarchy',
+
+            publish:
+                publishRoleInformation
+        },
+        {
+            name:
+                'FAQ',
+
+            publish:
+                publishFAQ
+        },
+        {
+            name:
+                'Support Guide',
+
+            publish:
+                publishTicketGuide
+        }
+    ]);
+
 function wait(
     milliseconds
 ) {
@@ -54,8 +95,10 @@ function wait(
 }
 
 /**
- * Publish the complete
- * LUNAR SEIREITEI information system.
+ * Publish every configured information section.
+ *
+ * Legacy publication functions remain unchanged
+ * for command and database compatibility.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -63,20 +106,23 @@ function wait(
 async function publishFullSetup(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     try {
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '☾ Setup Started',
+                    'Setup Started',
                     [
-                        `${brand.botName} is publishing the official **${brand.serverName}** information.`,
+                        `${profile.botName} is publishing the official **${profile.serverName}** information.`,
                         '',
-                        '✦ Verification Guide',
-                        '📜 Sacred Laws',
-                        '📖 Soul Codex',
-                        '♛ Role Hierarchy',
-                        '❓ FAQ',
-                        '🎫 Soul Sanctuary'
+                        ...PUBLICATIONS.map(
+                            publication =>
+                                `- ${publication.name}`
+                        )
                     ].join('\n')
                 )
             ],
@@ -89,28 +135,19 @@ async function publishFullSetup(
             `Full setup started by ${interaction.user.tag}.`
         );
 
-        const publications = [
-            publishVerificationGuide,
-            publishSacredLaws,
-            publishServerGuide,
-            publishRoleInformation,
-            publishFAQ,
-            publishTicketGuide
-        ];
-
         for (
             const [
                 index,
-                publish
-            ] of publications.entries()
+                publication
+            ] of PUBLICATIONS.entries()
         ) {
-            await publish(
+            await publication.publish(
                 interaction
             );
 
             if (
                 index <
-                publications.length - 1
+                PUBLICATIONS.length - 1
             ) {
                 await wait(
                     PUBLICATION_DELAY_MS
@@ -121,13 +158,13 @@ async function publishFullSetup(
         await interaction.editReply({
             embeds: [
                 createSuccessEmbed(
-                    '✅ Setup Complete',
+                    'Setup Complete',
                     [
                         'All information sections were published successfully.',
                         '',
-                        `**${brand.serverName} is ready.**`,
+                        `**${profile.serverName} is ready.**`,
                         '',
-                        `-# ${brand.motto}`
+                        `-# ${profile.motto}`
                     ].join('\n')
                 )
             ],
@@ -141,19 +178,19 @@ async function publishFullSetup(
         );
     } catch (error) {
         console.error(
-            'Evelynn full setup error:',
+            `${profile.botName} full setup error:`,
             error
         );
 
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Setup Failed',
+                    'Setup Failed',
                     [
-                        `${brand.botName} could not complete the full setup.`,
+                        `${profile.botName} could not complete the full setup.`,
                         '',
                         'Some sections may already have been published.',
-                        'Check the configured channel IDs, permissions and bot logs.'
+                        'Check the configured channels, permissions and bot logs.'
                     ].join('\n')
                 )
             ],

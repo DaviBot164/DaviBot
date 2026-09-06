@@ -11,6 +11,9 @@ module.exports = {
     informationChannelId:
         '1532053701718708296',
 
+    sacredLawsChannelId:
+        '1534648886566584341',
+
     decreesChannelId:
         '1528401988272914463',
 

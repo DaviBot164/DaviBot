@@ -11,30 +11,45 @@ const {
 const brand =
     require('../../config/brand');
 
-const setupChannels =
-    require('../../config/setupChannels');
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
+/*
+ * Legacy export kept for compatibility.
+ * Runtime color comes from the Guild Profile.
+ */
 const GUIDE_EMBED_COLOR =
     brand.themeColor;
 
 /**
- * Get the server guide channel.
+ * Get the configured information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getServerGuideChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .informationChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                setupChannels
-                    .informationChannelId
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -44,7 +59,7 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
+                    'Information Channel Missing',
                     'The configured information channel could not be found.'
                 )
             ],
@@ -59,12 +74,14 @@ async function getServerGuideChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -90,9 +107,9 @@ async function getServerGuideChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish the Soul Codex in ${channel}.`,
+                        `${profile.botName} cannot publish the Kingdom Guide in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -113,8 +130,9 @@ async function getServerGuideChannel(
 }
 
 /**
- * Publish the official
- * Lunar Seireitei server guide.
+ * Publish a server-aware Kingdom Guide.
+ *
+ * The legacy function name remains unchanged.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -122,12 +140,19 @@ async function getServerGuideChannel(
 async function publishServerGuide(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const channel =
         await getServerGuideChannel(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -151,22 +176,30 @@ async function publishServerGuide(
         }) ??
         botAvatar;
 
+    const unverifiedName =
+        profile.roles
+            .unverifiedName;
+
+    const verifiedName =
+        profile.roles
+            .verifiedName;
+
     const guideEmbed =
         createEmbed({
             title:
-                '☾・SOUL CODEX',
+                `📜・${profile.shortName.toUpperCase()} GUIDE`,
 
             description:
                 [
                     '**Your path begins here.**',
                     '',
-                    `A quick guide to **${brand.serverName}**.`,
+                    `A quick guide to **${profile.serverName}**.`,
                     '',
-                    `*${brand.motto}*`
+                    `*${profile.motto}*`
                 ].join('\n'),
 
             color:
-                GUIDE_EMBED_COLOR,
+                profile.themeColor,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -181,10 +214,10 @@ async function publishServerGuide(
             fields: [
                 {
                     name:
-                        'Ⅰ・READ THE CODE',
+                        'Ⅰ・READ THE LAWS',
 
                     value:
-                        'Read the **Sacred Laws** and respect every Soul within Seireitei.',
+                        'Read the **Royal Laws** and respect every member of the kingdom.',
 
                     inline:
                         false
@@ -192,13 +225,13 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅱ・ENTER SOUL SOCIETY',
+                        'Ⅱ・TAKE THE OATH',
 
                     value:
                         [
                             'Verify through **Bloxlink** to unlock the community.',
                             '',
-                            '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
+                            `**◇・${unverifiedName.toUpperCase()}** → **◆・${verifiedName.toUpperCase()}**`
                         ].join('\n'),
 
                     inline:
@@ -207,10 +240,10 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅲ・FIND YOUR PLACE',
+                        'Ⅲ・ENTER THE KINGDOM',
 
                     value:
-                        'Meet other Souls, find players and take part in community activities.',
+                        'Meet other members, find players and join community activities.',
 
                     inline:
                         false
@@ -218,10 +251,10 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅳ・AWAKEN YOUR SOUL',
+                        'Ⅳ・EARN YOUR PLACE',
 
                     value:
-                        'Earn Levels, Achievements, Titles and Soul Progression roles through activity.',
+                        'Earn Levels, Achievements, Titles and progression roles through activity.',
 
                     inline:
                         false
@@ -229,13 +262,13 @@ async function publishServerGuide(
 
                 {
                     name:
-                        'Ⅴ・RISE AS A CAPTAIN',
+                        'Ⅴ・RISE THROUGH THE RANKS',
 
                     value:
                         [
-                            'Compete in the official **Captain Trials**.',
+                            `Compete in the official **${profile.trialSystemName}**.`,
                             '',
-                            'Rise from **◇・UNRANKED** through the numbered **Captain Ranks**.'
+                            `Rise from **◇・UNRANKED** through the **${profile.rankSystemName}**.`
                         ].join('\n'),
 
                     inline:
@@ -256,7 +289,7 @@ async function publishServerGuide(
 
             author: {
                 name:
-                    `${brand.botName} • ${brand.serverName}`,
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -264,7 +297,7 @@ async function publishServerGuide(
 
             footer: {
                 text:
-                    `${brand.serverName} • Soul Codex`,
+                    `${profile.serverName} • Kingdom Guide`,
 
                 iconURL:
                     guildIcon
@@ -285,8 +318,8 @@ async function publishServerGuide(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ Soul Codex Published',
-                `The Soul Codex was published in ${channel}.`
+                'Kingdom Guide Published',
+                `The Kingdom Guide was published in ${channel}.`
             )
         ],
 
@@ -295,7 +328,7 @@ async function publishServerGuide(
     });
 
     console.log(
-        `Soul Codex published in #${channel.name} by ${interaction.user.tag}.`
+        `Kingdom Guide published in #${channel.name} by ${interaction.user.tag}.`
     );
 }
 

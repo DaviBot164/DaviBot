@@ -11,30 +11,45 @@ const {
 const brand =
     require('../../config/brand');
 
-const setupChannels =
-    require('../../config/setupChannels');
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
 
+/*
+ * Legacy export kept for compatibility.
+ * Runtime color comes from the Guild Profile.
+ */
 const FAQ_EMBED_COLOR =
     brand.themeColor;
 
 /**
- * Get the FAQ channel.
+ * Get the configured information channel.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
- * @returns {Promise<import('discord.js').TextBasedChannel|null>}
+ * @returns {Promise<import('discord.js').GuildTextBasedChannel|null>}
  */
 async function getFAQChannel(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
+    const channelId =
+        profile.channels
+            .informationChannelId;
+
     const channel =
-        await interaction.guild.channels
-            .fetch(
-                setupChannels
-                    .informationChannelId
-            )
-            .catch(
-                () => null
-            );
+        channelId
+            ? await interaction.guild.channels
+                .fetch(
+                    channelId
+                )
+                .catch(
+                    () => null
+                )
+            : null;
 
     if (
         !channel ||
@@ -44,7 +59,7 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Information Channel Missing',
+                    'Information Channel Missing',
                     'The configured information channel could not be found.'
                 )
             ],
@@ -59,12 +74,14 @@ async function getFAQChannel(
     const botMember =
         interaction.guild.members.me;
 
-    if (!botMember) {
+    if (
+        !botMember
+    ) {
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Evelynn Unavailable',
-                    'Evelynn could not access her server member record.'
+                    `${profile.botName} Unavailable`,
+                    `${profile.botName} could not access the server member record.`
                 )
             ],
 
@@ -90,9 +107,9 @@ async function getFAQChannel(
         await interaction.editReply({
             embeds: [
                 createErrorEmbed(
-                    '❌ Missing Permissions',
+                    'Missing Permissions',
                     [
-                        `Evelynn cannot publish the FAQ in ${channel}.`,
+                        `${profile.botName} cannot publish the FAQ in ${channel}.`,
                         '',
                         'Required:',
                         '• View Channel',
@@ -113,8 +130,7 @@ async function getFAQChannel(
 }
 
 /**
- * Publish the official
- * Lunar Seireitei FAQ.
+ * Publish a server-aware FAQ.
  *
  * @param {import('discord.js').StringSelectMenuInteraction} interaction
  * @returns {Promise<void>}
@@ -122,12 +138,19 @@ async function getFAQChannel(
 async function publishFAQ(
     interaction
 ) {
+    const profile =
+        getGuildProfile(
+            interaction.guildId
+        );
+
     const channel =
         await getFAQChannel(
             interaction
         );
 
-    if (!channel) {
+    if (
+        !channel
+    ) {
         return;
     }
 
@@ -154,13 +177,13 @@ async function publishFAQ(
     const faqEmbed =
         createEmbed({
             title:
-                '☾・FAQ',
+                '◆・FAQ',
 
             description:
-                '**Quick answers to common questions.**',
+                `**Quick answers for members of ${profile.serverName}.**`,
 
             color:
-                FAQ_EMBED_COLOR,
+                profile.themeColor,
 
             thumbnail:
                 interaction.guild.iconURL({
@@ -175,13 +198,13 @@ async function publishFAQ(
             fields: [
                 {
                     name:
-                        '✦・HOW DO I GET ACCESS?',
+                        '⛩️・HOW DO I GET ACCESS?',
 
                     value:
                         [
                             'Verify your Roblox account through **Bloxlink**.',
                             '',
-                            '**◇・WANDERING SOUL** → **✦・SOUL REAPER**'
+                            `**◇・${profile.roles.unverifiedName.toUpperCase()}** → **◆・${profile.roles.verifiedName.toUpperCase()}**`
                         ].join('\n'),
 
                     inline:
@@ -190,10 +213,10 @@ async function publishFAQ(
 
                 {
                     name:
-                        '📜・WHERE ARE THE RULES?',
+                        '⚖️・WHERE ARE THE RULES?',
 
                     value:
-                        'Read the **Sacred Laws** in the information section.',
+                        'Read the **Royal Laws** before entering the community.',
 
                     inline:
                         false
@@ -212,13 +235,13 @@ async function publishFAQ(
 
                 {
                     name:
-                        '⚖️・CAN I APPEAL?',
+                        '📜・CAN I APPEAL?',
 
                     value:
                         [
-                            '**Yes.** Use the Ticket System and explain what happened.',
+                            '**Yes.**.** Open a support ticket and explain what happened.',
                             '',
-                            '-# Appeals do not guarantee removal of a punishment.'
+                            '-# An appeal does not guarantee removal of a punishment.'
                         ].join('\n'),
 
                     inline:
@@ -227,10 +250,10 @@ async function publishFAQ(
 
                 {
                     name:
-                        '🌙・WHO IS EVELYNN?',
+                        '🐉・WHO IS EVELYNN?',
 
                     value:
-                        `**Evelynn** is the Moon Spirit and companion of **${brand.serverName}**.`,
+                        `**${profile.botName}** serves as the **${profile.botTitle}** and guardian of **${profile.serverName}**.`,
 
                     inline:
                         false
@@ -241,7 +264,7 @@ async function publishFAQ(
                         '🛡️・WHY WAS MY MESSAGE REMOVED?',
 
                     value:
-                        'Evelynn may automatically remove prohibited language, spam, invites, malicious links or filter bypass attempts.',
+                        `${profile.botName} may remove prohibited language, spam, unauthorized invites, malicious links or filter bypass attempts.`,
 
                     inline:
                         false
@@ -260,13 +283,13 @@ async function publishFAQ(
 
                 {
                     name:
-                        '◆・HOW DO I PROGRESS?',
+                        '✦・HOW DO I PROGRESS?',
 
                     value:
                         [
-                            'Stay active to earn Levels, Achievements, Titles and Soul Progression roles.',
+                            'Stay active to earn Levels, Achievements, Titles and progression roles.',
                             '',
-                            'Numbered **Captain Ranks** are earned separately through the official **Captain Trials**.'
+                            `**${profile.rankSystemName}** are earned separately through the official **${profile.trialSystemName}**.`
                         ].join('\n'),
 
                     inline:
@@ -275,7 +298,7 @@ async function publishFAQ(
 
                 {
                     name:
-                        '✦・STILL NEED HELP?',
+                        '◆・STILL NEED HELP?',
 
                     value:
                         'For private or moderation-related matters, open a support ticket.',
@@ -287,7 +310,7 @@ async function publishFAQ(
 
             author: {
                 name:
-                    `${brand.botName} • ${brand.serverName}`,
+                    `${profile.botName} • ${profile.serverName}`,
 
                 iconURL:
                     botAvatar
@@ -295,7 +318,7 @@ async function publishFAQ(
 
             footer: {
                 text:
-                    `${brand.serverName} • FAQ`,
+                    `${profile.serverName} • FAQ`,
 
                 iconURL:
                     guildIcon
@@ -316,7 +339,7 @@ async function publishFAQ(
     await interaction.editReply({
         embeds: [
             createSuccessEmbed(
-                '✅ FAQ Published',
+                'FAQ Published',
                 `The FAQ was published in ${channel}.`
             )
         ],
