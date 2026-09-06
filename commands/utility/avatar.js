@@ -11,25 +11,37 @@ const {
     createErrorEmbed
 } = require('../../utils/embeds');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
 module.exports = {
-    category: 'information',
+    category:
+        'information',
 
-    data: new SlashCommandBuilder()
-        .setName('avatar')
-        .setDescription(
-            'View the avatar of a LUNAR SEIREITEI member.'
-        )
-
-        .addUserOption(option =>
-            option
-                .setName('user')
-                .setDescription(
-                    'Select the member whose avatar you want to view'
-                )
-                .setRequired(false)
-        )
-
-        .setDMPermission(false),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'avatar'
+            )
+            .setDescription(
+                'View the avatar of a server member.'
+            )
+            .addUserOption(option =>
+                option
+                    .setName(
+                        'user'
+                    )
+                    .setDescription(
+                        'Select the member whose avatar you want to view'
+                    )
+                    .setRequired(
+                        false
+                    )
+            )
+            .setDMPermission(
+                false
+            ),
 
     /**
      * Execute the /avatar command.
@@ -37,14 +49,23 @@ module.exports = {
      * @param {import('discord.js').ChatInputCommandInteraction} interaction
      * @returns {Promise<void>}
      */
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         try {
-            if (!interaction.inGuild()) {
+            if (
+                !interaction.inGuild()
+            ) {
                 await interaction.reply({
                     embeds: [
                         createErrorEmbed(
-                            '❌ LUNAR SEIREITEI Only Command',
-                            'This command can only be used inside LUNAR SEIREITEI.'
+                            '❌ Server Only Command',
+                            'This command can only be used inside a server.'
                         )
                     ],
 
@@ -60,7 +81,7 @@ module.exports = {
             const selectedUser =
                 interaction.options.getUser(
                     'user'
-                ) ||
+                ) ??
                 interaction.user;
 
             const [
@@ -85,7 +106,7 @@ module.exports = {
                     embeds: [
                         createErrorEmbed(
                             '❌ Member Not Found',
-                            'This user is not currently a member of LUNAR SEIREITEI.'
+                            'This user is not currently a member of this server.'
                         )
                     ]
                 });
@@ -116,18 +137,28 @@ module.exports = {
                     ? '🤖 Bot'
                     : user.system
                         ? '⚙️ System'
-                        : '🌙 Member';
+                        : '◆ Member';
+
+            const botAvatar =
+                interaction.client.user
+                    .displayAvatarURL({
+                        size:
+                            128,
+
+                        forceStatic:
+                            false
+                    });
 
             const embed =
                 createEmbed({
                     title:
-                        '🖼️ LUNAR SEIREITEI Avatar',
+                        '🖼️・AVATAR',
 
                     description:
                         `Avatar record for ${user}.`,
 
                     color:
-                        '#6F42C1',
+                        profile.themeColor,
 
                     thumbnail:
                         avatarURL,
@@ -138,7 +169,7 @@ module.exports = {
                     fields: [
                         {
                             name:
-                                '👤 Member',
+                                '◆・MEMBER',
 
                             value:
                                 [
@@ -146,38 +177,29 @@ module.exports = {
                                     `**Display Name:** ${member.displayName}`,
                                     `**Type:** ${accountType}`,
                                     `**User ID:** \`${user.id}\``
-                                ].join(
-                                    '\n'
-                                ),
+                                ].join('\n'),
 
                             inline:
                                 false
                         }
-                    ]
+                    ],
+
+                    author: {
+                        name:
+                            `${user.username} • Avatar Archive`,
+
+                        iconURL:
+                            avatarURL
+                    },
+
+                    footer: {
+                        text:
+                            `${profile.botName} • ${profile.serverName} • Requested by ${interaction.user.username}`,
+
+                        iconURL:
+                            botAvatar
+                    }
                 });
-
-            embed.setAuthor({
-                name:
-                    `${user.username} • Avatar Archive`,
-
-                iconURL:
-                    avatarURL
-            });
-
-            embed.setFooter({
-                text:
-                    `Evelynn • Moon Spirit of Seireitei • Requested by ${interaction.user.username}`,
-
-                iconURL:
-                    interaction.client.user
-                        .displayAvatarURL({
-                            size:
-                                128,
-
-                            forceStatic:
-                                false
-                        })
-            });
 
             const buttons = [
                 new ButtonBuilder()
@@ -230,14 +252,14 @@ module.exports = {
             });
         } catch (error) {
             console.error(
-                '❌ Error executing Evelynn /avatar:',
+                '❌ /avatar command error:',
                 error
             );
 
             const errorEmbed =
                 createErrorEmbed(
                     '❌ Avatar Unavailable',
-                    'Evelynn could not retrieve this LUNAR SEIREITEI avatar.'
+                    `${profile.botName} could not retrieve this avatar.`
                 );
 
             if (interaction.deferred) {
@@ -247,7 +269,8 @@ module.exports = {
                             errorEmbed
                         ],
 
-                        components: []
+                        components:
+                            []
                     })
                     .catch(
                         () => null
