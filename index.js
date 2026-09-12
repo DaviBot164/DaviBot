@@ -31,15 +31,6 @@ const terminal =
     require('./utils/terminal');
 
 /**
- * Automatic Monthly Captain Trials System.
- */
-const {
-    startRankTrialScheduler,
-    stopRankTrialScheduler,
-    isRankTrialSchedulerRunning
-} = require('./utils/rankTrials/scheduler');
-
-/**
  * Server that Evelynn must leave.
  */
 const SERVER_TO_LEAVE_ID =
@@ -771,128 +762,6 @@ async function registerGuildCommands(
 }
 
 /**
- * Mark the Captain Trials service according
- * to its scheduler state.
- *
- * @param {import('discord.js').Guild[]} guilds
- * @param {boolean} schedulerRunning
- * @returns {Promise<void>}
- */
-async function updateRankTrialServiceStates(
-    guilds,
-    schedulerRunning
-) {
-    const serviceDefinition =
-        terminal
-            .UMBRA_SERVICES
-            .RANK_TRIALS;
-
-    for (
-        const guild
-        of guilds
-    ) {
-        if (schedulerRunning) {
-            await markBlackBoxServiceOnline({
-                guildId:
-                    guild.id,
-
-                serviceKey:
-                    serviceDefinition.key,
-
-                displayName:
-                    serviceDefinition.name,
-
-                message:
-                    'Automatic Monthly Captain Trials scheduler is running.',
-
-                metadata: {
-                    scheduler:
-                        'ACTIVE',
-
-                    cycle:
-                        'MONTHLY'
-                }
-            });
-
-            continue;
-        }
-
-        try {
-            await terminal
-                .blackBox
-                .open({
-                    guildId:
-                        guild.id,
-
-                    serviceKey:
-                        serviceDefinition.key,
-
-                    displayName:
-                        serviceDefinition.name,
-
-                    status:
-                        terminal
-                            .SERVICE_STATUS
-                            .OFFLINE,
-
-                    severity:
-                        terminal
-                            .INCIDENT_SEVERITY
-                            .CRITICAL,
-
-                    incidentType:
-                        'RANK_TRIAL_SCHEDULER_FAILURE',
-
-                    title:
-                        'Captain Trials Scheduler Offline',
-
-                    message:
-                        'The Automatic Monthly Captain Trials scheduler is not running.',
-
-                    fields: [
-                        {
-                            name:
-                                '⚔️ Scheduler',
-
-                            value:
-                                '`OFFLINE`',
-
-                            inline:
-                                true
-                        },
-                        {
-                            name:
-                                '📅 Cycle',
-
-                            value:
-                                '`MONTHLY`',
-
-                            inline:
-                                true
-                        }
-                    ],
-
-                    metadata: {
-                        scheduler:
-                            'OFFLINE',
-
-                        cycle:
-                            'MONTHLY'
-                    }
-                });
-        } catch (error) {
-            console.error(
-                `⚠️ Failed to update Captain Trials service state in ${guild.name}:`
-            );
-
-            console.error(
-                error
-            );
-        }
-    }
-}
-
-/**
  * Publish the official Evelynn
  * Core Boot Sequence.
  *
@@ -928,11 +797,6 @@ async function publishBootSequence(
             0
         );
 
-    const rankTrialState =
-        isRankTrialSchedulerRunning()
-            ? 'ACTIVE'
-            : 'STARTING';
-
     return terminal.success(
         readyClient,
         {
@@ -957,7 +821,6 @@ async function publishBootSequence(
                             '+ Guardian Systems Ready',
                             '+ Kingdom Records Available',
                             '+ Captain Rank Registry Online',
-                            '+ Monthly Captain Trials Ready',
                             '+ Alert Engine Armed',
                             '+ Incident Engine Ready',
                             '+ Black Box Services Registered',
@@ -1002,19 +865,6 @@ async function publishBootSequence(
                         [
                             `**Servers:** \`${guildCount}\``,
                             `**Souls:** \`${memberCount}\``
-                        ].join('\n'),
-
-                    inline:
-                        true
-                },
-                {
-                    name:
-                        '⚔️ Captain Trials',
-
-                    value:
-                        [
-                            `**Scheduler:** \`${rankTrialState}\``,
-                            '**Cycle:** `MONTHLY`'
                         ].join('\n'),
 
                     inline:
@@ -1252,56 +1102,6 @@ client.once(
                 error
             );
         }
-
-        /*
-         * Start the Automatic Monthly Rank
-         * Trials scheduler.
-         *
-         * The scheduler performs an immediate
-         * recovery check before starting its
-         * recurring interval.
-         */
-        try {
-            const rankTrialSchedulerStarted =
-                await startRankTrialScheduler(
-                    readyClient
-                );
-
-            if (
-                rankTrialSchedulerStarted
-            ) {
-                console.log(
-                    '✅ Automatic Captain Trials scheduler started.'
-                );
-            } else if (
-                isRankTrialSchedulerRunning()
-            ) {
-                console.log(
-                    'ℹ️ Automatic Captain Trials scheduler was already running.'
-                );
-            } else {
-                console.warn(
-                    '⚠️ Automatic Captain Trials scheduler did not start.'
-                );
-            }
-        } catch (error) {
-            console.error(
-                '❌ Automatic Captain Trials scheduler failed to start:'
-            );
-
-            console.error(
-                error
-            );
-        }
-
-        /*
-         * Synchronize the Captain Trials service
-         * with the actual scheduler state.
-         */
-        await updateRankTrialServiceStates(
-            activeGuilds,
-            isRankTrialSchedulerRunning()
-        );
 
         /*
          * Publish one Boot Sequence event
@@ -1816,25 +1616,6 @@ async function shutdown(
                 client
             )
             : [];
-
-    /*
-     * Stop automatic Captain Trial checks
-     * before beginning shutdown.
-     */
-    const rankTrialSchedulerStopped =
-        stopRankTrialScheduler();
-
-    if (
-        rankTrialSchedulerStopped
-    ) {
-        console.log(
-            '✅ Captain Trials scheduler stopped.'
-        );
-    } else {
-        console.log(
-            'ℹ️ Captain Trials scheduler was not running.'
-        );
-    }
 
     /*
      * Stop Dashboard updates before
@@ -2379,8 +2160,6 @@ async function handleFatalProcessError(
     console.error(
         '======================================'
     );
-
-    stopRankTrialScheduler();
 
     terminal.dashboard.stop();
 

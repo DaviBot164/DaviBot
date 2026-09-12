@@ -16,7 +16,7 @@ module.exports = {
      * Main Captain Trials system switch.
      */
     enabled:
-        true,
+        false,
 
     /**
      * Official channel:
