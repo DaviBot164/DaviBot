@@ -174,7 +174,7 @@ module.exports = {
                 'rank'
             )
             .setDescription(
-                'View a member’s Soul Progression.'
+                'View a member’s Level Progression.'
             )
             .addUserOption(
                 option =>
@@ -220,7 +220,7 @@ module.exports = {
             if (targetUser.bot) {
                 await sendRankError(
                     interaction,
-                    '❌ Invalid Soul',
+                    '❌ Invalid Member',
                     'Bots cannot participate in the Level System.'
                 );
 
@@ -371,7 +371,7 @@ module.exports = {
             const rankEmbed =
                 createEmbed({
                     title:
-                        '☾・SOUL PROGRESSION',
+                        '◆・LEVEL PROGRESSION',
 
                     description: [
                         `## ${
@@ -461,13 +461,13 @@ module.exports = {
                 });
         } catch (error) {
             console.error(
-                '❌ Evelynn /rank command error:',
+                '❌ /rank command error:',
                 error
             );
 
             await sendRankError(
                 interaction,
-                '❌ Soul Progression Unavailable',
+                '❌ Level Progression Unavailable',
                 `${brand.botName} could not retrieve this Level record.`
             );
         }
