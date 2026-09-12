@@ -438,7 +438,7 @@ module.exports = {
                 });
         } catch (error) {
             console.error(
-                '❌ Evelynn /profile command error:',
+                '❌ /profile command error:',
                 error
             );
 
