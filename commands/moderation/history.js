@@ -15,6 +15,10 @@ const {
     countMemberAutoModCases
 } = require('../../database/automodCases');
 
+const {
+    getGuildProfile
+} = require('../../config/guildProfiles');
+
 /**
  * Convert a date into a Discord timestamp.
  *
@@ -250,6 +254,11 @@ module.exports = {
             return;
         }
 
+        const profile =
+            getGuildProfile(
+                interaction.guildId
+            );
+
         const targetUser =
             interaction.options.getUser(
                 'user',
@@ -381,7 +390,7 @@ module.exports = {
 
                 .setAuthor({
                     name:
-                        'Evelynn Moderation History',
+                        `${profile.botName} • Moderation History`,
 
                     iconURL:
                         interaction.client.user
