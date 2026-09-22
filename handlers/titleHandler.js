@@ -1,228 +1,65 @@
 const {
-    TITLE_DEFINITIONS,
-    TITLE_UNLOCK_TYPES
+    getTitles: getUnlockedTitles,
+    unlockTitle,
+    equipTitle,
+    clearEquippedTitle
+} = require('../database/titles');
+
+const {
+    getTitle,
+    getTitles
 } = require('../config/titles');
 
-const achievementDatabase =
-    require('../database/achievements');
+const {
+    getAchievements: getUnlockedAchievements
+} = require('../database/achievements');
 
-const rankDatabase =
-    require('../database/ranks');
+const {
+    getAchievementRank,
+    getAchievements
+} = require('../config/achievements');
 
-const titleDatabase =
-    require('../database/titles');
+const {
+    calculateAchievementPoints
+} = require('./achievementHandler');
 
-const TITLE_ID_SET =
-    new Set(
-        TITLE_DEFINITIONS.map(
-            title => title.id
-        )
-    );
+const {
+    createEmbed,
+    errorEmbed
+} = require('../utils/embeds');
 
-function getMemberRoleNames(member) {
-    if (!member) {
-        return new Set();
-    }
-
-    return new Set(
-        member.roles.cache.map(
-            role => role.name
-        )
-    );
-}
-
-function getMemberRoleIds(member) {
-    if (!member) {
-        return new Set();
-    }
-
-    return new Set(
-        member.roles.cache.keys()
-    );
-}
-
-function getDiscordSinRank(member) {
-    if (!member) {
-        return null;
-    }
-
-    const ranks =
-        Array.isArray(
-            rankDatabase.SIN_RANKS
-        )
-            ? rankDatabase.SIN_RANKS
-            : [];
-
-    return (
-        ranks.find(
-            rankName =>
-                member.roles.cache.some(
-                    role =>
-                        role.name ===
-                        rankName
-                )
-        ) ??
-        null
-    );
-}
-
-async function getSafeAchievementIds(
-    guildId,
-    userId
-) {
-    try {
-        const achievements =
-            await achievementDatabase
-                .getSoulAchievements(
-                    guildId,
-                    userId
-                );
-
-        if (
-            !Array.isArray(
-                achievements
-            )
-        ) {
-            return new Set();
-        }
-
-        return new Set(
-            achievements
-                .map(
-                    achievement =>
-                        achievement
-                            ?.achievementId
-                )
-                .filter(
-                    Boolean
-                )
-        );
-    } catch (error) {
-        console.warn(
-            `⚠️ Title Achievement check unavailable for ${userId}: ${error.message}`
-        );
-
-        return new Set();
-    }
-}
-
-async function getSafeSinRank(
-    guildId,
-    userId,
-    member
-) {
-    try {
-        const rankRecord =
-            await rankDatabase
-                .getCurrentRank(
-                    guildId,
-                    userId
-                );
-
-        const rankName =
-            rankRecord?.rank_name ??
-            rankRecord?.rankName ??
-            null;
-
-        if (rankName) {
-            return rankName;
-        }
-    } catch (error) {
-        console.warn(
-            `⚠️ Title Rank check unavailable for ${userId}: ${error.message}`
-        );
-    }
-
-    return getDiscordSinRank(
-        member
-    );
-}
-
-async function createTitleContext({
-    guildId,
-    userId,
-    member
-}) {
-    const [
-        achievementIds,
-        sinRank
-    ] =
-        await Promise.all([
-            getSafeAchievementIds(
-                guildId,
-                userId
-            ),
-
-            getSafeSinRank(
-                guildId,
-                userId,
-                member
-            )
-        ]);
-
-    return {
-        guildId,
-        userId,
-        member,
-        achievementIds,
-        sinRank,
-
-        roleNames:
-            getMemberRoleNames(
-                member
-            ),
-
-        roleIds:
-            getMemberRoleIds(
-                member
-            )
-    };
-}
-
-function isTitleEligible(
+function meetsTitleRequirement(
     title,
-    context
-) {
-    if (
-        !title?.unlock ||
-        !context
-    ) {
-        return false;
+    {
+        user,
+        achievementCount,
+        achievementRank,
+        totalAchievements
     }
+) {
+    const requirement =
+        title.requirement;
 
-    const unlock =
-        title.unlock;
-
-    switch (unlock.type) {
-        case TITLE_UNLOCK_TYPES.ACHIEVEMENT:
+    switch (requirement.type) {
+        case 'achievement_rank':
             return Boolean(
-                unlock.achievementId &&
-                context.achievementIds.has(
-                    unlock.achievementId
-                )
+                achievementRank
             );
 
-        case TITLE_UNLOCK_TYPES.SIN_RANK:
-            return Boolean(
-                unlock.rankName &&
-                context.sinRank ===
-                    unlock.rankName
+        case 'achievement_count':
+            return achievementCount >=
+                requirement.value;
+
+        case 'prestige_rank':
+            return (
+                user.rank === 'hashira' ||
+                user.rank === 'upper_moon'
             );
 
-        case TITLE_UNLOCK_TYPES.STAFF_ROLE:
-            return Boolean(
-                (
-                    unlock.roleId &&
-                    context.roleIds.has(
-                        unlock.roleId
-                    )
-                ) ||
-                (
-                    unlock.roleName &&
-                    context.roleNames.has(
-                        unlock.roleName
-                    )
-                )
+        case 'all_achievements':
+            return (
+                achievementCount >=
+                totalAchievements
             );
 
         default:
@@ -230,95 +67,68 @@ function isTitleEligible(
     }
 }
 
-function getUnlockSource(title) {
-    const unlock =
-        title?.unlock ??
-        {};
-
-    switch (unlock.type) {
-        case TITLE_UNLOCK_TYPES.ACHIEVEMENT:
-            return (
-                `ACHIEVEMENT_${unlock.achievementId ?? 'UNKNOWN'}`
-            );
-
-        case TITLE_UNLOCK_TYPES.SIN_RANK:
-            return (
-                `SIN_RANK_${unlock.rankName ?? 'UNKNOWN'}`
-            );
-
-        case TITLE_UNLOCK_TYPES.STAFF_ROLE:
-            return (
-                `STAFF_ROLE_${unlock.roleId ?? unlock.roleName ?? 'UNKNOWN'}`
-            );
-
-        default:
-            return 'AUTOMATIC';
-    }
-}function normalizeUnlockedTitles(
-    unlockedTitles
+async function checkMemberTitles(
+    member,
+    user
 ) {
-    if (
-        !Array.isArray(
-            unlockedTitles
-        )
-    ) {
+    if (!member || !user) {
         return [];
     }
 
-    return unlockedTitles.filter(
-        title =>
-            TITLE_ID_SET.has(
-                title.titleId
-            )
-    );
-}
+    const guildId =
+        member.guild.id;
 
-async function checkSoulTitles({
-    guildId,
-    userId,
-    member
-}) {
-    if (
-        typeof guildId !==
-            'string' ||
-        !guildId.trim()
-    ) {
-        throw new TypeError(
-            'A guild ID is required to check Titles.'
-        );
-    }
+    const userId =
+        member.id;
 
-    if (
-        typeof userId !==
-            'string' ||
-        !userId.trim()
-    ) {
-        throw new TypeError(
-            'A user ID is required to check Titles.'
-        );
-    }
-
-    if (!member) {
-        throw new TypeError(
-            'A GuildMember is required to check Titles.'
-        );
-    }
-
-    const context =
-        await createTitleContext({
+    const [
+        unlockedTitles,
+        unlockedAchievements
+    ] = await Promise.all([
+        getUnlockedTitles(
             guildId,
-            userId,
-            member
-        });
+            userId
+        ),
+
+        getUnlockedAchievements(
+            guildId,
+            userId
+        )
+    ]);
+
+    const unlockedIds =
+        new Set(
+            unlockedTitles.map(
+                entry =>
+                    entry.titleId
+            )
+        );
+
+    const points =
+        calculateAchievementPoints(
+            unlockedAchievements
+        );
+
+    const achievementRank =
+        getAchievementRank(
+            points
+        );
+
+    const context = {
+        user,
+        achievementCount:
+            unlockedAchievements.length,
+        achievementRank,
+        totalAchievements:
+            getAchievements().length
+    };
 
     const newlyUnlocked = [];
 
-    for (
-        const title
-        of TITLE_DEFINITIONS
-    ) {
+    for (const title of getTitles()) {
         if (
-            !isTitleEligible(
+            unlockedIds.has(title.id) ||
+            !meetsTitleRequirement(
                 title,
                 context
             )
@@ -326,125 +136,138 @@ async function checkSoulTitles({
             continue;
         }
 
-        try {
-            const result =
-                await titleDatabase
-                    .unlockSoulTitle({
-                        guildId,
-                        userId,
-
-                        titleId:
-                            title.id,
-
-                        unlockedBy:
-                            null,
-
-                        unlockSource:
-                            getUnlockSource(
-                                title
-                            ),
-
-                        activate:
-                            false
-                    });
-
-            if (
-                result?.unlocked &&
-                result?.title
-            ) {
-                newlyUnlocked.push({
-                    ...result.title,
-                    ...title,
-
-                    titleId:
-                        title.id
-                });
-            }
-        } catch (error) {
-            console.error(
-                `❌ Evelynn could not unlock Title ${title.id} for ${userId}:`,
-                error
+        const unlocked =
+            await unlockTitle(
+                guildId,
+                userId,
+                title.id
             );
+
+        if (!unlocked) {
+            continue;
         }
+
+        newlyUnlocked.push(
+            title
+        );
+
+        unlockedIds.add(
+            title.id
+        );
     }
 
-    const unlockedTitles =
-        normalizeUnlockedTitles(
-            await titleDatabase
-                .getSoulTitles(
-                    guildId,
-                    userId
+    return newlyUnlocked;
+}
+
+async function handleTitleSelect(
+    interaction
+) {
+    if (
+        !interaction.isStringSelectMenu() ||
+        interaction.customId !==
+            'akane:title:select'
+    ) {
+        return false;
+    }
+
+    await interaction.deferUpdate();
+
+    const titleId =
+        interaction.values[0];
+
+    if (titleId === 'none') {
+        await clearEquippedTitle(
+            interaction.guild.id,
+            interaction.user.id
+        );
+
+        await interaction.editReply({
+            embeds: [
+                createEmbed(
+                    'Title Removed',
+                    'Your active title has been removed.'
                 )
-        );
-
-    const activeTitle =
-        unlockedTitles.find(
-            title =>
-                title.isActive
-        ) ??
-        null;
-
-    return {
-        context,
-        newlyUnlocked,
-        activeTitle,
-
-        unlockedCount:
-            unlockedTitles.length
-    };
-}
-
-async function checkMemberTitles(member) {
-    if (
-        !member?.guild ||
-        member.user?.bot
-    ) {
-        return null;
-    }
-
-    try {
-        return await checkSoulTitles({
-            guildId:
-                member.guild.id,
-
-            userId:
-                member.id,
-
-            member
+                    .setFooter({
+                        text: 'AKANE • BLOOD MOON'
+                    })
+            ],
+            components: []
         });
-    } catch (error) {
-        console.error(
-            `❌ Evelynn Title check failed for ${member.id}:`,
-            error
+
+        return true;
+    }
+
+    const unlocked =
+        await getUnlockedTitles(
+            interaction.guild.id,
+            interaction.user.id
         );
 
-        return null;
-    }
-}
+    const title =
+        getTitle(titleId);
 
-async function checkMessageTitles(message) {
+    const ownsTitle =
+        unlocked.some(
+            entry =>
+                entry.titleId ===
+                titleId
+        );
+
     if (
-        !message?.inGuild?.() ||
-        message.author?.bot ||
-        !message.member
+        !title ||
+        !ownsTitle
     ) {
-        return null;
+        await interaction.editReply({
+            embeds: [
+                errorEmbed(
+                    'Title Unavailable',
+                    'You have not unlocked this title.'
+                )
+            ],
+            components: []
+        });
+
+        return true;
     }
 
-    return checkMemberTitles(
-        message.member
-    );
+    const equipped =
+        await equipTitle(
+            interaction.guild.id,
+            interaction.user.id,
+            titleId
+        );
+
+    if (!equipped) {
+        await interaction.editReply({
+            embeds: [
+                errorEmbed(
+                    'Title Unavailable',
+                    'Akane could not equip this title.'
+                )
+            ],
+            components: []
+        });
+
+        return true;
+    }
+
+    await interaction.editReply({
+        embeds: [
+            createEmbed(
+                'Title Equipped',
+                `Your active title is now **${title.name}**.`
+            )
+                .setFooter({
+                    text: 'AKANE • BLOOD MOON'
+                })
+        ],
+        components: []
+    });
+
+    return true;
 }
 
 module.exports = {
-    getMemberRoleNames,
-    getDiscordSinRank,
-    getSafeAchievementIds,
-    getSafeSinRank,
-    createTitleContext,
-    isTitleEligible,
-    getUnlockSource,
-    checkSoulTitles,
     checkMemberTitles,
-    checkMessageTitles
+    handleTitleSelect
 };

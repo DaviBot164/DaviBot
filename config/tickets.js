@@ -1,72 +1,64 @@
-module.exports = {
-    channelPrefix: 'ticket',
+const TICKET_STATUS = Object.freeze({
+    OPEN: 'open',
+    CLOSED: 'closed'
+});
 
-    panel: {
-        title:
-            '🎫 Evelynn Support',
+const TICKET_ACTIONS = Object.freeze({
+    CREATED: 'created',
+    CLOSED: 'closed',
+    REOPENED: 'reopened',
+    DELETED: 'deleted'
+});
 
+const TICKET_CATEGORIES = Object.freeze({
+    support: {
+        id: 'support',
+        name: 'Support',
+        emoji: '🛟',
         description:
-            [
-                'Need help from High Command?',
-                '',
-                'Open a private ticket below and describe your issue clearly.',
-                '',
-                'Please create a ticket only when support is genuinely needed.'
-            ].join('\n'),
-
-        buttonLabel:
-            'Open Ticket',
-
-        buttonEmoji:
-            '🎫'
+            'Get help from the Blood Moon staff.'
     },
 
-    ticket: {
-        title:
-            '🎫 LUNAR SEIREITEI Support',
-
+    report: {
+        id: 'report',
+        name: 'Report',
+        emoji: '🚨',
         description:
-            [
-                'Your ticket has been opened.',
-                '',
-                'Describe your issue and include any relevant details.',
-                '',
-                'High Command will assist you as soon as possible.'
-            ].join('\n'),
-
-        closeButtonLabel:
-            'Close Ticket',
-
-        closeButtonEmoji:
-            '🔒'
+            'Report a member or server-related problem.'
     },
 
-    permissions: {
-        user: [
-            'ViewChannel',
-            'SendMessages',
-            'ReadMessageHistory',
-            'AttachFiles',
-            'EmbedLinks'
-        ],
+    appeal: {
+        id: 'appeal',
+        name: 'Appeal',
+        emoji: '⚖️',
+        description:
+            'Appeal a moderation action.'
+    },
 
-        staff: [
-            'ViewChannel',
-            'SendMessages',
-            'ReadMessageHistory',
-            'AttachFiles',
-            'EmbedLinks',
-            'ManageMessages'
-        ],
-
-        bot: [
-            'ViewChannel',
-            'SendMessages',
-            'ReadMessageHistory',
-            'AttachFiles',
-            'EmbedLinks',
-            'ManageChannels',
-            'ManageMessages'
-        ]
+    other: {
+        id: 'other',
+        name: 'Other',
+        emoji: '📜',
+        description:
+            'Open a ticket for another reason.'
     }
+});
+
+const STAFF_ROLE_KEYS = Object.freeze([
+    'samurai',
+    'hatamoto',
+    'daimyo',
+    'shogun'
+]);
+
+function getTicketCategory(id) {
+    return TICKET_CATEGORIES[id] ?? null;
+}
+
+module.exports = {
+    TICKET_STATUS,
+    TICKET_ACTIONS,
+    TICKET_CATEGORIES,
+    STAFF_ROLE_KEYS,
+    getTicketCategory
 };

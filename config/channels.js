@@ -1,45 +1,24 @@
-module.exports = {
-    /*
-     * Information
-     */
-    welcomeChannelId:
-        '1528401903438925906',
+module.exports = Object.freeze({
+    welcome: '1528401903438925906',
+    verification: '1528402259699044352',
+    sacredLaws: '1534648886566584341',
+    moonGuide: '1532053701718708296',
+    announcements: '1528401988272914463',
 
-    verifyChannelId:
-        '1528402259699044352',
+    general: '1528399925866532906',
+    soulProgression: '1534145341430038558',
 
-    informationChannelId:
-        '1532053701718708296',
+    slayers2: '1530901464413769779',
+    rankPromotions: '1533116816782524426',
 
-    sacredLawsChannelId:
-        '1534648886566584341',
+    pvp: '1551667516458147941',
+    challenges: '1551667623396384858',
 
-    decreesChannelId:
-        '1528401988272914463',
+    supportGuide: '1530989678553989261',
+    openTicket: '1530989713081630904',
 
-    /*
-     * Eclipse
-     */
-    eclipseChatChannelId:
-        '1528399925866532906',
-
-    /*
-     * Support
-     */
-    ticketGuideChannelId:
-        '1530989678553989261',
-
-    createTicketChannelId:
-        '1530989713081630904',
-
-    /*
-     * Logs
-     *
-     * Keep this legacy property name because
-     * existing moderation files may already use:
-     *
-     * channels.modLogs
-     */
-    modLogs:
-        '1530901922855256104'
-};
+    staffChat: '1530901890190151730',
+    staffLogs: '1531694604150116524',
+    moderation: '1530901922855256104',
+    botControl: '1530901956342710302'
+});
