@@ -1,6 +1,9 @@
 const channels =
     require('../config/channels');
 
+const brand =
+    require('../config/brand');
+
 const {
     createEmbed
 } = require('./embeds');
@@ -14,7 +17,9 @@ async function sendTitleUnlock(
             channels.soulProgression
         );
 
-    if (!channel?.isTextBased()) {
+    if (
+        !channel?.isTextBased()
+    ) {
         return;
     }
 
@@ -24,22 +29,24 @@ async function sendTitleUnlock(
             [
                 `${member} unlocked **${title.name}**.`,
                 '',
-                title.description,
-                '',
-                'Use `/titles` to equip it.'
+                title.description
             ].join('\n')
         )
             .setThumbnail(
-                member.user.displayAvatarURL({
-                    size: 256
-                })
+                member.user
+                    .displayAvatarURL({
+                        size: 256
+                    })
             )
             .setFooter({
-                text: 'AKANE • BLOOD MOON'
+                text:
+                    brand.footer
             });
 
     await channel.send({
-        embeds: [embed]
+        embeds: [
+            embed
+        ]
     });
 }
 
