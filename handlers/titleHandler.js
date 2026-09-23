@@ -23,6 +23,9 @@ const {
     calculateAchievementPoints
 } = require('./achievementHandler');
 
+const brand =
+    require('../config/brand');
+
 const {
     createEmbed,
     errorEmbed
@@ -71,7 +74,10 @@ async function checkMemberTitles(
     member,
     user
 ) {
-    if (!member || !user) {
+    if (
+        !member ||
+        !user
+    ) {
         return [];
     }
 
@@ -116,18 +122,26 @@ async function checkMemberTitles(
 
     const context = {
         user,
+
         achievementCount:
             unlockedAchievements.length,
+
         achievementRank,
+
         totalAchievements:
             getAchievements().length
     };
 
     const newlyUnlocked = [];
 
-    for (const title of getTitles()) {
+    for (
+        const title
+        of getTitles()
+    ) {
         if (
-            unlockedIds.has(title.id) ||
+            unlockedIds.has(
+                title.id
+            ) ||
             !meetsTitleRequirement(
                 title,
                 context
@@ -175,7 +189,9 @@ async function handleTitleSelect(
     const titleId =
         interaction.values[0];
 
-    if (titleId === 'none') {
+    if (
+        titleId === 'none'
+    ) {
         await clearEquippedTitle(
             interaction.guild.id,
             interaction.user.id
@@ -188,9 +204,11 @@ async function handleTitleSelect(
                     'Your active title has been removed.'
                 )
                     .setFooter({
-                        text: 'AKANE • BLOOD MOON'
+                        text:
+                            brand.footer
                     })
             ],
+
             components: []
         });
 
@@ -204,7 +222,9 @@ async function handleTitleSelect(
         );
 
     const title =
-        getTitle(titleId);
+        getTitle(
+            titleId
+        );
 
     const ownsTitle =
         unlocked.some(
@@ -224,6 +244,7 @@ async function handleTitleSelect(
                     'You have not unlocked this title.'
                 )
             ],
+
             components: []
         });
 
@@ -245,6 +266,7 @@ async function handleTitleSelect(
                     'Akane could not equip this title.'
                 )
             ],
+
             components: []
         });
 
@@ -258,9 +280,11 @@ async function handleTitleSelect(
                 `Your active title is now **${title.name}**.`
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text:
+                        brand.footer
                 })
         ],
+
         components: []
     });
 

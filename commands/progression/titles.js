@@ -13,43 +13,60 @@ const {
     getTitle
 } = require('../../config/titles');
 
+const brand =
+    require('../../config/brand');
+
 const {
     createEmbed
 } = require('../../utils/embeds');
 
-function buildTitleMenu(titles) {
-    const options = titles
-        .map(entry => {
-            const title =
-                getTitle(
-                    entry.titleId
-                );
+function buildTitleMenu(
+    titles
+) {
+    const options =
+        titles
+            .map(entry => {
+                const title =
+                    getTitle(
+                        entry.titleId
+                    );
 
-            if (!title) {
-                return null;
-            }
+                if (!title) {
+                    return null;
+                }
 
-            return {
-                label: title.name,
-                value: title.id,
-                description:
-                    entry.equipped
-                        ? 'Currently equipped'
-                        : 'Equip this title',
-                emoji:
-                    entry.equipped
-                        ? '🌙'
-                        : '🏮'
-            };
-        })
-        .filter(Boolean);
+                return {
+                    label:
+                        title.name,
+
+                    value:
+                        title.id,
+
+                    description:
+                        entry.equipped
+                            ? 'Currently equipped'
+                            : 'Equip this title',
+
+                    emoji:
+                        entry.equipped
+                            ? '🌙'
+                            : '🏷️'
+                };
+            })
+            .filter(Boolean);
 
     options.push({
-        label: 'Remove Active Title',
-        value: 'none',
+        label:
+            'Remove Active Title',
+
+        value:
+            'none',
+
         description:
             'Unequip your current title.',
-        emoji: '✖️'
+
+        emoji:
+            '✖️'
     });
 
     return new ActionRowBuilder()
@@ -61,18 +78,25 @@ function buildTitleMenu(titles) {
                 .setPlaceholder(
                     'Choose a title'
                 )
-                .addOptions(options)
+                .addOptions(
+                    options
+                )
         );
 }
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('titles')
-        .setDescription(
-            'View and equip your unlocked titles.'
-        ),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'titles'
+            )
+            .setDescription(
+                'View and equip your unlocked titles.'
+            ),
 
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         const titles =
             await getUnlockedTitles(
                 interaction.guild.id,
@@ -83,14 +107,19 @@ module.exports = {
             await interaction.reply({
                 embeds: [
                     createEmbed(
-                        'Soul Titles',
+                        'Titles',
                         [
                             'You have not unlocked any titles yet.',
                             '',
-                            'Explore Blood Moon and earn milestones to discover new titles.'
+                            'Earn milestones throughout Blood Moon to discover new titles.'
                         ].join('\n')
                     )
+                        .setFooter({
+                            text:
+                                brand.footer
+                        })
                 ],
+
                 flags:
                     MessageFlags.Ephemeral
             });
@@ -113,7 +142,7 @@ module.exports = {
 
         const embed =
             createEmbed(
-                'Soul Titles',
+                'Titles',
                 [
                     `Unlocked: **${titles.length}**`,
                     '',
@@ -125,16 +154,21 @@ module.exports = {
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text:
+                        brand.footer
                 });
 
         await interaction.reply({
-            embeds: [embed],
+            embeds: [
+                embed
+            ],
+
             components: [
                 buildTitleMenu(
                     titles
                 )
             ],
+
             flags:
                 MessageFlags.Ephemeral
         });
