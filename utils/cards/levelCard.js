@@ -18,6 +18,7 @@ function fillRoundRect(
     radius
 ) {
     ctx.beginPath();
+
     ctx.roundRect(
         x,
         y,
@@ -25,6 +26,7 @@ function fillRoundRect(
         height,
         radius
     );
+
     ctx.fill();
 }
 
@@ -167,6 +169,7 @@ async function createLevelCard(
     ctx.save();
 
     ctx.beginPath();
+
     ctx.arc(
         165,
         160,
@@ -193,6 +196,7 @@ async function createLevelCard(
     ctx.lineWidth = 6;
 
     ctx.beginPath();
+
     ctx.arc(
         165,
         160,
@@ -207,19 +211,19 @@ async function createLevelCard(
         '#C8A45D';
 
     ctx.font =
-        '600 20px sans-serif';
+        '600 19px sans-serif';
 
     ctx.fillText(
         `${brand.server.toUpperCase()} • ${brand.name.toUpperCase()}`,
         305,
-        77
+        68
     );
 
     ctx.fillStyle =
         '#F5F5F5';
 
     ctx.font =
-        '700 42px sans-serif';
+        '700 38px sans-serif';
 
     const displayName =
         fitName(
@@ -231,31 +235,31 @@ async function createLevelCard(
     ctx.fillText(
         displayName,
         305,
-        133
+        116
     );
 
     ctx.fillStyle =
         '#A7ADB5';
 
     ctx.font =
-        '600 19px sans-serif';
+        '600 18px sans-serif';
 
     ctx.fillText(
         'LEVEL UP',
         307,
-        171
+        151
     );
 
     ctx.fillStyle =
         '#FFFFFF';
 
     ctx.font =
-        '700 58px sans-serif';
+        '700 56px sans-serif';
 
     ctx.fillText(
         `LEVEL ${level}`,
         305,
-        238
+        218
     );
 
     const line =
@@ -281,7 +285,7 @@ async function createLevelCard(
 
     ctx.fillRect(
         305,
-        258,
+        239,
         530,
         3
     );
@@ -295,7 +299,7 @@ async function createLevelCard(
     ctx.fillText(
         'Your activity has earned you a new level.',
         305,
-        284
+        272
     );
 
     return canvas.toBuffer(
