@@ -30,6 +30,30 @@ function fillRoundRect(
     ctx.fill();
 }
 
+function getDisplayName(
+    member
+) {
+    const displayName =
+        member.displayName?.trim();
+
+    const username =
+        member.user.globalName?.trim() ||
+        member.user.username;
+
+    if (!displayName) {
+        return username;
+    }
+
+    const hasLettersOrNumbers =
+        /[\p{L}\p{N}]/u.test(
+            displayName
+        );
+
+    return hasLettersOrNumbers
+        ? displayName
+        : username;
+}
+
 function fitName(
     ctx,
     name,
@@ -42,7 +66,8 @@ function fitName(
         return name;
     }
 
-    let trimmed = name;
+    let trimmed =
+        name;
 
     while (
         trimmed.length > 1 &&
@@ -51,7 +76,10 @@ function fitName(
         ).width > maxWidth
     ) {
         trimmed =
-            trimmed.slice(0, -1);
+            trimmed.slice(
+                0,
+                -1
+            );
     }
 
     return `${trimmed}…`;
@@ -228,7 +256,9 @@ async function createLevelCard(
     const displayName =
         fitName(
             ctx,
-            member.displayName,
+            getDisplayName(
+                member
+            ),
             570
         );
 
