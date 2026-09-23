@@ -9,8 +9,8 @@ async function initializeSchema() {
             xp INTEGER NOT NULL DEFAULT 0
                 CHECK (xp >= 0),
 
-            level INTEGER NOT NULL DEFAULT 0
-                CHECK (level >= 0),
+            level INTEGER NOT NULL DEFAULT 1
+                CHECK (level >= 1),
 
             messages INTEGER NOT NULL DEFAULT 0
                 CHECK (messages >= 0),
@@ -32,6 +32,25 @@ async function initializeSchema() {
 
             PRIMARY KEY (guild_id, user_id)
         );
+
+        UPDATE akane_users
+        SET
+            level = 1,
+            updated_at = NOW()
+        WHERE level < 1;
+
+        ALTER TABLE akane_users
+            ALTER COLUMN level
+            SET DEFAULT 1;
+
+        ALTER TABLE akane_users
+            DROP CONSTRAINT IF EXISTS
+            akane_users_level_check;
+
+        ALTER TABLE akane_users
+            ADD CONSTRAINT
+            akane_users_level_check
+            CHECK (level >= 1);
 
         CREATE TABLE IF NOT EXISTS akane_achievements (
             guild_id TEXT NOT NULL,
