@@ -2,7 +2,11 @@ const {
     AttachmentBuilder
 } = require('discord.js');
 
-const channels = require('../config/channels');
+const brand =
+    require('../config/brand');
+
+const channels =
+    require('../config/channels');
 
 const {
     createEmbed
@@ -12,42 +16,56 @@ const {
     createLevelCard
 } = require('./cards/levelCard');
 
-async function sendLevelUp(message, level) {
+async function sendLevelUp(
+    message,
+    level
+) {
     const channel =
         message.guild.channels.cache.get(
             channels.soulProgression
         );
 
-    if (!channel?.isTextBased()) {
+    if (
+        !channel?.isTextBased()
+    ) {
         return;
     }
 
-    const image = await createLevelCard(
-        message.member,
-        level
-    );
+    const image =
+        await createLevelCard(
+            message.member,
+            level
+        );
 
-    const attachment = new AttachmentBuilder(
-        image,
-        {
-            name: 'level-up.png'
-        }
-    );
+    const attachment =
+        new AttachmentBuilder(
+            image,
+            {
+                name:
+                    'level-up.png'
+            }
+        );
 
-    const embed = createEmbed(
-        'Soul Ascended',
-        `${message.author} has reached **Level ${level}**.`
-    )
-        .setImage(
-            'attachment://level-up.png'
+    const embed =
+        createEmbed(
+            'Level Up',
+            `${message.author} has reached **Level ${level}**.`
         )
-        .setFooter({
-            text: 'AKANE • BLOOD MOON'
-        });
+            .setImage(
+                'attachment://level-up.png'
+            )
+            .setFooter({
+                text:
+                    brand.footer
+            });
 
     await channel.send({
-        embeds: [embed],
-        files: [attachment]
+        embeds: [
+            embed
+        ],
+        files: [
+            attachment
+        ]
     });
 }
 

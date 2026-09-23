@@ -3,126 +3,304 @@ const {
     loadImage
 } = require('@napi-rs/canvas');
 
+const brand =
+    require('../../config/brand');
+
 const WIDTH = 1000;
 const HEIGHT = 320;
 
-function roundRect(ctx, x, y, width, height, radius) {
+function fillRoundRect(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    radius
+) {
     ctx.beginPath();
-    ctx.roundRect(x, y, width, height, radius);
+    ctx.roundRect(
+        x,
+        y,
+        width,
+        height,
+        radius
+    );
     ctx.fill();
 }
 
-async function createLevelCard(member, level) {
-    const canvas = createCanvas(WIDTH, HEIGHT);
-    const ctx = canvas.getContext('2d');
+function fitName(
+    ctx,
+    name,
+    maxWidth
+) {
+    if (
+        ctx.measureText(name).width <=
+        maxWidth
+    ) {
+        return name;
+    }
 
-    const background = ctx.createLinearGradient(
+    let trimmed = name;
+
+    while (
+        trimmed.length > 1 &&
+        ctx.measureText(
+            `${trimmed}…`
+        ).width > maxWidth
+    ) {
+        trimmed =
+            trimmed.slice(0, -1);
+    }
+
+    return `${trimmed}…`;
+}
+
+async function createLevelCard(
+    member,
+    level
+) {
+    const canvas =
+        createCanvas(
+            WIDTH,
+            HEIGHT
+        );
+
+    const ctx =
+        canvas.getContext('2d');
+
+    const background =
+        ctx.createLinearGradient(
+            0,
+            0,
+            WIDTH,
+            HEIGHT
+        );
+
+    background.addColorStop(
+        0,
+        '#08090B'
+    );
+
+    background.addColorStop(
+        0.55,
+        '#151014'
+    );
+
+    background.addColorStop(
+        1,
+        '#350A12'
+    );
+
+    ctx.fillStyle =
+        background;
+
+    ctx.fillRect(
         0,
         0,
         WIDTH,
         HEIGHT
     );
 
-    background.addColorStop(0, '#09090B');
-    background.addColorStop(0.55, '#171014');
-    background.addColorStop(1, '#310B12');
+    const moonGlow =
+        ctx.createRadialGradient(
+            860,
+            35,
+            10,
+            860,
+            35,
+            190
+        );
 
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#DC143C';
-    ctx.beginPath();
-    ctx.arc(850, 55, 150, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-    roundRect(ctx, 30, 30, 940, 260, 28);
-
-    const avatar = await loadImage(
-        member.user.displayAvatarURL({
-            extension: 'png',
-            size: 256
-        })
+    moonGlow.addColorStop(
+        0,
+        'rgba(155, 28, 49, 0.35)'
     );
 
+    moonGlow.addColorStop(
+        1,
+        'rgba(155, 28, 49, 0)'
+    );
+
+    ctx.fillStyle =
+        moonGlow;
+
+    ctx.fillRect(
+        650,
+        0,
+        350,
+        260
+    );
+
+    ctx.fillStyle =
+        'rgba(0, 0, 0, 0.32)';
+
+    fillRoundRect(
+        ctx,
+        28,
+        28,
+        944,
+        264,
+        28
+    );
+
+    ctx.fillStyle =
+        '#9B1C31';
+
+    fillRoundRect(
+        ctx,
+        28,
+        28,
+        7,
+        264,
+        4
+    );
+
+    const avatar =
+        await loadImage(
+            member.user
+                .displayAvatarURL({
+                    extension: 'png',
+                    size: 256
+                })
+        );
+
     ctx.save();
+
     ctx.beginPath();
-    ctx.arc(165, 160, 92, 0, Math.PI * 2);
+    ctx.arc(
+        165,
+        160,
+        91,
+        0,
+        Math.PI * 2
+    );
+
     ctx.clip();
 
     ctx.drawImage(
         avatar,
-        73,
-        68,
-        184,
-        184
+        74,
+        69,
+        182,
+        182
     );
 
     ctx.restore();
 
-    ctx.strokeStyle = '#C8A45D';
-    ctx.lineWidth = 5;
+    ctx.strokeStyle =
+        '#9B1C31';
+
+    ctx.lineWidth = 6;
+
     ctx.beginPath();
-    ctx.arc(165, 160, 95, 0, Math.PI * 2);
+    ctx.arc(
+        165,
+        160,
+        96,
+        0,
+        Math.PI * 2
+    );
+
     ctx.stroke();
 
-    ctx.fillStyle = '#C8A45D';
-    ctx.font = '600 22px sans-serif';
+    ctx.fillStyle =
+        '#C8A45D';
+
+    ctx.font =
+        '600 20px sans-serif';
+
     ctx.fillText(
-        'BLOOD MOON • AKANE',
+        `${brand.server.toUpperCase()} • ${brand.name.toUpperCase()}`,
         305,
-        82
+        77
     );
 
-    ctx.fillStyle = '#F5F5F5';
-    ctx.font = '700 42px sans-serif';
+    ctx.fillStyle =
+        '#F5F5F5';
 
-    const name =
-        member.displayName.length > 20
-            ? `${member.displayName.slice(0, 20)}…`
-            : member.displayName;
+    ctx.font =
+        '700 42px sans-serif';
+
+    const displayName =
+        fitName(
+            ctx,
+            member.displayName,
+            570
+        );
 
     ctx.fillText(
-        name,
+        displayName,
         305,
-        137
+        133
     );
 
-    ctx.fillStyle = '#B8B8B8';
-    ctx.font = '500 20px sans-serif';
+    ctx.fillStyle =
+        '#A7ADB5';
+
+    ctx.font =
+        '600 19px sans-serif';
+
     ctx.fillText(
-        'SOUL ASCENDED',
+        'LEVEL UP',
         307,
-        175
+        171
     );
 
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '700 54px sans-serif';
+    ctx.fillStyle =
+        '#FFFFFF';
+
+    ctx.font =
+        '700 58px sans-serif';
+
     ctx.fillText(
         `LEVEL ${level}`,
         305,
         238
     );
 
-    ctx.fillStyle = '#C8A45D';
+    const line =
+        ctx.createLinearGradient(
+            305,
+            0,
+            835,
+            0
+        );
+
+    line.addColorStop(
+        0,
+        '#9B1C31'
+    );
+
+    line.addColorStop(
+        1,
+        '#C8A45D'
+    );
+
+    ctx.fillStyle =
+        line;
+
     ctx.fillRect(
         305,
         258,
-        500,
+        530,
         3
     );
 
-    ctx.fillStyle = '#8F8F8F';
-    ctx.font = '400 17px sans-serif';
+    ctx.fillStyle =
+        '#8F949C';
+
+    ctx.font =
+        '400 17px sans-serif';
+
     ctx.fillText(
-        'Your soul grows stronger beneath the Blood Moon.',
+        'Your activity has earned you a new level.',
         305,
-        285
+        284
     );
 
-    return canvas.toBuffer('image/png');
+    return canvas.toBuffer(
+        'image/png'
+    );
 }
 
 module.exports = {
