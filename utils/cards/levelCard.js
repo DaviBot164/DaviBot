@@ -30,28 +30,22 @@ function fillRoundRect(
     ctx.fill();
 }
 
-function getDisplayName(
+function getCardName(
     member
 ) {
     const displayName =
         member.displayName?.trim();
 
-    const username =
-        member.user.globalName?.trim() ||
-        member.user.username;
-
-    if (!displayName) {
-        return username;
-    }
-
-    const hasLettersOrNumbers =
+    if (
+        displayName &&
         /[\p{L}\p{N}]/u.test(
             displayName
-        );
+        )
+    ) {
+        return displayName;
+    }
 
-    return hasLettersOrNumbers
-        ? displayName
-        : username;
+    return member.user.username;
 }
 
 function fitName(
@@ -256,7 +250,7 @@ async function createLevelCard(
     const displayName =
         fitName(
             ctx,
-            getDisplayName(
+            getCardName(
                 member
             ),
             570

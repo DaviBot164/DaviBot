@@ -45,12 +45,9 @@ module.exports = {
                     .getInteger('level') ??
                 10;
 
-            const member =
-                interaction.member;
-
             const image =
                 await createLevelCard(
-                    member,
+                    interaction.member,
                     level
                 );
 
@@ -63,21 +60,9 @@ module.exports = {
                     }
                 );
 
-            const debug = [
-                `displayName: ${JSON.stringify(
-                    member.displayName
-                )}`,
-                `globalName: ${JSON.stringify(
-                    member.user.globalName
-                )}`,
-                `username: ${JSON.stringify(
-                    member.user.username
-                )}`
-            ].join('\n');
-
             await interaction.editReply({
                 content:
-                    `Level ${level} preview\n\`\`\`\n${debug}\n\`\`\``,
+                    `Level ${level} preview`,
                 files: [
                     attachment
                 ]
