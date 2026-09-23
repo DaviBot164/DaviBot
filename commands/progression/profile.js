@@ -17,7 +17,10 @@ const {
 
 const {
     getTitle
-} = require('../../config/achievements');
+} = require('../../config/titles');
+
+const brand =
+    require('../../config/brand');
 
 const {
     createProfileCard
@@ -29,33 +32,47 @@ const {
 } = require('../../utils/embeds');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('profile')
-        .setDescription(
-            'View a Blood Moon soul profile.'
-        )
-        .addUserOption(option =>
-            option
-                .setName('member')
-                .setDescription(
-                    'Member whose profile you want to view.'
-                )
-                .setRequired(false)
-        ),
+    data:
+        new SlashCommandBuilder()
+            .setName(
+                'profile'
+            )
+            .setDescription(
+                'View a Blood Moon soul profile.'
+            )
+            .addUserOption(option =>
+                option
+                    .setName(
+                        'member'
+                    )
+                    .setDescription(
+                        'Member whose profile you want to view.'
+                    )
+                    .setRequired(
+                        false
+                    )
+            ),
 
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
         await interaction.deferReply();
 
         const selected =
-            interaction.options.getUser(
-                'member'
-            ) ??
+            interaction.options
+                .getUser(
+                    'member'
+                ) ??
             interaction.user;
 
         const member =
             await interaction.guild.members
-                .fetch(selected.id)
-                .catch(() => null);
+                .fetch(
+                    selected.id
+                )
+                .catch(
+                    () => null
+                );
 
         if (!member) {
             await interaction.editReply({
@@ -83,11 +100,12 @@ module.exports = {
             return;
         }
 
-        const user = await ensureUser(
-            interaction.guild.id,
-            member.id,
-            member.joinedAt
-        );
+        const user =
+            await ensureUser(
+                interaction.guild.id,
+                member.id,
+                member.joinedAt
+            );
 
         const [
             achievements,
@@ -117,6 +135,7 @@ module.exports = {
                 user,
                 {
                     title,
+
                     achievementCount:
                         achievements.length
                 }
@@ -126,24 +145,32 @@ module.exports = {
             new AttachmentBuilder(
                 image,
                 {
-                    name: 'soul-profile.png'
+                    name:
+                        'soul-profile.png'
                 }
             );
 
-        const embed = createEmbed(
-            'Soul Profile',
-            `${member}'s journey beneath the Blood Moon.`
-        )
-            .setImage(
-                'attachment://soul-profile.png'
+        const embed =
+            createEmbed(
+                'Soul Profile',
+                `${member}'s journey beneath the Blood Moon.`
             )
-            .setFooter({
-                text: 'AKANE • BLOOD MOON'
-            });
+                .setImage(
+                    'attachment://soul-profile.png'
+                )
+                .setFooter({
+                    text:
+                        brand.footer
+                });
 
         await interaction.editReply({
-            embeds: [embed],
-            files: [attachment]
+            embeds: [
+                embed
+            ],
+
+            files: [
+                attachment
+            ]
         });
     }
 };
