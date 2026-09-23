@@ -1,13 +1,23 @@
-require('dotenv').config({ quiet: true });
+require('dotenv').config({
+    quiet: true
+});
 
 const {
     Client,
     GatewayIntentBits
 } = require('discord.js');
 
-const { loadCommands } = require('./handlers/commandLoader');
-const { loadEvents } = require('./handlers/eventLoader');
-const { initializeDatabase } = require('./database');
+const {
+    loadCommands
+} = require('./handlers/commandLoader');
+
+const {
+    loadEvents
+} = require('./handlers/eventLoader');
+
+const {
+    initializeDatabase
+} = require('./database');
 
 const client = new Client({
     intents: [
@@ -22,15 +32,27 @@ async function start() {
     loadCommands(client);
     loadEvents(client);
 
-    if (process.env.NODE_ENV === 'production') {
+    if (
+        process.env
+            .NF_DAVIBOT_DATABASE_POSTGRES_URI
+    ) {
         await initializeDatabase();
-        console.log('Database: Connected');
+
+        console.log(
+            'Database: Connected'
+        );
     }
 
-    await client.login(process.env.TOKEN);
+    await client.login(
+        process.env.TOKEN
+    );
 }
 
 start().catch(error => {
-    console.error('Startup failed:', error);
+    console.error(
+        'Startup failed:',
+        error
+    );
+
     process.exit(1);
 });
