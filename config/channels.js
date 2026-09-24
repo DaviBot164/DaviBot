@@ -9,6 +9,8 @@ module.exports = Object.freeze({
     soulProgression: '1534145341430038558',
 
     slayers2: '1530901464413769779',
+    slayerPath: '1551666879565922495',
+    demonPath: '1551667150022905906',
     rankPromotions: '1533116816782524426',
 
     pvp: '1551667516458147941',

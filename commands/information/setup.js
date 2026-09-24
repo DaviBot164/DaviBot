@@ -36,6 +36,7 @@ module.exports = {
                     '📜 **Sacred Laws** — Server rules',
                     '📖 **Moon Guide** — Server guide',
                     '⛩️ **Verification Guide** — Bloxlink instructions',
+                    '⚔️ **Progression Guides** — Slayer and Demon ranks',
                     '📜 **Support Guide** — Support information',
                     '🌙 **Full Setup** — Publish all core server content'
                 ].join('\n')
@@ -83,6 +84,16 @@ module.exports = {
                             'verification_guide',
                         emoji:
                             '⛩️'
+                    },
+                    {
+                        label:
+                            'Progression Guides',
+                        description:
+                            'Publish the Slayer and Demon rank guides.',
+                        value:
+                            'progression_guides',
+                        emoji:
+                            '⚔️'
                     },
                     {
                         label:

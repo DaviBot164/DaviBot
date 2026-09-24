@@ -11,6 +11,10 @@ const {
 } = require('./publishVerificationGuide');
 
 const {
+    publishProgressionGuides
+} = require('./publishProgressionGuides');
+
+const {
     publishPathSelection
 } = require('./publishPathSelection');
 
@@ -41,6 +45,16 @@ async function publishFullSetup(guild) {
         await publishVerificationGuide(
             guild
         )
+    );
+
+    const progression =
+        await publishProgressionGuides(
+            guild
+        );
+
+    results.push(
+        progression.slayer,
+        progression.demon
     );
 
     results.push(
