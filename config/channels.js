@@ -12,6 +12,7 @@ module.exports = Object.freeze({
     slayers2: '1530901464413769779',
     slayerPath: '1551666879565922495',
     demonPath: '1551667150022905906',
+    guides: '1551667199163367505',
     rankPromotions: '1533116816782524426',
 
     pvp: '1551667516458147941',

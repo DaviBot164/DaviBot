@@ -38,6 +38,7 @@ module.exports = {
                     '⛩️ **Verification Guide** — Bloxlink instructions',
                     '🎭 **Role Guide** — Roles and hierarchy',
                     '⚔️ **Progression Guides** — Slayer and Demon ranks',
+                    '🗺️ **Game Guide** — Slayers 2 guide directory',
                     '📜 **Support Guide** — Support information',
                     '🌙 **Full Setup** — Publish all core server content'
                 ].join('\n')
@@ -105,6 +106,16 @@ module.exports = {
                             'progression_guides',
                         emoji:
                             '⚔️'
+                    },
+                    {
+                        label:
+                            'Game Guide',
+                        description:
+                            'Publish the Slayers 2 guide directory.',
+                        value:
+                            'game_guide',
+                        emoji:
+                            '🗺️'
                     },
                     {
                         label:

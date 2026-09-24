@@ -23,6 +23,10 @@ const {
 } = require('../utils/setup/publishProgressionGuides');
 
 const {
+    publishGameGuide
+} = require('../utils/setup/publishGameGuide');
+
+const {
     publishSupportGuide
 } = require('../utils/setup/publishSupportGuide');
 
@@ -41,6 +45,7 @@ const SETUP_OPTIONS = Object.freeze({
     VERIFICATION_GUIDE: 'verification_guide',
     ROLE_GUIDE: 'role_guide',
     PROGRESSION_GUIDES: 'progression_guides',
+    GAME_GUIDE: 'game_guide',
     SUPPORT_GUIDE: 'support_guide',
     FULL_SETUP: 'full_setup'
 });
@@ -156,6 +161,24 @@ async function handleSetupSelect(interaction) {
                 break;
             }
 
+            case SETUP_OPTIONS.GAME_GUIDE: {
+                const message =
+                    await publishGameGuide(
+                        interaction.guild
+                    );
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            'Game Guide Published',
+                            `The Slayers 2 guide directory was published in ${message.channel}.`
+                        )
+                    ]
+                });
+
+                break;
+            }
+
             case SETUP_OPTIONS.SUPPORT_GUIDE: {
                 const message =
                     await publishSupportGuide(
@@ -192,6 +215,7 @@ async function handleSetupSelect(interaction) {
                                 '🎭 Role Guide',
                                 '⚔️ Slayer Path Guide',
                                 '🩸 Demon Path Guide',
+                                '🗺️ Game Guide',
                                 '⚔️ Path Selection',
                                 '📜 Support Guide',
                                 '🎫 Ticket Panel'
