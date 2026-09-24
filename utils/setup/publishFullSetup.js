@@ -15,6 +15,10 @@ const {
 } = require('./publishPathSelection');
 
 const {
+    publishSupportGuide
+} = require('./publishSupportGuide');
+
+const {
     publishTicketPanel
 } = require('./publishTicketPanel');
 
@@ -41,6 +45,12 @@ async function publishFullSetup(guild) {
 
     results.push(
         await publishPathSelection(
+            guild
+        )
+    );
+
+    results.push(
+        await publishSupportGuide(
             guild
         )
     );

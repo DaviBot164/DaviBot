@@ -15,12 +15,8 @@ const {
 } = require('../utils/setup/publishVerificationGuide');
 
 const {
-    publishPathSelection
-} = require('../utils/setup/publishPathSelection');
-
-const {
-    publishTicketPanel
-} = require('../utils/setup/publishTicketPanel');
+    publishSupportGuide
+} = require('../utils/setup/publishSupportGuide');
 
 const {
     publishFullSetup
@@ -35,8 +31,7 @@ const SETUP_OPTIONS = Object.freeze({
     SACRED_LAWS: 'sacred_laws',
     MOON_GUIDE: 'moon_guide',
     VERIFICATION_GUIDE: 'verification_guide',
-    PATH_SELECTION: 'path_selection',
-    TICKET_PANEL: 'ticket_panel',
+    SUPPORT_GUIDE: 'support_guide',
     FULL_SETUP: 'full_setup'
 });
 
@@ -112,35 +107,17 @@ async function handleSetupSelect(interaction) {
                 break;
             }
 
-            case SETUP_OPTIONS.PATH_SELECTION: {
+            case SETUP_OPTIONS.SUPPORT_GUIDE: {
                 const message =
-                    await publishPathSelection(
+                    await publishSupportGuide(
                         interaction.guild
                     );
 
                 await interaction.editReply({
                     embeds: [
                         successEmbed(
-                            'Path Panel Published',
-                            `The path selection panel was published in ${message.channel}.`
-                        )
-                    ]
-                });
-
-                break;
-            }
-
-            case SETUP_OPTIONS.TICKET_PANEL: {
-                const message =
-                    await publishTicketPanel(
-                        interaction.guild
-                    );
-
-                await interaction.editReply({
-                    embeds: [
-                        successEmbed(
-                            'Ticket Panel Published',
-                            `The ticket panel was published in ${message.channel}.`
+                            'Support Guide Published',
+                            `The support guide was published in ${message.channel}.`
                         )
                     ]
                 });
@@ -164,6 +141,7 @@ async function handleSetupSelect(interaction) {
                                 '📖 Moon Guide',
                                 '⛩️ Verification Guide',
                                 '⚔️ Path Selection',
+                                '📜 Support Guide',
                                 '🎫 Ticket Panel'
                             ].join('\n')
                         )

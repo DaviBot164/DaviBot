@@ -29,16 +29,15 @@ module.exports = {
             createEmbed(
                 'Blood Moon Setup',
                 [
-                    'Configure and publish the main Blood Moon server systems.',
+                    'Configure and publish the main Blood Moon server content.',
                     '',
-                    'Select what you want Akane to set up from the menu below.',
+                    'Select what you want Akane to set up.',
                     '',
                     '📜 **Sacred Laws** — Server rules',
                     '📖 **Moon Guide** — Server guide',
                     '⛩️ **Verification Guide** — Bloxlink instructions',
-                    '⚔️ **Path Selection** — Slayer or Demon selection',
-                    '🎫 **Ticket Panel** — Support system',
-                    '🌙 **Full Setup** — Publish all core setup content'
+                    '📜 **Support Guide** — Support information',
+                    '🌙 **Full Setup** — Publish all core server content'
                 ].join('\n')
             )
                 .setFooter({
@@ -87,23 +86,13 @@ module.exports = {
                     },
                     {
                         label:
-                            'Path Selection',
+                            'Support Guide',
                         description:
-                            'Publish the Slayer and Demon path panel.',
+                            'Publish the Blood Moon support guide.',
                         value:
-                            'path_selection',
+                            'support_guide',
                         emoji:
-                            '⚔️'
-                    },
-                    {
-                        label:
-                            'Ticket Panel',
-                        description:
-                            'Publish the Blood Moon support panel.',
-                        value:
-                            'ticket_panel',
-                        emoji:
-                            '🎫'
+                            '📜'
                     },
                     {
                         label:
