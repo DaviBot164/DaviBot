@@ -19,6 +19,10 @@ const {
     handleTicketInteraction
 } = require('../handlers/ticketInteractionHandler');
 
+const {
+    handleSetupSelect
+} = require('../handlers/setupHandler');
+
 module.exports = {
     name: Events.InteractionCreate,
 
@@ -63,6 +67,14 @@ module.exports = {
 
                 if (
                     await handleTicketInteraction(
+                        interaction
+                    )
+                ) {
+                    return;
+                }
+
+                if (
+                    await handleSetupSelect(
                         interaction
                     )
                 ) {
