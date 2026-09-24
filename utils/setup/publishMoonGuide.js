@@ -25,30 +25,48 @@ async function publishMoonGuide(guild) {
     }
 
     const title =
-        '📖 Moon Guide';
+        '📖 Blood Moon Guide';
 
     const embed =
         createEmbed(
             title,
             [
-                'Welcome to **Blood Moon** — a Slayers 2 community built around progression, PvP and playing together.',
+                'Welcome to **Blood Moon**, a Slayers 2 community built around progression, PvP and the Slayer vs Demon world.',
                 '',
-                '⚔️ **Choose Your Path**',
-                'Visit <#' + channels.slayers2 + '> and choose **Slayer** or **Demon**.',
+                '⛩️ **BEGIN YOUR JOURNEY**',
+                'Complete verification, then choose your path as a **Slayer** or **Demon**.',
+                `Choose your path in <#${channels.slayers2}>.`,
                 '',
-                '🌙 **Progression**',
-                'Chat, earn XP, level up and unlock achievements and titles.',
+                '🌙 **LEVEL & PROGRESS**',
+                'Stay active in the server to earn XP, gain levels and progress through your faction ranks.',
                 '',
-                '🏆 **Ranks**',
-                'Your path determines your ranks. Higher ranks are earned through progression and trials.',
+                '⚔️ **RANKS**',
+                'Slayers and Demons follow separate rank paths.',
+                'Normal ranks are earned automatically at their required levels, while elite ranks require more.',
                 '',
-                '🏯 **Dojo**',
-                'Use the Dojo for PvP, training and challenges.',
+                '🔥 **ELITE RANKS**',
+                '**Hashira** and **Upper Moon** are not automatic promotions.',
+                'Reach Level 50+ and prove yourself through Trials or staff promotion.',
                 '',
-                '🎫 **Need Help?**',
-                'Use <#' + channels.openTicket + '> to open a private support ticket.',
+                '🏆 **ACHIEVEMENTS**',
+                'Complete milestones across Blood Moon to unlock achievements and rise through Achievement Ranks.',
                 '',
-                '*Choose your path. Grow stronger. Rise beneath the Blood Moon.*'
+                '✨ **TITLES**',
+                'Earn collectible titles through activity, progression and accomplishments.',
+                'Unlocked titles can be equipped through Akane.',
+                '',
+                '🏯 **DOJO & COMMUNITY**',
+                'Train, challenge other members, discuss Slayers 2 and find people to play with.',
+                '',
+                '🎫 **SUPPORT**',
+                `Need help? Read the support guide and open a private ticket in <#${channels.openTicket}>.`,
+                '',
+                '🎭 **LEARN MORE**',
+                `View the complete role hierarchy in <#${channels.roles}>.`,
+                `Slayer progression: <#${channels.slayerPath}>`,
+                `Demon progression: <#${channels.demonPath}>`,
+                '',
+                '*Choose your path. Build your legacy beneath the Blood Moon.*'
             ].join('\n')
         )
             .setFooter({
