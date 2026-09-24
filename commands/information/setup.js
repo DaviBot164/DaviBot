@@ -36,6 +36,7 @@ module.exports = {
                     '📜 **Sacred Laws** — Server rules',
                     '📖 **Moon Guide** — Server guide',
                     '⛩️ **Verification Guide** — Bloxlink instructions',
+                    '🎭 **Role Guide** — Roles and hierarchy',
                     '⚔️ **Progression Guides** — Slayer and Demon ranks',
                     '📜 **Support Guide** — Support information',
                     '🌙 **Full Setup** — Publish all core server content'
@@ -84,6 +85,16 @@ module.exports = {
                             'verification_guide',
                         emoji:
                             '⛩️'
+                    },
+                    {
+                        label:
+                            'Role Guide',
+                        description:
+                            'Publish the Blood Moon role hierarchy.',
+                        value:
+                            'role_guide',
+                        emoji:
+                            '🎭'
                     },
                     {
                         label:

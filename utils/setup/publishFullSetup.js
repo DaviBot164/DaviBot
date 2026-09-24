@@ -11,6 +11,10 @@ const {
 } = require('./publishVerificationGuide');
 
 const {
+    publishRoleGuide
+} = require('./publishRoleGuide');
+
+const {
     publishProgressionGuides
 } = require('./publishProgressionGuides');
 
@@ -43,6 +47,12 @@ async function publishFullSetup(guild) {
 
     results.push(
         await publishVerificationGuide(
+            guild
+        )
+    );
+
+    results.push(
+        await publishRoleGuide(
             guild
         )
     );

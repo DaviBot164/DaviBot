@@ -15,6 +15,10 @@ const {
 } = require('../utils/setup/publishVerificationGuide');
 
 const {
+    publishRoleGuide
+} = require('../utils/setup/publishRoleGuide');
+
+const {
     publishProgressionGuides
 } = require('../utils/setup/publishProgressionGuides');
 
@@ -35,6 +39,7 @@ const SETUP_OPTIONS = Object.freeze({
     SACRED_LAWS: 'sacred_laws',
     MOON_GUIDE: 'moon_guide',
     VERIFICATION_GUIDE: 'verification_guide',
+    ROLE_GUIDE: 'role_guide',
     PROGRESSION_GUIDES: 'progression_guides',
     SUPPORT_GUIDE: 'support_guide',
     FULL_SETUP: 'full_setup'
@@ -112,6 +117,24 @@ async function handleSetupSelect(interaction) {
                 break;
             }
 
+            case SETUP_OPTIONS.ROLE_GUIDE: {
+                const message =
+                    await publishRoleGuide(
+                        interaction.guild
+                    );
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            'Role Guide Published',
+                            `The role guide was published in ${message.channel}.`
+                        )
+                    ]
+                });
+
+                break;
+            }
+
             case SETUP_OPTIONS.PROGRESSION_GUIDES: {
                 const messages =
                     await publishProgressionGuides(
@@ -166,6 +189,7 @@ async function handleSetupSelect(interaction) {
                                 '📜 Sacred Laws',
                                 '📖 Moon Guide',
                                 '⛩️ Verification Guide',
+                                '🎭 Role Guide',
                                 '⚔️ Slayer Path Guide',
                                 '🩸 Demon Path Guide',
                                 '⚔️ Path Selection',

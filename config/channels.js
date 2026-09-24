@@ -3,6 +3,7 @@ module.exports = Object.freeze({
     verification: '1528402259699044352',
     sacredLaws: '1534648886566584341',
     moonGuide: '1532053701718708296',
+    roles: '1552654801953886218',
     announcements: '1528401988272914463',
 
     general: '1528399925866532906',
