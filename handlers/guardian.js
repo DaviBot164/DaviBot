@@ -24,6 +24,16 @@ const SCAM_PATTERNS = [
     /discord\s+gift/i
 ];
 
+const SEVERE_PATTERNS = [
+    // Georgian mother-directed severe insults.
+    /დედას\s+(?:გიტყნავ|მოგიტყნავ|შეგეცი)/iu,
+    /შენს?\s+დედას\s+(?:გიტყნავ|მოგიტყნავ|შეგეცი)/iu,
+
+    // English mother-directed severe insults.
+    /fuck\s+(?:your|ur)\s+(?:mom|mum|mother)/iu,
+    /mother\s*fucker/iu
+];
+
 function isStaff(member) {
     return Boolean(
         member?.permissions.has(
@@ -35,27 +45,54 @@ function isStaff(member) {
 function normalizeContent(content) {
     return content
         .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 }
 
-function containsBadWord(content) {
-    if (!guardian.protections.badWords) {
+function containsConfiguredSevereWord(
+    content
+) {
+    const normalized =
+        ` ${normalizeContent(content)} `;
+
+    return guardian.severeWords.some(
+        entry => {
+            const blocked =
+                normalizeContent(entry);
+
+            return (
+                blocked &&
+                normalized.includes(
+                    ` ${blocked} `
+                )
+            );
+        }
+    );
+}
+
+function containsSevereWord(content) {
+    if (
+        !guardian.protections.severeWords
+    ) {
         return false;
+    }
+
+    if (
+        containsConfiguredSevereWord(
+            content
+        )
+    ) {
+        return true;
     }
 
     const normalized =
         normalizeContent(content);
 
-    return guardian.badWords.some(word => {
-        const blocked =
-            normalizeContent(word);
-
-        return (
-            blocked &&
-            normalized.includes(blocked)
-        );
-    });
+    return SEVERE_PATTERNS.some(
+        pattern =>
+            pattern.test(normalized)
+    );
 }
 
 function containsScam(content) {
@@ -333,10 +370,10 @@ async function runGuardian(message) {
         );
     }
 
-    if (containsBadWord(content)) {
+    if (containsSevereWord(content)) {
         return deleteBlockedMessage(
             message,
-            'bad_word'
+            'severe_word'
         );
     }
 

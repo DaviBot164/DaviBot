@@ -12,7 +12,7 @@ const TYPE_NAMES = Object.freeze({
     spam: 'Spam',
     scam: 'Scam',
     invite: 'Discord Invite',
-    bad_word: 'Blocked Word'
+    severe_word: 'Severe Insult'
 });
 
 const ACTION_NAMES = Object.freeze({
@@ -21,9 +21,18 @@ const ACTION_NAMES = Object.freeze({
     timeout: 'Message Deleted • 5 Minute Timeout'
 });
 
+function sanitizeContent(content) {
+    return content
+        .replace(/@everyone/gi, '@\u200beveryone')
+        .replace(/@here/gi, '@\u200bhere');
+}
+
 function trimContent(content) {
     const text =
-        content?.trim();
+        sanitizeContent(
+            content?.trim() ||
+            ''
+        );
 
     if (!text) {
         return '*No text content*';
@@ -40,6 +49,10 @@ async function sendGuardianLog(
     message,
     result
 ) {
+    if (!result?.blocked) {
+        return;
+    }
+
     const channel =
         message.guild.channels.cache.get(
             channels.staffLogs
@@ -55,27 +68,34 @@ async function sendGuardianLog(
 
     const action =
         ACTION_NAMES[result.action] ??
-        result.action;
+        result.action ??
+        'Unknown';
+
+    const details = [
+        `Member: ${message.author}`,
+        `Channel: ${message.channel}`,
+        `Detection: **${type}**`,
+        `Action: **${action}**`
+    ];
+
+    if (result.strikes) {
+        details.push(
+            `Spam Strikes: **${result.strikes}**`
+        );
+    }
+
+    details.push(
+        '',
+        '**Message**',
+        trimContent(
+            message.content
+        )
+    );
 
     const embed =
         createEmbed(
             '🛡️ Guardian Protection',
-            [
-                `Member: ${message.author}`,
-                `Channel: ${message.channel}`,
-                `Detection: **${type}**`,
-                `Action: **${action}**`,
-                result.strikes
-                    ? `Spam Strikes: **${result.strikes}**`
-                    : null,
-                '',
-                '**Message**',
-                trimContent(
-                    message.content
-                )
-            ]
-                .filter(Boolean)
-                .join('\n')
+            details.join('\n')
         )
             .setFooter({
                 text:
