@@ -16,6 +16,10 @@ const {
 } = require('../handlers/xpCooldown');
 
 const {
+    runGuardian
+} = require('../handlers/guardian');
+
+const {
     checkAutoPromotion
 } = require('../handlers/autoPromotion');
 
@@ -33,7 +37,21 @@ module.exports = {
     async execute(message) {
         if (
             !message.inGuild() ||
-            message.author.bot ||
+            message.author.bot
+        ) {
+            return;
+        }
+
+        const guardianResult =
+            await runGuardian(
+                message
+            );
+
+        if (guardianResult.blocked) {
+            return;
+        }
+
+        if (
             !canEarnXP(
                 message.guild.id,
                 message.author.id
