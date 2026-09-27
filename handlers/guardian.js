@@ -9,6 +9,10 @@ const {
     sendGuardianLog
 } = require('../utils/guardianLogs');
 
+const {
+    recordModerationAction
+} = require('./moderationService');
+
 const spamHistory = new Map();
 const spamStrikes = new Map();
 
@@ -25,11 +29,9 @@ const SCAM_PATTERNS = [
 ];
 
 const SEVERE_PATTERNS = [
-    // Georgian mother-directed severe insults.
     /დედას\s+(?:გიტყნავ|მოგიტყნავ|შეგეცი)/iu,
     /შენს?\s+დედას\s+(?:გიტყნავ|მოგიტყნავ|შეგეცი)/iu,
 
-    // English mother-directed severe insults.
     /fuck\s+(?:your|ur)\s+(?:mom|mum|mother)/iu,
     /mother\s*fucker/iu
 ];
@@ -255,10 +257,110 @@ function clearSpamHistory(message) {
     );
 }
 
+function getGuardianReason(result) {
+    const reasons = {
+        spam:
+            'Guardian detected spam.',
+        scam:
+            'Guardian detected a scam message.',
+        invite:
+            'Guardian detected an unauthorized Discord invite.',
+        severe_word:
+            'Guardian detected prohibited severe language.'
+    };
+
+    return (
+        reasons[result.type] ??
+        'Guardian protection triggered.'
+    );
+}
+
+async function recordGuardianCase(
+    message,
+    result
+) {
+    try {
+        const timeout =
+            result.action ===
+            'timeout';
+
+        const moderationCase =
+            await recordModerationAction({
+                guild:
+                    message.guild,
+
+                userId:
+                    message.author.id,
+
+                moderatorId:
+                    message.guild.members.me?.id ??
+                    null,
+
+                action:
+                    'guardian',
+
+                reason:
+                    getGuardianReason(
+                        result
+                    ),
+
+                durationMs:
+                    timeout
+                        ? guardian.spam.timeoutMs
+                        : null,
+
+                channelId:
+                    message.channelId,
+
+                messageId:
+                    message.id,
+
+                metadata: {
+                    detection:
+                        result.type,
+
+                    guardianAction:
+                        result.action,
+
+                    strikes:
+                        result.strikes ??
+                        null
+                },
+
+                active:
+                    timeout,
+
+                expiresAt:
+                    timeout
+                        ? new Date(
+                            Date.now() +
+                            guardian.spam.timeoutMs
+                        )
+                        : null,
+
+                target:
+                    message.author
+            });
+
+        result.caseId =
+            moderationCase.id;
+    } catch (error) {
+        console.error(
+            'Guardian case recording failed:',
+            error
+        );
+    }
+}
+
 async function logGuardianAction(
     message,
     result
 ) {
+    await recordGuardianCase(
+        message,
+        result
+    );
+
     try {
         await sendGuardianLog(
             message,
