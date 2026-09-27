@@ -13,6 +13,10 @@ const {
     clearProgressionRoles
 } = require('./progressionRoles');
 
+const {
+    refreshProgressionUnlocks
+} = require('./progressionUnlocks');
+
 async function assignFaction(member, faction) {
     if (!isFaction(faction)) {
         throw new Error(
@@ -57,6 +61,17 @@ async function assignFaction(member, faction) {
         );
 
         throw error;
+    }
+
+    try {
+        await refreshProgressionUnlocks(
+            member
+        );
+    } catch (error) {
+        console.error(
+            'Progression unlock refresh failed:',
+            error
+        );
     }
 
     return {

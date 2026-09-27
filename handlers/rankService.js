@@ -17,6 +17,10 @@ const {
 } = require('./progressionRoles');
 
 const {
+    refreshProgressionUnlocks
+} = require('./progressionUnlocks');
+
+const {
     sendRankPromotion
 } = require('../utils/rankNotifications');
 
@@ -106,6 +110,17 @@ async function changeRank(
                 error
             );
         }
+    }
+
+    try {
+        await refreshProgressionUnlocks(
+            member
+        );
+    } catch (error) {
+        console.error(
+            'Progression unlock refresh failed:',
+            error
+        );
     }
 
     return {

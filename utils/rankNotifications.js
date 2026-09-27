@@ -5,6 +5,9 @@ const {
 const channels =
     require('../config/channels');
 
+const brand =
+    require('../config/brand');
+
 const {
     createEmbed
 } = require('./embeds');
@@ -27,34 +30,42 @@ async function sendRankPromotion(
         return;
     }
 
-    const image = await createRankCard(
-        member,
-        faction,
-        rank
-    );
+    const image =
+        await createRankCard(
+            member,
+            faction,
+            rank
+        );
 
     const attachment =
         new AttachmentBuilder(
             image,
             {
-                name: 'rank-promotion.png'
+                name:
+                    'rank-promotion.png'
             }
         );
 
-    const embed = createEmbed(
-        'Rank Ascension',
-        `${member} has ascended to **${rank.name}**.`
-    )
-        .setImage(
-            'attachment://rank-promotion.png'
+    const embed =
+        createEmbed(
+            'Rank Ascension',
+            `${member} has ascended to **${rank.name}**.`
         )
-        .setFooter({
-            text: 'AKANE • BLOOD MOON'
-        });
+            .setImage(
+                'attachment://rank-promotion.png'
+            )
+            .setFooter({
+                text:
+                    brand.footer
+            });
 
     await channel.send({
-        embeds: [embed],
-        files: [attachment]
+        embeds: [
+            embed
+        ],
+        files: [
+            attachment
+        ]
     });
 }
 

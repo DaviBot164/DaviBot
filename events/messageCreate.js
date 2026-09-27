@@ -20,24 +20,12 @@ const {
 } = require('../handlers/autoPromotion');
 
 const {
-    checkMemberAchievements
-} = require('../handlers/achievementHandler');
-
-const {
-    checkMemberTitles
-} = require('../handlers/titleHandler');
+    refreshProgressionUnlocks
+} = require('../handlers/progressionUnlocks');
 
 const {
     sendLevelUp
 } = require('../utils/levelNotifications');
-
-const {
-    sendAchievementUnlock
-} = require('../utils/achievementNotifications');
-
-const {
-    sendTitleUnlock
-} = require('../utils/titleNotifications');
 
 module.exports = {
     name: Events.MessageCreate,
@@ -109,47 +97,8 @@ module.exports = {
             return;
         }
 
-        const achievementResult =
-            await checkMemberAchievements(
-                member,
-                user
-            );
-
-        for (
-            const achievement
-            of achievementResult.unlocked
-        ) {
-            try {
-                await sendAchievementUnlock(
-                    member,
-                    achievement
-                );
-            } catch (error) {
-                console.error(
-                    'Achievement announcement failed:',
-                    error
-                );
-            }
-        }
-
-        const unlockedTitles =
-            await checkMemberTitles(
-                member,
-                user
-            );
-
-        for (const title of unlockedTitles) {
-            try {
-                await sendTitleUnlock(
-                    member,
-                    title
-                );
-            } catch (error) {
-                console.error(
-                    'Title announcement failed:',
-                    error
-                );
-            }
-        }
+        await refreshProgressionUnlocks(
+            member
+        );
     }
 };
