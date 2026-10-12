@@ -1,507 +1,343 @@
+const { SlashCommandBuilder } = require('discord.js');
+
+const { createEmbed } = require('../../utils/embeds');
 const {
-    SlashCommandBuilder,
-    ComponentType
-} = require('discord.js');
+    paginate,
+    openRecordBrowser
+} = require('../../utils/recordBrowser');
 
 const {
-    createEmbed,
-    createErrorEmbed
-} = require('../../utils/embeds');
+    getLegacyRecords
+} = require('../../database/communityViews');
 
-const roles =
-    require('../../config/roles');
+const { getUser } = require('../../database/users');
 
 const {
-    getAchievementStats,
-    getTitleStats,
     getLegacyTotals
 } = require('../../database/legacy');
 
 const {
-    LEGACY_IDS,
-    buildLegacyComponents
-} = require('../../utils/legacyComponents');
+    getAchievements,
+    ACHIEVEMENT_RANKS
+} = require('../../config/achievements');
 
-const ITEMS_PER_PAGE = 10;
-const COLLECTOR_TIME = 5 * 60 * 1000;
+const {
+    getTitles
+} = require('../../config/titles');
 
-const LEGACY_RANKS = Object.freeze([
-    {
-        id: 'moonbound',
-        name: 'Moonbound',
-        emoji: '🌙'
-    },
-    {
-        id: 'crimsonBloom',
-        name: 'Crimson Bloom',
-        emoji: '🌸'
-    },
-    {
-        id: 'bloodbound',
-        name: 'Bloodbound',
-        emoji: '🩸'
-    },
-    {
-        id: 'nightAscendant',
-        name: 'Night Ascendant',
-        emoji: '🌑'
-    },
-    {
-        id: 'eternalMoon',
-        name: 'Eternal Moon',
-        emoji: '🌕'
+const SECTIONS = [
+    { label: 'Overview', value: 'overview', emoji: '🌙' },
+    { label: 'Achievements', value: 'achievements', emoji: '🏆' },
+    { label: 'Titles', value: 'titles', emoji: '📜' },
+    { label: 'Legacy Ranks', value: 'ranks', emoji: '🌕' }
+];
+
+function prettyId(id) {
+    return id.replace(/[_-]/g, ' ');
+}
+
+function progressText(achievement, user) {
+    const requirement = achievement.requirement;
+
+    if (requirement.type === 'level') {
+        return `Level ${Number(user?.level ?? 0)}/${requirement.value}`;
     }
-]);
 
-function formatId(value) {
-    return value
-        .replace(/[_-]+/g, ' ')
-        .replace(
-            /\b\w/g,
-            character =>
-                character.toUpperCase()
-        );
-}
-
-function getLegacyRankCounts(
-    guild
-) {
-    return LEGACY_RANKS.map(
-        rank => {
-            const roleId =
-                roles[rank.id];
-
-            const role =
-                roleId
-                    ? guild.roles.cache.get(
-                        roleId
-                    )
-                    : null;
-
-            return {
-                ...rank,
-                roleId,
-                members:
-                    role?.members.size ??
-                    0
-            };
-        }
-    );
-}
-
-function createOverviewEmbed(
-    totals,
-    rankCounts
-) {
-    const rankLines =
-        rankCounts.map(
-            rank =>
-                `${rank.emoji} **${rank.name}** — ${rank.members}`
-        );
-
-    return createEmbed(
-        '🌙 BLOOD MOON • LEGACY',
-        [
-            'The achievements and titles recorded across Blood Moon.',
-            '',
-            '**🏆 ACHIEVEMENTS**',
-            `Total Unlocks — **${totals.achievementUnlocks}**`,
-            `Members — **${totals.achievementMembers}**`,
-            '',
-            '**📜 TITLES**',
-            `Total Unlocks — **${totals.titleUnlocks}**`,
-            `Members — **${totals.titleMembers}**`,
-            '',
-            '**🌕 LEGACY RANKS**',
-            ...rankLines,
-            '',
-            `**Recorded Members:** ${totals.recordedMembers}`
-        ].join('\n')
-    );
-}
-
-function createRecordEmbed({
-    title,
-    description,
-    records,
-    page,
-    formatter
-}) {
-    const totalPages =
-        Math.max(
-            1,
-            Math.ceil(
-                records.length /
-                ITEMS_PER_PAGE
-            )
-        );
-
-    const safePage =
-        Math.min(
-            Math.max(
-                page,
-                0
-            ),
-            totalPages - 1
-        );
-
-    const start =
-        safePage *
-        ITEMS_PER_PAGE;
-
-    const pageRecords =
-        records.slice(
-            start,
-            start +
-                ITEMS_PER_PAGE
-        );
-
-    const lines =
-        pageRecords.map(
-            (record, index) =>
-                formatter(
-                    record,
-                    start +
-                        index +
-                        1
-                )
-        );
-
-    if (!lines.length) {
-        lines.push(
-            '*No records have been unlocked yet.*'
-        );
+    if (requirement.type === 'messages') {
+        return `Messages ${Number(user?.messages ?? 0)}/${requirement.value}`;
     }
+
+    if (requirement.type === 'faction') {
+        return user?.faction ? 'Path chosen' : 'Choose a path';
+    }
+
+    if (requirement.type === 'prestige_rank') {
+        return 'Requires Hashira or Upper Moon';
+    }
+
+    return achievement.description;
+}
+
+function pageView(title, intro, records, state, formatter) {
+    const page = paginate(records, state.page);
+    const lines = page.records.map((record, index) =>
+        formatter(record, page.start + index + 1)
+    );
 
     return {
-        embed:
-            createEmbed(
-                title,
-                [
-                    description,
-                    '',
-                    ...lines,
-                    '',
-                    `Records: **${records.length}** • Page **${safePage + 1}/${totalPages}**`
-                ].join('\n')
-            ),
-
-        page:
-            safePage,
-
-        totalPages
+        ...page,
+        embed: createEmbed(
+            title,
+            [
+                intro,
+                '',
+                lines.join('\n\n') || '*No records found.*',
+                '',
+                `Records: **${page.total}** • Page **${page.page + 1}/${page.totalPages}**`
+            ].join('\n')
+        )
     };
 }
 
-function createRankEmbed(
-    rankCounts
-) {
-    const total =
-        rankCounts.reduce(
-            (sum, rank) =>
-                sum +
-                rank.members,
-            0
-        );
+function catalogView(data, state, isAchievement) {
+    const catalog = isAchievement ? getAchievements() : getTitles();
+    const records = isAchievement ? data.achievements : data.titles;
+    const key = isAchievement ? 'achievementId' : 'titleId';
+    const title = isAchievement ? '🏆 ACHIEVEMENTS' : '📜 TITLES';
 
-    const lines =
-        rankCounts.map(
-            rank => [
-                `${rank.emoji} **${rank.name}**`,
-                `Members — **${rank.members}**`
-            ].join('\n')
-        );
+    const items = [...catalog];
+    const knownIds = new Set(items.map(item => item.id));
 
-    return createEmbed(
-        '🌕 BLOOD MOON • LEGACY RANKS',
-        [
-            'Achievement rank distribution across Blood Moon.',
-            '',
-            ...lines,
-            '',
-            `**Total Rank Assignments:** ${total}`
-        ].join('\n')
+    for (const id of new Set(records.map(record => record[key]))) {
+        if (!knownIds.has(id)) {
+            items.push({
+                id,
+                name: prettyId(id),
+                description: 'Previously recorded unlock.'
+            });
+
+            knownIds.add(id);
+        }
+    }
+
+    if (state.item) {
+        const item = items.find(entry => entry.id === state.item);
+        const holders = records.filter(record => record[key] === state.item);
+
+        return {
+            ...pageView(
+                `${title} • ${item?.name ?? prettyId(state.item)}`,
+                item?.description ?? '',
+                holders,
+                state,
+                (record, position) =>
+                    `**${position}.** <@${record.userId}>${
+                        !isAchievement && record.equipped
+                            ? ' • **Equipped**'
+                            : ''
+                    }`
+            ),
+            choices: [
+                { label: 'Back to all records', value: 'all' }
+            ],
+            placeholder: 'Return to the catalog'
+        };
+    }
+
+    const view = pageView(
+        `🌙 BLOOD MOON • ${title}`,
+        data.target
+            ? `Records for <@${data.target.id}>.`
+            : 'Choose a record below to view its holders. Database records may include former members.',
+        items,
+        state,
+        item => {
+            const holders = records.filter(record => record[key] === item.id);
+
+            if (data.target) {
+                const unlocked = holders.length > 0;
+
+                return [
+                    `${unlocked ? '✅' : '🔒'} **${item.name}**`,
+                    item.description,
+                    unlocked
+                        ? !isAchievement && holders.some(record => record.equipped)
+                            ? '**Unlocked • Equipped**'
+                            : '**Unlocked**'
+                        : isAchievement && item.requirement
+                            ? progressText(item, data.user)
+                            : '**Locked**'
+                ].join('\n');
+            }
+
+            const preview = holders.slice(0, 3)
+                .map(record => `<@${record.userId}>`)
+                .join(', ');
+
+            return [
+                `**${item.name}**`,
+                item.description,
+                `Holders: **${holders.length}**${
+                    !isAchievement
+                        ? ` • Equipped: **${holders.filter(record => record.equipped).length}**`
+                        : ''
+                }`,
+                preview
+                    ? `${preview}${holders.length > 3 ? ' …' : ''}`
+                    : '*No holders yet.*'
+            ].join('\n');
+        }
     );
+
+    const choices = view.records.map(item => ({
+        label: item.name.slice(0, 100),
+        value: item.id
+    }));
+
+    return {
+        ...view,
+        choices,
+        placeholder: 'Choose an achievement or title'
+    };
 }
 
-async function loadSection(
-    interaction,
-    section,
-    page = 0
-) {
-    if (section === 'overview') {
-        const [
-            totals,
-            rankCounts
-        ] = await Promise.all([
-            getLegacyTotals(
-                interaction.guild.id
+function rankView(data, state) {
+    if (state.item) {
+        const rank = data.ranks.find(entry => entry.id === state.item);
+
+        return {
+            ...pageView(
+                `🌕 LEGACY • ${rank?.name ?? 'Rank'}`,
+                `Discord role holders${data.target ? ` for <@${data.target.id}>` : ''}.`,
+                rank?.members ?? [],
+                state,
+                (userId, position) => `**${position}.** <@${userId}>`
             ),
+            choices: [
+                { label: 'Back to all ranks', value: 'all' }
+            ]
+        };
+    }
 
-            Promise.resolve(
-                getLegacyRankCounts(
-                    interaction.guild
+    return {
+        embed: createEmbed(
+            '🌕 BLOOD MOON • LEGACY RANKS',
+            [
+                'Current Discord role assignments. One member may hold multiple roles.',
+                '',
+                ...data.ranks.map(rank =>
+                    `**${rank.name}** — ${rank.points} achievement points\nHolders: **${rank.members.length}**`
                 )
-            )
-        ]);
+            ].join('\n\n')
+        ),
+        page: 0,
+        totalPages: 1,
+        choices: data.ranks.map(rank => ({
+            label: rank.name,
+            value: rank.id
+        })),
+        placeholder: 'Choose a legacy rank'
+    };
+}
 
-        return {
-            embed:
-                createOverviewEmbed(
-                    totals,
-                    rankCounts
-                ),
-
-            page: 0,
-            totalPages: 1
-        };
+function render(data, state) {
+    if (state.item === 'all') {
+        state.item = null;
+        state.page = 0;
     }
 
-    if (section === 'achievements') {
-        const records =
-            await getAchievementStats(
-                interaction.guild.id
-            );
-
-        return createRecordEmbed({
-            title:
-                '🏆 BLOOD MOON • ACHIEVEMENTS',
-
-            description:
-                'Server-wide achievement unlock records.',
-
-            records,
-            page,
-
-            formatter:
-                (record, position) =>
-                    [
-                        `**${position}. ${formatId(record.achievementId)}**`,
-                        `Unlocks — **${record.unlocks}**`
-                    ].join('\n')
-        });
+    if (state.section === 'achievements') {
+        return catalogView(data, state, true);
     }
 
-    if (section === 'titles') {
-        const records =
-            await getTitleStats(
-                interaction.guild.id
-            );
-
-        return createRecordEmbed({
-            title:
-                '📜 BLOOD MOON • TITLES',
-
-            description:
-                'Titles earned across Blood Moon.',
-
-            records,
-            page,
-
-            formatter:
-                (record, position) =>
-                    [
-                        `**${position}. ${formatId(record.titleId)}**`,
-                        `Unlocked — **${record.unlocks}** • Equipped — **${record.equipped}**`
-                    ].join('\n')
-        });
+    if (state.section === 'titles') {
+        return catalogView(data, state, false);
     }
 
-    if (section === 'ranks') {
-        return {
-            embed:
-                createRankEmbed(
-                    getLegacyRankCounts(
-                        interaction.guild
-                    )
-                ),
-
-            page: 0,
-            totalPages: 1
-        };
+    if (state.section === 'ranks') {
+        return rankView(data, state);
     }
 
-    return loadSection(
-        interaction,
-        'overview',
-        0
+    const achievementIds = new Set(
+        data.achievements.map(record => record.achievementId)
     );
+
+    const points = getAchievements()
+        .filter(item => achievementIds.has(item.id))
+        .reduce((sum, item) => sum + item.points, 0);
+
+    const lines = data.target
+        ? [
+            `Member: <@${data.target.id}>`,
+            '',
+            `Achievements: **${achievementIds.size}/${getAchievements().length}**`,
+            `Achievement Points: **${points}**`,
+            `Titles: **${data.titles.length}/${getTitles().length}**`,
+            `Equipped Title: **${
+                getTitles().find(item =>
+                    item.id === data.titles.find(record => record.equipped)?.titleId
+                )?.name ?? 'None'
+            }**`
+        ]
+        : [
+            'Achievements, titles, and legacy role holders.',
+            '',
+            `Achievement Unlocks: **${data.totals.achievementUnlocks}**`,
+            `Achievement Holders: **${data.totals.achievementMembers}**`,
+            `Title Unlocks: **${data.totals.titleUnlocks}**`,
+            `Title Holders: **${data.totals.titleMembers}**`,
+            `Recorded Members: **${data.totals.recordedMembers}**`
+        ];
+
+    return {
+        embed: createEmbed(
+            '🌙 BLOOD MOON • LEGACY',
+            [
+                ...lines,
+                '',
+                '**LEGACY ROLES**',
+                ...data.ranks.map(rank =>
+                    `${rank.name} — **${rank.members.length}**`
+                )
+            ].join('\n')
+        ),
+        page: 0,
+        totalPages: 1
+    };
 }
 
 module.exports = {
-    data:
-        new SlashCommandBuilder()
-            .setName('legacy')
-            .setDescription(
-                'View Blood Moon achievements, titles and legacy ranks.'
-            ),
+    data: new SlashCommandBuilder()
+        .setName('legacy')
+        .setDescription('View achievements, titles, and their holders.')
+        .setDMPermission(false)
+        .addUserOption(option =>
+            option
+                .setName('member')
+                .setDescription('View one member’s legacy.')
+        ),
 
     async execute(interaction) {
-        await interaction.deferReply();
+        const target = interaction.options.getUser('member');
 
-        try {
-            let section =
-                'overview';
+        await openRecordBrowser(interaction, {
+            sections: SECTIONS,
+            render,
 
-            let page =
-                0;
+            async load() {
+                const [records, totals, user] = await Promise.all([
+                    getLegacyRecords(interaction.guildId, target?.id),
+                    getLegacyTotals(interaction.guildId),
+                    target
+                        ? getUser(interaction.guildId, target.id)
+                        : Promise.resolve(null),
+                    interaction.guild.members.fetch()
+                ]);
 
-            let view =
-                await loadSection(
-                    interaction,
-                    section,
-                    page
-                );
+                const ranks = ACHIEVEMENT_RANKS.map(rank => ({
+                    ...rank,
+                    members: [
+                        ...(
+                            interaction.guild.roles.cache
+                                .get(rank.roleId)?.members.values() ?? []
+                        )
+                    ]
+                        .filter(member =>
+                            !member.user.bot &&
+                            (!target || member.id === target.id)
+                        )
+                        .map(member => member.id)
+                        .sort()
+                }));
 
-            const reply =
-                await interaction.editReply({
-                    embeds: [
-                        view.embed
-                    ],
-
-                    components:
-                        buildLegacyComponents({
-                            section,
-                            page:
-                                view.page,
-                            totalPages:
-                                view.totalPages
-                        })
-                });
-
-            const collector =
-                reply.createMessageComponentCollector({
-                    componentType:
-                        ComponentType.MessageComponent,
-
-                    time:
-                        COLLECTOR_TIME
-                });
-
-            collector.on(
-                'collect',
-                async component => {
-                    if (
-                        component.user.id !==
-                        interaction.user.id
-                    ) {
-                        await component.reply({
-                            content:
-                                'Run `/legacy` to open your own legacy view.',
-                            ephemeral:
-                                true
-                        });
-
-                        return;
-                    }
-
-                    try {
-                        if (
-                            component.isStringSelectMenu() &&
-                            component.customId ===
-                                LEGACY_IDS.section
-                        ) {
-                            section =
-                                component.values[0];
-
-                            page = 0;
-                        } else if (
-                            component.isButton()
-                        ) {
-                            if (
-                                component.customId ===
-                                LEGACY_IDS.previous
-                            ) {
-                                page -= 1;
-                            }
-
-                            if (
-                                component.customId ===
-                                LEGACY_IDS.next
-                            ) {
-                                page += 1;
-                            }
-                        } else {
-                            return;
-                        }
-
-                        view =
-                            await loadSection(
-                                interaction,
-                                section,
-                                page
-                            );
-
-                        page =
-                            view.page;
-
-                        await component.update({
-                            embeds: [
-                                view.embed
-                            ],
-
-                            components:
-                                buildLegacyComponents({
-                                    section,
-                                    page,
-                                    totalPages:
-                                        view.totalPages
-                                })
-                        });
-                    } catch (error) {
-                        console.error(
-                            'Legacy navigation failed:',
-                            error
-                        );
-
-                        if (
-                            !component.replied &&
-                            !component.deferred
-                        ) {
-                            await component.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        'Legacy Failed',
-                                        'Akane could not update the legacy records.'
-                                    )
-                                ],
-
-                                ephemeral:
-                                    true
-                            });
-                        }
-                    }
-                }
-            );
-
-            collector.on(
-                'end',
-                async () => {
-                    try {
-                        await interaction.editReply({
-                            components: []
-                        });
-                    } catch {
-                        // Message may no longer exist.
-                    }
-                }
-            );
-        } catch (error) {
-            console.error(
-                'Legacy command failed:',
-                error
-            );
-
-            await interaction.editReply({
-                embeds: [
-                    createErrorEmbed(
-                        'Legacy Failed',
-                        'Akane could not load the Blood Moon legacy.'
-                    )
-                ],
-
-                components: []
-            });
-        }
+                return {
+                    ...records,
+                    target,
+                    totals,
+                    user,
+                    ranks
+                };
+            }
+        });
     }
 };

@@ -1,537 +1,167 @@
-const {
-    SlashCommandBuilder,
-    ComponentType
-} = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
+
+const { createEmbed } = require('../../utils/embeds');
 
 const {
-    createEmbed,
-    createErrorEmbed
-} = require('../../utils/embeds');
+    paginate,
+    openRecordBrowser
+} = require('../../utils/recordBrowser');
 
 const {
-    getCorpsMembers,
-    getFactionMembers,
-    getRankMembers,
-    getCorpsCounts
+    getCorpsMembers
 } = require('../../database/directory');
 
 const {
-    CORPS_IDS,
-    buildCorpsComponents
-} = require('../../utils/corpsComponents');
+    getRanks
+} = require('../../config/progression');
 
-const MEMBERS_PER_PAGE = 10;
-const COLLECTOR_TIME = 5 * 60 * 1000;
+const {
+    getTitle
+} = require('../../config/titles');
 
-const RANKS = Object.freeze({
-    hashira: {
-        faction: 'slayer',
-        rank: 'hashira',
-        name: 'Hashira',
-        emoji: '🔥'
-    },
+const RANK_FILTERS = {
+    hashira: { faction: 'slayer', rank: 'hashira' },
+    kinoe: { faction: 'slayer', rank: 'kinoe' },
+    mizunoe: { faction: 'slayer', rank: 'mizunoe' },
+    slayer_rank: { faction: 'slayer', rank: 'slayer' },
+    upper_moon: { faction: 'demon', rank: 'upper_moon' },
+    lower_moon: { faction: 'demon', rank: 'lower_moon' },
+    demon_rank: { faction: 'demon', rank: 'demon' }
+};
 
-    kinoe: {
-        faction: 'slayer',
-        rank: 'kinoe',
-        name: 'Kinoe',
-        emoji: '🍃'
-    },
+const SECTIONS = [
+    { label: 'Overview', value: 'overview', emoji: '🌙' },
+    { label: 'All Members', value: 'all', emoji: '👥' },
+    { label: 'Slayer Corps', value: 'slayer', emoji: '⚔️' },
+    { label: 'Hashira', value: 'hashira', emoji: '🔥' },
+    { label: 'Kinoe', value: 'kinoe', emoji: '🍃' },
+    { label: 'Mizunoe', value: 'mizunoe', emoji: '🌊' },
+    { label: 'Slayer', value: 'slayer_rank', emoji: '🗡️' },
+    { label: 'Demon Order', value: 'demon', emoji: '🩸' },
+    { label: 'Upper Moon', value: 'upper_moon', emoji: '🌙' },
+    { label: 'Lower Moon', value: 'lower_moon', emoji: '🌑' },
+    { label: 'Demon', value: 'demon_rank', emoji: '🩸' }
+];
 
-    mizunoe: {
-        faction: 'slayer',
-        rank: 'mizunoe',
-        name: 'Mizunoe',
-        emoji: '🌊'
-    },
-
-    slayer_rank: {
-        faction: 'slayer',
-        rank: 'slayer',
-        name: 'Slayer',
-        emoji: '🗡️'
-    },
-
-    upper_moon: {
-        faction: 'demon',
-        rank: 'upper_moon',
-        name: 'Upper Moon',
-        emoji: '🌙'
-    },
-
-    lower_moon: {
-        faction: 'demon',
-        rank: 'lower_moon',
-        name: 'Lower Moon',
-        emoji: '🌑'
-    },
-
-    demon_rank: {
-        faction: 'demon',
-        rank: 'demon',
-        name: 'Demon',
-        emoji: '🩸'
-    }
-});
-
-const OVERVIEW_RANKS = Object.freeze([
-    {
-        faction: 'slayer',
-        rank: 'hashira',
-        label: '🔥 Hashira'
-    },
-    {
-        faction: 'slayer',
-        rank: 'kinoe',
-        label: '🍃 Kinoe'
-    },
-    {
-        faction: 'slayer',
-        rank: 'mizunoe',
-        label: '🌊 Mizunoe'
-    },
-    {
-        faction: 'slayer',
-        rank: 'slayer',
-        label: '🗡️ Slayer'
-    },
-    {
-        faction: 'demon',
-        rank: 'upper_moon',
-        label: '🌙 Upper Moon'
-    },
-    {
-        faction: 'demon',
-        rank: 'lower_moon',
-        label: '🌑 Lower Moon'
-    },
-    {
-        faction: 'demon',
-        rank: 'demon',
-        label: '🩸 Demon'
-    }
-]);
-
-function getCount(
-    counts,
-    faction,
-    rank
-) {
-    return (
-        counts.find(
-            entry =>
-                entry.faction === faction &&
-                entry.rank === rank
-        )?.members ?? 0
-    );
+function rankName(member) {
+    return getRanks(member.faction)
+        .find(rank => rank.id === member.rank)?.name ??
+        member.rank?.replace(/_/g, ' ') ??
+        'Unranked';
 }
 
-function formatTitle(titleId) {
-    if (!titleId) {
-        return 'None';
-    }
+function render(members, state) {
+    if (state.section === 'overview') {
+        const lines = [
+            'Recorded progression roster. Database records may include former members.',
+            ''
+        ];
 
-    return titleId
-        .split(/[_-]/g)
-        .filter(Boolean)
-        .map(
-            word =>
-                word.charAt(0).toUpperCase() +
-                word.slice(1)
-        )
-        .join(' ');
-}
-
-function createOverviewEmbed(
-    counts,
-    totalMembers
-) {
-    const slayerLines =
-        OVERVIEW_RANKS
-            .filter(
-                entry =>
-                    entry.faction ===
-                    'slayer'
-            )
-            .map(
-                entry =>
-                    `${entry.label} — **${getCount(
-                        counts,
-                        entry.faction,
-                        entry.rank
-                    )}**`
+        for (const faction of ['slayer', 'demon']) {
+            const factionMembers = members.filter(member =>
+                member.faction === faction
             );
 
-    const demonLines =
-        OVERVIEW_RANKS
-            .filter(
-                entry =>
-                    entry.faction ===
-                    'demon'
-            )
-            .map(
-                entry =>
-                    `${entry.label} — **${getCount(
-                        counts,
-                        entry.faction,
-                        entry.rank
-                    )}**`
+            lines.push(
+                `**${faction === 'slayer' ? '⚔️ SLAYER CORPS' : '🩸 DEMON ORDER'} — ${factionMembers.length}**`
             );
 
-    return createEmbed(
-        '🌙 BLOOD MOON • CORPS',
-        [
-            'Official Blood Moon progression roster.',
-            '',
-            '**⚔️ SLAYER CORPS**',
-            ...slayerLines,
-            '',
-            '**🩸 DEMON ORDER**',
-            ...demonLines,
-            '',
-            `**Recorded Members:** ${totalMembers}`
-        ].join('\n')
-    );
-}
-
-function createMemberEmbed({
-    title,
-    description,
-    members,
-    page
-}) {
-    const totalPages =
-        Math.max(
-            1,
-            Math.ceil(
-                members.length /
-                MEMBERS_PER_PAGE
-            )
-        );
-
-    const safePage =
-        Math.min(
-            Math.max(
-                page,
-                0
-            ),
-            totalPages - 1
-        );
-
-    const start =
-        safePage *
-        MEMBERS_PER_PAGE;
-
-    const pageMembers =
-        members.slice(
-            start,
-            start +
-                MEMBERS_PER_PAGE
-        );
-
-    const lines =
-        pageMembers.map(
-            (member, index) => {
-                const position =
-                    start +
-                    index +
-                    1;
-
-                return [
-                    `**${position}.** <@${member.userId}>`,
-                    `Level **${member.level}** • Title: **${formatTitle(member.titleId)}**`
-                ].join('\n');
+            for (const rank of [...getRanks(faction)].reverse()) {
+                lines.push(
+                    `${rank.name} — **${
+                        factionMembers.filter(member =>
+                            member.rank === rank.id
+                        ).length
+                    }**`
+                );
             }
-        );
 
-    if (!lines.length) {
-        lines.push(
-            '*No members are recorded here yet.*'
-        );
-    }
+            const unknown = factionMembers.filter(member =>
+                !getRanks(faction).some(rank => rank.id === member.rank)
+            ).length;
 
-    return {
-        embed:
-            createEmbed(
-                title,
-                [
-                    description,
-                    '',
-                    ...lines,
-                    '',
-                    `Members: **${members.length}** • Page **${safePage + 1}/${totalPages}**`
-                ].join('\n')
-            ),
+            if (unknown) {
+                lines.push(`Unranked / Other — **${unknown}**`);
+            }
 
-        page:
-            safePage,
+            lines.push('');
+        }
 
-        totalPages
-    };
-}
-
-async function loadSection(
-    guildId,
-    section,
-    page = 0
-) {
-    if (section === 'overview') {
-        const [
-            counts,
-            members
-        ] = await Promise.all([
-            getCorpsCounts(
-                guildId
-            ),
-
-            getCorpsMembers(
-                guildId
-            )
-        ]);
+        lines.push(`Recorded Members: **${members.length}**`);
 
         return {
-            embed:
-                createOverviewEmbed(
-                    counts,
-                    members.length
-                ),
-
+            embed: createEmbed(
+                '🌙 BLOOD MOON • CORPS',
+                lines.join('\n')
+            ),
             page: 0,
             totalPages: 1
         };
     }
 
-    if (
-        section === 'slayer' ||
-        section === 'demon'
-    ) {
-        const members =
-            await getFactionMembers(
-                guildId,
-                section
-            );
+    const filter = RANK_FILTERS[state.section];
 
-        return createMemberEmbed({
-            title:
-                section === 'slayer'
-                    ? '⚔️ BLOOD MOON • SLAYER CORPS'
-                    : '🩸 BLOOD MOON • DEMON ORDER',
+    const filtered = members.filter(member => {
+        if (filter) {
+            return member.faction === filter.faction &&
+                member.rank === filter.rank;
+        }
 
-            description:
-                section === 'slayer'
-                    ? 'Members following the Slayer path.'
-                    : 'Members following the Demon path.',
+        if (['slayer', 'demon'].includes(state.section)) {
+            return member.faction === state.section;
+        }
 
-            members,
-            page
-        });
-    }
-
-    const rank =
-        RANKS[section];
-
-    if (!rank) {
-        return loadSection(
-            guildId,
-            'overview',
-            0
-        );
-    }
-
-    const members =
-        await getRankMembers(
-            guildId,
-            rank.faction,
-            rank.rank
-        );
-
-    return createMemberEmbed({
-        title:
-            `${rank.emoji} BLOOD MOON • ${rank.name.toUpperCase()}`,
-
-        description:
-            `${rank.name} roster.`,
-
-        members,
-        page
+        return true;
     });
+
+    const page = paginate(filtered, state.page);
+
+    const lines = page.records.map((member, index) => [
+        `**${page.start + index + 1}.** <@${member.userId}>`,
+        `${member.faction === 'slayer' ? '⚔️ Slayer' : '🩸 Demon'} • **${rankName(member)}**`,
+        `Level **${member.level}** • XP **${member.xp}** • Messages **${member.messages}**`,
+        `Title: **${getTitle(member.titleId)?.name ?? member.titleId ?? 'None'}**`
+    ].join('\n'));
+
+    const label = SECTIONS.find(section =>
+        section.value === state.section
+    )?.label ?? 'Members';
+
+    return {
+        ...page,
+        embed: createEmbed(
+            `🌙 BLOOD MOON • ${label.toUpperCase()}`,
+            [
+                'Sorted by level, then XP.',
+                '',
+                lines.join('\n\n') || '*No members recorded here yet.*',
+                '',
+                `Members: **${page.total}** • Page **${page.page + 1}/${page.totalPages}**`
+            ].join('\n')
+        )
+    };
 }
 
 module.exports = {
-    data:
-        new SlashCommandBuilder()
-            .setName('corps')
-            .setDescription(
-                'View the Blood Moon progression roster.'
-            ),
+    data: new SlashCommandBuilder()
+        .setName('corps')
+        .setDescription('View faction members, ranks, levels, and titles.')
+        .setDMPermission(false),
 
     async execute(interaction) {
-        await interaction.deferReply();
+        await openRecordBrowser(interaction, {
+            sections: SECTIONS,
+            render,
 
-        try {
-            let section =
-                'overview';
+            async load() {
+                const records = await getCorpsMembers(interaction.guildId);
 
-            let page =
-                0;
-
-            let view =
-                await loadSection(
-                    interaction.guild.id,
-                    section,
-                    page
-                );
-
-            const reply =
-                await interaction.editReply({
-                    embeds: [
-                        view.embed
-                    ],
-
-                    components:
-                        buildCorpsComponents({
-                            section,
-                            page:
-                                view.page,
-                            totalPages:
-                                view.totalPages
-                        })
-                });
-
-            const collector =
-                reply.createMessageComponentCollector({
-                    componentType:
-                        ComponentType.MessageComponent,
-
-                    time:
-                        COLLECTOR_TIME
-                });
-
-            collector.on(
-                'collect',
-                async component => {
-                    if (
-                        component.user.id !==
-                        interaction.user.id
-                    ) {
-                        await component.reply({
-                            content:
-                                'Run `/corps` to open your own roster view.',
-
-                            ephemeral:
-                                true
-                        });
-
-                        return;
-                    }
-
-                    try {
-                        if (
-                            component.isStringSelectMenu() &&
-                            component.customId ===
-                                CORPS_IDS.section
-                        ) {
-                            section =
-                                component.values[0];
-
-                            page = 0;
-                        } else if (
-                            component.isButton()
-                        ) {
-                            if (
-                                component.customId ===
-                                CORPS_IDS.previous
-                            ) {
-                                page -= 1;
-                            }
-
-                            if (
-                                component.customId ===
-                                CORPS_IDS.next
-                            ) {
-                                page += 1;
-                            }
-                        } else {
-                            return;
-                        }
-
-                        view =
-                            await loadSection(
-                                interaction.guild.id,
-                                section,
-                                page
-                            );
-
-                        page =
-                            view.page;
-
-                        await component.update({
-                            embeds: [
-                                view.embed
-                            ],
-
-                            components:
-                                buildCorpsComponents({
-                                    section,
-                                    page,
-                                    totalPages:
-                                        view.totalPages
-                                })
-                        });
-                    } catch (error) {
-                        console.error(
-                            'Corps navigation failed:',
-                            error
-                        );
-
-                        if (
-                            !component.replied &&
-                            !component.deferred
-                        ) {
-                            await component.reply({
-                                embeds: [
-                                    createErrorEmbed(
-                                        'Corps Failed',
-                                        'Akane could not update the roster.'
-                                    )
-                                ],
-
-                                ephemeral:
-                                    true
-                            });
-                        }
-                    }
-                }
-            );
-
-            collector.on(
-                'end',
-                async () => {
-                    try {
-                        await interaction.editReply({
-                            components: []
-                        });
-                    } catch {
-                        // Message may no longer exist.
-                    }
-                }
-            );
-        } catch (error) {
-            console.error(
-                'Corps command failed:',
-                error
-            );
-
-            await interaction.editReply({
-                embeds: [
-                    createErrorEmbed(
-                        'Corps Failed',
-                        'Akane could not load the Blood Moon roster.'
-                    )
-                ],
-
-                components: []
-            });
-        }
+                return [
+                    ...new Map(
+                        records.map(member => [member.userId, member])
+                    ).values()
+                ];
+            }
+        });
     }
 };
