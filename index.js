@@ -4,7 +4,8 @@ require('dotenv').config({
 
 const {
     Client,
-    GatewayIntentBits
+    GatewayIntentBits,
+    Partials
 } = require('discord.js');
 
 const {
@@ -23,8 +24,12 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
+    ],
+    partials: [
+        Partials.Message
     ]
 });
 
@@ -32,27 +37,15 @@ async function start() {
     loadCommands(client);
     loadEvents(client);
 
-    if (
-        process.env
-            .NF_DAVIBOT_DATABASE_POSTGRES_URI
-    ) {
+    if (process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI) {
         await initializeDatabase();
-
-        console.log(
-            'Database: Connected'
-        );
+        console.log('Database: Connected');
     }
 
-    await client.login(
-        process.env.TOKEN
-    );
+    await client.login(process.env.TOKEN);
 }
 
 start().catch(error => {
-    console.error(
-        'Startup failed:',
-        error
-    );
-
+    console.error('Startup failed:', error);
     process.exit(1);
 });
