@@ -1,155 +1,151 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    PermissionsBitField,
+    MessageFlags
 } = require('discord.js');
 
-const {
-    createEmbed
-} = require('../../utils/embeds');
+const { createEmbed } = require('../../utils/embeds');
 
-const PUBLIC_SECTIONS = Object.freeze([
+const SECTIONS = [
     {
         name: '⚔️ PROGRESSION',
         commands: [
-            '/profile',
-            '/path',
-            '/achievements',
-            '/titles',
-            '/corps',
-            '/legacy'
+            ['profile', 'View your progression.'],
+            ['path', 'Choose your faction.'],
+            ['achievements', 'View your achievements.'],
+            ['titles', 'View your titles.'],
+            ['leaderboard', 'View the level and XP rankings.'],
+            ['corps', 'Browse members and ranks.'],
+            ['legacy', 'Explore achievements, titles and ranks.']
         ]
     },
     {
         name: '🏯 RANKS & TRIALS',
         commands: [
-            '/trial'
+            ['trial', 'View rank trials.']
         ]
     },
     {
         name: '⚙️ UTILITY',
         commands: [
-            '/ping'
+            ['help', 'View available commands.'],
+            ['ping', 'Check bot latency.']
         ]
-    }
-]);
-
-const STAFF_SECTIONS = Object.freeze([
+    },
     {
         name: '🏯 RANK MANAGEMENT',
+        staff: true,
         commands: [
-            '/setrank',
-            '/removerank',
-            '/rankhistory'
+            ['setrank', 'Assign a rank.'],
+            ['removerank', 'Remove a rank.'],
+            ['rankhistory', 'View rank changes.']
         ]
     },
     {
         name: '🛡️ MODERATION',
+        staff: true,
         commands: [
-            '/warn',
-            '/warnings',
-            '/unwarn',
-            '/timeout',
-            '/untimeout',
-            '/kick',
-            '/ban',
-            '/unban',
-            '/clear',
-            '/slowmode',
-            '/lock',
-            '/unlock',
-            '/case',
-            '/history'
+            ['warn', 'Warn a member.'],
+            ['warnings', 'View member warnings.'],
+            ['unwarn', 'Remove a warning.'],
+            ['timeout', 'Timeout a member.'],
+            ['untimeout', 'Remove a timeout.'],
+            ['kick', 'Kick a member.'],
+            ['ban', 'Ban a user.'],
+            ['unban', 'Unban a user.'],
+            ['clear', 'Delete messages.'],
+            ['slowmode', 'Set channel slowmode.'],
+            ['lock', 'Lock a channel.'],
+            ['unlock', 'Unlock a channel.'],
+            ['case', 'View a moderation case.'],
+            ['history', 'View moderation history.']
         ]
     },
     {
         name: '🌑 ADMINISTRATION',
+        staff: true,
         commands: [
-            '/setup',
-            '/ticketpanel',
-            '/emergency'
+            ['announce', 'Publish an announcement.'],
+            ['setup', 'Configure server information.'],
+            ['ticketpanel', 'Publish a ticket panel.'],
+            ['emergency', 'Manage emergency protection.']
         ]
     },
     {
         name: '🩸 TESTING',
+        staff: true,
         commands: [
-            '/testlevel',
-            '/testwelcome'
+            ['testlevel', 'Test level notifications.'],
+            ['testwelcome', 'Test welcome notifications.']
         ]
     }
-]);
+];
 
-function formatCommands(commands) {
-    return commands
-        .map(command => `\`${command}\``)
-        .join('  ');
-}
+function canViewCommand(interaction, command, staff) {
+    const permissions = interaction.memberPermissions;
+    const required = command.data.toJSON()
+        .default_member_permissions;
 
-function addSections(
-    embed,
-    sections
-) {
-    for (const section of sections) {
-        embed.addFields({
-            name:
-                section.name,
-
-            value:
-                formatCommands(
-                    section.commands
-                )
-        });
+    if (required != null) {
+        return permissions?.has(
+            new PermissionsBitField(BigInt(required))
+        ) ?? false;
     }
 
-    return embed;
+    return !staff || (
+        permissions?.has(PermissionFlagsBits.ManageMessages)
+        ?? false
+    );
 }
 
 module.exports = {
-    data:
-        new SlashCommandBuilder()
-            .setName('help')
-            .setDescription(
-                'View Akane commands.'
-            ),
+    data: new SlashCommandBuilder()
+        .setName('help')
+        .setDescription('View available Akane commands.'),
 
     async execute(interaction) {
-        const isStaff =
-            interaction.memberPermissions
-                ?.has(
-                    PermissionFlagsBits
-                        .ManageMessages
-                ) ?? false;
+        const commands = interaction.client.commands;
 
-        const embed =
-            createEmbed(
-                '🌙 AKANE • COMMANDS',
-                isStaff
-                    ? 'Blood Moon command directory • Staff Access'
-                    : 'Blood Moon command directory'
-            );
-
-        addSections(
-            embed,
-            PUBLIC_SECTIONS
+        const embed = createEmbed(
+            '🌙 AKANE • HELP',
+            'Explore your progression and available commands.'
         );
 
-        if (isStaff) {
-            addSections(
-                embed,
-                STAFF_SECTIONS
-            );
+        let count = 0;
+
+        for (const section of SECTIONS) {
+            const visible = section.commands.filter(([name]) => {
+                const command = commands.get(name);
+
+                return command && canViewCommand(
+                    interaction,
+                    command,
+                    section.staff
+                );
+            });
+
+            if (!visible.length) continue;
+
+            count += visible.length;
+
+            embed.addFields({
+                name: section.name,
+                value: visible
+                    .map(([name, description]) =>
+                        `\`/${name}\` — ${description}`
+                    )
+                    .join('\n')
+            });
         }
 
         embed.setFooter({
-            text:
-                isStaff
-                    ? 'Akane • Blood Moon • 31 Commands'
-                    : 'Akane • Blood Moon'
+            text: `Akane • Blood Moon • ${count} Commands Available`
         });
 
         await interaction.reply({
-            embeds: [
-                embed
-            ]
+            embeds: [embed],
+            flags: MessageFlags.Ephemeral
         });
     }
 };
