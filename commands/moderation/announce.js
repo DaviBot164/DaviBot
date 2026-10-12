@@ -40,6 +40,16 @@ module.exports = {
                 .setDescription('Announcement text. Use \\n for a new line.')
                 .setMaxLength(4000)
                 .setRequired(true)
+        )
+        .addUserOption(option =>
+            option
+                .setName('member')
+                .setDescription('Server member to mention.')
+        )
+        .addBooleanOption(option =>
+            option
+                .setName('everyone')
+                .setDescription('Mention everyone in the server.')
         ),
 
     async execute(interaction) {
@@ -68,17 +78,38 @@ module.exports = {
             .replace(/\\n/g, '\n')
             .trim();
 
-        if (!title || !text) {
-            await interaction.editReply({
-                embeds: [
-                    errorEmbed(
-                        'Invalid Announcement',
-                        'The title and text cannot be empty.'
-                    )
-                ]
+        const user = interaction.options.getUser('member');
+        const everyone = interaction.options.getBoolean('everyone') ?? false;
+
+        const fail = async (heading, description) =>
+            interaction.editReply({
+                content: null,
+                embeds: [errorEmbed(heading, description)],
+                components: []
             });
 
+        if (!title || !text) {
+            await fail(
+                'Invalid Announcement',
+                'The title and text cannot be empty.'
+            );
+
             return;
+        }
+
+        if (user) {
+            const member = await interaction.guild.members
+                .fetch(user.id)
+                .catch(() => null);
+
+            if (!member) {
+                await fail(
+                    'Member Not Found',
+                    'Choose a member who is currently in this server.'
+                );
+
+                return;
+            }
         }
 
         const requiredPermissions = [
@@ -88,19 +119,42 @@ module.exports = {
         ];
 
         const botMember = await interaction.guild.members.fetchMe();
+        const authorMember = await interaction.guild.members.fetch(
+            interaction.user.id
+        );
 
         if (!channel.permissionsFor(botMember)?.has(requiredPermissions)) {
-            await interaction.editReply({
-                embeds: [
-                    errorEmbed(
-                        'Missing Permissions',
-                        'Akane needs View Channel, Send Messages, and Embed Links in that channel.'
-                    )
-                ]
-            });
+            await fail(
+                'Missing Permissions',
+                'Akane needs View Channel, Send Messages, and Embed Links in that channel.'
+            );
 
             return;
         }
+
+        if (
+            everyone &&
+            (
+                !channel.permissionsFor(authorMember)?.has(
+                    PermissionFlagsBits.MentionEveryone
+                ) ||
+                !channel.permissionsFor(botMember)?.has(
+                    PermissionFlagsBits.MentionEveryone
+                )
+            )
+        ) {
+            await fail(
+                'Missing Mention Permission',
+                'Both you and Akane need Mention Everyone permission in that channel.'
+            );
+
+            return;
+        }
+
+        const mentions = [
+            everyone ? '@everyone' : null,
+            user ? `<@${user.id}>` : null
+        ].filter(Boolean).join(' ');
 
         const announcement = new EmbedBuilder()
             .setColor('#9B1C31')
@@ -110,6 +164,12 @@ module.exports = {
                 text: `AKANE • ${interaction.guild.name}`
             })
             .setTimestamp();
+
+        if (user) {
+            announcement.setThumbnail(
+                user.displayAvatarURL({ size: 256 })
+            );
+        }
 
         const publishId = `akane:announce:publish:${interaction.id}`;
         const cancelId = `akane:announce:cancel:${interaction.id}`;
@@ -126,7 +186,10 @@ module.exports = {
         );
 
         const preview = await interaction.editReply({
-            content: `Preview for ${channel}. Confirm within 2 minutes.`,
+            content: [
+                `Preview for ${channel}. Confirm within 2 minutes.`,
+                mentions ? `Mentions: ${mentions}` : null
+            ].filter(Boolean).join('\n'),
             embeds: [announcement],
             components: [controls],
             allowedMentions: { parse: [] }
@@ -144,7 +207,8 @@ module.exports = {
         } catch {
             await interaction.editReply({
                 content: 'Announcement preview expired. Run /announce again.',
-                components: []
+                components: [],
+                allowedMentions: { parse: [] }
             }).catch(() => null);
 
             return;
@@ -164,9 +228,55 @@ module.exports = {
         }
 
         try {
+            const currentAuthor = await interaction.guild.members.fetch(
+                interaction.user.id
+            );
+            const currentBot = await interaction.guild.members.fetchMe();
+
+            if (
+                !currentAuthor.permissions.has(
+                    PermissionFlagsBits.ManageGuild
+                ) ||
+                !channel.permissionsFor(currentBot)?.has(
+                    requiredPermissions
+                )
+            ) {
+                await fail(
+                    'Permissions Changed',
+                    'The required permissions are no longer available.'
+                );
+
+                return;
+            }
+
+            if (
+                everyone &&
+                (
+                    !channel.permissionsFor(currentAuthor)?.has(
+                        PermissionFlagsBits.MentionEveryone
+                    ) ||
+                    !channel.permissionsFor(currentBot)?.has(
+                        PermissionFlagsBits.MentionEveryone
+                    )
+                )
+            ) {
+                await fail(
+                    'Missing Mention Permission',
+                    'Both you and Akane need Mention Everyone permission in that channel.'
+                );
+
+                return;
+            }
+
             const message = await channel.send({
+                content: mentions || undefined,
                 embeds: [announcement],
-                allowedMentions: { parse: [] }
+                allowedMentions: {
+                    parse: everyone ? ['everyone'] : [],
+                    users: user ? [user.id] : [],
+                    roles: [],
+                    repliedUser: false
+                }
             });
 
             await interaction.editReply({
@@ -182,16 +292,10 @@ module.exports = {
         } catch (error) {
             console.error('Announcement publish failed:', error);
 
-            await interaction.editReply({
-                content: null,
-                embeds: [
-                    errorEmbed(
-                        'Publish Failed',
-                        'Akane could not publish the announcement. Check her channel permissions.'
-                    )
-                ],
-                components: []
-            });
+            await fail(
+                'Publish Failed',
+                'Akane could not publish the announcement. Check her channel permissions.'
+            );
         }
     }
 };
