@@ -1,71 +1,84 @@
-const channels =
-    require('../../config/channels');
-
-const brand =
-    require('../../config/brand');
-
-const {
-    createEmbed
-} = require('../embeds');
-
-const {
-    publishSetupMessage
-} = require('./publishSetupMessage');
+const channels = require('../../config/channels');
+const { createEmbed } = require('../embeds');
+const { publishSetupMessage } = require('./publishSetupMessage');
 
 async function publishSupportGuide(guild) {
-    const channel =
-        guild.channels.cache.get(
-            channels.supportGuide
-        );
+    const channel = guild.channels.cache.get(channels.supportGuide);
 
     if (!channel?.isTextBased()) {
-        throw new Error(
-            'Support Guide channel could not be found.'
-        );
+        throw new Error('Support Guide channel could not be found.');
     }
 
-    const title =
-        '📜 Support Guide';
+    const title = '📜 Support Guide';
 
-    const embed =
-        createEmbed(
-            title,
-            [
-                'Need help in **Blood Moon**? Use the ticket system to contact the staff team privately.',
-                '',
-                '🛟 **Support**',
-                'General questions or server-related help.',
-                '',
-                '🚨 **Report**',
-                'Report a member, rule violation or other problem.',
-                '',
-                '⚖️ **Appeal**',
-                'Appeal a moderation action.',
-                '',
-                '📜 **Other**',
-                'Use this when your request does not fit another category.',
-                '',
-                'Open your ticket in <#' + channels.openTicket + '>.',
-                '',
-                '*Please explain your issue clearly and wait patiently for staff.*'
+    const embed = createEmbed(
+        title,
+        [
+            '**Need assistance? Let the Shogunate know.**',
+            'Use a ticket to discuss server issues with staff privately, away from public chat.',
+            `Open a ticket in <#${channels.openTicket}> and choose the category that best matches your request.`
+        ].join('\n')
+    ).addFields(
+        {
+            name: '🛟 SUPPORT',
+            value: [
+                'For server questions, verification problems, missing roles or issues with Akane.',
+                'Explain what you expected to happen, what happened instead and which steps you already tried.'
             ].join('\n')
-        )
-            .setFooter({
-                text:
-                    brand.footer
-            });
+        },
+        {
+            name: '🚨 REPORT',
+            value: [
+                'For rule violations, harassment, suspicious links or other community concerns.',
+                'Include the member involved, relevant message links or screenshots, and a brief explanation.',
+                'Report the issue without starting an argument or sharing private details in public chat.'
+            ].join('\n')
+        },
+        {
+            name: '⚖️ APPEAL',
+            value: [
+                'Request a review of a moderation action you believe needs reconsideration.',
+                'Include the action, its date or case ID if available, and why you are requesting a review.',
+                'An appeal is a request for review, not a guarantee that the decision will change.'
+            ].join('\n')
+        },
+        {
+            name: '📜 OTHER',
+            value: [
+                'For requests that do not fit the categories above.',
+                'State what you need clearly so staff can direct your request appropriately.'
+            ].join('\n')
+        },
+        {
+            name: '📋 HELP US UNDERSTAND',
+            value: [
+                '**1.** Describe the issue in your first message.',
+                '**2.** Add relevant evidence and context.',
+                '**3.** Keep related information in the same ticket.',
+                '**4.** Never include passwords, account tokens or verification codes.'
+            ].join('\n')
+        },
+        {
+            name: '⏳ AFTER OPENING A TICKET',
+            value: [
+                'Wait patiently for a staff response. Avoid repeated mentions or duplicate tickets for the same issue.',
+                'Keep the conversation respectful and answer any follow-up questions.',
+                'Once your issue is resolved, follow the ticket controls or staff instructions to close it.'
+            ].join('\n')
+        }
+    );
+
+    const icon = guild.iconURL({ size: 256 });
+
+    if (icon) {
+        embed.setThumbnail(icon);
+    }
 
     return publishSetupMessage(
         channel,
-        {
-            embeds: [
-                embed
-            ]
-        },
+        { embeds: [embed] },
         title
     );
 }
 
-module.exports = {
-    publishSupportGuide
-};
+module.exports = { publishSupportGuide };
