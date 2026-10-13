@@ -30,6 +30,7 @@ const SECTIONS = [
         name: '⚙️ UTILITY',
         commands: [
             ['help', 'View available commands.'],
+            ['avatar', 'View a member or bot avatar.'],
             ['ping', 'Check bot latency.']
         ]
     },
