@@ -27,11 +27,13 @@ async function getLegacyRecords(guildId, userId = null) {
     return {
         achievements: achievements.rows.map(row => ({
             userId: row.user_id,
-            id: row.achievement_id
+            id: row.achievement_id,
+            achievementId: row.achievement_id
         })),
         titles: titles.rows.map(row => ({
             userId: row.user_id,
             id: row.title_id,
+            titleId: row.title_id,
             equipped: row.equipped
         }))
     };

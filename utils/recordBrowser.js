@@ -121,24 +121,24 @@ async function openRecordBrowser(interaction, {
         let queue = Promise.resolve();
         let ended = false;
 
-        collector.on('collect', component => {
+        async function handleComponent(component) {
+            if (component.user.id !== interaction.user.id) {
+                await component.reply({
+                    content: `Run /${interaction.commandName} to open your own view.`,
+                    flags: MessageFlags.Ephemeral
+                });
+
+                return;
+            }
+
+            await component.deferUpdate();
+
             const task = async () => {
+                if (ended) return;
+
+                const previousState = { ...state };
+
                 try {
-                    if (component.user.id !== interaction.user.id) {
-                        await component.reply({
-                            content: `Run /${interaction.commandName} to open your own view.`,
-                            flags: MessageFlags.Ephemeral
-                        });
-
-                        return;
-                    }
-
-                    await component.deferUpdate();
-
-                    if (ended) {
-                        return;
-                    }
-
                     if (component.customId === `${prefix}:section`) {
                         const section = component.values[0];
 
@@ -163,14 +163,18 @@ async function openRecordBrowser(interaction, {
                         state.page -= 1;
                     } else if (component.customId === `${prefix}:next`) {
                         state.page += 1;
+                    } else {
+                        return;
                     }
 
                     await interaction.editReply(payload());
                 } catch (error) {
+                    Object.assign(state, previousState);
+
                     console.error('Record navigation failed:', error);
 
                     await component.followUp({
-                        content: 'Akane could not update this view.',
+                        content: 'Akane could not update this view. Please try again.',
                         flags: MessageFlags.Ephemeral
                     }).catch(() => null);
                 }
@@ -178,6 +182,12 @@ async function openRecordBrowser(interaction, {
 
             queue = queue.then(task).catch(error => {
                 console.error('Record browser failed:', error);
+            });
+        }
+
+        collector.on('collect', component => {
+            handleComponent(component).catch(error => {
+                console.error('Record interaction failed:', error);
             });
         });
 
