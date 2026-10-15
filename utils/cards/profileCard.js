@@ -3,73 +3,35 @@ const {
     loadImage
 } = require('@napi-rs/canvas');
 
-const {
-    getProgress
-} = require('../leveling');
-
-const {
-    getRank
-} = require('../../handlers/factionHandler');
-
-const {
-    FACTIONS
-} = require('../../config/progression');
-
-const brand =
-    require('../../config/brand');
+const { getProgress } = require('../leveling');
+const { getRank } = require('../../handlers/factionHandler');
+const { FACTIONS } = require('../../config/progression');
+const brand = require('../../config/brand');
 
 const WIDTH = 1100;
-const HEIGHT = 440;
+const HEIGHT = 620;
 
-function formatNumber(
-    value
-) {
-    return Number(
-        value || 0
-    ).toLocaleString(
-        'en-US'
-    );
+const COLORS = {
+    background: '#08090B',
+    surface: '#151014',
+    crimson: '#9B1C31',
+    gold: '#C8A45D',
+    white: '#F5F5F5',
+    muted: '#AFAFAF',
+    border: 'rgba(255,255,255,0.08)'
+};
+
+function formatNumber(value) {
+    return Number(value || 0).toLocaleString('en-US');
 }
 
-function getCardName(
-    member
-) {
-    const displayName =
-        member.displayName?.trim();
+function fitText(ctx, value, maxWidth, size = 28, min = 12) {
+    const text = String(value ?? '');
 
-    if (
-        displayName &&
-        /[\p{L}\p{N}]/u.test(
-            displayName
-        )
-    ) {
-        return displayName;
-    }
+    while (size > min) {
+        ctx.font = `700 ${size}px sans-serif`;
 
-    return member.user.username;
-}
-
-function fitText(
-    ctx,
-    text,
-    maxWidth,
-    startSize,
-    minSize
-) {
-    let size =
-        startSize;
-
-    while (
-        size > minSize
-    ) {
-        ctx.font =
-            `700 ${size}px sans-serif`;
-
-        if (
-            ctx.measureText(
-                text
-            ).width <= maxWidth
-        ) {
+        if (ctx.measureText(text).width <= maxWidth) {
             break;
         }
 
@@ -79,386 +41,529 @@ function fitText(
     return size;
 }
 
+function trimText(ctx, value, maxWidth) {
+    let text = String(value ?? '');
+
+    if (ctx.measureText(text).width <= maxWidth) {
+        return text;
+    }
+
+    while (
+        text.length &&
+        ctx.measureText(`${text}…`).width > maxWidth
+    ) {
+        text = text.slice(0, -1);
+    }
+
+    return `${text}…`;
+}
+
+function roundRect(ctx, x, y, width, height, radius, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    ctx.fill();
+}
+
+function drawText(
+    ctx,
+    value,
+    x,
+    y,
+    size = 20,
+    color = COLORS.white,
+    weight = 600,
+    maxWidth = null
+) {
+    ctx.font = `${weight} ${size}px sans-serif`;
+    ctx.fillStyle = color;
+
+    const text = maxWidth
+        ? trimText(ctx, value, maxWidth)
+        : String(value ?? '');
+
+    ctx.fillText(text, x, y);
+}
+
+function drawStat(ctx, x, y, label, value, accent = COLORS.gold) {
+    const width = 242;
+    const height = 76;
+
+    roundRect(
+        ctx,
+        x,
+        y,
+        width,
+        height,
+        15,
+        'rgba(255,255,255,0.045)'
+    );
+
+    ctx.strokeStyle = COLORS.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 15);
+    ctx.stroke();
+
+    roundRect(ctx, x + 14, y + 17, 3, 14, 2, accent);
+
+    drawText(
+        ctx,
+        label.toUpperCase(),
+        x + 26,
+        y + 29,
+        13,
+        COLORS.muted,
+        600
+    );
+
+    ctx.font = '700 26px sans-serif';
+
+    const display = trimText(
+        ctx,
+        formatNumber(value),
+        width - 36
+    );
+
+    drawText(
+        ctx,
+        display,
+        x + 18,
+        y + 62,
+        26
+    );
+}
+
+function getFaction(user) {
+    if (user.faction === FACTIONS.SLAYER) {
+        return {
+            name: 'SLAYER',
+            color: '#4A90E2'
+        };
+    }
+
+    if (user.faction === FACTIONS.DEMON) {
+        return {
+            name: 'DEMON',
+            color: COLORS.crimson
+        };
+    }
+
+    return {
+        name: 'UNCHOSEN',
+        color: COLORS.muted
+    };
+}
+
+function formatDate(value) {
+    if (!value) {
+        return 'Unknown';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return 'Unknown';
+    }
+
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
+    });
+}
+
 async function createProfileCard(
     member,
     user,
     {
         title = null,
-        achievementCount = 0
+        achievementCount = 0,
+        stats = null
     } = {}
 ) {
-    const canvas =
-        createCanvas(
-            WIDTH,
-            HEIGHT
-        );
+    const canvas = createCanvas(WIDTH, HEIGHT);
+    const ctx = canvas.getContext('2d');
 
-    const ctx =
-        canvas.getContext('2d');
-
-    const gradient =
-        ctx.createLinearGradient(
-            0,
-            0,
-            WIDTH,
-            HEIGHT
-        );
-
-    gradient.addColorStop(
-        0,
-        '#08090B'
-    );
-
-    gradient.addColorStop(
-        0.55,
-        '#151014'
-    );
-
-    gradient.addColorStop(
-        1,
-        '#3A0A13'
-    );
-
-    ctx.fillStyle =
-        gradient;
-
-    ctx.fillRect(
+    const background = ctx.createLinearGradient(
         0,
         0,
         WIDTH,
         HEIGHT
     );
 
-    const moonGlow =
-        ctx.createRadialGradient(
-            930,
-            55,
-            20,
-            930,
-            55,
-            210
-        );
+    background.addColorStop(0, COLORS.background);
+    background.addColorStop(0.55, COLORS.surface);
+    background.addColorStop(1, '#350A12');
 
-    moonGlow.addColorStop(
-        0,
-        'rgba(155, 28, 49, 0.35)'
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    const glow = ctx.createRadialGradient(
+        950, 80, 15,
+        950, 80, 280
     );
 
-    moonGlow.addColorStop(
-        1,
-        'rgba(155, 28, 49, 0)'
-    );
+    glow.addColorStop(0, 'rgba(155,28,49,0.35)');
+    glow.addColorStop(1, 'rgba(155,28,49,0)');
 
-    ctx.fillStyle =
-        moonGlow;
+    ctx.fillStyle = glow;
+    ctx.fillRect(650, 0, 450, 370);
 
-    ctx.fillRect(
-        700,
-        0,
-        400,
-        300
-    );
-
-    ctx.fillStyle =
-        'rgba(0, 0, 0, 0.30)';
-
+    ctx.fillStyle = 'rgba(200,164,93,0.09)';
     ctx.beginPath();
-
-    ctx.roundRect(
-        30,
-        30,
-        1040,
-        380,
-        30
-    );
-
+    ctx.arc(960, 100, 62, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle =
-        '#9B1C31';
+    roundRect(
+        ctx,
+        22,
+        22,
+        1056,
+        576,
+        25,
+        'rgba(0,0,0,0.25)'
+    );
 
-    ctx.beginPath();
-
-    ctx.roundRect(
-        30,
-        30,
+    roundRect(
+        ctx,
+        22,
+        22,
         7,
-        380,
-        4
+        576,
+        4,
+        COLORS.crimson
     );
 
-    ctx.fill();
+    drawText(
+        ctx,
+        `${brand.server.toUpperCase()} • SOUL PROFILE`,
+        58,
+        65,
+        19,
+        COLORS.gold,
+        700,
+        700
+    );
 
-    const avatar =
-        await loadImage(
-            member.user
-                .displayAvatarURL({
-                    extension: 'png',
-                    size: 256
-                })
-        );
+    drawText(
+        ctx,
+        'AKANE • PLAYER IDENTITY',
+        58,
+        95,
+        13,
+        COLORS.muted
+    );
+
+    const faction = getFaction(user);
+
+    const rank = user.faction && user.rank
+        ? getRank(user.faction, user.rank)
+        : null;
+
+    const progress = getProgress(user.level, user.xp);
+
+    const percentage = Math.max(
+        0,
+        Math.min(100, Number(progress.percentage) || 0)
+    );
+
+    const avatar = await loadImage(
+        member.user.displayAvatarURL({
+            extension: 'png',
+            size: 256
+        })
+    );
+
+    const centerX = 170;
+    const centerY = 225;
+    const radius = 105;
 
     ctx.save();
-
     ctx.beginPath();
-
-    ctx.arc(
-        170,
-        195,
-        105,
-        0,
-        Math.PI * 2
-    );
-
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
     ctx.clip();
 
     ctx.drawImage(
         avatar,
-        65,
-        90,
-        210,
-        210
+        centerX - radius,
+        centerY - radius,
+        radius * 2,
+        radius * 2
     );
 
     ctx.restore();
 
-    ctx.strokeStyle =
-        '#9B1C31';
-
+    ctx.strokeStyle = faction.color;
     ctx.lineWidth = 6;
-
     ctx.beginPath();
-
-    ctx.arc(
-        170,
-        195,
-        108,
-        0,
-        Math.PI * 2
-    );
-
+    ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
     ctx.stroke();
 
-    const faction =
-        user.faction ===
-        FACTIONS.SLAYER
-            ? 'SLAYER'
-            : user.faction ===
-                FACTIONS.DEMON
-                ? 'DEMON'
-                : 'UNCHOSEN';
-
-    const rank =
-        user.faction &&
-        user.rank
-            ? getRank(
-                user.faction,
-                user.rank
-            )
-            : null;
-
-    const progress =
-        getProgress(
-            user.level,
-            user.xp
-        );
-
-    ctx.fillStyle =
-        '#C8A45D';
-
-    ctx.font =
-        '600 20px sans-serif';
-
-    ctx.fillText(
-        `${brand.server.toUpperCase()} • PROFILE`,
-        330,
-        65
-    );
+    ctx.strokeStyle = 'rgba(200,164,93,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 12, 0, Math.PI * 2);
+    ctx.stroke();
 
     const displayName =
-        getCardName(
-            member
-        );
+        member.displayName &&
+        /[\p{L}\p{N}]/u.test(member.displayName)
+            ? member.displayName
+            : member.user.username;
 
-    const nameSize =
-        fitText(
-            ctx,
-            displayName,
-            650,
-            43,
-            28
-        );
+    const nameSize = fitText(
+        ctx,
+        displayName,
+        550,
+        42,
+        24
+    );
 
-    ctx.fillStyle =
-        '#F5F5F5';
-
-    ctx.font =
-        `700 ${nameSize}px sans-serif`;
-
-    ctx.fillText(
+    drawText(
+        ctx,
         displayName,
         330,
-        118
+        151,
+        nameSize,
+        COLORS.white,
+        700,
+        550
+    );
+
+    drawText(
+        ctx,
+        `@${member.user.username}`,
+        332,
+        180,
+        17,
+        COLORS.muted,
+        500,
+        550
     );
 
     if (title) {
-        ctx.fillStyle =
-            '#C8A45D';
-
-        ctx.font =
-            '600 19px sans-serif';
-
-        ctx.fillText(
+        drawText(
+            ctx,
             `「 ${title.name.toUpperCase()} 」`,
             332,
-            151
+            211,
+            18,
+            COLORS.gold,
+            600,
+            550
         );
     }
 
-    ctx.fillStyle =
-        '#AFAFAF';
-
-    ctx.font =
-        '500 18px sans-serif';
-
-    ctx.fillText(
-        `${faction} • ${
-            rank
-                ? rank.name.toUpperCase()
-                : 'UNRANKED'
-        }`,
+    drawText(
+        ctx,
+        faction.name,
         332,
-        title
-            ? 182
-            : 158
+        244,
+        18,
+        faction.color,
+        700
     );
 
-    const levelY =
-        title
-            ? 240
-            : 220;
-
-    ctx.fillStyle =
-        '#FFFFFF';
-
-    ctx.font =
-        '700 48px sans-serif';
-
-    ctx.fillText(
-        `LEVEL ${user.level}`,
-        330,
-        levelY
+    drawText(
+        ctx,
+        rank ? rank.name.toUpperCase() : 'UNRANKED',
+        332,
+        273,
+        17,
+        COLORS.muted,
+        600,
+        550
     );
 
-    const barX = 330;
-    const barY =
-        levelY + 24;
+    drawText(
+        ctx,
+        `LEVEL ${formatNumber(user.level)}`,
+        332,
+        322,
+        32,
+        COLORS.white,
+        700
+    );
 
-    const barWidth = 620;
-    const barHeight = 16;
+    const barX = 332;
+    const barY = 339;
+    const barWidth = 665;
+    const barHeight = 15;
 
-    ctx.fillStyle =
-        '#29292E';
-
-    ctx.beginPath();
-
-    ctx.roundRect(
+    roundRect(
+        ctx,
         barX,
         barY,
         barWidth,
         barHeight,
-        8
+        8,
+        '#29292E'
     );
 
-    ctx.fill();
+    const filledWidth = barWidth * percentage / 100;
 
-    const progressWidth =
-        barWidth *
-        (
-            progress.percentage /
-            100
-        );
-
-    if (
-        progressWidth > 0
-    ) {
-        ctx.fillStyle =
-            '#9B1C31';
-
-        ctx.beginPath();
-
-        ctx.roundRect(
+    if (filledWidth > 0) {
+        const barGradient = ctx.createLinearGradient(
             barX,
             barY,
-            progressWidth,
-            barHeight,
-            8
+            barX + barWidth,
+            barY
         );
 
-        ctx.fill();
+        barGradient.addColorStop(0, COLORS.crimson);
+        barGradient.addColorStop(1, COLORS.gold);
+
+        roundRect(
+            ctx,
+            barX,
+            barY,
+            filledWidth,
+            barHeight,
+            8,
+            barGradient
+        );
     }
 
-    ctx.fillStyle =
-        '#AFAFAF';
-
-    ctx.font =
-        '500 16px sans-serif';
-
-    ctx.fillText(
-        `${formatNumber(
-            progress.current
-        )} / ${formatNumber(
-            progress.required
-        )} XP`,
+    drawText(
+        ctx,
+        `${formatNumber(progress.current)} / ${formatNumber(progress.required)} XP`,
         barX,
-        barY + 42
+        377,
+        15,
+        COLORS.muted
     );
 
-    ctx.fillStyle =
-        '#F5F5F5';
+    ctx.textAlign = 'right';
 
-    ctx.font =
-        '600 17px sans-serif';
-
-    ctx.fillText(
-        `MESSAGES  ${formatNumber(
-            user.messages
-        )}`,
-        330,
-        355
+    drawText(
+        ctx,
+        `${Math.round(percentage)}%`,
+        barX + barWidth,
+        377,
+        15,
+        COLORS.gold
     );
 
-    ctx.fillText(
-        `ACHIEVEMENTS  ${formatNumber(
-            achievementCount
-        )}`,
-        545,
-        355
+    ctx.textAlign = 'left';
+
+    const columns = [47, 306, 565, 824];
+
+    const firstRow = 405;
+    const secondRow = 497;
+
+    drawStat(
+        ctx,
+        columns[0],
+        firstRow,
+        'Messages',
+        user.messages
     );
 
-    ctx.fillText(
-        `RANK POINTS  ${formatNumber(
-            user.rankPoints
-        )}`,
-        790,
-        355
+    drawStat(
+        ctx,
+        columns[1],
+        firstRow,
+        'Achievements',
+        achievementCount
     );
 
-    ctx.fillStyle =
-        '#77777D';
+    drawStat(
+        ctx,
+        columns[2],
+        firstRow,
+        'Rank Points',
+        user.rankPoints
+    );
 
-    ctx.font =
-        '400 16px sans-serif';
+    drawStat(
+        ctx,
+        columns[3],
+        firstRow,
+        'Duel Wins',
+        stats?.duelWins || 0,
+        '#4CAF50'
+    );
 
-    ctx.fillText(
+    drawStat(
+        ctx,
+        columns[0],
+        secondRow,
+        'Duel Losses',
+        stats?.duelLosses || 0,
+        COLORS.crimson
+    );
+
+    drawStat(
+        ctx,
+        columns[1],
+        secondRow,
+        'Daily Streak',
+        stats?.dailyStreak || 0
+    );
+
+    drawStat(
+        ctx,
+        columns[2],
+        secondRow,
+        'Event Points',
+        stats?.eventPoints || 0
+    );
+
+    roundRect(
+        ctx,
+        columns[3],
+        secondRow,
+        242,
+        76,
+        15,
+        'rgba(255,255,255,0.045)'
+    );
+
+    drawText(
+        ctx,
+        'JOINED SERVER',
+        columns[3] + 18,
+        secondRow + 29,
+        13,
+        COLORS.muted
+    );
+
+    drawText(
+        ctx,
+        formatDate(member.joinedAt),
+        columns[3] + 18,
+        secondRow + 61,
+        24,
+        COLORS.white,
+        700
+    );
+
+    drawText(
+        ctx,
         'Forged beneath the Blood Moon.',
-        330,
-        392
+        50,
+        594,
+        14,
+        COLORS.muted,
+        400
     );
 
-    return canvas.toBuffer(
-        'image/png'
+    ctx.textAlign = 'right';
+
+    drawText(
+        ctx,
+        brand.footer,
+        1055,
+        594,
+        13,
+        COLORS.muted,
+        500,
+        400
     );
+
+    ctx.textAlign = 'left';
+
+    return canvas.toBuffer('image/png');
 }
 
 module.exports = {

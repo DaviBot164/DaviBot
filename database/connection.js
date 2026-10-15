@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const pool = new Pool({
     connectionString:
         process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI,
+
     ssl: process.env.NODE_ENV === 'production'
         ? { rejectUnauthorized: false }
         : false
@@ -21,6 +22,7 @@ async function closeConnection() {
 }
 
 module.exports = {
+    pool,
     query,
     testConnection,
     closeConnection

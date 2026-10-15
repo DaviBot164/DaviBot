@@ -8,6 +8,10 @@ const {
 } = require('../../database/users');
 
 const {
+    ensurePlayerStats
+} = require('../../database/playerStats');
+
+const {
     getAchievements
 } = require('../../database/achievements');
 
@@ -19,9 +23,6 @@ const {
     getTitle
 } = require('../../config/titles');
 
-const brand =
-    require('../../config/brand');
-
 const {
     createProfileCard
 } = require('../../utils/cards/profileCard');
@@ -31,51 +32,32 @@ const {
     errorEmbed
 } = require('../../utils/embeds');
 
-module.exports = {
-    data:
-        new SlashCommandBuilder()
-            .setName(
-                'profile'
-            )
-            .setDescription(
-                'View a Blood Moon soul profile.'
-            )
-            .addUserOption(option =>
-                option
-                    .setName(
-                        'member'
-                    )
-                    .setDescription(
-                        'Member whose profile you want to view.'
-                    )
-                    .setRequired(
-                        false
-                    )
-            ),
+const brand = require('../../config/brand');
 
-    async execute(
-        interaction
-    ) {
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('profile')
+        .setDescription('View a Blood Moon soul profile.')
+        .addUserOption(option =>
+            option
+                .setName('member')
+                .setDescription('Member whose profile you want to view.')
+                .setRequired(false)
+        ),
+
+    async execute(interaction) {
         await interaction.deferReply();
 
         const selected =
-            interaction.options
-                .getUser(
-                    'member'
-                ) ??
+            interaction.options.getUser('member') ??
             interaction.user;
 
-        const member =
-            await interaction.guild.members
-                .fetch(
-                    selected.id
-                )
-                .catch(
-                    () => null
-                );
+        const member = await interaction.guild.members
+            .fetch(selected.id)
+            .catch(() => null);
 
         if (!member) {
-            await interaction.editReply({
+            return interaction.editReply({
                 embeds: [
                     errorEmbed(
                         'Soul Not Found',
@@ -83,12 +65,10 @@ module.exports = {
                     )
                 ]
             });
-
-            return;
         }
 
         if (member.user.bot) {
-            await interaction.editReply({
+            return interaction.editReply({
                 embeds: [
                     errorEmbed(
                         'No Soul Profile',
@@ -96,81 +76,62 @@ module.exports = {
                     )
                 ]
             });
-
-            return;
         }
 
-        const user =
-            await ensureUser(
-                interaction.guild.id,
-                member.id,
-                member.joinedAt
-            );
+        const user = await ensureUser(
+            interaction.guild.id,
+            member.id,
+            member.joinedAt
+        );
 
         const [
+            stats,
             achievements,
             equippedTitle
         ] = await Promise.all([
+            ensurePlayerStats(
+                interaction.guild.id,
+                member.id
+            ),
             getAchievements(
                 interaction.guild.id,
                 member.id
             ),
-
             getEquippedTitle(
                 interaction.guild.id,
                 member.id
             )
         ]);
 
-        const title =
-            equippedTitle
-                ? getTitle(
-                    equippedTitle.titleId
-                )
-                : null;
+        const title = equippedTitle
+            ? getTitle(equippedTitle.titleId)
+            : null;
 
-        const image =
-            await createProfileCard(
-                member,
-                user,
-                {
-                    title,
+        const image = await createProfileCard(
+            member,
+            user,
+            {
+                title,
+                achievementCount: achievements.length,
+                stats
+            }
+        );
 
-                    achievementCount:
-                        achievements.length
-                }
-            );
+        const attachment = new AttachmentBuilder(
+            image,
+            { name: 'soul-profile.png' }
+        );
 
-        const attachment =
-            new AttachmentBuilder(
-                image,
-                {
-                    name:
-                        'soul-profile.png'
-                }
-            );
-
-        const embed =
-            createEmbed(
-                'Soul Profile',
-                `${member}'s journey beneath the Blood Moon.`
-            )
-                .setImage(
-                    'attachment://soul-profile.png'
-                )
-                .setFooter({
-                    text:
-                        brand.footer
-                });
+        const embed = createEmbed(
+            'Soul Profile',
+            `${member}'s journey beneath the Blood Moon.`
+        )
+            .setImage('attachment://soul-profile.png')
+            .setFooter({ text: brand.footer });
 
         await interaction.editReply({
-            embeds: [
-                embed
-            ],
-
-            files: [
-                attachment
-            ]
+            embeds: [embed],
+            files: [attachment]
         });
     }
 };
