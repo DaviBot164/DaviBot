@@ -1,14 +1,15 @@
 const { Events } = require('discord.js');
 
 const {
-    ensureUser,
-    addActivity,
-    setProgress
+    ensureUser
 } = require('../database/users');
 
 const {
-    randomXP,
-    calculateLevel
+    awardXP
+} = require('../database/xpRewards');
+
+const {
+    randomXP
 } = require('../utils/leveling');
 
 const {
@@ -35,33 +36,21 @@ module.exports = {
     name: Events.MessageCreate,
 
     async execute(message) {
-        if (
-            !message.inGuild() ||
-            message.author.bot
-        ) {
+        if (!message.inGuild() || message.author.bot) {
             return;
         }
 
-        const guardianResult =
-            await runGuardian(
-                message
-            );
+        const guardianResult = await runGuardian(message);
 
         if (guardianResult.blocked) {
             return;
         }
 
-        if (
-            !canEarnXP(
-                message.guild.id,
-                message.author.id
-            )
-        ) {
+        if (!canEarnXP(message.guild.id, message.author.id)) {
             return;
         }
 
-        const member =
-            message.member;
+        const member = message.member;
 
         await ensureUser(
             message.guild.id,
@@ -69,32 +58,18 @@ module.exports = {
             member?.joinedAt ?? null
         );
 
-        let user =
-            await addActivity(
-                message.guild.id,
-                message.author.id,
-                randomXP()
-            );
+        const result = await awardXP(
+            message.guild.id,
+            message.author.id,
+            randomXP(),
+            { message: true }
+        );
 
-        const progress =
-            calculateLevel(
-                user.level,
-                user.xp
-            );
-
-        if (progress.levelsGained) {
-            user =
-                await setProgress(
-                    message.guild.id,
-                    message.author.id,
-                    progress.level,
-                    progress.xp
-                );
-
+        if (result.levelsGained) {
             try {
                 await sendLevelUp(
                     message,
-                    progress.level
+                    result.user.level
                 );
             } catch (error) {
                 console.error(
@@ -106,17 +81,13 @@ module.exports = {
             if (member) {
                 await checkAutoPromotion(
                     member,
-                    user
+                    result.user
                 );
             }
         }
 
-        if (!member) {
-            return;
+        if (member) {
+            await refreshProgressionUnlocks(member);
         }
-
-        await refreshProgressionUnlocks(
-            member
-        );
     }
 };
