@@ -1,3 +1,4 @@
+
 const {
     Events,
     MessageFlags
@@ -27,12 +28,20 @@ const {
     handleTrainingButton
 } = require('../handlers/trainingInteractionHandler');
 
+const {
+    handleQuestInteraction
+} = require('../handlers/questInteractionHandler');
+
 module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
         try {
             if (interaction.isButton()) {
+                if (await handleQuestInteraction(interaction)) {
+                    return;
+                }
+
                 if (await handleTrainingButton(interaction)) {
                     return;
                 }

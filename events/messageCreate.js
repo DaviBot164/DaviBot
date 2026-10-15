@@ -1,3 +1,4 @@
+
 const { Events } = require('discord.js');
 
 const {
@@ -36,33 +37,48 @@ module.exports = {
     name: Events.MessageCreate,
 
     async execute(message) {
-        if (!message.inGuild() || message.author.bot) {
+        if (
+            !message.inGuild() ||
+            message.author.bot
+        ) {
             return;
         }
 
-        const guardianResult = await runGuardian(message);
+        const guardianResult = await runGuardian(
+            message
+        );
 
         if (guardianResult.blocked) {
             return;
         }
 
-        if (!canEarnXP(message.guild.id, message.author.id)) {
+        if (
+            !canEarnXP(
+                message.guild.id,
+                message.author.id
+            )
+        ) {
             return;
         }
 
         const member = message.member;
+        const guildId = message.guild.id;
+        const userId = message.author.id;
 
         await ensureUser(
-            message.guild.id,
-            message.author.id,
+            guildId,
+            userId,
             member?.joinedAt ?? null
         );
 
         const result = await awardXP(
-            message.guild.id,
-            message.author.id,
+            guildId,
+            userId,
             randomXP(),
-            { message: true }
+            {
+                message: true,
+                questProgress: true
+            }
         );
 
         if (result.levelsGained) {
@@ -87,7 +103,9 @@ module.exports = {
         }
 
         if (member) {
-            await refreshProgressionUnlocks(member);
+            await refreshProgressionUnlocks(
+                member
+            );
         }
     }
 };

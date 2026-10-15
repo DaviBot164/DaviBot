@@ -13,7 +13,8 @@ const { createEmbed } = require('../embeds');
 const TRAINING_IDS = Object.freeze({
     daily: 'akane:training:daily',
     profile: 'akane:training:profile',
-    achievements: 'akane:training:achievements'
+    achievements: 'akane:training:achievements',
+    quests: 'akane:training:quests'
 });
 
 function buildTrainingPanel() {
@@ -68,11 +69,10 @@ function buildTrainingPanel() {
                 .setStyle(ButtonStyle.Secondary),
 
             new ButtonBuilder()
-                .setCustomId('akane:training:quests')
-                .setLabel('Daily Quests')
-                .setEmoji('📜')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true)
+    .setCustomId(TRAINING_IDS.quests)
+    .setLabel('Daily Quests')
+    .setEmoji('📜')
+    .setStyle(ButtonStyle.Secondary)
         );
 
     return {

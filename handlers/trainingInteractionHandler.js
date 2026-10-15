@@ -21,6 +21,10 @@ const {
 } = require('../database/dailyRewards');
 
 const {
+    getDailyQuests
+} = require('../database/dailyQuests');
+
+const {
     getAchievements: getUnlockedAchievements
 } = require('../database/achievements');
 
@@ -53,6 +57,10 @@ const {
 const {
     createProfileCard
 } = require('../utils/cards/profileCard');
+
+const {
+    buildQuestPanel
+} = require('../utils/quests/questPanel');
 
 const {
     createEmbed,
@@ -234,7 +242,12 @@ function formatAchievement(achievement, user, unlocked) {
     ].join('\n');
 }
 
-function addAchievementSections(embed, entries, user, unlockedIds) {
+function addAchievementSections(
+    embed,
+    entries,
+    user,
+    unlockedIds
+) {
     for (const [label, unlocked] of [
         ['🏆 Unlocked', true],
         ['🔒 Locked', false]
@@ -254,7 +267,10 @@ function addAchievementSections(embed, entries, user, unlockedIds) {
                 unlocked
             );
 
-            if (current && current.length + entry.length + 2 > 1000) {
+            if (
+                current &&
+                current.length + entry.length + 2 > 1000
+            ) {
                 sections.push(current);
                 current = '';
             }
@@ -278,7 +294,11 @@ function addAchievementSections(embed, entries, user, unlockedIds) {
             );
         }
 
-        for (let index = 0; index < sections.length; index++) {
+        for (
+            let index = 0;
+            index < sections.length;
+            index++
+        ) {
             embed.addFields({
                 name: index
                     ? `${label} • Continued`
@@ -294,12 +314,18 @@ async function handleAchievements(interaction, member) {
     const userId = member.id;
 
     const [user, unlockedEntries] = await Promise.all([
-        ensureUser(guildId, userId, member.joinedAt),
+        ensureUser(
+            guildId,
+            userId,
+            member.joinedAt
+        ),
         getUnlockedAchievements(guildId, userId)
     ]);
 
     const unlockedIds = new Set(
-        unlockedEntries.map(entry => entry.achievementId)
+        unlockedEntries.map(
+            entry => entry.achievementId
+        )
     );
 
     const points = calculateAchievementPoints(
@@ -344,10 +370,23 @@ async function handleAchievements(interaction, member) {
     });
 }
 
+async function handleQuests(interaction, member) {
+    const data = await getDailyQuests(
+        member.guild.id,
+        member.id
+    );
+
+    await interaction.editReply(
+        buildQuestPanel(data)
+    );
+}
+
 async function handleTrainingButton(interaction) {
     if (
         !interaction.isButton() ||
-        !Object.values(TRAINING_IDS).includes(interaction.customId)
+        !Object.values(TRAINING_IDS).includes(
+            interaction.customId
+        )
     ) {
         return false;
     }
@@ -390,6 +429,10 @@ async function handleTrainingButton(interaction) {
 
         case TRAINING_IDS.achievements:
             await handleAchievements(interaction, member);
+            break;
+
+        case TRAINING_IDS.quests:
+            await handleQuests(interaction, member);
             break;
     }
 
