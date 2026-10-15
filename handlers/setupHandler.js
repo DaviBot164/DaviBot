@@ -1,6 +1,5 @@
-const {
-    MessageFlags
-} = require('discord.js');
+
+const { MessageFlags } = require('discord.js');
 
 const {
     publishSacredLaws
@@ -31,6 +30,10 @@ const {
 } = require('../utils/setup/publishSupportGuide');
 
 const {
+    publishTrainingGrounds
+} = require('../utils/setup/publishTrainingGrounds');
+
+const {
     publishFullSetup
 } = require('../utils/setup/publishFullSetup');
 
@@ -47,6 +50,7 @@ const SETUP_OPTIONS = Object.freeze({
     PROGRESSION_GUIDES: 'progression_guides',
     GAME_GUIDE: 'game_guide',
     SUPPORT_GUIDE: 'support_guide',
+    TRAINING_GROUNDS: 'training_grounds',
     FULL_SETUP: 'full_setup'
 });
 
@@ -59,20 +63,17 @@ async function handleSetupSelect(interaction) {
     }
 
     await interaction.deferReply({
-        flags:
-            MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral
     });
 
-    const option =
-        interaction.values[0];
+    const option = interaction.values[0];
 
     try {
         switch (option) {
             case SETUP_OPTIONS.SACRED_LAWS: {
-                const message =
-                    await publishSacredLaws(
-                        interaction.guild
-                    );
+                const message = await publishSacredLaws(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -82,15 +83,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.MOON_GUIDE: {
-                const message =
-                    await publishMoonGuide(
-                        interaction.guild
-                    );
+                const message = await publishMoonGuide(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -100,15 +99,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.VERIFICATION_GUIDE: {
-                const message =
-                    await publishVerificationGuide(
-                        interaction.guild
-                    );
+                const message = await publishVerificationGuide(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -118,15 +115,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.ROLE_GUIDE: {
-                const message =
-                    await publishRoleGuide(
-                        interaction.guild
-                    );
+                const message = await publishRoleGuide(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -136,15 +131,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.PROGRESSION_GUIDES: {
-                const messages =
-                    await publishProgressionGuides(
-                        interaction.guild
-                    );
+                const messages = await publishProgressionGuides(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -157,15 +150,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.GAME_GUIDE: {
-                const message =
-                    await publishGameGuide(
-                        interaction.guild
-                    );
+                const message = await publishGameGuide(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -175,15 +166,13 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
             case SETUP_OPTIONS.SUPPORT_GUIDE: {
-                const message =
-                    await publishSupportGuide(
-                        interaction.guild
-                    );
+                const message = await publishSupportGuide(
+                    interaction.guild
+                );
 
                 await interaction.editReply({
                     embeds: [
@@ -193,7 +182,22 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
+                break;
+            }
 
+            case SETUP_OPTIONS.TRAINING_GROUNDS: {
+                const message = await publishTrainingGrounds(
+                    interaction.guild
+                );
+
+                await interaction.editReply({
+                    embeds: [
+                        successEmbed(
+                            'Training Grounds Ready',
+                            `The training panel was published or updated in ${message.channel}.`
+                        )
+                    ]
+                });
                 break;
             }
 
@@ -223,7 +227,6 @@ async function handleSetupSelect(interaction) {
                         )
                     ]
                 });
-
                 break;
             }
 
@@ -238,10 +241,7 @@ async function handleSetupSelect(interaction) {
                 });
         }
     } catch (error) {
-        console.error(
-            'Setup publish failed:',
-            error
-        );
+        console.error('Setup publish failed:', error);
 
         await interaction.editReply({
             embeds: [

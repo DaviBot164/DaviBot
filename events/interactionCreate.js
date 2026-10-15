@@ -23,33 +23,29 @@ const {
     handleSetupSelect
 } = require('../handlers/setupHandler');
 
+const {
+    handleTrainingButton
+} = require('../handlers/trainingInteractionHandler');
+
 module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
         try {
             if (interaction.isButton()) {
-                if (
-                    await handlePathButton(
-                        interaction
-                    )
-                ) {
+                if (await handleTrainingButton(interaction)) {
                     return;
                 }
 
-                if (
-                    await handleTrialButton(
-                        interaction
-                    )
-                ) {
+                if (await handlePathButton(interaction)) {
                     return;
                 }
 
-                if (
-                    await handleTicketInteraction(
-                        interaction
-                    )
-                ) {
+                if (await handleTrialButton(interaction)) {
+                    return;
+                }
+
+                if (await handleTicketInteraction(interaction)) {
                     return;
                 }
 
@@ -57,27 +53,15 @@ module.exports = {
             }
 
             if (interaction.isStringSelectMenu()) {
-                if (
-                    await handleTitleSelect(
-                        interaction
-                    )
-                ) {
+                if (await handleTitleSelect(interaction)) {
                     return;
                 }
 
-                if (
-                    await handleTicketInteraction(
-                        interaction
-                    )
-                ) {
+                if (await handleTicketInteraction(interaction)) {
                     return;
                 }
 
-                if (
-                    await handleSetupSelect(
-                        interaction
-                    )
-                ) {
+                if (await handleSetupSelect(interaction)) {
                     return;
                 }
 
@@ -85,18 +69,13 @@ module.exports = {
             }
 
             if (interaction.isAutocomplete()) {
-                const command =
-                    interaction.client.commands.get(
-                        interaction.commandName
-                    );
-
-                if (!command?.autocomplete) {
-                    return;
-                }
-
-                await command.autocomplete(
-                    interaction
+                const command = interaction.client.commands.get(
+                    interaction.commandName
                 );
+
+                if (command?.autocomplete) {
+                    await command.autocomplete(interaction);
+                }
 
                 return;
             }
@@ -105,23 +84,17 @@ module.exports = {
                 return;
             }
 
-            const command =
-                interaction.client.commands.get(
-                    interaction.commandName
-                );
+            const command = interaction.client.commands.get(
+                interaction.commandName
+            );
 
             if (!command) {
                 return;
             }
 
-            await command.execute(
-                interaction
-            );
+            await command.execute(interaction);
         } catch (error) {
-            console.error(
-                'Interaction failed:',
-                error
-            );
+            console.error('Interaction failed:', error);
 
             if (
                 !interaction.isRepliable() ||
@@ -131,29 +104,29 @@ module.exports = {
             }
 
             const payload = {
-                content:
-                    'Akane could not complete that action.',
-
-                flags:
-                    MessageFlags.Ephemeral
+                content: 'Akane could not complete that action.'
             };
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
-                delete payload.flags;
-
-                await interaction.followUp(
-                    payload
-                ).catch(() => null);
+            if (interaction.deferred) {
+                await interaction.editReply(payload)
+                    .catch(() => null);
 
                 return;
             }
 
-            await interaction.reply(
-                payload
-            ).catch(() => null);
+            if (interaction.replied) {
+                await interaction.followUp({
+                    ...payload,
+                    flags: MessageFlags.Ephemeral
+                }).catch(() => null);
+
+                return;
+            }
+
+            await interaction.reply({
+                ...payload,
+                flags: MessageFlags.Ephemeral
+            }).catch(() => null);
         }
     }
 };

@@ -6,156 +6,108 @@ const {
     StringSelectMenuBuilder
 } = require('discord.js');
 
-const brand =
-    require('../../config/brand');
+const brand = require('../../config/brand');
+const { createEmbed } = require('../../utils/embeds');
 
-const {
-    createEmbed
-} = require('../../utils/embeds');
+const SETUP_ITEMS = [
+    {
+        label: 'Sacred Laws',
+        description: 'Publish the Blood Moon server rules.',
+        value: 'sacred_laws',
+        emoji: '📜'
+    },
+    {
+        label: 'Moon Guide',
+        description: 'Publish the Blood Moon server guide.',
+        value: 'moon_guide',
+        emoji: '📖'
+    },
+    {
+        label: 'Verification Guide',
+        description: 'Publish Bloxlink verification instructions.',
+        value: 'verification_guide',
+        emoji: '⛩️'
+    },
+    {
+        label: 'Role Guide',
+        description: 'Publish the Blood Moon role hierarchy.',
+        value: 'role_guide',
+        emoji: '🎭'
+    },
+    {
+        label: 'Progression Guides',
+        description: 'Publish Slayer and Demon rank guides.',
+        value: 'progression_guides',
+        emoji: '⚔️'
+    },
+    {
+        label: 'Game Guide',
+        description: 'Publish the Slayers 2 guide directory.',
+        value: 'game_guide',
+        emoji: '🗺️'
+    },
+    {
+        label: 'Support Guide',
+        description: 'Publish the Blood Moon support guide.',
+        value: 'support_guide',
+        emoji: '📜'
+    },
+    {
+        label: 'Training Grounds',
+        description: 'Publish or update the interactive training panel.',
+        value: 'training_grounds',
+        emoji: '🥋'
+    },
+    {
+        label: 'Full Setup',
+        description: 'Publish all core Blood Moon setup content.',
+        value: 'full_setup',
+        emoji: '🌙'
+    }
+];
 
 module.exports = {
-    data:
-        new SlashCommandBuilder()
-            .setName('setup')
-            .setDescription(
-                'Open the Blood Moon setup wizard.'
-            )
-            .setDefaultMemberPermissions(
-                PermissionFlagsBits.ManageGuild
-            ),
+    data: new SlashCommandBuilder()
+        .setName('setup')
+        .setDescription('Open the Blood Moon setup wizard.')
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
+        ),
 
     async execute(interaction) {
-        const embed =
-            createEmbed(
-                'Blood Moon Setup',
-                [
-                    'Configure and publish the main Blood Moon server content.',
-                    '',
-                    'Select what you want Akane to set up.',
-                    '',
-                    '📜 **Sacred Laws** — Server rules',
-                    '📖 **Moon Guide** — Server guide',
-                    '⛩️ **Verification Guide** — Bloxlink instructions',
-                    '🎭 **Role Guide** — Roles and hierarchy',
-                    '⚔️ **Progression Guides** — Slayer and Demon ranks',
-                    '🗺️ **Game Guide** — Slayers 2 guide directory',
-                    '📜 **Support Guide** — Support information',
-                    '🌙 **Full Setup** — Publish all core server content'
-                ].join('\n')
-            )
-                .setFooter({
-                    text:
-                        brand.footer
-                });
+        const embed = createEmbed(
+            'Blood Moon Setup',
+            [
+                'Configure and publish the main Blood Moon server content.',
+                '',
+                'Select what you want Akane to set up.',
+                '',
+                '📜 **Sacred Laws** — Server rules',
+                '📖 **Moon Guide** — Server guide',
+                '⛩️ **Verification Guide** — Bloxlink instructions',
+                '🎭 **Role Guide** — Roles and hierarchy',
+                '⚔️ **Progression Guides** — Slayer and Demon ranks',
+                '🗺️ **Game Guide** — Slayers 2 guides',
+                '📜 **Support Guide** — Support information',
+                '🥋 **Training Grounds** — Interactive training panel',
+                '🌙 **Full Setup** — Publish core server content'
+            ].join('\n')
+        ).setFooter({
+            text: brand.footer
+        });
 
-        const menu =
-            new StringSelectMenuBuilder()
-                .setCustomId(
-                    'akane:setup'
-                )
-                .setPlaceholder(
-                    'Choose a setup option'
-                )
-                .addOptions(
-                    {
-                        label:
-                            'Sacred Laws',
-                        description:
-                            'Publish the Blood Moon server rules.',
-                        value:
-                            'sacred_laws',
-                        emoji:
-                            '📜'
-                    },
-                    {
-                        label:
-                            'Moon Guide',
-                        description:
-                            'Publish the Blood Moon server guide.',
-                        value:
-                            'moon_guide',
-                        emoji:
-                            '📖'
-                    },
-                    {
-                        label:
-                            'Verification Guide',
-                        description:
-                            'Publish the Bloxlink verification guide.',
-                        value:
-                            'verification_guide',
-                        emoji:
-                            '⛩️'
-                    },
-                    {
-                        label:
-                            'Role Guide',
-                        description:
-                            'Publish the Blood Moon role hierarchy.',
-                        value:
-                            'role_guide',
-                        emoji:
-                            '🎭'
-                    },
-                    {
-                        label:
-                            'Progression Guides',
-                        description:
-                            'Publish the Slayer and Demon rank guides.',
-                        value:
-                            'progression_guides',
-                        emoji:
-                            '⚔️'
-                    },
-                    {
-                        label:
-                            'Game Guide',
-                        description:
-                            'Publish the Slayers 2 guide directory.',
-                        value:
-                            'game_guide',
-                        emoji:
-                            '🗺️'
-                    },
-                    {
-                        label:
-                            'Support Guide',
-                        description:
-                            'Publish the Blood Moon support guide.',
-                        value:
-                            'support_guide',
-                        emoji:
-                            '📜'
-                    },
-                    {
-                        label:
-                            'Full Setup',
-                        description:
-                            'Publish all core Blood Moon setup content.',
-                        value:
-                            'full_setup',
-                        emoji:
-                            '🌙'
-                    }
-                );
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId('akane:setup')
+            .setPlaceholder('Choose a setup option')
+            .addOptions(SETUP_ITEMS);
 
-        const row =
-            new ActionRowBuilder()
-                .addComponents(
-                    menu
-                );
+        const row = new ActionRowBuilder()
+            .addComponents(menu);
 
         await interaction.reply({
-            flags:
-                MessageFlags.Ephemeral,
-
-            embeds: [
-                embed
-            ],
-
-            components: [
-                row
-            ]
+            flags: MessageFlags.Ephemeral,
+            embeds: [embed],
+            components: [row]
         });
     }
 };

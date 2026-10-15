@@ -16,6 +16,7 @@ module.exports = Object.freeze({
     rankPromotions: '1533116816782524426',
 
     pvp: '1551667516458147941',
+    training: '1551667580412887090',
     challenges: '1551667623396384858',
 
     supportGuide: '1530989678553989261',

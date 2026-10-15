@@ -11,10 +11,15 @@ const {
     initializePlayerSchema
 } = require('./playerSchema');
 
+const {
+    initializeTrainingPanels
+} = require('./trainingPanels');
+
 async function initializeDatabase() {
     await testConnection();
     await initializeSchema();
     await initializePlayerSchema();
+    await initializeTrainingPanels();
 }
 
 module.exports = {
