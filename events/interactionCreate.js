@@ -1,4 +1,3 @@
-
 const {
     Events,
     MessageFlags
@@ -32,12 +31,20 @@ const {
     handleQuestInteraction
 } = require('../handlers/questInteractionHandler');
 
+const {
+    handleMatchInteraction
+} = require('../handlers/matchInteractionHandler');
+
 module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
         try {
             if (interaction.isButton()) {
+                if (await handleMatchInteraction(interaction)) {
+                    return;
+                }
+
                 if (await handleQuestInteraction(interaction)) {
                     return;
                 }
@@ -115,6 +122,15 @@ module.exports = {
             const payload = {
                 content: 'Akane could not complete that action.'
             };
+
+            if (interaction.isButton() && interaction.deferred) {
+                await interaction.followUp({
+                    ...payload,
+                    flags: MessageFlags.Ephemeral
+                }).catch(() => null);
+
+                return;
+            }
 
             if (interaction.deferred) {
                 await interaction.editReply(payload)

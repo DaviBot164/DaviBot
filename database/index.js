@@ -1,4 +1,3 @@
-
 const {
     testConnection,
     closeConnection
@@ -20,12 +19,17 @@ const {
     initializeQuestSchema
 } = require('./questSchema');
 
+const {
+    initializeMatchSchema
+} = require('./matchSchema');
+
 async function initializeDatabase() {
     await testConnection();
     await initializeSchema();
     await initializePlayerSchema();
     await initializeTrainingPanels();
     await initializeQuestSchema();
+    await initializeMatchSchema();
 }
 
 module.exports = {
