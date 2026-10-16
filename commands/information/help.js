@@ -1,92 +1,135 @@
+
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
     PermissionsBitField,
-    MessageFlags
+    MessageFlags,
+    ActionRowBuilder,
+    StringSelectMenuBuilder
 } = require('discord.js');
 
 const { createEmbed } = require('../../utils/embeds');
 
+const HELP_MENU_ID = 'akane:help:section';
+
 const SECTIONS = [
     {
+        id: 'progression',
         name: '⚔️ PROGRESSION',
-        commands: [
-            ['profile', 'View your progression.'],
-            ['path', 'Choose your faction.'],
-            ['achievements', 'View your achievements.'],
-            ['titles', 'View your titles.'],
-            ['leaderboard', 'View the level and XP rankings.'],
-            ['corps', 'Browse members and ranks.'],
-            ['legacy', 'Explore achievements, titles and ranks.']
-        ]
+        description: 'Levels, rewards and achievements',
+        emoji: '⚔️',
+        commands: {
+            profile: 'View your profile and battle statistics.',
+            daily: 'Claim your daily XP reward.',
+            achievements: 'View your achievements.',
+            titles: 'Explore and equip titles.',
+            leaderboard: 'View XP and level rankings.',
+            corps: 'Browse faction members and ranks.',
+            legacy: 'Explore Blood Moon accomplishments.'
+        }
     },
     {
+        id: 'battles',
+        name: '🩸 PvP & TRAINING',
+        description: 'Matches, quests and training',
+        emoji: '🩸',
+        commands: {
+            match: 'Create a 1v1–5v5 match for any game.',
+            training: 'Access training activities.',
+            quests: 'View daily quests.'
+        }
+    },
+    {
+        id: 'ranks',
         name: '🏯 RANKS & TRIALS',
-        commands: [
-            ['trial', 'View rank trials.']
-        ]
+        description: 'Rank trials and advancement',
+        emoji: '🏯',
+        commands: {
+            trial: 'View rank trials.'
+        }
     },
     {
+        id: 'utility',
         name: '⚙️ UTILITY',
-        commands: [
-            ['help', 'View available commands.'],
-            ['avatar', 'View a member or bot avatar.'],
-            ['ping', 'Check bot latency.']
-        ]
+        description: 'General bot commands',
+        emoji: '⚙️',
+        commands: {
+            help: 'Open the command center.',
+            avatar: 'View a user avatar.',
+            ping: 'Check bot latency.'
+        }
     },
     {
-        name: '🏯 RANK MANAGEMENT',
+        id: 'management',
+        name: '👑 RANK MANAGEMENT',
+        description: 'Faction and rank administration',
+        emoji: '👑',
         staff: true,
-        commands: [
-            ['setrank', 'Assign a rank.'],
-            ['removerank', 'Remove a rank.'],
-            ['rankhistory', 'View rank changes.']
-        ]
+        commands: {
+            path: 'Publish the faction selection panel.',
+            setrank: 'Assign a faction rank.',
+            removerank: 'Remove a faction rank.',
+            rankhistory: 'View rank changes.'
+        }
     },
     {
+        id: 'moderation',
         name: '🛡️ MODERATION',
+        description: 'Moderation and member safety',
+        emoji: '🛡️',
         staff: true,
-        commands: [
-            ['warn', 'Warn a member.'],
-            ['warnings', 'View member warnings.'],
-            ['unwarn', 'Remove a warning.'],
-            ['timeout', 'Timeout a member.'],
-            ['untimeout', 'Remove a timeout.'],
-            ['kick', 'Kick a member.'],
-            ['ban', 'Ban a user.'],
-            ['unban', 'Unban a user.'],
-            ['clear', 'Delete messages.'],
-            ['slowmode', 'Set channel slowmode.'],
-            ['lock', 'Lock a channel.'],
-            ['unlock', 'Unlock a channel.'],
-            ['case', 'View a moderation case.'],
-            ['history', 'View moderation history.']
-        ]
+        commands: {
+            warn: 'Warn a member.',
+            warnings: 'View member warnings.',
+            unwarn: 'Remove a warning.',
+            timeout: 'Timeout a member.',
+            untimeout: 'Remove a timeout.',
+            kick: 'Kick a member.',
+            ban: 'Ban a user.',
+            unban: 'Unban a user.',
+            clear: 'Delete messages.',
+            slowmode: 'Manage slowmode.',
+            lock: 'Lock a channel.',
+            unlock: 'Unlock a channel.',
+            case: 'View a moderation case.',
+            history: 'View moderation history.'
+        }
     },
     {
+        id: 'administration',
         name: '🌑 ADMINISTRATION',
+        description: 'Server setup and management',
+        emoji: '🌑',
         staff: true,
-        commands: [
-            ['announce', 'Publish an announcement.'],
-            ['setup', 'Configure server information.'],
-            ['ticketpanel', 'Publish a ticket panel.'],
-            ['emergency', 'Manage emergency protection.']
-        ]
+        commands: {
+            announce: 'Publish an announcement.',
+            setup: 'Publish server guides.',
+            ticketpanel: 'Publish the support panel.',
+            emergency: 'Manage emergency protection.',
+            matchmanage: 'Cancel matches or resolve disputes.'
+        }
     },
     {
-        name: '🩸 TESTING',
+        id: 'testing',
+        name: '🧪 TESTING',
+        description: 'Staff testing tools',
+        emoji: '🧪',
         staff: true,
-        commands: [
-            ['testlevel', 'Test level notifications.'],
-            ['testwelcome', 'Test welcome notifications.']
-        ]
+        commands: {
+            testlevel: 'Test level notifications.',
+            testwelcome: 'Test welcome notifications.'
+        }
     }
 ];
 
-function canViewCommand(interaction, command, staff) {
+function canViewCommand(interaction, command, staff = false) {
     const permissions = interaction.memberPermissions;
     const required = command.data.toJSON()
         .default_member_permissions;
+
+    if (required === '0') {
+        return false;
+    }
 
     if (required != null) {
         return permissions?.has(
@@ -100,52 +143,199 @@ function canViewCommand(interaction, command, staff) {
     );
 }
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('help')
-        .setDescription('View available Akane commands.'),
-
-    async execute(interaction) {
-        const commands = interaction.client.commands;
-
-        const embed = createEmbed(
-            '🌙 AKANE • HELP',
-            'Explore your progression and available commands.'
-        );
-
-        let count = 0;
-
-        for (const section of SECTIONS) {
-            const visible = section.commands.filter(([name]) => {
-                const command = commands.get(name);
+function getVisibleSections(interaction) {
+    return SECTIONS.map(section => ({
+        ...section,
+        visible: Object.entries(section.commands)
+            .filter(([name]) => {
+                const command = interaction.client.commands.get(name);
 
                 return command && canViewCommand(
                     interaction,
                     command,
                     section.staff
                 );
-            });
+            })
+    })).filter(section => section.visible.length);
+}
 
-            if (!visible.length) continue;
+function getOtherCommands(interaction) {
+    const listed = new Set(
+        SECTIONS.flatMap(section =>
+            Object.keys(section.commands)
+        )
+    );
 
-            count += visible.length;
+    return [...interaction.client.commands.values()]
+        .filter(command =>
+            !listed.has(command.data.name) &&
+            canViewCommand(interaction, command)
+        )
+        .sort((a, b) =>
+            a.data.name.localeCompare(b.data.name)
+        )
+        .map(command => [
+            command.data.name,
+            command.data.description
+        ]);
+}
 
+function buildHelpEmbed(interaction, selected = 'overview') {
+    const sections = getVisibleSections(interaction);
+    const other = getOtherCommands(interaction);
+
+    const embed = createEmbed(
+        '🌙 AKANE • COMMAND CENTER',
+        selected === 'overview'
+            ? [
+                '**Welcome to the Blood Moon command center.**',
+                'Select a category below to explore its commands.',
+                '',
+                'Only commands available to you are displayed.'
+            ].join('\n')
+            : 'Explore your available commands.'
+    );
+
+    let count = 0;
+
+    if (selected === 'overview') {
+        for (const section of sections) {
             embed.addFields({
                 name: section.name,
-                value: visible
-                    .map(([name, description]) =>
-                        `\`/${name}\` — ${description}`
-                    )
-                    .join('\n')
+                value: section.visible
+                    .map(([name]) => `\`/${name}\``)
+                    .join(' • ')
             });
+
+            count += section.visible.length;
         }
 
-        embed.setFooter({
-            text: `Akane • Blood Moon • ${count} Commands Available`
+        if (other.length) {
+            embed.addFields({
+                name: '📚 OTHER COMMANDS',
+                value: other.map(([name]) =>
+                    `\`/${name}\``
+                ).join(' • ')
+            });
+
+            count += other.length;
+        }
+    } else {
+        const section = sections.find(item =>
+            item.id === selected
+        );
+
+        const commands = selected === 'other'
+            ? other
+            : section?.visible ?? [];
+
+        if (commands.length) {
+            embed.addFields({
+                name: section?.name ?? '📚 OTHER COMMANDS',
+                value: commands.map(([name, description]) =>
+                    `\`/${name}\` — ${description}`
+                ).join('\n')
+            });
+        } else {
+            embed.setDescription(
+                'No commands are available in this category.'
+            );
+        }
+
+        count = commands.length;
+    }
+
+    embed.setFooter({
+        text: `AKANE • BLOOD MOON • ${count} Commands`
+    });
+
+    const icon = interaction.guild?.iconURL({ size: 256 });
+
+    if (icon) {
+        embed.setThumbnail(icon);
+    }
+
+    return embed;
+}
+
+function buildHelpMenu(interaction, selected = 'overview') {
+    const sections = getVisibleSections(interaction);
+    const other = getOtherCommands(interaction);
+
+    const options = [
+        {
+            label: 'Overview',
+            value: 'overview',
+            description: 'View all available command categories.',
+            emoji: '🌙'
+        },
+        ...sections.map(section => ({
+            label: section.name.replace(
+                /^[^\p{L}\p{N}]+/u,
+                ''
+            ),
+            value: section.id,
+            description: section.description,
+            emoji: section.emoji
+        }))
+    ];
+
+    if (other.length) {
+        options.push({
+            label: 'Other Commands',
+            value: 'other',
+            description: 'Additional available commands.',
+            emoji: '📚'
         });
+    }
+
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId(HELP_MENU_ID)
+        .setPlaceholder('Explore Akane commands')
+        .addOptions(
+            options.map(option => ({
+                ...option,
+                default: option.value === selected
+            }))
+        );
+
+    return [
+        new ActionRowBuilder().addComponents(menu)
+    ];
+}
+
+module.exports = {
+    HELP_MENU_ID,
+    buildHelpEmbed,
+    buildHelpMenu,
+
+    data: new SlashCommandBuilder()
+        .setName('help')
+        .setDescription(
+            'Explore Blood Moon commands and systems.'
+        )
+        .addStringOption(option =>
+            option
+                .setName('section')
+                .setDescription('Choose a command category.')
+                .setRequired(false)
+                .addChoices(
+                    ...SECTIONS.map(section => ({
+                        name: section.name,
+                        value: section.id
+                    }))
+                )
+        ),
+
+    async execute(interaction) {
+        const section = interaction.options.getString('section')
+            ?? 'overview';
 
         await interaction.reply({
-            embeds: [embed],
+            embeds: [
+                buildHelpEmbed(interaction, section)
+            ],
+            components: buildHelpMenu(interaction, section),
             flags: MessageFlags.Ephemeral
         });
     }

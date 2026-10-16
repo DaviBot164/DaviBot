@@ -1,3 +1,4 @@
+
 const {
     Events,
     MessageFlags
@@ -35,6 +36,10 @@ const {
     handleMatchInteraction
 } = require('../handlers/matchInteractionHandler');
 
+const {
+    handleHelpSelect
+} = require('../handlers/helpInteractionHandler');
+
 module.exports = {
     name: Events.InteractionCreate,
 
@@ -69,6 +74,10 @@ module.exports = {
             }
 
             if (interaction.isStringSelectMenu()) {
+                if (await handleHelpSelect(interaction)) {
+                    return;
+                }
+
                 if (await handleTitleSelect(interaction)) {
                     return;
                 }
@@ -123,16 +132,19 @@ module.exports = {
                 content: 'Akane could not complete that action.'
             };
 
-            if (interaction.isButton() && interaction.deferred) {
-                await interaction.followUp({
-                    ...payload,
-                    flags: MessageFlags.Ephemeral
-                }).catch(() => null);
-
-                return;
-            }
-
             if (interaction.deferred) {
+                if (
+                    interaction.isButton() ||
+                    interaction.isStringSelectMenu()
+                ) {
+                    await interaction.followUp({
+                        ...payload,
+                        flags: MessageFlags.Ephemeral
+                    }).catch(() => null);
+
+                    return;
+                }
+
                 await interaction.editReply(payload)
                     .catch(() => null);
 
