@@ -1,3 +1,4 @@
+
 const channels = require('../../config/channels');
 const { createEmbed } = require('../embeds');
 const { publishSetupMessage } = require('./publishSetupMessage');
@@ -15,8 +16,8 @@ async function publishRoleGuide(guild) {
         title,
         [
             '**Every role marks a place in your journey.**',
-            'Faction ranks show your server progression, Achievement Ranks recognize accomplishments, and staff roles identify the team responsible for the community.',
-            '*These are Blood Moon server roles, not your Slayers 2 in-game ranks.*'
+            'Faction ranks represent your server progression, Achievement Ranks recognize accomplishments, and staff roles identify the team responsible for Blood Moon.',
+            '*These are server roles, not your Slayers 2 in-game ranks.*'
         ].join('\n')
     ).addFields(
         {
@@ -37,16 +38,16 @@ async function publishRoleGuide(guild) {
             ].join('\n')
         },
         {
-            name: '🏯 HOW FACTION PROMOTIONS WORK',
+            name: '🏯 FACTION PROMOTIONS',
             value: [
-                'Regular ranks are awarded automatically at their required server levels within your chosen faction.',
-                '**Hashira** and **Upper Moon** require approval through Trials or staff promotion. Reaching Level 50 alone does not award either role.'
+                'Regular ranks are awarded automatically when you reach the required server level within your chosen faction.',
+                '**Hashira** and **Upper Moon** require Trials or staff approval. Level 50 alone does not grant either rank.'
             ].join('\n')
         },
         {
             name: '🌕 ACHIEVEMENT RANKS',
             value: [
-                'From first milestones to lasting accomplishments:',
+                'From your first milestone to your greatest accomplishments:',
                 '',
                 '🌙 **Moonbound**',
                 '🌸 **Crimson Bloom**',
@@ -54,13 +55,13 @@ async function publishRoleGuide(guild) {
                 '🌑 **Night Ascendant**',
                 '🌕 **Eternal Moon**',
                 '',
-                'This progression is separate from your Slayer or Demon rank. Use `/achievements` to view your achievements.'
+                'Achievement Ranks are separate from faction ranks. Use `/achievements` to track your progress.'
             ].join('\n')
         },
         {
             name: '👑 SHOGUNATE',
             value: [
-                'The staff hierarchy, from owner to supporting staff:',
+                'The staff hierarchy:',
                 '',
                 '👑 **Shogun** — Server Owner',
                 '🏯 **Daimyo** — Administrator',
@@ -73,8 +74,8 @@ async function publishRoleGuide(guild) {
         {
             name: '✨ COLLECTIBLE TITLES',
             value: [
-                'Titles are honors earned through activity, progression and achievements.',
-                'Use `/titles` to view and equip unlocked titles. Equipping a title does not change your faction rank or grant staff authority.'
+                'Earn titles through activity, progression and achievements.',
+                'Use `/titles` to view and equip unlocked titles. Titles do not change your faction rank or grant staff authority.'
             ].join('\n')
         },
         {
@@ -82,8 +83,7 @@ async function publishRoleGuide(guild) {
             value: [
                 '`/profile` — View your server progression.',
                 '`/corps` — Browse members and faction ranks.',
-                `Slayer guide: <#${channels.slayerPath}>`,
-                `Demon guide: <#${channels.demonPath}>`
+                `Slayer & Demon guides: <#${channels.factionProgression}>`
             ].join('\n')
         }
     );

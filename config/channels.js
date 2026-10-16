@@ -1,3 +1,4 @@
+
 module.exports = Object.freeze({
     welcome: '1528401903438925906',
     verification: '1528402259699044352',
@@ -10,14 +11,11 @@ module.exports = Object.freeze({
     soulProgression: '1534145341430038558',
 
     slayers2: '1530901464413769779',
-    slayerPath: '1551666879565922495',
-    demonPath: '1551667150022905906',
-    guides: '1551667199163367505',
+    factionProgression: '1560731489933594664',
     rankPromotions: '1533116816782524426',
 
     pvp: '1551667516458147941',
     training: '1551667580412887090',
-    challenges: '1551667623396384858',
 
     supportGuide: '1530989678553989261',
     openTicket: '1530989713081630904',
