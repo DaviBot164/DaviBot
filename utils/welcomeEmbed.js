@@ -8,21 +8,20 @@ const path = require('path');
 const brand = require('../config/brand');
 const channels = require('../config/channels');
 
-const WELCOME_BANNER_NAME = 'welcome-banner.png';
+const BANNER_NAME = 'welcome-banner.png';
 
-const WELCOME_BANNER_PATH = path.join(
+const BANNER_PATH = path.join(
     __dirname,
     '..',
     'assets',
     'images',
-    WELCOME_BANNER_NAME
+    BANNER_NAME
 );
 
 function createWelcomeBanner() {
-    return new AttachmentBuilder(
-        WELCOME_BANNER_PATH,
-        { name: WELCOME_BANNER_NAME }
-    );
+    return new AttachmentBuilder(BANNER_PATH, {
+        name: BANNER_NAME
+    });
 }
 
 function createWelcomeEmbed(member) {
@@ -31,7 +30,7 @@ function createWelcomeEmbed(member) {
     );
 
     const verifyText = verification?.isTextBased()
-        ? `Verify in ${verification} to begin your journey.`
+        ? `Begin your journey in ${verification}.`
         : 'Complete verification to begin your journey.';
 
     return new EmbedBuilder()
@@ -42,18 +41,16 @@ function createWelcomeEmbed(member) {
                 size: 256
             })
         })
-        .setTitle(`Welcome to ${brand.server}`)
+        .setTitle('🌙 A New Soul Has Arrived')
         .setDescription([
             `Welcome, ${member}.`,
             '',
-            `⛩️ ${verifyText}`,
-            '',
-            `**Member #${member.guild.memberCount}**`
+            `⛩️ ${verifyText}`
         ].join('\n'))
         .setThumbnail(
             member.user.displayAvatarURL({ size: 256 })
         )
-        .setImage(`attachment://${WELCOME_BANNER_NAME}`)
+        .setImage(`attachment://${BANNER_NAME}`)
         .setFooter({ text: brand.footer });
 }
 
