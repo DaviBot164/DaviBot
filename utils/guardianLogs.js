@@ -1,12 +1,5 @@
-const channels =
-    require('../config/channels');
-
-const brand =
-    require('../config/brand');
-
-const {
-    createEmbed
-} = require('./embeds');
+const channels = require('../config/channels');
+const { createEmbed } = require('./embeds');
 
 const TYPE_NAMES = Object.freeze({
     spam: 'Spam',
@@ -21,95 +14,54 @@ const ACTION_NAMES = Object.freeze({
     timeout: 'Message Deleted • 5 Minute Timeout'
 });
 
-function sanitizeContent(content) {
-    return content
+function trimContent(content) {
+    const text = String(content ?? '')
+        .trim()
         .replace(/@everyone/gi, '@\u200beveryone')
         .replace(/@here/gi, '@\u200bhere');
+
+    if (!text) return '*No text content*';
+
+    return text.length > 700
+        ? `${text.slice(0, 697)}...`
+        : text;
 }
 
-function trimContent(content) {
-    const text =
-        sanitizeContent(
-            content?.trim() ||
-            ''
-        );
+async function sendGuardianLog(message, result) {
+    if (!message.guild || !result?.blocked) return;
 
-    if (!text) {
-        return '*No text content*';
+    const channel = await message.guild.channels.fetch(
+        channels.moderation
+    );
+
+    if (!channel?.isTextBased() || typeof channel.send !== 'function') {
+        throw new Error('Guardian log channel is unavailable.');
     }
 
-    if (text.length <= 700) {
-        return text;
-    }
-
-    return `${text.slice(0, 697)}...`;
-}
-
-async function sendGuardianLog(
-    message,
-    result
-) {
-    if (!result?.blocked) {
-        return;
-    }
-
-    const channel =
-        message.guild.channels.cache.get(
-            channels.staffLogs
-        );
-
-    if (!channel?.isTextBased()) {
-        return;
-    }
-
-    const type =
-        TYPE_NAMES[result.type] ??
-        'Guardian';
-
-    const action =
-        ACTION_NAMES[result.action] ??
-        result.action ??
-        'Unknown';
+    const type = TYPE_NAMES[result.type] ?? 'Guardian';
+    const action = ACTION_NAMES[result.action]
+        ?? result.action
+        ?? 'Unknown';
 
     const details = [
-        `Member: ${message.author}`,
-        `Channel: ${message.channel}`,
+        `Member: <@${message.author.id}> (\`${message.author.id}\`)`,
+        `Channel: <#${message.channelId}>`,
         `Detection: **${type}**`,
         `Action: **${action}**`
     ];
 
     if (result.strikes) {
-        details.push(
-            `Spam Strikes: **${result.strikes}**`
-        );
+        details.push(`Spam Strikes: **${result.strikes}**`);
     }
 
-    details.push(
-        '',
-        '**Message**',
-        trimContent(
-            message.content
-        )
-    );
-
-    const embed =
-        createEmbed(
-            '🛡️ Guardian Protection',
-            details.join('\n')
-        )
-            .setFooter({
-                text:
-                    brand.footer
-            })
-            .setTimestamp();
+    details.push('', '**Message**', trimContent(message.content));
 
     await channel.send({
         embeds: [
-            embed
-        ]
+            createEmbed('🛡️ Guardian Protection', details.join('\n'))
+        ],
+        allowedMentions: { parse: [] }
     });
 }
 
-module.exports = {
-    sendGuardianLog
-};
+module.exports = { sendGuardianLog };

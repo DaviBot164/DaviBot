@@ -6,6 +6,17 @@ const {
 const channels = require('../config/channels');
 const brand = require('../config/brand');
 
+const MODERATION_ACTIONS = new Set([
+    AuditLogEvent.MemberKick,
+    AuditLogEvent.MemberPrune,
+    AuditLogEvent.MemberBanAdd,
+    AuditLogEvent.MemberBanRemove,
+    AuditLogEvent.MemberDisconnect,
+    AuditLogEvent.AutoModerationBlockMessage,
+    AuditLogEvent.AutoModerationFlagToChannel,
+    AuditLogEvent.AutoModerationUserCommunicationDisabled
+]);
+
 function shorten(value, limit = 1000) {
     const text = String(value ?? '').trim();
 
@@ -14,33 +25,19 @@ function shorten(value, limit = 1000) {
         : text;
 }
 
-function messageText(message) {
-    const parts = [];
-
-    if (message.content) {
-        parts.push(message.content);
-    }
-
-    for (const embed of message.embeds ?? []) {
-        if (embed.title) {
-            parts.push(embed.title);
-        }
-
-        if (embed.description) {
-            parts.push(embed.description);
-        }
-    }
-
-    return shorten(parts.join('\n')) ||
-        'Text unavailable or no text content.';
+function isLogChannel(channelId) {
+    return [
+        channels.staffLogs,
+        channels.moderation
+    ].includes(channelId);
 }
 
-async function sendLog(guild, embed) {
+async function sendLog(guild, embed, channelId = channels.staffLogs) {
     try {
-        const channel = await guild.channels.fetch(channels.staffLogs);
+        const channel = await guild.channels.fetch(channelId);
 
         if (!channel?.isTextBased() || typeof channel.send !== 'function') {
-            return;
+            throw new Error(`Log channel unavailable: ${channelId}`);
         }
 
         embed
@@ -52,22 +49,26 @@ async function sendLog(guild, embed) {
             allowedMentions: { parse: [] }
         });
     } catch (error) {
-        console.error('Staff log failed:', error);
+        console.error('Server log failed:', error);
     }
 }
 
-function isLogChannel(channelId) {
-    return channelId === channels.staffLogs;
+function messageText(message) {
+    const parts = [];
+
+    if (message.content) parts.push(message.content);
+
+    for (const embed of message.embeds ?? []) {
+        if (embed.title) parts.push(embed.title);
+        if (embed.description) parts.push(embed.description);
+    }
+
+    return shorten(parts.join('\n'))
+        || 'Text unavailable or no text content.';
 }
 
 async function logMessageDelete(message) {
-    if (!message.guild || isLogChannel(message.channelId)) {
-        return;
-    }
-
-    const author = message.author
-        ? `<@${message.author.id}> • ${message.author.id}`
-        : 'Unavailable';
+    if (!message.guild || isLogChannel(message.channelId)) return;
 
     const embed = new EmbedBuilder()
         .setColor('#9B1C31')
@@ -75,7 +76,9 @@ async function logMessageDelete(message) {
         .addFields(
             {
                 name: 'Author',
-                value: author
+                value: message.author
+                    ? `<@${message.author.id}> • ${message.author.id}`
+                    : 'Unavailable'
             },
             {
                 name: 'Channel',
@@ -91,7 +94,7 @@ async function logMessageDelete(message) {
             },
             {
                 name: 'Executor',
-                value: 'Not established for this message. Check the separate Audit Log entries.'
+                value: 'Not established for this message.'
             }
         );
 
@@ -110,17 +113,14 @@ async function logMessageDelete(message) {
 }
 
 async function logBulkDelete(messages, channel) {
-    if (!channel.guild || isLogChannel(channel.id)) {
-        return;
-    }
+    if (!channel.guild || isLogChannel(channel.id)) return;
 
     const sample = [...messages.values()]
         .slice(0, 6)
-        .map(message => {
-            const author = message.author?.tag ?? 'Unknown author';
-
-            return `${author} • ${message.id}\n${shorten(messageText(message), 120)}`;
-        })
+        .map(message =>
+            `${message.author?.tag ?? 'Unknown author'} • ${message.id}\n` +
+            shorten(messageText(message), 120)
+        )
         .join('\n\n');
 
     const embed = new EmbedBuilder()
@@ -141,7 +141,7 @@ async function logBulkDelete(messages, channel) {
             },
             {
                 name: 'Executor',
-                value: 'See the separate Audit Log entry for this action.'
+                value: 'See the separate Audit Log entry.'
             }
         );
 
@@ -153,13 +153,7 @@ async function logMessageUpdate(before, after) {
         !after.guild ||
         isLogChannel(after.channelId) ||
         after.author?.bot ||
-        typeof after.content !== 'string'
-    ) {
-        return;
-    }
-
-    if (
-        typeof before.content === 'string' &&
+        typeof after.content !== 'string' ||
         before.content === after.content
     ) {
         return;
@@ -199,49 +193,50 @@ async function logMessageUpdate(before, after) {
 }
 
 function formatValue(value) {
-    if (value === undefined) {
-        return 'Not supplied';
-    }
-
-    if (value === null) {
-        return 'None';
-    }
+    if (value === undefined) return 'Not supplied';
+    if (value === null) return 'None';
 
     return shorten(
-        typeof value === 'object'
-            ? JSON.stringify(value)
-            : value,
+        typeof value === 'object' ? JSON.stringify(value) : value,
         180
-    );
+    ) || 'Empty';
 }
 
 async function logAuditEntry(entry, guild) {
-    const action = AuditLogEvent[entry.action] ??
-        `Action ${entry.action}`;
+    const extra = entry.extra ?? {};
+    const channelId = extra.channel?.id ?? extra.channelId;
+    const changes = entry.changes ?? [];
+
+    const messageAction = [
+        AuditLogEvent.MessageDelete,
+        AuditLogEvent.MessageBulkDelete
+    ].includes(entry.action);
+
+    if (messageAction && isLogChannel(channelId)) return;
+
+    const timeoutChanged =
+        entry.action === AuditLogEvent.MemberUpdate &&
+        changes.some(change =>
+            change.key === 'communication_disabled_until'
+        );
+
+    const moderation = MODERATION_ACTIONS.has(entry.action)
+        || timeoutChanged
+        || messageAction;
 
     const executorId = entry.executorId ?? entry.executor?.id;
     const targetId = entry.targetId ?? entry.target?.id;
-    const extra = entry.extra ?? {};
-    const channelId = extra.channel?.id ?? extra.channelId;
-
-    if (
-        isLogChannel(channelId) &&
-        [
-            AuditLogEvent.MessageDelete,
-            AuditLogEvent.MessageBulkDelete
-        ].includes(entry.action)
-    ) {
-        return;
-    }
+    const action = AuditLogEvent[entry.action] ?? `Action ${entry.action}`;
 
     const embed = new EmbedBuilder()
-        .setColor('#9B1C31')
-        .setTitle('🛡️ Server Audit Action')
+        .setColor(moderation ? '#9B1C31' : '#C8A45D')
+        .setTitle(
+            moderation
+                ? '🛡️ Moderation Audit'
+                : '🏯 Server Audit Action'
+        )
         .addFields(
-            {
-                name: 'Action',
-                value: action
-            },
+            { name: 'Action', value: action },
             {
                 name: 'Executor',
                 value: executorId
@@ -250,9 +245,7 @@ async function logAuditEntry(entry, guild) {
             },
             {
                 name: 'Target',
-                value: targetId
-                    ? `ID: ${targetId}`
-                    : 'Not supplied'
+                value: targetId ? `ID: ${targetId}` : 'Not supplied'
             },
             {
                 name: 'Reason',
@@ -260,7 +253,9 @@ async function logAuditEntry(entry, guild) {
             },
             {
                 name: 'Audit Entry',
-                value: `${entry.id}\n<t:${Math.floor(entry.createdTimestamp / 1000)}:F>`
+                value: `${entry.id}\n<t:${Math.floor(
+                    entry.createdTimestamp / 1000
+                )}:F>`
             }
         );
 
@@ -278,22 +273,56 @@ async function logAuditEntry(entry, guild) {
         });
     }
 
-    const changes = (entry.changes ?? [])
-        .filter(change =>
-            !/token|secret|password/i.test(change.key)
-        )
+    const changeText = changes
+        .filter(change => !/token|secret|password/i.test(change.key))
         .slice(0, 8)
         .map(change =>
-            `${change.key}: ${formatValue(change.old)} → ${formatValue(change.new)}`
+            `${change.key}: ${formatValue(change.old)} → ` +
+            formatValue(change.new)
         )
         .join('\n');
 
-    if (changes) {
+    if (changeText) {
         embed.addFields({
             name: 'Changes',
-            value: shorten(changes)
+            value: shorten(changeText)
         });
     }
+
+    await sendLog(
+        guild,
+        embed,
+        moderation ? channels.moderation : channels.staffLogs
+    );
+}
+
+async function logAvatarChange(guild, user, oldURL, newURL, server = false) {
+    const embed = new EmbedBuilder()
+        .setColor('#C8A45D')
+        .setTitle(
+            server ? '🖼️ Server Avatar Changed' : '🖼️ Account Avatar Changed'
+        )
+        .setDescription(
+            `<@${user.id}> • ${user.id}\n` +
+            (server
+                ? 'Their avatar for this server was updated.'
+                : 'Their account avatar was updated.')
+        )
+        .addFields(
+            {
+                name: 'Before',
+                value: oldURL
+                    ? `[Open previous avatar](${oldURL})`
+                    : 'Previous avatar unavailable.'
+            },
+            {
+                name: 'After',
+                value: `[Open current avatar](${newURL})`
+            }
+        )
+        .setImage(newURL);
+
+    if (oldURL) embed.setThumbnail(oldURL);
 
     await sendLog(guild, embed);
 }
@@ -302,5 +331,6 @@ module.exports = {
     logMessageDelete,
     logBulkDelete,
     logMessageUpdate,
-    logAuditEntry
+    logAuditEntry,
+    logAvatarChange
 };
