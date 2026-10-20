@@ -9,12 +9,23 @@ const { createEmbed } = require('../utils/embeds');
 const baseReplies = require('../config/akaneReplies');
 const personality = require('../config/akanePersonality');
 
+const {
+    pools: reactionPools,
+    detectReaction
+} = require('../config/akaneReactions');
+
 const replies = {
     ...baseReplies,
     general: personality.general,
     member: personality.member,
     owner: personality.owner,
-    davi: [...baseReplies.davi, ...personality.davi]
+    davi: [...baseReplies.davi, ...personality.davi],
+    ...Object.fromEntries(
+        Object.entries(reactionPools).map(([name, pool]) => [
+            `reaction_${name}`,
+            pool
+        ])
+    )
 };
 
 const USER_COOLDOWN = 10_000;
@@ -36,38 +47,28 @@ const ALIASES = new Map([
     ['hi', 'hi'],
     ['hello', 'hi'],
     ['გამარჯობა', 'hi'],
-
     ['mood', 'mood'],
     ['how are you', 'mood'],
     ['როგორ ხარ', 'mood'],
     ['განწყობა', 'mood'],
-
     ['nice', 'nice'],
     ['compliment', 'nice'],
     ['კომპლიმენტი', 'nice'],
-
     ['roast', 'roast'],
     ['გამეხუმრე', 'roast'],
-
     ['tip', 'tip'],
     ['advice', 'tip'],
     ['რჩევა', 'tip'],
-
     ['pick', 'pick'],
     ['აირჩიე', 'pick'],
-
     ['rate', 'rate'],
     ['შეფასება', 'rate'],
-
     ['luck', 'luck'],
     ['იღბალი', 'luck'],
-
     ['secret', 'secret'],
     ['საიდუმლო', 'secret'],
-
     ['help', 'help'],
     ['დახმარება', 'help'],
-
     ['stop', 'stop'],
     ['გაჩერდი', 'stop']
 ]);
@@ -92,7 +93,7 @@ const FOLLOWUPS = new Map([
 ]);
 
 function normalize(text) {
-    return text
+    return String(text ?? '')
         .normalize('NFKC')
         .toLowerCase()
         .trim()
@@ -124,6 +125,11 @@ function closeSessions(userId, channelId) {
 
 function drawReply(state, category) {
     const pool = replies[category];
+
+    if (!pool?.length) {
+        throw new Error(`Missing Akane reply category: ${category}`);
+    }
+
     let bag = state.bags.get(category);
 
     if (!bag?.remaining.length) {
@@ -161,8 +167,25 @@ function drawReply(state, category) {
     return pool[index];
 }
 
+function reactionRequest(content, owner) {
+    const reaction = detectReaction(content);
+
+    if (!reaction) return null;
+
+    const flirt = owner && [
+        'romance',
+        'affection',
+        'possessive'
+    ].includes(reaction);
+
+    return {
+        category: `reaction_${flirt ? 'ownerFlirt' : reaction}`
+    };
+}
+
 function parseRequest(message, now) {
     const content = message.content.trim();
+    const owner = message.author.id === personality.ownerId;
 
     const trigger = content.match(
         /^(?:akane|აკანე)(?=$|[\s!?.,…:;♡♥❤🩸👋🔪🌙])[\s!?.,…:;]*(.*)$/iu
@@ -182,21 +205,30 @@ function parseRequest(message, now) {
 
         const category = FOLLOWUPS.get(normalize(content));
 
-        if (!category) return null;
+        if (category) {
+            if (
+                ['yes', 'no'].includes(category) &&
+                !session.question
+            ) {
+                return null;
+            }
 
-        if (
-            ['yes', 'no'].includes(category) &&
-            !session.question
-        ) {
-            return null;
+            return {
+                category,
+                followup: true,
+                context: session.category
+            };
         }
 
-        return {
-            category,
-            followup: true,
-            context: session.category,
-            sessionId: message.reference.messageId
-        };
+        const reaction = reactionRequest(content, owner);
+
+        if (reaction) return reaction;
+
+        if (/[?？]/u.test(content)) {
+            return { category: 'reaction_question' };
+        }
+
+        return null;
     }
 
     const raw = trigger[1].trim();
@@ -206,9 +238,7 @@ function parseRequest(message, now) {
         return { category: 'general' };
     }
 
-    if (DAVI_NAMES.has(text)) {
-        return { category: 'davi' };
-    }
+    if (DAVI_NAMES.has(text)) return { category: 'davi' };
 
     const direct = ALIASES.get(text);
 
@@ -247,6 +277,20 @@ function parseRequest(message, now) {
         };
     }
 
+    const followup = FOLLOWUPS.get(text);
+
+    if (followup === 'thanks' || followup === 'rude') {
+        return { category: followup };
+    }
+
+    const reaction = reactionRequest(raw, owner);
+
+    if (reaction) return reaction;
+
+    if (/[?？]/u.test(raw)) {
+        return { category: 'reaction_question' };
+    }
+
     if (
         !category &&
         /^[\p{L}\p{N}_ -]{1,64}$/u.test(text)
@@ -258,21 +302,24 @@ function parseRequest(message, now) {
 }
 
 function buildHelp(message) {
-    const embed = createEmbed(
+    return createEmbed(
         '🩸 Akane • Chat Help',
         [
-            'Type these in chat — no `/` needed.',
-            'Use **akane** or **აკანე**. Replies are in English.'
+            'Type **akane** or **აკანე** followed by your request.',
+            'No slash needed. All replies are in English.'
         ].join('\n')
+    ).setThumbnail(
+        message.client.user.displayAvatarURL({ size: 256 })
     ).addFields(
         {
-            name: 'START HERE',
+            name: 'BASIC REQUESTS',
             value: [
                 '`akane` — Get my attention',
                 '`akane hi` — Say hello',
                 '`akane nice` — Get a compliment',
                 '`akane roast` — Get a playful roast',
-                '`akane tip` — Get advice'
+                '`akane tip` — Get advice',
+                '`akane help` — Show this guide'
             ].join('\n')
         },
         {
@@ -287,67 +334,68 @@ function buildHelp(message) {
         {
             name: 'MORE',
             value: [
-                '`akane mood` — Check my mood',
-                '`akane rate` — Get a playful random score',
-                '`akane luck` — Get a pretend prediction',
-                '`akane secret` — Hear a secret',
-                '`akane stop` — End your current conversation',
-                '`akane help` — Show this guide'
+                '`akane mood` — My fictional mood',
+                '`akane rate` — A random score for fun',
+                '`akane luck` — A pretend prediction',
+                '`akane secret` — A character secret',
+                '`akane stop` — Close your current conversation'
+            ].join('\n')
+        },
+        {
+            name: 'TRY TALKING TO ME',
+            value: [
+                '`akane who are you?`',
+                '`akane are you angry?`',
+                '`akane be my gf`',
+                '`akane you are just a bot`',
+                '`აკანე ბოდიში`',
+                'These use recognized phrases, not free-form AI.'
             ].join('\n')
         },
         {
             name: 'CONTINUE WITH REPLY',
             value: [
-                'Reply directly to **your own Akane response** within 2 minutes.',
-                '`thanks` / `მადლობა`',
-                '`rude` / `უხეში ხარ`',
-                '`really?` / `მართლა?`',
-                '`why?` / `რატომ?`',
-                '`yes` / `no` or `კი` / `არა` — only when I ask.',
-                '`stop` / `გაჩერდი` — end the conversation.'
+                'Reply to my latest response to **you**, within **2 minutes**.',
+                '`thanks` / `მადლობა` · `rude` / `უხეში ხარ`',
+                '`really?` / `მართლა?` · `why?` / `რატომ?`',
+                '`yes` / `no` or `კი` / `არა` — when I ask.',
+                'Recognized flirting, jokes, apologies and questions also work.',
+                '`stop` / `გაჩერდი` — close the conversation.'
             ].join('\n')
         },
         {
-            name: 'EXAMPLES & TIMING',
+            name: 'TIMING',
             value: [
-                '`აკანე გამარჯობა` · `აკანე რჩევა` · `აკანე დავითი`',
-                'Wait **10 seconds** between your requests.',
-                'The channel also has a **5-second** cooldown.',
-                'I use preset dialogue, not free-form AI chat.'
+                '**10 seconds** between your requests.',
+                '**5 seconds** between channel responses.',
+                '`akane stop` clears your conversation immediately;',
+                'its confirmation still follows the cooldown.'
             ].join('\n')
         }
-    ).setThumbnail(
-        message.client.user.displayAvatarURL({ size: 256 })
     );
-
-    return { embeds: [embed] };
 }
 
 function contextualReply(request) {
-    const warm = ['owner', 'davi'].includes(request.context);
+    const warm = [
+        'owner',
+        'davi',
+        'reaction_ownerFlirt'
+    ].includes(request.context);
 
     if (request.category === 'really') {
         if (warm) {
             return 'Yes, Davi. You make my favoritism embarrassingly easy.';
         }
 
-        if (request.context === 'nice') {
-            return 'Yes. Take the compliment before I make it awkward.';
-        }
+        const answers = {
+            nice: 'Yes. Take the compliment before I make it awkward.',
+            roast: 'It was a joke you requested, not a serious assessment.',
+            rate: 'The score is random. My dramatic delivery is intentional.',
+            luck: 'It is a pretend prediction, not a forecast.'
+        };
 
-        if (request.context === 'roast') {
-            return 'It was a joke you requested, not a serious assessment.';
-        }
-
-        if (request.context === 'rate') {
-            return 'The score is random. My dramatic delivery is intentional.';
-        }
-
-        if (request.context === 'luck') {
-            return 'It is a pretend prediction. Please do not plan your life around it.';
-        }
-
-        return 'Really. The attitude was included at no extra charge.';
+        return answers[request.context]
+            ?? 'The attitude is part of the character. The reply is scripted.';
     }
 
     if (warm) {
@@ -355,18 +403,18 @@ function contextualReply(request) {
     }
 
     const reasons = {
-        nice: 'Because you asked for a compliment. Accept it without an investigation.',
+        nice: 'Because you asked for a compliment. No investigation required.',
         roast: 'Because you requested a playful roast. It is not a judgment of your worth.',
-        rate: 'Because this is a randomly chosen score for fun, not a real evaluation.',
-        luck: 'Because theatrical predictions are entertaining. They are not reliable forecasts.',
-        tip: 'The advice is meant as a practical suggestion, not a universal rule. Use it only when it fits your situation.',
-        member: 'Because this is my theatrical cold greeting, not a claim about that person.',
-        mood: 'Because my mood is part of the character. The sarcasm is scripted.',
-        secret: 'Because a little fictional mystery suits the character.'
+        rate: 'Because this is a randomly chosen score for entertainment.',
+        luck: 'Because theatrical predictions are fun, not reliable forecasts.',
+        tip: 'It is a practical suggestion, not a universal rule. Use it when it fits.',
+        member: 'That is my theatrical cold greeting, not a claim about the person.',
+        mood: 'My mood is fictional. The sarcasm is scripted.',
+        secret: 'A little fictional mystery suits the character.'
     };
 
     return reasons[request.context]
-        ?? 'Because a little sarcasm suits me. This is preset character dialogue.';
+        ?? 'I matched a recognized phrase to preset character dialogue. No personal grudge included.';
 }
 
 function buildResponse(message, request, state) {
@@ -374,7 +422,7 @@ function buildResponse(message, request, state) {
 
     if (category === 'help') {
         return {
-            payload: buildHelp(message),
+            payload: { embeds: [buildHelp(message)] },
             category,
             session: false
         };
@@ -405,25 +453,29 @@ function buildResponse(message, request, state) {
             options.length <= 10 &&
             options.every(option => option.length <= 100);
 
-        const content = valid
-            ? `My choice: **${escapeMarkdown(
-                options[randomInt(options.length)]
-            )}**. The committee is dismissed.`
-            : 'Use 2–10 options separated by `/`.\n' +
-              'Example: `akane pick pvp / training`';
-
         return {
-            payload: { content },
+            payload: {
+                content: valid
+                    ? `My choice: **${escapeMarkdown(
+                        options[randomInt(options.length)]
+                    )}**. The committee is dismissed.`
+                    : 'Use 2–10 options separated by `/`.\n' +
+                      'Example: `akane pick pvp / training`'
+            },
             category,
             session: false
         };
     }
 
-    if (request.followup && ['really', 'why'].includes(category)) {
+    if (
+        request.followup &&
+        ['really', 'why'].includes(category)
+    ) {
         return {
             payload: { content: contextualReply(request) },
             category: request.context,
-            session: true
+            session: true,
+            question: false
         };
     }
 
@@ -435,9 +487,10 @@ function buildResponse(message, request, state) {
         category = request.context;
     }
 
-    const owner = message.author.id === personality.ownerId;
-
-    if (owner && ['general', 'hi', 'nice'].includes(category)) {
+    if (
+        message.author.id === personality.ownerId &&
+        ['general', 'hi', 'nice'].includes(category)
+    ) {
         category = 'owner';
     }
 
@@ -456,7 +509,8 @@ function buildResponse(message, request, state) {
     return {
         payload: { content },
         category,
-        session: category !== 'fallback'
+        session: category !== 'fallback',
+        question: content.includes('Reply yes or no.')
     };
 }
 
@@ -500,13 +554,6 @@ async function handleAkaneReply(message) {
         return false;
     }
 
-    if (
-        request.category === 'help' &&
-        !permissions.has(PermissionFlagsBits.EmbedLinks)
-    ) {
-        return false;
-    }
-
     const userKey = `${message.guildId}:${message.author.id}`;
 
     let state = channels.get(message.channelId);
@@ -535,6 +582,23 @@ async function handleAkaneReply(message) {
     try {
         const response = buildResponse(message, request, state);
 
+        if (
+            response.payload.embeds &&
+            !permissions.has(PermissionFlagsBits.EmbedLinks)
+        ) {
+            response.payload = {
+                content: response.payload.embeds
+                    .map(embed => [
+                        embed.data.title,
+                        embed.data.description,
+                        ...(embed.data.fields ?? []).map(field =>
+                            `**${field.name}**\n${field.value}`
+                        )
+                    ].filter(Boolean).join('\n\n'))
+                    .join('\n\n')
+            };
+        }
+
         const sent = await message.reply({
             ...response.payload,
             allowedMentions: {
@@ -550,9 +614,7 @@ async function handleAkaneReply(message) {
                 userId: message.author.id,
                 channelId: message.channelId,
                 category: response.category,
-                question: response.payload.content.includes(
-                    'Reply yes or no.'
-                ),
+                question: response.question ?? false,
                 expiresAt: Date.now() + SESSION_TTL
             });
         }
