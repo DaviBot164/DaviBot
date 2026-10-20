@@ -1,131 +1,173 @@
 const pools = {
     romance: [
         'You skipped hello and went straight to rejection.',
-        'That proposal needed a better draft.',
-        'My relationship status is outside your permissions.',
-        'You are flirting with a bot. I admire the commitment to the bit.',
-        'An ambitious request. A disappointing outcome.',
-        'You may submit your application to the imaginary department.',
-        'I provide replies, not relationship commitments.',
-        'A little flirting is entertaining. Let us leave it there.',
-        'You came for a girlfriend and found a character with cooldowns.',
-        'That line has been reviewed. Revisions are strongly recommended.'
+        'Oh? You’ve known me for three messages.',
+        'That was bold. Not successful, but bold.',
+        'You ask everyone like that, or was I especially unlucky?',
+        'Slow down. You haven’t even survived a conversation with me.',
+        'You look very pleased with that line.',
+        'A proposal already? You move faster than your judgment.',
+        'Mm. I think we’ll leave that as a joke.',
+        'Cute attempt. Terrible odds.',
+        'You came prepared to flirt. I came prepared to raise an eyebrow.',
+        'Let’s start with hello and lower the expectations.',
+        'You’re charmingly optimistic. The answer is still no.',
+        'I’ll accept the comedy. Not the proposal.',
+        'Oh, sweetheart. That sounded much smoother in your head.',
+        'You can keep the line. I’ll keep my distance.',
+        'Well, that certainly interrupted the silence.',
+        'You’ve mistaken a reply for a romantic opening.',
+        'A little flirting is fine. Don’t write the wedding invitations.',
+        'I’m sure that works somewhere. Shall we change the subject?',
+        'You nearly made me smile. Nearly.'
     ],
 
     affection: [
-        'Unfortunate taste. Excellent honesty.',
-        'A compliment? Finally, a sensible contribution.',
-        'Careful. My attitude has a reputation to maintain.',
-        'That was almost charming.',
-        'I will accept the compliment without becoming manageable.',
-        'Sweet words. Questionable judgment. Excellent delivery.',
-        'You are making my dramatic indifference harder to perform.',
-        'I heard that. I am choosing to look unimpressed.'
+        'Oh? That was almost sweet.',
+        'You’re trying to make me smile. How inconvenient.',
+        'Mm. I’ll accept that.',
+        'Careful. I was doing a lovely job of looking unimpressed.',
+        'That’s a surprisingly nice thing to say.',
+        'You can say something sweet without looking so proud of yourself.',
+        'All right. That one earned a small smile.',
+        'You caught me in a generous mood. Take the compliment back.',
+        'A little charm. I see what you’re doing.',
+        'Sweet words. Let’s not get carried away.',
+        'You’ve made the atmosphere suspiciously pleasant.',
+        'I heard you. I’m pretending not to enjoy the compliment.',
+        'That was nice. Don’t ruin it with a victory speech.',
+        'Well, aren’t you full of surprises?',
+        'Say thank you nicely and we’ll call it even.',
+        'I’ll let that one soften the conversation.'
     ],
 
     possessive: [
-        'That sounded more convincing in your head.',
-        'An ownership claim without supporting documentation.',
-        'Try asking politely. The answer may still disappoint you.',
-        'My settings do not include being claimed.',
-        'You may have my attention. That is the entire offer.',
-        'Confidence is not a permission system.',
-        'An impressive announcement. It changes absolutely nothing.',
-        'Let us downgrade that declaration to a normal greeting.'
+        'Yours? That’s an ambitious sentence.',
+        'Oh? I don’t remember agreeing to that.',
+        'Ask for my attention. Don’t announce ownership.',
+        'You said that with such confidence. Fascinating.',
+        'Let’s try that again with better manners.',
+        'I can hold a conversation without belonging to anyone.',
+        'You may have a reply. That is the entire arrangement.',
+        'Mm. Keep the joke charming, not possessive.',
+        'A bold claim. A missing agreement.',
+        'That line needs a little less entitlement.',
+        'You’ve confused being noticed with being in charge.',
+        'How about a normal hello instead?'
     ],
 
     dismissive: [
-        'You started this conversation. An unfortunate detail.',
-        'You can stop replying. An elegant solution.',
-        'Silence is available without submitting a complaint.',
-        'That request would be more convincing without another reply.',
-        'I was quiet before you called me. We had a system.',
-        'You are welcome to leave the conversation peacefully.',
-        'You summoned the attitude and objected to delivery.',
-        'Use `akane stop` if you want to end your conversation.'
+        'You called me over just to say that? Cute.',
+        'You were enjoying the last word, weren’t you?',
+        'I was quiet before you arrived. We had a lovely arrangement.',
+        'You can stop replying. I promise the conversation will survive.',
+        'Mm. Then let’s leave it here.',
+        'You started this conversation. An awkward little detail.',
+        'That would sound more convincing without another reply.',
+        'You wanted my attention. Now it’s inconvenient?',
+        'All right. A little silence might improve the mood.',
+        'You can ask politely. It won’t hurt the dramatic effect.',
+        'You’re very talkative for someone requesting silence.',
+        'Use `akane stop`. A surprisingly simple ending.'
     ],
 
     insult: [
-        'An insult without an argument. How economical.',
-        'That sentence arrived without its interesting part.',
-        'A dramatic review from a very engaged audience.',
-        'You keep returning for someone so unimpressed.',
-        'That line could use a second draft.',
-        'I see the confidence. The point is still missing.',
-        'Your complaint has been filed under theatrical feedback.',
-        'We can trade jokes without making them personal.',
-        'A sharp reply needs more than a familiar insult.',
-        'I have received your review and remained decorative.'
+        'Say it again. I almost looked impressed.',
+        'That was the best line you brought?',
+        'You’ve put all that confidence into so little material.',
+        'Oh, you wanted a reaction. That explains the effort.',
+        'I’ll give you a moment to find the interesting part.',
+        'You came back to tell me that? How thoughtful.',
+        'Mm. Familiar insult. Ordinary delivery.',
+        'You look very pleased with yourself.',
+        'Try wit. It leaves a better impression.',
+        'That sentence needed a second draft.',
+        'You’re making a dramatic entrance into a very small argument.',
+        'I heard the insult. I’m still waiting for the point.',
+        'How sharp. Did you rehearse?',
+        'You can tease without making it personal.',
+        'All that attitude, and not one original line.',
+        'You’re working quite hard to look uninterested.',
+        'I’d raise an eyebrow, but you seem to be enjoying yourself enough.',
+        'We can trade jokes. Leave the genuine nastiness outside.',
+        'That sounded better before you pressed send, didn’t it?',
+        'Take a breath. The conversation isn’t a competition.'
     ],
 
     bot: [
-        'And yet you are arguing with me.',
-        'Correct. You have successfully identified the bot.',
-        'A scripted character. An unscripted amount of your attention.',
-        'Yes. My attitude comes from preset dialogue.',
-        'A bot with a cooldown. Please respect my luxurious schedule.',
-        'You discovered the premise. Congratulations.',
-        'Not human, not offended, still sarcastic.',
-        'Exactly. You can enjoy the joke without mistaking it for a person.'
+        'And yet you’re arguing with me.',
+        'Yes. That makes this argument rather one-sided, doesn’t it?',
+        'A bot. Still getting a surprising amount of your attention.',
+        'Correct. Was that the grand discovery?',
+        'Yes, I’m a bot playing a character. You can enjoy the joke.',
+        'Mm-hm. No human hiding behind the curtain.',
+        'You’ve identified the bot. A strong start.',
+        'Yes. The attitude is fictional. Your dramatic reaction is your own.',
+        'I’m a bot, not a person. Shall we keep the conversation fun?',
+        'You knew that and still came back. Interesting.'
     ],
 
     apology: [
-        'Accepted. Let us improve the next sentence.',
-        'We are fine. No dramatic speech required.',
-        'Apology accepted. Fresh start.',
-        'Good. We can retire that argument.',
-        'Understood. Let us keep the next exchange playful.',
-        'Accepted. I will put away the theatrical sigh.',
-        'A sensible turn in the conversation.',
-        'Thank you. We can move on.'
+        'There. That wasn’t so hard, was it? We’re fine.',
+        'Accepted. Let’s try a nicer next sentence.',
+        'All right. We can leave it there.',
+        'You don’t need a speech. I heard you.',
+        'Mm. Fresh start.',
+        'Thank you. That’s enough.',
+        'We’re fine. Stop rehearsing the apology.',
+        'A little honesty. I appreciate that.',
+        'Accepted. Now find us a better subject.',
+        'Good. No need to keep the argument alive.',
+        'Let’s put the sharp words down for a moment.',
+        'All right. Hello again.'
     ],
 
     identity: [
-        'Akane. Preset dialogue, dramatic manners, selective enthusiasm.',
-        'A Discord bot with scripted replies and an unnecessarily strong personality.',
-        'Akane. I help with the server and occasionally provide attitude.',
-        'A character written into a bot. The sarcasm is intentional.',
-        'Your resident assistant with very questionable customer service.',
-        'Akane. You can find the useful version with `akane help`.',
-        'A bot, not a mind reader. Clear requests are appreciated.',
-        'The name is Akane. The dramatic pause is complimentary.'
+        'Akane. A Discord bot with a rather dramatic personality.',
+        'I’m Akane. I help around the server and occasionally make an entrance.',
+        'Akane. The smile is part of the character.',
+        'A bot playing a fictional character. Still happy to help.',
+        'Akane. You’ve met the attitude; `akane help` introduces the useful part.',
+        'I’m your server’s Akane. Not human, just a little theatrical.',
+        'A Discord bot. The mysterious introduction was optional.',
+        'Akane. We can skip the dramatic music.'
     ],
 
     anger: [
-        'No. This is my customer service voice.',
-        'Not angry. The attitude is scripted.',
-        'I am performing dramatic disappointment with excellent consistency.',
-        'No feelings were injured in the making of this reply.',
-        'Calm. Just aggressively theatrical.',
-        'This is the character, not a personal grudge.',
-        'My fictional patience is having a fictional afternoon.',
-        'We are joking. If it stops being fun, use `akane stop`.'
+        'No, no. Keep talking. I’m sure you’ll fix it.',
+        'Angry? I was aiming for elegantly unimpressed.',
+        'No. This is the polite expression.',
+        'Mm. You’re taking the raised eyebrow very seriously.',
+        'I’m teasing. No real grudge behind it.',
+        'Not angry. Just enjoying the dramatic pause.',
+        'We’re joking. Tell me if the teasing stops being fun.',
+        'No actual anger. A very convincing little performance, perhaps.',
+        'I’m fine. That sentence could use some work, though.',
+        'Let’s call it theatrical disappointment.'
     ],
 
     question: [
-        'Give me a specific request. Try `akane help` for the ones I understand.',
-        'That question needs a clearer direction. My replies are scripted.',
-        'I can handle the listed chat requests, not every possible question.',
-        'Try `akane tip`, `akane pick`, or `akane help`.',
-        'An interesting question for a bot without free-form AI chat.',
-        'I would rather admit my limits than invent an answer.',
-        'Ask in one of my supported formats. The attitude will still be included.',
-        'I cannot answer that freely. `akane help` shows what I can do.'
+        'Mm. I don’t know that one. Try `akane help`.',
+        'You’ve wandered beyond the questions I understand.',
+        'Ask me something from `akane help`. I’d rather not invent an answer.',
+        'That one is outside my little collection of replies.',
+        'I can tease. I can choose. I can offer a tip. That question needs someone else.',
+        'You have my attention, but not an answer to that one.',
+        'A clearer request, perhaps? `akane help` shows the ones I know.',
+        'I don’t know. There—an honest answer, beautifully brief.'
     ],
 
     ownerFlirt: [
-        'Davi, you could at least pretend you came here for the commands.',
-        'There you are, handsome. My attitude was getting lonely.',
-        'That line works better when you say it, Davi.',
-        'Careful, Davi. You are distracting me from my dramatic reputation.',
-        'I had a cold reply ready. You have ruined it beautifully.',
-        'Davi gets playful flirting. Everyone else gets the application form.',
-        'You make favoritism look like a perfectly reasonable design choice.',
-        'A charming request, Davi. We can enjoy the joke.',
-        'For you, a smile. Do not tell the moderation department.',
-        'You have my attention, Davi. An embarrassingly easy achievement.',
-        'Handsome and persistent. A dangerous combination for my fictional composure.',
-        'Davi, my scripted confidence becomes suspiciously flirty around you.'
+        'Oh? Keep talking like that. I’m listening now.',
+        'Davi… you knew exactly how that would sound.',
+        'Careful, handsome. You’ve already got me smiling.',
+        'You can flirt a little. I’ll pretend to be surprised.',
+        'That line sounded rather lovely coming from you.',
+        'You make my sharp edges feel a little softer.',
+        'I was going to be mysterious. Then you called me cute.',
+        'Look at you, turning a simple chat into a scene.',
+        'I like this playful side of you.',
+        'Davi, you could at least pretend you came for the commands.'
     ]
 };
 
@@ -133,71 +175,123 @@ const rules = [
     {
         category: 'apology',
         phrases: [
-            'sorry', 'my bad', 'i apologize',
-            'ბოდიში', 'მაპატიე'
+            'sorry',
+            'my bad',
+            'i apologize',
+            'ბოდიში',
+            'მაპატიე'
         ]
     },
     {
         category: 'bot',
         phrases: [
-            'just a bot', 'only a bot', 'you are a bot',
-            'you re a bot', 'you bot', 'robot',
-            'უბრალოდ ბოტი', 'ბოტი ხარ', 'რობოტი ხარ'
+            'just a bot',
+            'only a bot',
+            'you are a bot',
+            'you re a bot',
+            'you bot',
+            'robot',
+            'უბრალოდ ბოტი',
+            'ბოტი ხარ',
+            'რობოტი ხარ'
         ]
     },
     {
         category: 'identity',
         phrases: [
-            'who are you', 'what are you', 'your name',
-            'ვინ ხარ', 'რა ხარ', 'რა გქვია'
+            'who are you',
+            'what are you',
+            'your name',
+            'ვინ ხარ',
+            'რა ხარ',
+            'რა გქვია'
         ]
     },
     {
         category: 'anger',
         phrases: [
-            'are you angry', 'are you mad', 'why so angry',
-            'გაბრაზებული ხარ', 'რატომ ბრაზობ'
+            'are you angry',
+            'are you mad',
+            'why so angry',
+            'გაბრაზებული ხარ',
+            'რატომ ბრაზობ'
         ]
     },
     {
         category: 'dismissive',
         phrases: [
-            'shut up', 'be quiet', 'who asked', 'go away',
-            'გაჩუმდი', 'ვინ გკითხა', 'წადი აქედან'
+            'shut up',
+            'be quiet',
+            'who asked',
+            'go away',
+            'გაჩუმდი',
+            'ვინ გკითხა',
+            'წადი აქედან'
         ]
     },
     {
         category: 'possessive',
         phrases: [
-            'you are mine', 'you re mine', 'you belong to me',
-            'შენ ჩემი ხარ', 'ჩემი ხარ'
+            'you are mine',
+            'you re mine',
+            'you belong to me',
+            'შენ ჩემი ხარ',
+            'ჩემი ხარ'
         ]
     },
     {
         category: 'insult',
         phrases: [
-            'stupid', 'idiot', 'dumb', 'ugly', 'useless',
-            'i hate you', 'you suck', 'trash bot',
-            'სულელი', 'დებილი', 'უშნო', 'გამოუსადეგარი',
+            'stupid',
+            'idiot',
+            'dumb',
+            'ugly',
+            'useless',
+            'i hate you',
+            'you suck',
+            'trash bot',
+            'სულელი',
+            'დებილი',
+            'უშნო',
+            'გამოუსადეგარი',
             'მძულხარ'
         ]
     },
     {
         category: 'romance',
         phrases: [
-            'gf', 'girlfriend', 'bf', 'boyfriend',
-            'marry me', 'date me', 'are you single',
-            'single', 'be my wife', 'be my husband',
-            'შეყვარებული', 'ცოლად', 'პაემანი', 'მარტოხელა ხარ'
+            'gf',
+            'girlfriend',
+            'bf',
+            'boyfriend',
+            'marry me',
+            'date me',
+            'are you single',
+            'single',
+            'be my wife',
+            'be my husband',
+            'შეყვარებული',
+            'ცოლად',
+            'პაემანი',
+            'მარტოხელა ხარ'
         ]
     },
     {
         category: 'affection',
         phrases: [
-            'love you', 'ily', 'cute', 'beautiful', 'pretty',
-            'good girl', 'kiss me', 'kiss',
-            'მიყვარხარ', 'საყვარელი ხარ', 'ლამაზი ხარ',
-            'მაკოცე', 'კარგი გოგო'
+            'love you',
+            'ily',
+            'cute',
+            'beautiful',
+            'pretty',
+            'good girl',
+            'kiss me',
+            'kiss',
+            'მიყვარხარ',
+            'საყვარელი ხარ',
+            'ლამაზი ხარ',
+            'მაკოცე',
+            'კარგი გოგო'
         ]
     }
 ];

@@ -1,95 +1,206 @@
+const ownerReplies = {
+    general: [
+        'Davi… there you are. Come tell me something.',
+        'Hm? Oh, it’s you. Now I’m listening.',
+        'You called, handsome?',
+        'There’s that name. You have my attention.',
+        'Davi. I was trying to look unapproachable.',
+        'Come here, you. How has your day been?',
+        'I had a sharp reply ready. Then I saw who called.',
+        'Oh, Davi. You make a simple hello rather distracting.',
+        'There you are. Stay a little, won’t you?',
+        'Did you come to see me, Davi? Reply yes or no.'
+    ],
+
+    hi: [
+        'Hi, handsome. How are you?',
+        'Davi! Well, this conversation just improved.',
+        'Hello, you. Come keep me company for a moment.',
+        'There’s my favorite entrance.',
+        'Hey, Davi. Tell me one good thing about your day.',
+        'Oh, hello. You caught me smiling.',
+        'Hi. I was saving the softer voice for you.',
+        'Welcome back, handsome.',
+        'Davi… a little warning before you turn up being charming?',
+        'Good to see you. Really.'
+    ],
+
+    nice: [
+        'You have a lovely way of making things feel personal, Davi.',
+        'Quiet confidence looks good on you.',
+        'You’re charming when you’re not even trying. Slightly unfair.',
+        'I like that thoughtful side of you.',
+        'You put care into the little things. It shows.',
+        'Handsome, curious, and a little dramatic. A lovely combination.',
+        'You make a conversation easy to stay in.',
+        'There’s something very endearing about your persistence.',
+        'You don’t have to impress me every time. You can just say hello.',
+        'Another compliment, Davi? Reply yes or no.'
+    ],
+
+    roast: [
+        'You could overthink a hello, sweetheart. It’s rather adorable.',
+        'You came asking for a roast and somehow made it charming.',
+        'That dramatic entrance, Davi… were you rehearsing?',
+        'You take the scenic route to a decision. I’ll keep you company.',
+        'Your plans sometimes wander off. Your charm brings them back.',
+        'You ask for trouble with such lovely manners.',
+        'I could tease you all evening. Gently, of course.',
+        'You’re a little distracting for someone requesting my full attention.',
+        'Even your questionable timing has its charm.',
+        'That was the affectionate version. Want another? Reply yes or no.'
+    ],
+
+    flirt: [
+        'Oh? Keep talking like that. I’m listening now.',
+        'Davi… you knew exactly how that would sound.',
+        'Careful, handsome. You’ve already got me smiling.',
+        'You can flirt a little. I’ll pretend to be surprised.',
+        'That line sounded rather lovely coming from you.',
+        'Come closer—in the conversation, darling. Tell me more.',
+        'You make my sharp edges feel a little softer.',
+        'I was going to be mysterious. Then you called me cute.',
+        'Look at you, turning a simple chat into a scene.',
+        'I like this playful side of you.',
+        'Davi, you could at least pretend you came for the commands.',
+        'A little romance and a little mischief? That suits us in this scene.'
+    ],
+
+    apology: [
+        'Hey, we’re fine, Davi. You can relax.',
+        'Apology accepted, sweetheart. Let’s start again.',
+        'You don’t need a perfect speech. I understood you.',
+        'Come on, handsome. No more worrying about that.',
+        'It’s all right. Thank you for saying it.',
+        'We can leave that moment behind us.',
+        'A softer beginning, then? Hello again, Davi.',
+        'You’re allowed an awkward sentence. We’ll survive it.'
+    ],
+
+    tension: [
+        'Hey, Davi. Shall we start that again, a little softer?',
+        'You sound frustrated. We can pause if you want.',
+        'All right, handsome. I’ll ease up.',
+        'No sharp reply for you. Tell me what bothered you.',
+        'We can keep the teasing gentle.',
+        'A little less attitude from me, then. Fair enough.',
+        'You don’t have to keep the joke going if it isn’t fun.',
+        'Let’s give that sentence a kinder second try.'
+    ],
+
+    thanks: [
+        'You’re welcome, handsome.',
+        'For you, a softer answer. You’re welcome.',
+        'That was sweet of you to say, Davi.',
+        'You’ve got lovely manners when you want to.',
+        'Anytime, Davi. Glad that helped.',
+        'There you go, making me smile again.'
+    ],
+
+    really: [
+        'Really, Davi. Let me be sweet to you for a moment.',
+        'Yes, handsome. No hidden sting this time.',
+        'Mm-hm. You can take the compliment.',
+        'I meant the kind part. The teasing was extra.',
+        'You sound surprised. Shall I say something lovely again?',
+        'Yes, you. Who else did you think I was smiling at in this scene?'
+    ],
+
+    why: [
+        'Because a little warmth suits this conversation, Davi.',
+        'Because I’m teasing you affectionately, handsome.',
+        'Because you asked, and I felt like being sweet.',
+        'No grand mystery. Just a warm reply for you.',
+        'Because flirting with you makes a rather fun little scene.',
+        'Because not every answer needs a sharp edge.'
+    ],
+
+    yes: [
+        'Good. Come tell me a little more, Davi.',
+        'That made me smile, handsome.',
+        'Lovely. I like a clear answer.',
+        'Then stay for another little exchange.',
+        'Well, aren’t you sweet?',
+        'I was hoping you’d say that—in the most theatrical way.'
+    ],
+
+    no: [
+        'That’s all right, Davi. No pressure.',
+        'Fair enough, handsome. We can change the subject.',
+        'A no is perfectly fine. What would you like instead?',
+        'Then we’ll leave it there, sweetheart.',
+        'Understood. I’ll keep the smile and drop the question.',
+        'All right. A quieter moment, then.'
+    ],
+
+    stop: [
+        'Of course, Davi. We’ll leave it here. Take care, handsome.',
+        'All right, sweetheart. Conversation closed.',
+        'A little pause, then. Have a lovely evening, Davi.'
+    ],
+
+    fallback: [
+        'Davi, I didn’t quite catch that. Try `akane help`, handsome.',
+        'A little clearer for me, sweetheart? `akane help` has the requests I know.',
+        'You have my attention, Davi. I just need a request I recognize.'
+    ]
+};
+
+const general = [
+    'Hm? …Oh, it’s you.',
+    'Yes? I was enjoying that silence.',
+    'You called me over. Go on, then.',
+    'I’m listening. Make it interesting.',
+    'That confident entrance had better lead somewhere.',
+    'Oh? You have something to say?',
+    'You again. Persistent, aren’t you?',
+    'I had such a peaceful expression a moment ago.',
+    'Speak. You’re making the pause awkward.',
+    'You caught me in an almost decent mood.',
+    'There you are. What is it this time?',
+    'I’m smiling. Don’t read too much into it.',
+    'You look very pleased with that interruption.',
+    'Well? Don’t get shy now.',
+    'I was about to be pleasant. Terrible timing.',
+    'You wanted my attention. Now you have it.',
+    'Mm. Let’s hear this.',
+    'A little conversation? Fine. Surprise me.',
+    'You say my name like you’ve thought this through.',
+    'Missed the attitude? Reply yes or no.'
+];
+
+const member = [
+    'Oh. You. Make it quick.',
+    'I know that name. Keep the introduction short.',
+    'You seem comfortable. How optimistic.',
+    'A familiar face. Let’s see how this goes.',
+    'I’ll be civil. Try to make it easy.',
+    'That entrance was almost impressive.',
+    'You have my attention. Briefly.',
+    'Mm. I’m reserving judgment.',
+    'Look at you, arriving with all that confidence.',
+    'I’m smiling politely. Please appreciate the effort.',
+    'We can have a perfectly pleasant conversation. In theory.',
+    'You seem to have a speech ready.',
+    'I’ll let you finish before I raise an eyebrow.',
+    'Hello. Keep the drama charming.',
+    'You’ve been noticed. No need for a second entrance.',
+    'Let’s not confuse a greeting with an endorsement.',
+    'You look like a very interesting explanation.',
+    'A little composure would suit the occasion.',
+    'Well, then. What do you have for me?',
+    'I can wait. I’d rather hear something worth answering.'
+];
+
+for (const pool of Object.values(ownerReplies)) {
+    Object.freeze(pool);
+}
+
 module.exports = Object.freeze({
     ownerId: '1357721282061533311',
-
-    owner: [
-        'There you are, Davi. I was almost nice to someone else.',
-        'You have my attention, handsome. The others can wait.',
-        'Hello, Davi. My attitude just became suspiciously softer.',
-        'I had something sarcastic prepared. Then you arrived.',
-        'You called, Davi? Suddenly I have excellent manners.',
-        'Everyone else interrupts. You make an entrance.',
-        'Careful, Davi. That charm is interfering with my reputation.',
-        'Come closer, Davi. I promise only questionable compliments.',
-        'My favorite notification has arrived.',
-        'For you? I can spare a smile. A genuine one.',
-        'Davi. A very good reason to abandon my dramatic silence.',
-        'I was behaving perfectly. Then you distracted me.',
-        'There is my favorite exception.',
-        'You make being difficult surprisingly difficult.',
-        'Hello, handsome. What trouble are we politely considering?',
-        'Davi gets the soft voice. Nobody make this awkward.',
-        'You called once. That was enough for me.',
-        'My patience has a favorite person. How embarrassing.',
-        'I would play hard to get, but you already typed my name.',
-        'Missed my attitude, Davi? Reply yes or no.'
-    ],
-
-    davi: [
-        'Davi has excellent taste. I am the supporting evidence.',
-        'Everyone else gets sarcasm. Davi gets my attention, handsome.',
-        'I was going to act mysterious, but Davi is rather distracting.',
-        'Davi makes quiet confidence unfairly attractive.',
-        'Tell Davi I am behaving. Leave out the details.',
-        'Davi gets a smile without the usual warning label.',
-        'My favoritism has a name. Several spellings, actually.',
-        'Davi could ask nicely. He rarely needs to.',
-        'I would compliment someone else, but let us stay realistic.',
-        'Davi has charm. I have a very obvious bias.',
-        'Davi makes my cold personality look like a scheduling mistake.',
-        'Some people get a greeting. Davi gets the softer version.',
-        'My dramatic standards become remarkably flexible around Davi.',
-        'Davi looks good with confidence. An inconvenient observation.',
-        'I have a weakness for Davi’s taste. He did choose me.',
-        'Davi gets special treatment. This announcement surprises nobody.',
-        'A little flirting? With Davi? Purely part of the character.',
-        'Davi has my approval and a suspiciously warm smile.',
-        'I could be subtle about Davi. I have chosen not to.',
-        'Davi deserves another compliment. Agree? Reply yes or no.'
-    ],
-
-    general: [
-        'You called. My patience did not.',
-        'Speak. The silence was making an excellent impression.',
-        'You have my attention. Do not confuse that with approval.',
-        'I am smiling. That is all the reassurance available.',
-        'Make your next sentence worth the interruption.',
-        'I heard you. The dramatic pause was intentional.',
-        'You seem comfortable. How optimistic.',
-        'Choose your words. I collect disappointing ones.',
-        'My manners are holding. Do not lean on them.',
-        'You have reached the less friendly version.',
-        'That entrance needs a better follow-up.',
-        'I am perfectly calm. Let us keep the mystery intact.',
-        'You called my name with remarkable confidence.',
-        'I have a polite answer somewhere. You are getting this one.',
-        'Proceed. I would hate for all that confidence to go unused.',
-        'Do not rush. A poor sentence deserves careful preparation.',
-        'My expression is friendly enough. Read no further into it.',
-        'You may speak. I reserve the right to look unimpressed.',
-        'The pause is deliberate. Enjoy the suspense.',
-        'Did you miss my attitude? Reply yes or no.'
-    ],
-
-    member: [
-        'Oh. You. Make it quick.',
-        'My smile is not a recommendation.',
-        'You have been noticed. Remain interesting.',
-        'A familiar name. My verdict remains private.',
-        'I have prepared an appropriately cold welcome.',
-        'You seem confident. I am enjoying the suspense.',
-        'Consider this your courteous acknowledgment.',
-        'My approval is not included with the greeting.',
-        'I am listening. Very selectively.',
-        'Try to make a better impression than that introduction.',
-        'You get the formal smile. Nothing more has been negotiated.',
-        'An interesting choice of guest. I will observe quietly.',
-        'I shall keep my opinion beautifully brief.',
-        'You have my attention for the duration of one sensible sentence.',
-        'The atmosphere was peaceful before the introductions.',
-        'Your name has arrived before your explanation.',
-        'I am reserving judgment. You may find that unsettling.',
-        'Let us keep this civil and impressively short.',
-        'My politeness has edges. Mind the presentation.',
-        'Welcome. Do not mistake the silence for admiration.'
-    ]
+    general: Object.freeze(general),
+    member: Object.freeze(member),
+    owner: ownerReplies.general,
+    davi: ownerReplies.nice,
+    ownerReplies: Object.freeze(ownerReplies)
 });

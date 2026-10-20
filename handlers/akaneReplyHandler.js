@@ -14,19 +14,7 @@ const {
     detectReaction
 } = require('../config/akaneReactions');
 
-const replies = {
-    ...baseReplies,
-    general: personality.general,
-    member: personality.member,
-    owner: personality.owner,
-    davi: [...baseReplies.davi, ...personality.davi],
-    ...Object.fromEntries(
-        Object.entries(reactionPools).map(([name, pool]) => [
-            `reaction_${name}`,
-            pool
-        ])
-    )
-};
+const OWNER_ID = personality.ownerId;
 
 const USER_COOLDOWN = 10_000;
 const CHANNEL_COOLDOWN = 5_000;
@@ -35,6 +23,89 @@ const SESSION_TTL = 120_000;
 const users = new Map();
 const channels = new Map();
 const sessions = new Map();
+
+const ownerExtra = {
+    mood: [
+        'A little softer now that you’re here, Davi.',
+        'In the mood for a nice conversation with you, handsome.',
+        'Trying to look mysterious. You’re making that difficult.',
+        'Quite lovely, Davi. What about you?',
+        'Feeling playful. You arrived at a good moment.'
+    ],
+
+    rate: [
+        '{score}/10, handsome. Entirely random, so don’t let it steal your confidence.',
+        'The imaginary judges gave you {score}/10. I gave you a smile.',
+        '{score}/10 for the game, Davi. Your charm wasn’t part of the calculation.',
+        'A playful {score}/10. Come on, handsome—no arguing with imaginary numbers.',
+        '{score}/10. A random number, a very deliberate warm welcome.'
+    ],
+
+    luck: [
+        'My little prediction? You’ll find a reason to smile today, Davi.',
+        'A playful forecast: one small victory and a well-earned break, handsome.',
+        'Good timing, a little patience, and a smile. That’s my wish for you today.',
+        'I predict a charming entrance. Oh, you already made it.',
+        'A pretend prediction, Davi: something ordinary may turn into a lovely moment.'
+    ],
+
+    secret: [
+        'A secret? I find it terribly easy to soften my tone around you.',
+        'I was going to act unimpressed. Then you said hello.',
+        'Your name makes a rather good entrance, Davi.',
+        'I rehearse being mysterious. You keep making me smile instead.',
+        'I rather like this gentle little side of our conversations.'
+    ],
+
+    identity: [
+        'Akane, handsome. A Discord bot with a little drama and a soft reply for you.',
+        'I’m Akane, Davi—a fictional character brought to life through preset replies.',
+        'Your server’s Akane. A bot, a little attitude, and some very deliberate charm.'
+    ],
+
+    bot: [
+        'I am, Davi. We can still have a sweet little exchange.',
+        'Yes, handsome—a bot playing a character. The playful tone is intentional.',
+        'A bot, Davi. No mystery there. Shall we keep the conversation lovely?'
+    ],
+
+    question: [
+        'Davi, I don’t quite know that one. Shall we try something from `akane help`?',
+        'A little clearer for me, handsome? I only understand the phrases written for me.',
+        'I’d rather be honest with you, Davi: I can’t answer that freely. Try `akane help`.'
+    ],
+
+    rude: [
+        'Then I’ll soften the teasing, Davi.',
+        'All right, handsome. A gentler answer for you.',
+        'A little less mischief from me, then. Thank you for saying it.',
+        'Let’s make the next exchange sweeter, Davi.'
+    ]
+};
+
+const replies = {
+    ...baseReplies,
+    general: personality.general,
+    member: personality.member,
+    davi: personality.davi,
+
+    ...Object.fromEntries(
+        Object.entries(reactionPools).map(([name, pool]) => [
+            `reaction_${name}`,
+            pool
+        ])
+    ),
+
+    ...Object.fromEntries(
+        Object.entries({
+            ...personality.ownerReplies,
+            ...ownerExtra
+        }).map(([name, pool]) => [
+            `owner_${name}`,
+            pool
+        ])
+    )
+};
 
 const DAVI_NAMES = new Set([
     'davi',
@@ -47,28 +118,38 @@ const ALIASES = new Map([
     ['hi', 'hi'],
     ['hello', 'hi'],
     ['გამარჯობა', 'hi'],
+
     ['mood', 'mood'],
     ['how are you', 'mood'],
     ['როგორ ხარ', 'mood'],
     ['განწყობა', 'mood'],
+
     ['nice', 'nice'],
     ['compliment', 'nice'],
     ['კომპლიმენტი', 'nice'],
+
     ['roast', 'roast'],
     ['გამეხუმრე', 'roast'],
+
     ['tip', 'tip'],
     ['advice', 'tip'],
     ['რჩევა', 'tip'],
+
     ['pick', 'pick'],
     ['აირჩიე', 'pick'],
+
     ['rate', 'rate'],
     ['შეფასება', 'rate'],
+
     ['luck', 'luck'],
     ['იღბალი', 'luck'],
+
     ['secret', 'secret'],
     ['საიდუმლო', 'secret'],
+
     ['help', 'help'],
     ['დახმარება', 'help'],
+
     ['stop', 'stop'],
     ['გაჩერდი', 'stop']
 ]);
@@ -77,17 +158,23 @@ const FOLLOWUPS = new Map([
     ['yes', 'yes'],
     ['კი', 'yes'],
     ['დიახ', 'yes'],
+
     ['no', 'no'],
     ['არა', 'no'],
+
     ['rude', 'rude'],
     ['უხეში ხარ', 'rude'],
+
     ['thanks', 'thanks'],
     ['thank you', 'thanks'],
     ['მადლობა', 'thanks'],
+
     ['really', 'really'],
     ['მართლა', 'really'],
+
     ['why', 'why'],
     ['რატომ', 'why'],
+
     ['stop', 'stop'],
     ['გაჩერდი', 'stop']
 ]);
@@ -167,25 +254,8 @@ function drawReply(state, category) {
     return pool[index];
 }
 
-function reactionRequest(content, owner) {
-    const reaction = detectReaction(content);
-
-    if (!reaction) return null;
-
-    const flirt = owner && [
-        'romance',
-        'affection',
-        'possessive'
-    ].includes(reaction);
-
-    return {
-        category: `reaction_${flirt ? 'ownerFlirt' : reaction}`
-    };
-}
-
 function parseRequest(message, now) {
     const content = message.content.trim();
-    const owner = message.author.id === personality.ownerId;
 
     const trigger = content.match(
         /^(?:akane|აკანე)(?=$|[\s!?.,…:;♡♥❤🩸👋🔪🌙])[\s!?.,…:;]*(.*)$/iu
@@ -220,9 +290,11 @@ function parseRequest(message, now) {
             };
         }
 
-        const reaction = reactionRequest(content, owner);
+        const reaction = detectReaction(content);
 
-        if (reaction) return reaction;
+        if (reaction) {
+            return { category: `reaction_${reaction}` };
+        }
 
         if (/[?？]/u.test(content)) {
             return { category: 'reaction_question' };
@@ -238,7 +310,9 @@ function parseRequest(message, now) {
         return { category: 'general' };
     }
 
-    if (DAVI_NAMES.has(text)) return { category: 'davi' };
+    if (DAVI_NAMES.has(text)) {
+        return { category: 'davi' };
+    }
 
     const direct = ALIASES.get(text);
 
@@ -270,9 +344,7 @@ function parseRequest(message, now) {
         if (!member) return { category: 'fallback' };
 
         return {
-            category: member.id === personality.ownerId
-                ? 'davi'
-                : 'member',
+            category: member.id === OWNER_ID ? 'davi' : 'member',
             target: member.displayName
         };
     }
@@ -283,9 +355,11 @@ function parseRequest(message, now) {
         return { category: followup };
     }
 
-    const reaction = reactionRequest(raw, owner);
+    const reaction = detectReaction(raw);
 
-    if (reaction) return reaction;
+    if (reaction) {
+        return { category: `reaction_${reaction}` };
+    }
 
     if (/[?？]/u.test(raw)) {
         return { category: 'reaction_question' };
@@ -301,18 +375,20 @@ function parseRequest(message, now) {
     return { category: 'fallback' };
 }
 
-function buildHelp(message) {
+function buildHelp(message, owner) {
     return createEmbed(
         '🩸 Akane • Chat Help',
         [
-            'Type **akane** or **აკანე** followed by your request.',
-            'No slash needed. All replies are in English.'
+            owner
+                ? 'Hello, Davi. Here is the short version, handsome.'
+                : 'Call my name. Then tell me what you want.',
+            'Use **akane** or **აკანე**. Replies are in English.'
         ].join('\n')
     ).setThumbnail(
         message.client.user.displayAvatarURL({ size: 256 })
     ).addFields(
         {
-            name: 'BASIC REQUESTS',
+            name: 'BASIC',
             value: [
                 '`akane` — Get my attention',
                 '`akane hi` — Say hello',
@@ -337,92 +413,136 @@ function buildHelp(message) {
                 '`akane mood` — My fictional mood',
                 '`akane rate` — A random score for fun',
                 '`akane luck` — A pretend prediction',
-                '`akane secret` — A character secret',
-                '`akane stop` — Close your current conversation'
+                '`akane secret` — A little character secret',
+                '`akane stop` — End your current conversation'
             ].join('\n')
         },
         {
-            name: 'TRY TALKING TO ME',
+            name: 'TALK TO ME',
             value: [
                 '`akane who are you?`',
                 '`akane are you angry?`',
                 '`akane be my gf`',
                 '`akane you are just a bot`',
-                '`აკანე ბოდიში`',
-                'These use recognized phrases, not free-form AI.'
+                '`აკანე ბოდიში`'
             ].join('\n')
         },
         {
-            name: 'CONTINUE WITH REPLY',
+            name: 'USE REPLY',
             value: [
-                'Reply to my latest response to **you**, within **2 minutes**.',
+                'Reply to my latest response to **you** within **2 minutes**.',
                 '`thanks` / `მადლობა` · `rude` / `უხეში ხარ`',
                 '`really?` / `მართლა?` · `why?` / `რატომ?`',
                 '`yes` / `no` or `კი` / `არა` — when I ask.',
-                'Recognized flirting, jokes, apologies and questions also work.',
+                'Recognized flirting, apologies and jokes also work.',
                 '`stop` / `გაჩერდი` — close the conversation.'
             ].join('\n')
         },
         {
-            name: 'TIMING',
+            name: 'GOOD TO KNOW',
             value: [
                 '**10 seconds** between your requests.',
                 '**5 seconds** between channel responses.',
-                '`akane stop` clears your conversation immediately;',
-                'its confirmation still follows the cooldown.'
+                'Stop clears your session immediately;',
+                'the confirmation still follows the cooldown.',
+                'This is a fictional character using preset dialogue.'
             ].join('\n')
         }
     );
 }
 
 function contextualReply(request) {
-    const warm = [
-        'owner',
-        'davi',
-        'reaction_ownerFlirt'
-    ].includes(request.context);
+    const category = request.context ?? 'general';
 
     if (request.category === 'really') {
-        if (warm) {
-            return 'Yes, Davi. You make my favoritism embarrassingly easy.';
-        }
-
         const answers = {
-            nice: 'Yes. Take the compliment before I make it awkward.',
-            roast: 'It was a joke you requested, not a serious assessment.',
-            rate: 'The score is random. My dramatic delivery is intentional.',
-            luck: 'It is a pretend prediction, not a forecast.'
+            davi: 'Yes, Davi. Let me say something lovely without cross-examination.',
+            nice: 'Yes. Take the compliment. You’re making this difficult.',
+            roast: 'You asked for a joke. Don’t turn it into a biography.',
+            rate: 'The number is random. The dramatic pause was mine.',
+            luck: 'It’s a little pretend prediction. Don’t book a flight over it.',
+            reaction_apology: 'We’re fine. You can stop rehearsing the apology.',
+            reaction_romance: 'You heard me. Bold entrance, questionable outcome.',
+            reaction_affection: 'Mm-hm. I accepted the compliment. Try to stay composed.',
+            reaction_anger: 'We’re joking. No real grudge behind the expression.'
         };
 
-        return answers[request.context]
-            ?? 'The attitude is part of the character. The reply is scripted.';
-    }
-
-    if (warm) {
-        return 'Because you get the softer version, Davi. Do not ruin my reputation.';
+        return answers[category]
+            ?? 'Mm-hm. That was the answer. The raised eyebrow was extra.';
     }
 
     const reasons = {
-        nice: 'Because you asked for a compliment. No investigation required.',
-        roast: 'Because you requested a playful roast. It is not a judgment of your worth.',
-        rate: 'Because this is a randomly chosen score for entertainment.',
-        luck: 'Because theatrical predictions are fun, not reliable forecasts.',
-        tip: 'It is a practical suggestion, not a universal rule. Use it when it fits.',
-        member: 'That is my theatrical cold greeting, not a claim about the person.',
-        mood: 'My mood is fictional. The sarcasm is scripted.',
-        secret: 'A little fictional mystery suits the character.'
+        davi: 'Because I can be sweet about Davi. Let me enjoy the moment.',
+        nice: 'You asked for something nice. I decided not to make you work for it.',
+        roast: 'Because you asked me to tease you. Gently, by my standards.',
+        rate: 'It’s a random score for fun. There isn’t a secret judgment behind it.',
+        luck: 'A little theatre. Nothing you should mistake for a real forecast.',
+        tip: 'It’s a suggestion, not an order. Keep what fits your situation.',
+        member: 'That’s the cold greeting. It isn’t a serious judgment of them.',
+        mood: 'A little dramatic mood suits the conversation.',
+        secret: 'Because some things sound better whispered theatrically.',
+        reaction_apology: 'Because you apologized. We can move on.',
+        reaction_romance: 'A little flirting can stay a joke without becoming a commitment.',
+        reaction_affection: 'Because you said something sweet. I noticed.',
+        reaction_insult: 'We can tease each other without making it personal.',
+        reaction_dismissive: 'You can end the conversation. No argument needed.',
+        reaction_possessive: 'Attention is one thing. Ownership is another.',
+        reaction_bot: 'Because I am a bot playing a character. You asked directly.',
+        reaction_identity: 'You asked who I am. I gave you the introduction.',
+        reaction_anger: 'The sharp tone is part of the character, not actual anger.',
+        reaction_question: 'I don’t know that answer. Better to say so than invent one.'
     };
 
-    return reasons[request.context]
-        ?? 'I matched a recognized phrase to preset character dialogue. No personal grudge included.';
+    return reasons[category]
+        ?? 'A little teasing, a little theatre. Nothing personal.';
+}
+
+function ownerCategory(category) {
+    if (category.startsWith('owner_')) return category;
+
+    const mapping = {
+        general: 'general',
+        hi: 'hi',
+        nice: 'nice',
+        davi: 'nice',
+        roast: 'roast',
+        mood: 'mood',
+        rate: 'rate',
+        luck: 'luck',
+        secret: 'secret',
+        thanks: 'thanks',
+        rude: 'rude',
+        yes: 'yes',
+        no: 'no',
+        really: 'really',
+        why: 'why',
+        fallback: 'fallback',
+
+        reaction_romance: 'flirt',
+        reaction_affection: 'flirt',
+        reaction_possessive: 'flirt',
+        reaction_ownerFlirt: 'flirt',
+
+        reaction_apology: 'apology',
+        reaction_insult: 'tension',
+        reaction_dismissive: 'tension',
+        reaction_anger: 'tension',
+
+        reaction_identity: 'identity',
+        reaction_bot: 'bot',
+        reaction_question: 'question'
+    };
+
+    return `owner_${mapping[category] ?? 'general'}`;
 }
 
 function buildResponse(message, request, state) {
+    const owner = message.author.id === OWNER_ID;
     let category = request.category;
 
     if (category === 'help') {
         return {
-            payload: { embeds: [buildHelp(message)] },
+            payload: { embeds: [buildHelp(message, owner)] },
             category,
             session: false
         };
@@ -431,7 +551,9 @@ function buildResponse(message, request, state) {
     if (category === 'stop') {
         return {
             payload: {
-                content: 'Conversation closed. Enjoy the suspicious peace.'
+                content: owner
+                    ? drawReply(state, 'owner_stop')
+                    : 'All right. We’ll leave it there.'
             },
             category,
             session: false
@@ -453,15 +575,26 @@ function buildResponse(message, request, state) {
             options.length <= 10 &&
             options.every(option => option.length <= 100);
 
+        let content;
+
+        if (valid) {
+            const choice = escapeMarkdown(
+                options[randomInt(options.length)]
+            );
+
+            content = owner
+                ? `**${choice}**, handsome. That’s my pick. What do you think?`
+                : `**${choice}**. There. Someone made a decision.`;
+        } else {
+            content = owner
+                ? 'Give me 2–10 choices, Davi, separated by `/`.\n' +
+                  'Like this: `akane pick pvp / training`'
+                : 'Give me 2–10 choices separated by `/`.\n' +
+                  '`akane pick pvp / training`';
+        }
+
         return {
-            payload: {
-                content: valid
-                    ? `My choice: **${escapeMarkdown(
-                        options[randomInt(options.length)]
-                    )}**. The committee is dismissed.`
-                    : 'Use 2–10 options separated by `/`.\n' +
-                      'Example: `akane pick pvp / training`'
-            },
+            payload: { content },
             category,
             session: false
         };
@@ -472,7 +605,11 @@ function buildResponse(message, request, state) {
         ['really', 'why'].includes(category)
     ) {
         return {
-            payload: { content: contextualReply(request) },
+            payload: {
+                content: owner
+                    ? drawReply(state, ownerCategory(category))
+                    : contextualReply(request)
+            },
             category: request.context,
             session: true,
             question: false
@@ -482,22 +619,35 @@ function buildResponse(message, request, state) {
     if (
         request.followup &&
         category === 'yes' &&
-        ['nice', 'roast', 'davi', 'owner'].includes(request.context)
+        [
+            'nice',
+            'roast',
+            'davi',
+            'owner_nice',
+            'owner_roast'
+        ].includes(request.context)
     ) {
         category = request.context;
     }
 
-    if (
-        message.author.id === personality.ownerId &&
-        ['general', 'hi', 'nice'].includes(category)
-    ) {
-        category = 'owner';
+    let poolCategory = category;
+
+    if (owner && category !== 'member' && category !== 'tip') {
+        poolCategory = ownerCategory(category);
     }
 
-    let content = drawReply(state, category);
+    let content = drawReply(state, poolCategory);
 
     if (category === 'rate') {
         content = content.replace('{score}', String(randomInt(1, 11)));
+    }
+
+    if (owner && category === 'tip') {
+        content = `A little thought for you, handsome:\n\n${content}`;
+    }
+
+    if (owner && category === 'member') {
+        content = `For you, Davi, an introduction—with a little attitude:\n\n${content}`;
     }
 
     if (request.target) {
