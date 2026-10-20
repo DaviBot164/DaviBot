@@ -4,11 +4,22 @@ const {
 } = require('discord.js');
 
 const { randomInt } = require('node:crypto');
-const replies = require('../config/akaneReplies');
+const { createEmbed } = require('../utils/embeds');
+
+const baseReplies = require('../config/akaneReplies');
+const personality = require('../config/akanePersonality');
+
+const replies = {
+    ...baseReplies,
+    general: personality.general,
+    member: personality.member,
+    owner: personality.owner,
+    davi: [...baseReplies.davi, ...personality.davi]
+};
 
 const USER_COOLDOWN = 10_000;
 const CHANNEL_COOLDOWN = 5_000;
-const FOLLOWUP_TTL = 2 * 60_000;
+const SESSION_TTL = 120_000;
 
 const users = new Map();
 const channels = new Map();
@@ -27,8 +38,9 @@ const ALIASES = new Map([
     ['გამარჯობა', 'hi'],
 
     ['mood', 'mood'],
-    ['განწყობა', 'mood'],
+    ['how are you', 'mood'],
     ['როგორ ხარ', 'mood'],
+    ['განწყობა', 'mood'],
 
     ['nice', 'nice'],
     ['compliment', 'nice'],
@@ -54,7 +66,10 @@ const ALIASES = new Map([
     ['საიდუმლო', 'secret'],
 
     ['help', 'help'],
-    ['დახმარება', 'help']
+    ['დახმარება', 'help'],
+
+    ['stop', 'stop'],
+    ['გაჩერდი', 'stop']
 ]);
 
 const FOLLOWUPS = new Map([
@@ -67,35 +82,14 @@ const FOLLOWUPS = new Map([
     ['უხეში ხარ', 'rude'],
     ['thanks', 'thanks'],
     ['thank you', 'thanks'],
-    ['მადლობა', 'thanks']
+    ['მადლობა', 'thanks'],
+    ['really', 'really'],
+    ['მართლა', 'really'],
+    ['why', 'why'],
+    ['რატომ', 'why'],
+    ['stop', 'stop'],
+    ['გაჩერდი', 'stop']
 ]);
-
-const HELP = [
-    '**AKANE • CHAT GUIDE**',
-    '`akane` — Get my attention.',
-    '`akane hi` — A greeting. Temper your expectations.',
-    '`akane mood` — Check my mood.',
-    '`akane nice` — Receive a compliment.',
-    '`akane roast` — Request a light roast.',
-    '`akane tip` — Get a useful tip.',
-    '`akane pick pvp / training` — Let me choose.',
-    '`akane davi` — Hear about my favorite exception.',
-    '`akane @member` — Request my cold acknowledgment.',
-    '`akane rate` — Get a playful random score.',
-    '`akane luck` — Get a pretend prediction.',
-    '`akane secret` — Hear a little secret.',
-    '',
-    'Use `აკანე` instead of `akane` if you prefer.',
-    'Davi aliases: `davi`, `daviti`, `დავი`, `დავითი`.',
-    'Replies are always in English.',
-    '',
-    'Reply directly to my response within 2 minutes:',
-    '`thanks` / `მადლობა` or `rude` / `უხეში ხარ`.',
-    'When I ask a question, you can also reply `yes` / `no`',
-    'or `კი` / `არა`.',
-    '',
-    'Cooldown: 10 seconds per member, 5 seconds per channel.'
-].join('\n');
 
 function normalize(text) {
     return text
@@ -114,6 +108,17 @@ function cleanExpired(now) {
 
     for (const [key, session] of sessions) {
         if (session.expiresAt <= now) sessions.delete(key);
+    }
+}
+
+function closeSessions(userId, channelId) {
+    for (const [key, session] of sessions) {
+        if (
+            session.userId === userId &&
+            session.channelId === channelId
+        ) {
+            sessions.delete(key);
+        }
     }
 }
 
@@ -137,19 +142,15 @@ function drawReply(state, category) {
             remaining.length > 1 &&
             remaining.at(-1) === bag?.last
         ) {
-            const last = remaining.length - 1;
+            const end = remaining.length - 1;
 
-            [remaining[0], remaining[last]] = [
-                remaining[last],
+            [remaining[0], remaining[end]] = [
+                remaining[end],
                 remaining[0]
             ];
         }
 
-        bag = {
-            remaining,
-            last: bag?.last
-        };
-
+        bag = { remaining, last: bag?.last };
         state.bags.set(category, bag);
     }
 
@@ -192,8 +193,9 @@ function parseRequest(message, now) {
 
         return {
             category,
-            sessionId: message.reference.messageId,
-            context: session.category
+            followup: true,
+            context: session.category,
+            sessionId: message.reference.messageId
         };
     }
 
@@ -208,18 +210,19 @@ function parseRequest(message, now) {
         return { category: 'davi' };
     }
 
-    const directAlias = ALIASES.get(text);
+    const direct = ALIASES.get(text);
 
-    if (directAlias) {
-        return { category: directAlias };
-    }
+    if (direct) return { category: direct };
 
     const [first, ...rest] = text.split(' ');
     const category = ALIASES.get(first);
     const argument = rest.join(' ');
 
     if (category === 'pick') {
-        return { category, argument };
+        return {
+            category,
+            argument: raw.slice(first.length).trim()
+        };
     }
 
     if (
@@ -234,31 +237,160 @@ function parseRequest(message, now) {
     if (mention) {
         const member = message.mentions.members?.get(mention[1]);
 
-        return member
-            ? {
-                category: 'member',
-                target: member.displayName
-            }
-            : { category: 'fallback' };
+        if (!member) return { category: 'fallback' };
+
+        return {
+            category: member.id === personality.ownerId
+                ? 'davi'
+                : 'member',
+            target: member.displayName
+        };
     }
 
     if (
         !category &&
         /^[\p{L}\p{N}_ -]{1,64}$/u.test(text)
     ) {
-        return {
-            category: 'member',
-            target: raw
-        };
+        return { category: 'member', target: raw };
     }
 
     return { category: 'fallback' };
 }
 
-function buildResponse(request, state) {
-    if (request.category === 'help') return HELP;
+function buildHelp(message) {
+    const embed = createEmbed(
+        '🩸 Akane • Chat Help',
+        [
+            'Type these in chat — no `/` needed.',
+            'Use **akane** or **აკანე**. Replies are in English.'
+        ].join('\n')
+    ).addFields(
+        {
+            name: 'START HERE',
+            value: [
+                '`akane` — Get my attention',
+                '`akane hi` — Say hello',
+                '`akane nice` — Get a compliment',
+                '`akane roast` — Get a playful roast',
+                '`akane tip` — Get advice'
+            ].join('\n')
+        },
+        {
+            name: 'PEOPLE & CHOICES',
+            value: [
+                '`akane @member` — Hear my reaction to a member',
+                '`akane davi` — Ask about Davi',
+                '`akane pick pvp / training` — Let me choose',
+                'Davi aliases: `davi`, `daviti`, `დავი`, `დავითი`.'
+            ].join('\n')
+        },
+        {
+            name: 'MORE',
+            value: [
+                '`akane mood` — Check my mood',
+                '`akane rate` — Get a playful random score',
+                '`akane luck` — Get a pretend prediction',
+                '`akane secret` — Hear a secret',
+                '`akane stop` — End your current conversation',
+                '`akane help` — Show this guide'
+            ].join('\n')
+        },
+        {
+            name: 'CONTINUE WITH REPLY',
+            value: [
+                'Reply directly to **your own Akane response** within 2 minutes.',
+                '`thanks` / `მადლობა`',
+                '`rude` / `უხეში ხარ`',
+                '`really?` / `მართლა?`',
+                '`why?` / `რატომ?`',
+                '`yes` / `no` or `კი` / `არა` — only when I ask.',
+                '`stop` / `გაჩერდი` — end the conversation.'
+            ].join('\n')
+        },
+        {
+            name: 'EXAMPLES & TIMING',
+            value: [
+                '`აკანე გამარჯობა` · `აკანე რჩევა` · `აკანე დავითი`',
+                'Wait **10 seconds** between your requests.',
+                'The channel also has a **5-second** cooldown.',
+                'I use preset dialogue, not free-form AI chat.'
+            ].join('\n')
+        }
+    ).setThumbnail(
+        message.client.user.displayAvatarURL({ size: 256 })
+    );
 
-    if (request.category === 'pick') {
+    return { embeds: [embed] };
+}
+
+function contextualReply(request) {
+    const warm = ['owner', 'davi'].includes(request.context);
+
+    if (request.category === 'really') {
+        if (warm) {
+            return 'Yes, Davi. You make my favoritism embarrassingly easy.';
+        }
+
+        if (request.context === 'nice') {
+            return 'Yes. Take the compliment before I make it awkward.';
+        }
+
+        if (request.context === 'roast') {
+            return 'It was a joke you requested, not a serious assessment.';
+        }
+
+        if (request.context === 'rate') {
+            return 'The score is random. My dramatic delivery is intentional.';
+        }
+
+        if (request.context === 'luck') {
+            return 'It is a pretend prediction. Please do not plan your life around it.';
+        }
+
+        return 'Really. The attitude was included at no extra charge.';
+    }
+
+    if (warm) {
+        return 'Because you get the softer version, Davi. Do not ruin my reputation.';
+    }
+
+    const reasons = {
+        nice: 'Because you asked for a compliment. Accept it without an investigation.',
+        roast: 'Because you requested a playful roast. It is not a judgment of your worth.',
+        rate: 'Because this is a randomly chosen score for fun, not a real evaluation.',
+        luck: 'Because theatrical predictions are entertaining. They are not reliable forecasts.',
+        tip: 'The advice is meant as a practical suggestion, not a universal rule. Use it only when it fits your situation.',
+        member: 'Because this is my theatrical cold greeting, not a claim about that person.',
+        mood: 'Because my mood is part of the character. The sarcasm is scripted.',
+        secret: 'Because a little fictional mystery suits the character.'
+    };
+
+    return reasons[request.context]
+        ?? 'Because a little sarcasm suits me. This is preset character dialogue.';
+}
+
+function buildResponse(message, request, state) {
+    let category = request.category;
+
+    if (category === 'help') {
+        return {
+            payload: buildHelp(message),
+            category,
+            session: false
+        };
+    }
+
+    if (category === 'stop') {
+        return {
+            payload: {
+                content: 'Conversation closed. Enjoy the suspicious peace.'
+            },
+            category,
+            session: false
+        };
+    }
+
+    if (category === 'pick') {
         const options = [
             ...new Set(
                 (request.argument ?? '')
@@ -268,44 +400,64 @@ function buildResponse(request, state) {
             )
         ];
 
-        if (
-            options.length < 2 ||
-            options.length > 10 ||
-            options.some(option => option.length > 100)
-        ) {
-            return 'Give me 2–10 options separated by `/`. ' +
-                'Example: `akane pick pvp / training`.';
-        }
+        const valid =
+            options.length >= 2 &&
+            options.length <= 10 &&
+            options.every(option => option.length <= 100);
 
-        return `My choice: **${escapeMarkdown(
-            options[randomInt(options.length)]
-        )}**. Try not to form a committee about it.`;
+        const content = valid
+            ? `My choice: **${escapeMarkdown(
+                options[randomInt(options.length)]
+            )}**. The committee is dismissed.`
+            : 'Use 2–10 options separated by `/`.\n' +
+              'Example: `akane pick pvp / training`';
+
+        return {
+            payload: { content },
+            category,
+            session: false
+        };
     }
 
-    let category = request.category;
+    if (request.followup && ['really', 'why'].includes(category)) {
+        return {
+            payload: { content: contextualReply(request) },
+            category: request.context,
+            session: true
+        };
+    }
 
-    if (category === 'yes' && request.context === 'davi') {
-        category = 'davi';
-    } else if (
+    if (
+        request.followup &&
         category === 'yes' &&
-        ['nice', 'roast'].includes(request.context)
+        ['nice', 'roast', 'davi', 'owner'].includes(request.context)
     ) {
         category = request.context;
     }
 
-    let text = drawReply(state, category);
+    const owner = message.author.id === personality.ownerId;
+
+    if (owner && ['general', 'hi', 'nice'].includes(category)) {
+        category = 'owner';
+    }
+
+    let content = drawReply(state, category);
 
     if (category === 'rate') {
-        text = text.replace('{score}', String(randomInt(1, 11)));
+        content = content.replace('{score}', String(randomInt(1, 11)));
     }
 
     if (request.target) {
-        text = `**${escapeMarkdown(
+        content = `**${escapeMarkdown(
             request.target.slice(0, 80)
-        )}**\n${text}`;
+        )}**\n${content}`;
     }
 
-    return { text, category };
+    return {
+        payload: { content },
+        category,
+        session: category !== 'fallback'
+    };
 }
 
 async function handleAkaneReply(message) {
@@ -324,6 +476,10 @@ async function handleAkaneReply(message) {
     const request = parseRequest(message, now);
 
     if (!request) return false;
+
+    if (request.category === 'stop') {
+        closeSessions(message.author.id, message.channelId);
+    }
 
     const bot = message.guild.members.me;
     const permissions = bot
@@ -344,10 +500,16 @@ async function handleAkaneReply(message) {
         return false;
     }
 
-    const userKey = `${message.guildId}:${message.author.id}`;
-    const channelKey = message.channelId;
+    if (
+        request.category === 'help' &&
+        !permissions.has(PermissionFlagsBits.EmbedLinks)
+    ) {
+        return false;
+    }
 
-    let state = channels.get(channelKey);
+    const userKey = `${message.guildId}:${message.author.id}`;
+
+    let state = channels.get(message.channelId);
 
     if (!state) {
         state = {
@@ -356,7 +518,7 @@ async function handleAkaneReply(message) {
             bags: new Map()
         };
 
-        channels.set(channelKey, state);
+        channels.set(message.channelId, state);
     }
 
     if (
@@ -371,34 +533,27 @@ async function handleAkaneReply(message) {
     users.set(userKey, now + USER_COOLDOWN);
 
     try {
-        const response = buildResponse(request, state);
-        const text = typeof response === 'string'
-            ? response
-            : response.text;
+        const response = buildResponse(message, request, state);
 
         const sent = await message.reply({
-            content: text,
+            ...response.payload,
             allowedMentions: {
                 parse: [],
                 repliedUser: false
             }
         });
 
-        if (request.sessionId) {
-            sessions.delete(request.sessionId);
-        }
+        closeSessions(message.author.id, message.channelId);
 
-        const category = typeof response === 'string'
-            ? request.category
-            : response.category;
-
-        if (!['help', 'pick', 'fallback'].includes(category)) {
+        if (response.session) {
             sessions.set(sent.id, {
                 userId: message.author.id,
                 channelId: message.channelId,
-                category,
-                question: text.includes('Reply yes or no.'),
-                expiresAt: Date.now() + FOLLOWUP_TTL
+                category: response.category,
+                question: response.payload.content.includes(
+                    'Reply yes or no.'
+                ),
+                expiresAt: Date.now() + SESSION_TTL
             });
         }
 
