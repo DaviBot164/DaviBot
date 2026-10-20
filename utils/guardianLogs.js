@@ -1,17 +1,13 @@
 const channels = require('../config/channels');
+const guardian = require('../config/guardian');
 const { createEmbed } = require('./embeds');
+const { formatDuration } = require('../handlers/moderationService');
 
 const TYPE_NAMES = Object.freeze({
     spam: 'Spam',
     scam: 'Scam',
     invite: 'Discord Invite',
-    severe_word: 'Severe Insult'
-});
-
-const ACTION_NAMES = Object.freeze({
-    delete: 'Message Deleted',
-    warning: 'Message Deleted • Warning',
-    timeout: 'Message Deleted • 5 Minute Timeout'
+    severe_word: 'Severe Language'
 });
 
 function trimContent(content) {
@@ -27,6 +23,29 @@ function trimContent(content) {
         : text;
 }
 
+function deletionStatus(result) {
+    if (result.messageDeleted === true) return 'Deleted';
+    if (result.messageDeleted === false) return 'Deletion failed';
+
+    return 'Not recorded';
+}
+
+function timeoutStatus(result) {
+    if (result.timeoutStatus === 'applied') {
+        return `Applied • ${formatDuration(guardian.spam.timeoutMs)}`;
+    }
+
+    if (result.timeoutStatus === 'failed') {
+        return 'Failed • Check runtime logs';
+    }
+
+    if (result.timeoutStatus === 'unavailable') {
+        return 'Unavailable • Member cannot be timed out by Akane';
+    }
+
+    return 'Not applied';
+}
+
 async function sendGuardianLog(message, result) {
     if (!message.guild || !result?.blocked) return;
 
@@ -38,23 +57,36 @@ async function sendGuardianLog(message, result) {
         throw new Error('Guardian log channel is unavailable.');
     }
 
-    const type = TYPE_NAMES[result.type] ?? 'Guardian';
-    const action = ACTION_NAMES[result.action]
-        ?? result.action
-        ?? 'Unknown';
-
     const details = [
         `Member: <@${message.author.id}> (\`${message.author.id}\`)`,
         `Channel: <#${message.channelId}>`,
-        `Detection: **${type}**`,
-        `Action: **${action}**`
+        `Detection: **${TYPE_NAMES[result.type] ?? 'Guardian'}**`,
+        `Message: **${deletionStatus(result)}**`
     ];
 
-    if (result.strikes) {
+    if (result.caseId != null) {
+        details.push(`Case: **#${result.caseId}**`);
+    }
+
+    if (result.strikes != null) {
         details.push(`Spam Strikes: **${result.strikes}**`);
     }
 
-    details.push('', '**Message**', trimContent(message.content));
+    if (result.type === 'spam') {
+        details.push(`Timeout: **${timeoutStatus(result)}**`);
+
+        if (result.action === 'warning') {
+            details.push(
+                'Response: **Spam strike recorded • No timeout applied**'
+            );
+        }
+    }
+
+    details.push(
+        '',
+        '**Detected Content**',
+        trimContent(message.content)
+    );
 
     await channel.send({
         embeds: [
