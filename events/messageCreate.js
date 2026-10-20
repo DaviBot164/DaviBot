@@ -1,37 +1,21 @@
-
 const { Events } = require('discord.js');
 
-const {
-    ensureUser
-} = require('../database/users');
-
-const {
-    awardXP
-} = require('../database/xpRewards');
-
-const {
-    randomXP
-} = require('../utils/leveling');
-
-const {
-    canEarnXP
-} = require('../handlers/xpCooldown');
-
-const {
-    runGuardian
-} = require('../handlers/guardian');
-
-const {
-    checkAutoPromotion
-} = require('../handlers/autoPromotion');
+const { ensureUser } = require('../database/users');
+const { awardXP } = require('../database/xpRewards');
+const { randomXP } = require('../utils/leveling');
+const { canEarnXP } = require('../handlers/xpCooldown');
+const { runGuardian } = require('../handlers/guardian');
+const { checkAutoPromotion } = require('../handlers/autoPromotion');
 
 const {
     refreshProgressionUnlocks
 } = require('../handlers/progressionUnlocks');
 
 const {
-    sendLevelUp
-} = require('../utils/levelNotifications');
+    handleAkaneReply
+} = require('../handlers/akaneReplyHandler');
+
+const { sendLevelUp } = require('../utils/levelNotifications');
 
 module.exports = {
     name: Events.MessageCreate,
@@ -39,31 +23,24 @@ module.exports = {
     async execute(message) {
         if (
             !message.inGuild() ||
-            message.author.bot
+            message.author.bot ||
+            message.webhookId
         ) {
             return;
         }
 
-        const guardianResult = await runGuardian(
-            message
-        );
+        const guardianResult = await runGuardian(message);
 
-        if (guardianResult.blocked) {
-            return;
-        }
+        if (guardianResult.blocked) return;
 
-        if (
-            !canEarnXP(
-                message.guild.id,
-                message.author.id
-            )
-        ) {
-            return;
-        }
+        await handleAkaneReply(message);
 
-        const member = message.member;
         const guildId = message.guild.id;
         const userId = message.author.id;
+
+        if (!canEarnXP(guildId, userId)) return;
+
+        const member = message.member;
 
         await ensureUser(
             guildId,
@@ -83,29 +60,18 @@ module.exports = {
 
         if (result.levelsGained) {
             try {
-                await sendLevelUp(
-                    message,
-                    result.user.level
-                );
+                await sendLevelUp(message, result.user.level);
             } catch (error) {
-                console.error(
-                    'Level announcement failed:',
-                    error
-                );
+                console.error('Level announcement failed:', error);
             }
 
             if (member) {
-                await checkAutoPromotion(
-                    member,
-                    result.user
-                );
+                await checkAutoPromotion(member, result.user);
             }
         }
 
         if (member) {
-            await refreshProgressionUnlocks(
-                member
-            );
+            await refreshProgressionUnlocks(member);
         }
     }
 };
