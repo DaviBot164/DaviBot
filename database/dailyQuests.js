@@ -1,25 +1,7 @@
 const { pool } = require('./connection');
 const { calculateLevel } = require('../utils/leveling');
 
-const CYCLE_MS = 24 * 60 * 60 * 1000;
-
-const QUESTS = Object.freeze({
-    active_soul: {
-        name: 'Active Soul',
-        required: 15,
-        reward: 75
-    },
-    dedicated_warrior: {
-        name: 'Dedicated Warrior',
-        required: 30,
-        reward: 125
-    },
-    blood_moon_devotion: {
-        name: 'Blood Moon Devotion',
-        required: 1,
-        reward: 50
-    }
-});
+const { DAY: CYCLE_MS, QUESTS, themeFor, BOARD_BONUS } = require('../config/missions');
 
 async function getQuestState(client, guildId, userId) {
     await client.query(
@@ -49,7 +31,7 @@ async function getQuestState(client, guildId, userId) {
     const state = rows[0];
 
     const { rows: timeRows } = await client.query(
-        'SELECT NOW() AS current_time'
+        'SELECT clock_timestamp() AS current_time'
     );
 
     const now = timeRows[0].current_time;
@@ -141,7 +123,7 @@ function mapQuests(state) {
 
         return {
             id,
-            name: quest.name,
+            name: themeFor(state.cycle_id).names[id],
             current: Math.min(current, quest.required),
             required: quest.required,
             reward: quest.reward,
@@ -157,6 +139,9 @@ async function getDailyQuests(guildId, userId) {
         userId,
         async (client, state) => ({
             quests: mapQuests(state),
+            theme: themeFor(state.cycle_id),
+            boardBonus: BOARD_BONUS,
+            boardBonusClaimed: state.claimed_rewards.includes('board_bonus'),
             cycleId: state.cycle_id,
             cycleStartedAt: state.cycle_started_at,
             nextResetAt: new Date(
@@ -261,10 +246,11 @@ async function claimQuestReward(
                 };
             }
 
-            const progress = calculateLevel(
-                user.level,
-                user.xp + quest.reward
-            );
+            const claimedIds = new Set([...state.claimed_rewards, questId]);
+            const boardBonus = Object.keys(QUESTS).every(id => claimedIds.has(id)) &&
+                !claimedIds.has('board_bonus') ? BOARD_BONUS : 0;
+            const totalReward = quest.reward + boardBonus;
+            const progress = calculateLevel(Number(user.level), Number(user.xp) + totalReward);
 
             await client.query(
                 `
@@ -299,10 +285,21 @@ async function claimQuestReward(
                 [guildId, userId, questId]
             );
 
+            if (boardBonus) {
+                await client.query(
+                    `UPDATE akane_daily_quests
+                     SET claimed_rewards = array_append(claimed_rewards, 'board_bonus'), updated_at = NOW()
+                     WHERE guild_id = $1 AND user_id = $2`, [guildId, userId]
+                );
+            }
+
             return {
                 claimed: true,
                 questId,
-                reward: quest.reward,
+                reward: totalReward,
+                missionReward: quest.reward,
+                boardBonus,
+                questName: themeFor(state.cycle_id).names[questId],
                 previousLevel: user.level,
                 level: progress.level,
                 levelsGained: progress.levelsGained

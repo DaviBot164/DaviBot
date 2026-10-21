@@ -12,11 +12,11 @@ const BUTTON_PREFIX = 'akane:match:';
 
 const TEAM_INFO = Object.freeze({
     crimson: {
-        name: 'Crimson',
+        name: 'Vortex',
         emoji: '🔴'
     },
     azure: {
-        name: 'Azure',
+        name: 'Nova',
         emoji: '🔵'
     }
 });
@@ -80,14 +80,14 @@ function buildMatchButtons(match) {
                 matchButton(
                     match.id,
                     'join_crimson',
-                    'Join Crimson',
+                    'Join Vortex',
                     ButtonStyle.Primary,
                     '🔴'
                 ),
                 matchButton(
                     match.id,
                     'join_azure',
-                    'Join Azure',
+                    'Join Nova',
                     ButtonStyle.Primary,
                     '🔵'
                 ),
@@ -127,14 +127,14 @@ function buildMatchButtons(match) {
                 matchButton(
                     match.id,
                     'report_crimson',
-                    'Crimson Won',
+                    'Vortex Won',
                     ButtonStyle.Primary,
                     '🔴'
                 ),
                 matchButton(
                     match.id,
                     'report_azure',
-                    'Azure Won',
+                    'Nova Won',
                     ButtonStyle.Primary,
                     '🔵'
                 )

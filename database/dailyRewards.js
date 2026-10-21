@@ -1,11 +1,12 @@
 const { pool } = require('./connection');
 const { calculateLevel } = require('../utils/leveling');
 
-const DAY = 24 * 60 * 60 * 1000;
+const { DAY, streakInfo } = require('../config/missions');
 const MAX_STREAK_WINDOW = DAY * 2;
 
 function getDailyReward(streak) {
-    return Math.min(200, 50 + (streak - 1) * 25);
+    const info = streakInfo(streak);
+    return info.base + info.bonus;
 }
 
 async function claimDaily(guildId, userId) {
@@ -54,7 +55,7 @@ async function claimDaily(guildId, userId) {
         );
 
         const { rows: timeRows } = await client.query(
-            'SELECT NOW() AS current_time'
+            'SELECT clock_timestamp() AS current_time'
         );
 
         const now = timeRows[0].current_time;
@@ -72,7 +73,8 @@ async function claimDaily(guildId, userId) {
             return {
                 claimed: false,
                 remainingMs: DAY - elapsed,
-                streak: stats.daily_streak
+                streak: Number(stats.daily_streak),
+                nextClaimAt: new Date(now.getTime() + DAY - elapsed)
             };
         }
 
@@ -81,13 +83,14 @@ async function claimDaily(guildId, userId) {
             elapsed > MAX_STREAK_WINDOW
         )
             ? 1
-            : stats.daily_streak + 1;
+            : Number(stats.daily_streak) + 1;
 
+        const rewardInfo = streakInfo(streak);
         const reward = getDailyReward(streak);
 
         const progress = calculateLevel(
-            user.level,
-            user.xp + reward
+            Number(user.level),
+            Number(user.xp) + reward
         );
 
         await client.query(
@@ -113,12 +116,12 @@ async function claimDaily(guildId, userId) {
                 UPDATE akane_player_stats
                 SET
                     daily_streak = $3,
-                    last_daily_claim_at = NOW(),
+                    last_daily_claim_at = $4,
                     updated_at = NOW()
                 WHERE guild_id = $1
                   AND user_id = $2
             `,
-            [guildId, userId, streak]
+            [guildId, userId, streak, now]
         );
 
         await client.query(
@@ -184,6 +187,10 @@ async function claimDaily(guildId, userId) {
         return {
             claimed: true,
             reward,
+            baseReward: rewardInfo.base,
+            streakBonus: rewardInfo.bonus,
+            streakReset: elapsed !== null && elapsed > MAX_STREAK_WINDOW,
+            nextClaimAt: new Date(now.getTime() + DAY),
             streak,
             previousLevel: user.level,
             level: progress.level,

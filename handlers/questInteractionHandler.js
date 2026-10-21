@@ -58,8 +58,9 @@ function parseQuestButton(customId) {
 function claimMessage(result, questId) {
     if (result.claimed) {
         return [
-            `🎁 **${QUESTS[questId].name} Completed!**`,
+            `🎁 **${result.questName ?? QUESTS[questId].name} Completed!**`,
             `You received **+${result.reward} XP**.`,
+            result.boardBonus ? `🦊 **Board cleared! +${result.boardBonus} XP bonus included.**` : '',
             result.levelsGained
                 ? `⚔️ Level Up! You reached **Level ${result.level}**.`
                 : ''

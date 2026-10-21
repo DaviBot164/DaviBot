@@ -41,7 +41,7 @@ async function publishMoonGuide(guild) {
             '',
             '**05 • Universal PvP & Matches**',
             'Challenge warriors in **any game** using `/match` in the PvP channel.',
-            'Choose a format from **1v1 to 5v5** and recruit players for 🔴 Crimson or 🔵 Azure.',
+            'Choose a format from **1v1 to 5v5** and recruit players for 🔴 Vortex or 🔵 Nova.',
             'When both teams are full, each captain must confirm before the battle begins.',
             'After the match, a captain reports the winner. The opposing captain must confirm or dispute the result.',
             'Confirmed results update your **Wins & Losses** on `/profile`.',

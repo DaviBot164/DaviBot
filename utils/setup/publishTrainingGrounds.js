@@ -1,4 +1,3 @@
-
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -19,15 +18,15 @@ const TRAINING_IDS = Object.freeze({
 
 function buildTrainingPanel() {
     const embed = createEmbed(
-        '🥋 BLOOD MOON • TRAINING GROUNDS',
+        '🦊 AKANE • MISSION CONTROL',
         [
-            '*Every warrior begins somewhere.*',
+            '*Your next little victory starts here.*',
             '',
             'Train your soul, strengthen your resolve,',
             'and forge your legacy beneath the Blood Moon.',
             '',
-            '🌙 **Daily Reward**',
-            'Claim XP and build your daily streak.',
+            '🌙 **Daily Drop**',
+            'Collect XP, build a streak, and reach 3/7/14/30-day bonus drops.',
             '',
             '🎴 **Soul Profile**',
             'View your level, rank, and progression.',
@@ -35,8 +34,8 @@ function buildTrainingPanel() {
             '🏆 **Achievements**',
             'Discover the milestones you have unlocked.',
             '',
-            '📜 **Daily Quests**',
-            'New challenges are coming soon.',
+            '📜 **Mission Board**',
+            'Complete three missions for XP. Collect all three rewards for a +50 XP clear bonus.',
             '',
             '━━━━━━━━━━━━━━━━━━━━',
             '*Your journey begins here, warrior.*'
@@ -49,7 +48,7 @@ function buildTrainingPanel() {
         .addComponents(
             new ButtonBuilder()
                 .setCustomId(TRAINING_IDS.daily)
-                .setLabel('Claim Daily')
+                .setLabel('Daily Drop')
                 .setEmoji('🌙')
                 .setStyle(ButtonStyle.Success),
 
@@ -70,7 +69,7 @@ function buildTrainingPanel() {
 
             new ButtonBuilder()
     .setCustomId(TRAINING_IDS.quests)
-    .setLabel('Daily Quests')
+    .setLabel('Missions')
     .setEmoji('📜')
     .setStyle(ButtonStyle.Secondary)
         );

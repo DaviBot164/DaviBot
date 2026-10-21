@@ -1,3 +1,4 @@
+const { dailyEmbed } = require('../../utils/dailyPresentation');
 const {
     SlashCommandBuilder,
     MessageFlags
@@ -23,25 +24,6 @@ const {
     createEmbed,
     errorEmbed
 } = require('../../utils/embeds');
-
-const DAY = 24 * 60 * 60 * 1000;
-
-function formatDuration(milliseconds) {
-    const totalMinutes = Math.ceil(
-        Math.max(0, milliseconds) / 60000
-    );
-
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    if (!hours) {
-        return `${minutes}m`;
-    }
-
-    return minutes
-        ? `${hours}h ${minutes}m`
-        : `${hours}h`;
-}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -95,40 +77,8 @@ module.exports = {
             userId
         );
 
-        if (!result.claimed) {
-            const embed = createEmbed(
-                '🌙 Daily Reward Unavailable',
-                [
-                    'You have already claimed your daily reward.',
-                    '',
-                    `**Current Streak:** ${result.streak} days`,
-                    `**Next Reward:** ${formatDuration(result.remainingMs)}`
-                ].join('\n')
-            );
-
-            return interaction.editReply({
-                embeds: [embed]
-            });
-        }
-
-        const embed = createEmbed(
-            '🩸 Daily Reward Claimed',
-            [
-                `**Reward:** +${result.reward} XP`,
-                `**Daily Streak:** ${result.streak} days`,
-                `**Current Level:** ${result.level}`,
-                '',
-                result.levelsGained
-                    ? `⚔️ **Level Up!** +${result.levelsGained} level(s)`
-                    : 'Your soul grows stronger beneath the Blood Moon.',
-                '',
-                'Return in 24 hours to continue your journey.'
-            ].join('\n')
-        );
-
-        await interaction.editReply({
-            embeds: [embed]
-        });
+        await interaction.editReply({ embeds: [dailyEmbed(result)] });
+        if (!result.claimed) return;
 
         if (result.levelsGained) {
             try {

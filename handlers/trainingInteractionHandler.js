@@ -1,4 +1,4 @@
-
+const { dailyEmbed } = require('../utils/dailyPresentation');
 const {
     MessageFlags,
     AttachmentBuilder
@@ -86,42 +86,8 @@ async function handleDaily(interaction, member) {
         member.id
     );
 
-    if (!result.claimed) {
-        await interaction.editReply({
-            embeds: [
-                createEmbed(
-                    '🌙 Daily Reward Unavailable',
-                    [
-                        'Your daily reward has already been claimed.',
-                        '',
-                        `**Current Streak:** ${result.streak} days`,
-                        `**Next Reward:** ${formatDuration(result.remainingMs)}`
-                    ].join('\n')
-                )
-            ]
-        });
-
-        return;
-    }
-
-    await interaction.editReply({
-        embeds: [
-            createEmbed(
-                '🩸 Daily Reward Claimed',
-                [
-                    `**Reward:** +${result.reward} XP`,
-                    `**Daily Streak:** ${result.streak} days`,
-                    `**Current Level:** ${result.level}`,
-                    '',
-                    result.levelsGained
-                        ? `⚔️ **Level Up!** +${result.levelsGained} level(s)`
-                        : 'Your soul grows stronger beneath the Blood Moon.',
-                    '',
-                    'Return in 24 hours to continue your journey.'
-                ].join('\n')
-            )
-        ]
-    });
+    await interaction.editReply({ embeds: [dailyEmbed(result)] });
+    if (!result.claimed) return;
 
     if (result.levelsGained) {
         try {

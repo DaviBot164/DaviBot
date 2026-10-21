@@ -121,3 +121,9 @@ module.exports = {
     BUTTON_PREFIX,
     buildQuestPanel
 };
+// Akane mission presentation v1: preserve original button and cycle IDs.
+const originalMissionPanel = module.exports.buildQuestPanel;
+const { decorateQuestPanel } = require('./missionView');
+module.exports.buildQuestPanel = function(data) {
+    return decorateQuestPanel(originalMissionPanel(data), data);
+};
