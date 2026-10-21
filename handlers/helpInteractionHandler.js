@@ -1,4 +1,3 @@
-
 const {
     HELP_MENU_ID,
     buildHelpEmbed,
@@ -13,18 +12,32 @@ async function handleHelpSelect(interaction) {
         return false;
     }
 
-    const section = interaction.values[0];
+    await interaction.deferUpdate();
 
-    await interaction.update({
+    const requested = interaction.values[0] ?? 'overview';
+
+    const available = buildHelpMenu(interaction, 'overview');
+
+    const options = available[0]
+        .toJSON()
+        .components[0]
+        .options;
+
+    const selected = options.some(
+        option => option.value === requested
+    )
+        ? requested
+        : 'overview';
+
+    await interaction.editReply({
         embeds: [
-            buildHelpEmbed(interaction, section)
+            buildHelpEmbed(interaction, selected)
         ],
-        components: buildHelpMenu(interaction, section)
+        components: buildHelpMenu(interaction, selected),
+        allowedMentions: { parse: [] }
     });
 
     return true;
 }
 
-module.exports = {
-    handleHelpSelect
-};
+module.exports = { handleHelpSelect };

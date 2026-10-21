@@ -124,25 +124,28 @@ const SECTIONS = [
 
 function canViewCommand(interaction, command, staff = false) {
     const permissions = interaction.memberPermissions;
+
+    if (!permissions) return !staff &&
+        command.data.toJSON().default_member_permissions == null;
+
+    if (permissions.has(PermissionFlagsBits.Administrator)) {
+        return true;
+    }
+
     const required = command.data.toJSON()
         .default_member_permissions;
 
-    if (required === '0') {
-        return false;
-    }
-
     if (required != null) {
-        return permissions?.has(
-            new PermissionsBitField(BigInt(required))
-        ) ?? false;
+        const bits = BigInt(required);
+
+        if (bits === 0n) return false;
+
+        return permissions.has(new PermissionsBitField(bits));
     }
 
-    return !staff || (
-        permissions?.has(PermissionFlagsBits.ManageMessages)
-        ?? false
-    );
+    return !staff ||
+        permissions.has(PermissionFlagsBits.ManageMessages);
 }
-
 function getVisibleSections(interaction) {
     return SECTIONS.map(section => ({
         ...section,
@@ -191,7 +194,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
                 '**Welcome to the Blood Moon command center.**',
                 'Select a category below to explore its commands.',
                 '',
-                'Only commands available to you are displayed.'
+                'Commands are filtered by default member permissions. Server command overrides may affect access.'
             ].join('\n')
             : 'Explore your available commands.'
     );
