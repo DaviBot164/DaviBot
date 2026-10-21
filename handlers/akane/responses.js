@@ -43,6 +43,14 @@ for (const [tone, categories] of Object.entries(repairs.pools)) {
     }
 }
 
+const social = require('../../config/akaneSocialReplies');
+for (const [tone,categories] of Object.entries(social.pools)) {
+    for (const [category,pool] of Object.entries(categories)) {
+        const key=`conversation_${tone}_${category}`;
+        replies[key]=[...new Set([...(replies[key] ?? []),...pool])];
+    }
+}
+
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',
@@ -190,8 +198,8 @@ function buildResponse(message, request) {
     if (request.category === 'reaction_question') request = {...request,category:'clarify'};
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
-    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context])) {
-        const meanings = {...everyday.explanations,...repairs.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
+    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context])) {
+        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
         const tone=toneFor(message.author.id);
         const content=(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+(meanings[request.context] ?? 'I did not understand the exact request. Please give me the main point in a short sentence.');
         return {payload:{content},category:request.context,question:false,session:true,pending:request.conversation?.pending??null};
@@ -216,6 +224,13 @@ function buildResponse(message, request) {
         };
         const tone=toneFor(message.author.id);
         base={...base,payload:{content:(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+calm[request.category]}};
+    }
+    if (request.conversation?.mode?.remaining > 0 && ['sexual_boundary','frustration'].includes(request.category)) {
+        const tone=toneFor(message.author.id);
+        const line=request.category==='sexual_boundary'
+            ? 'I will keep this conversation non-explicit. Please choose another subject.'
+            : 'That sounds frustrating. We can pause or choose a calmer subject.';
+        base={...base,payload:{content:(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+line}};
     }
     const final = decorate(base, toneFor(message.author.id), request);
     if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};

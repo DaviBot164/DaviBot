@@ -1,3 +1,4 @@
+const { recognizeSocial, acknowledge } = require('./socialIntent');
 const { prepareSentence, reactionClauses, resolveMixedMood } = require('./sentenceParser');
 const { recognizeEveryday } = require('../../config/akaneEveryday');
 const { normalize, aliases } = require('./aliases');
@@ -85,7 +86,11 @@ function recognize(value) {
     if(/[^\x00-\x7f]/u.test(raw)&&/[\p{L}]/u.test(raw.replace(/[a-z]/giu,'')))return null;
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
-    const normalized=tidy(raw);const text=prepareSentence(stripMarkers(normalized));
+    const normalized=tidy(raw);
+    const acknowledgement=acknowledge(prepareSentence(normalized),null);
+    if(acknowledgement) return acknowledgement;
+    const text=prepareSentence(stripMarkers(normalized));
+    const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
     const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;

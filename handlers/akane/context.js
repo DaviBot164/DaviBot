@@ -1,3 +1,4 @@
+const { acknowledge } = require('./socialIntent');
 // Bounded, temporary conversation context. No user text is retained.
 const { normalize } = require('./aliases');
 const { canonical } = require('./language');
@@ -18,10 +19,11 @@ function contextualCategory(raw, session) {
     if (controls.has(plain)) return controls.get(plain);
     if (session?.pending?.kind === 'mood') {
         if (['fine','okay','ok','all right','alright','not bad','so so'].includes(text)) return 'feeling_neutral';
-        if (['bad','not good','awful','terrible','ცუდად','ცუდი'].includes(text)) return 'feeling_bad';
+        if (['bad','not good','not okay','not ok','awful','terrible','ცუდად','ცუდი'].includes(text)) return 'feeling_bad';
         if (['good','great','pretty good','really good','კარგად','კარგი'].includes(text)) return 'feeling_good';
         if (['tired','sleepy','დაღლილი'].includes(text)) return 'tired';
     }
+    const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';
     if (session?.pending?.kind === 'choices' && raw.includes('/')) return 'context_choices';
     return null;
