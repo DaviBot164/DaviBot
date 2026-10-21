@@ -164,6 +164,135 @@ addAliases('why', ['why', 'რატომ']);
 addAliases('yes', ['yes', 'yeah', 'კი', 'დიახ']);
 addAliases('no', ['no', 'nope', 'არა']);
 
+// Expanded conversational aliases.
+addAliases('hi', [
+    'hey there',
+    'hello there',
+    'hello again',
+    'hi again',
+    'hey akane',
+    'სალამი აკანე',
+    'გამარჯობა აკანე',
+    'კიდევ გამარჯობა'
+]);
+
+addAliases('mood', [
+    'how are you today',
+    'how is it going',
+    "how's it going",
+    'how are things',
+    'are you okay',
+    'are you ok',
+    'როგორ მიდის საქმე',
+    'როგორ მიდის საქმეები',
+    'დღეს როგორ ხარ',
+    'კარგად ხარ'
+]);
+
+addAliases('thanks', [
+    'thanks a lot',
+    'thanks so much',
+    'thank you so much',
+    'thank you very much',
+    'appreciate it',
+    'i appreciate it',
+    'ty',
+    'tysm',
+    'დიდი მადლობა',
+    'ძალიან დიდი მადლობა',
+    'გმადლობ',
+    'გმადლობთ'
+]);
+
+addAliases('really', [
+    'are you serious',
+    'seriously',
+    'for real',
+    'you mean it',
+    'do you mean it',
+    'მართლა ამბობ',
+    'სერიოზულად',
+    'სერიოზულად ამბობ'
+]);
+
+addAliases('why', [
+    'why is that',
+    'why do you say that',
+    'why would you say that',
+    'რატომ ამბობ ამას',
+    'რატომ ფიქრობ ასე',
+    'რატომ ასე'
+]);
+
+addAliases('nice', [
+    'say something nice',
+    'tell me something nice',
+    'give me a compliment',
+    'კომპლიმენტი მითხარი',
+    'მითხარი რამე კარგი',
+    'რამე კარგი მითხარი'
+]);
+
+addAliases('roast', [
+    'give me a roast',
+    'tease me',
+    'make fun of me',
+    'ცოტა გამეხუმრე'
+]);
+
+addAliases('tip', [
+    'give me a tip',
+    'any advice',
+    'some advice please',
+    'რჩევა მომეცი',
+    'მომეცი რჩევა',
+    'რამე მირჩიე'
+]);
+
+addAliases('rude', [
+    'that was rude',
+    'you are being rude',
+    'be nicer',
+    'be nice to me',
+    'easy on me',
+    'ცოტა რბილად',
+    'ნუ მეუხეშები',
+    'ასე უხეშად ნუ მპასუხობ'
+]);
+
+addAliases('reaction_apology', [
+    'sorry',
+    'my bad',
+    'i am sorry',
+    "i'm sorry",
+    'i apologize',
+    'ბოდიში',
+    'მაპატიე',
+    'მაპატიე გთხოვ'
+]);
+
+addAliases('reaction_affection', [
+    'you are sweet',
+    'you are lovely',
+    'you are cute',
+    'you are beautiful',
+    'კარგი ხარ',
+    'ძალიან საყვარელი ხარ',
+    'ლამაზი ხარ'
+]);
+
+addAliases('stop', [
+    'bye',
+    'goodbye',
+    'see you',
+    'see you later',
+    'talk later',
+    'stop please',
+    'ნახვამდის',
+    'დროებით',
+    'მერე გნახავ',
+    'შემდეგამდე'
+]);
 function sessionKey(message) {
     return `${message.guildId}:${message.channelId}:${message.author.id}`;
 }
@@ -249,7 +378,18 @@ function parseRequest(message, now) {
         const shortFollowup = aliases.get(normalize(content));
 
         const allowed = [
-            'why', 'really', 'thanks', 'rude', 'stop'
+            'hi',
+            'mood',
+            'thanks',
+            'really',
+            'why',
+            'nice',
+            'roast',
+            'tip',
+            'rude',
+            'reaction_apology',
+            'reaction_affection',
+            'stop'
         ].includes(shortFollowup);
 
         if (
@@ -380,7 +520,7 @@ function buildHelp(message) {
             {
                 name: 'CONTINUE',
                 value: [
-                    'Reply within **2 minutes**, or type `why`, `really`, `thanks` or `rude` directly within **30 seconds**.',
+                    'Reply within **2 minutes**, or type `why`, `really`, `thanks` or `rude` directly within **2 minutes**.',
                     'Try `why`, `really`, `thanks`, or another request.',
                     'For yes/no questions, use Reply or `akane yes` / `akane no`.',
                     '`akane stop` — Close your conversation',
@@ -691,7 +831,7 @@ function plainHelp() {
         '`akane rate` · `luck` · `secret`',
         '`akane @member` · `akane davi`',
         '`akane pick pvp / training`',
-        'Reply within 2 minutes. Short follow-ups also work directly for 30 seconds.',
+        'Reply within 2 minutes. Short follow-ups also work directly for 2 minutes.',
         'Try `why`, `really`, `thanks`, or another request.',
         '`yes` / `no` work when I ask.',
         '`akane stop` — Close the conversation.',
@@ -1089,7 +1229,7 @@ async function handleAkaneReply(message) {
                     messageId: sent.id,
                     category: response.category,
                     question: response.question ?? false,
-                    implicitUntil: Date.now() + 30_000,
+                    implicitUntil: Date.now() + SESSION_TTL,
                     expiresAt: Date.now() + SESSION_TTL
                 });
             }
