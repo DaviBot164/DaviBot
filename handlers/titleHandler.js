@@ -44,10 +44,22 @@ function meetsTitleRequirement(
         title.requirement;
 
     switch (requirement.type) {
-        case 'achievement_rank':
-            return Boolean(
-                achievementRank
+        case 'achievement_rank': {
+            const {
+                ACHIEVEMENT_RANKS
+            } = require('../config/achievements');
+
+            const requiredIndex = ACHIEVEMENT_RANKS.findIndex(
+                rank => rank.id === requirement.value
             );
+
+            const currentIndex = ACHIEVEMENT_RANKS.findIndex(
+                rank => rank.id === achievementRank?.id
+            );
+
+            return requiredIndex >= 0 &&
+                currentIndex >= requiredIndex;
+        }
 
         case 'achievement_count':
             return achievementCount >=
