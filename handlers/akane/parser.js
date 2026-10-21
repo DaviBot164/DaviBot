@@ -2,8 +2,10 @@ const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
 
-const { recognize, extractChoice } = require('./language');
+const { recognize, extractChoice, canonical } = require('./language');
 const { contextualCategory } = require('./context');
+const { reactionClauses, prepareSentence } = require('./sentenceParser');
+const { recognizeSocial } = require('./socialIntent');
 
 function parseRequest(message, now) {
     const content = String(message.content ?? '').trim();
@@ -30,9 +32,13 @@ function parseRequest(message, now) {
         ) return null;
     }
 
+    const parts = reactionClauses(prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim()));
+    const meanings = parts.length > 1 && parts.length <= 3 ? parts.map(part => recognizeSocial(part,raw)) : [];
+    const mixedSocial = meanings.includes('reaction_affection') && meanings.includes('reaction_insult');
     const context = session?.category ?? null;
     const followup = {
         context,
+        mixedSocial,
         followup: Boolean(context),
         question: session?.question ?? false,
         conversation: session

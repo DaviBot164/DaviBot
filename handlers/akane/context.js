@@ -23,6 +23,15 @@ function contextualCategory(raw, session) {
         if (['good','great','pretty good','really good','კარგად','კარგი'].includes(text)) return 'feeling_good';
         if (['tired','sleepy','დაღლილი'].includes(text)) return 'tired';
     }
+    if (session && ['same','same here','me too','me neither','so do i','so am i'].includes(text)) {
+        // The session category records Akane's last topic, not necessarily the user's mood.
+        const last = session.history?.at(-1);
+        const ownMood = ['feeling_good','feeling_bad','feeling_neutral','tired','bored','hungry','lonely'];
+        if (ownMood.includes(session.category) && last?.request === session.category && !['me neither'].includes(text)) return session.category;
+        return 'context_echo';
+    }
+    if (session && ['not anymore','not any more','no longer','not now anymore'].includes(text)) return 'context_changed';
+    if (session && ['maybe','perhaps','possibly','i guess','not sure','i am not sure'].includes(text)) return ['mood','choices'].includes(session.pending?.kind) ? 'uncertain' : 'context_hesitant';
     const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';
     if (session?.pending?.kind === 'choices' && raw.includes('/')) return 'context_choices';

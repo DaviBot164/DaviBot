@@ -6,6 +6,7 @@ const conversation = require('../../config/akaneConversation');
 const english = require('../../config/akaneEnglish');
 const OWNER_ID='1357721282061533311';
 const MAX_INPUT=2000;
+const socialVocabulary = require('../../config/akaneSocialVocabulary');
 function canonical(value) {
     return normalize(value).slice(0,MAX_INPUT)
         .replace(/\b(he+y+|hi+i+|helloo+|hii+)\b/gu,'hello')
@@ -14,6 +15,9 @@ function canonical(value) {
         .replace(/[a-z0-9]+(?:'[a-z]+)?/gu,word=>english.slang[word]??word)
         .replace(/\bur\s+(?=(?:so |really |very |pretty |kind of |not |a |an |just )*(?:cute|nice|sweet|beautiful|pretty|funny|stupid|dumb|ugly|useless|rude|mean|adorable|lovely|bot|robot)\b)/gu,'you are ')
         .replace(/\bur\b/gu,'your')
+        .replace(/\bso{3,}\b/gu,'so')
+        .replace(/\bver{1,}y{2,}\b/gu,'very')
+        .replace(/^you (?=(?:so |really |very |not )+(?:[a-z]+))/u,'you are ')
         .replace(/\s+/gu,' ').trim();
 }
 function tidy(value) {
@@ -53,8 +57,8 @@ function reaction(value) {
     const text=stripMarkers(tidy(raw.replace(new RegExp(`<@!?${OWNER_ID}>`,'gu'),' Davi ')));
     // Quoted or reported speech should not become a personal accusation.
     if(/["“”]/u.test(raw)||/\b(?:said|says|told|quoted|quote|someone|my friend|my brother|my sister)\b/u.test(text))return null;
-    const negative='stupid|dumb|ugly|useless|trash|annoying|idiot|boring';
-    const nice='cute|beautiful|pretty|sweet|lovely|adorable|gorgeous|nice|funny|amazing';
+    const negative=socialVocabulary.negative.join('|');
+    const nice=socialVocabulary.positive.join('|');
     const clauses=reactionClauses(text);
     let best=null;let priority=0;
     const offer=(category,p)=>{if(p>priority){best=category;priority=p;}};
@@ -95,6 +99,7 @@ function recognize(value) {
     const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
+    if (/^(?:i (?:never|did not) (?:say|said|mean) (?:that|you (?:are|were) .+)|that is not what i said)$/u.test(text)) return 'repair';
     const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;
     if (/^(?:(?:can|could|would) you (?:please )?)?(?:tell me (?:a |another )?(?:funny )?joke|give me a joke|say something funny|joke)$/u.test(text)) return 'joke';
     if (/^(?:(?:can|could|would) you (?:please )?)?(?:help me|give me some help|i need (?:some )?help|i need your help)$/u.test(text)) return 'help_offer';

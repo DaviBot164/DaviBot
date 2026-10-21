@@ -209,7 +209,7 @@ function buildResponse(message, request) {
     } else {
         const effective = request.category === 'context_choices'
             ? { ...request, category: 'pick' } : request;
-        base = buildBaseResponse(message, effective);
+        base = buildBaseResponse(message, request.mixedSocial ? {...effective,category:'mixed_social'} : effective);
     }
     if (request.conversation?.mode?.remaining > 0 && everyday.explanations[request.category]) {
         const calm = {

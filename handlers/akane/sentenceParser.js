@@ -1,3 +1,8 @@
+const vocabulary = require('../../config/akaneSocialVocabulary');
+const descriptions = new Set([...vocabulary.positive, ...vocabulary.negative, 'rude', 'mean']);
+function bareDescription(text) {
+    return descriptions.has(text.replace(/^(?:not )?(?:(?:really|very|so|just|quite|extremely|absolutely|fucking) )*/u, ''));
+}
 // Pure sentence-shape helpers. No Discord state or reply text belongs here.
 function prepareSentence(text) {
     const withoutMarkers = text.replace(/\b(?:not going to lie|to be honest|in my opinion|honestly|actually)\b/gu,' ').replace(/\s+/gu,' ').trim();
@@ -17,7 +22,7 @@ function reactionClauses(text) {
         const join=clauses[i-1];
         // Carry a clear addressee across "but", never copy negation to another clause.
         if(['but','however','yet'].includes(join)&&/^you (?:are|look|sound)\b/u.test(previous)&&
-            /^(?:not )?(?:(?:really|very|so) )*(?:stupid|dumb|ugly|useless|trash|annoying|boring|cute|sweet|pretty|beautiful|rude|mean)$/u.test(clause)){
+            bareDescription(clause)){
             clause='you are '+clause;
         }
         result.push(clause);previous=clause;
