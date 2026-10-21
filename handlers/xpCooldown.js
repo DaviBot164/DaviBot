@@ -2,19 +2,37 @@ const { XP } = require('../config/progression');
 
 const cooldowns = new Map();
 
-function canEarnXP(guildId, userId) {
-    const key = `${guildId}:${userId}`;
-    const now = Date.now();
-    const lastEarned = cooldowns.get(key);
+let nextCleanup = 0;
 
-    if (
-        lastEarned &&
-        now - lastEarned < XP.cooldown
-    ) {
+function cleanExpired(now) {
+    if (now < nextCleanup) return;
+
+    nextCleanup = now + 60_000;
+
+    for (const [key, expiresAt] of cooldowns) {
+        if (expiresAt <= now) {
+            cooldowns.delete(key);
+        }
+    }
+}
+
+function canEarnXP(guildId, userId) {
+    const duration = Number(XP.cooldown);
+
+    if (!Number.isSafeInteger(duration) || duration < 0) {
+        throw new Error('XP cooldown must be a non-negative integer.');
+    }
+
+    const now = Date.now();
+    const key = `${guildId}:${userId}`;
+
+    cleanExpired(now);
+
+    if (now < (cooldowns.get(key) ?? 0)) {
         return false;
     }
 
-    cooldowns.set(key, now);
+    cooldowns.set(key, now + duration);
     return true;
 }
 

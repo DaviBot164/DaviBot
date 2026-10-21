@@ -44,10 +44,29 @@ async function awardXP(
 
         const user = rows[0];
 
-        const progress = calculateLevel(
-            user.level,
-            user.xp + amount
-        );
+        const currentLevel = Number(user.level);
+        const currentXP = Number(user.xp);
+
+        if (
+            user.level == null ||
+            user.xp == null ||
+            !String(user.level).trim() ||
+            !String(user.xp).trim() ||
+            !Number.isSafeInteger(currentLevel) ||
+            currentLevel < 1 ||
+            !Number.isSafeInteger(currentXP) ||
+            currentXP < 0
+        ) {
+            throw new Error('Player has invalid level or XP data.');
+        }
+
+        const totalXP = currentXP + amount;
+
+        if (!Number.isSafeInteger(totalXP)) {
+            throw new Error('XP exceeds the supported range.');
+        }
+
+        const progress = calculateLevel(currentLevel, totalXP);
 
         const { rows: updatedRows } = await client.query(
             `
@@ -152,7 +171,7 @@ async function awardXP(
                 rank: updated.rank,
                 rankPoints: updated.rank_points
             },
-            previousLevel: user.level,
+            previousLevel: currentLevel,
             levelsGained: progress.levelsGained,
             awardedXP: amount
         };
