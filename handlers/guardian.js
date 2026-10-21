@@ -1,10 +1,12 @@
+const { markDeletion, forgetDeletion } = require('../utils/logTracking');
 const { PermissionFlagsBits } = require('discord.js');
 
 const guardian = require('../config/guardian');
 const { sendGuardianLog } = require('../utils/guardianLogs');
 
 const {
-    recordModerationAction
+    recordModerationAction,
+    sendModerationLog
 } = require('./moderationService');
 
 const spamHistory = new Map();
@@ -163,6 +165,7 @@ async function recordGuardianCase(message, result) {
             userId: message.author.id,
             moderatorId: message.guild.members.me?.id ?? null,
             action: 'guardian',
+            log: false,
             reason: getGuardianReason(result),
             durationMs: timeout ? guardian.spam.timeoutMs : null,
             channelId: message.channelId,
@@ -183,6 +186,7 @@ async function recordGuardianCase(message, result) {
         });
 
         result.caseId = moderationCase.id;
+        result.moderationCase = moderationCase;
     } catch (error) {
         console.error('Guardian case recording failed:', error);
     }
@@ -195,14 +199,20 @@ async function logGuardianAction(message, result) {
         await sendGuardianLog(message, result);
     } catch (error) {
         console.error('Guardian log failed:', error);
+        if (result.moderationCase) {
+            await sendModerationLog({ guild: message.guild, moderationCase: result.moderationCase, target: message.author })
+                .catch(fallbackError => console.error('Guardian fallback log failed:', fallbackError));
+        }
     }
 }
 
 async function deleteMessage(message) {
+    markDeletion(message.guild.id, message.id);
     try {
         await message.delete();
         return true;
     } catch (error) {
+        forgetDeletion(message.guild.id, message.id);
         console.error('Guardian message deletion failed:', error);
         return false;
     }

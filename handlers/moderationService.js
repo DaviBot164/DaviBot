@@ -1,3 +1,4 @@
+const { recordAction } = require('../utils/logTracking');
 const { PermissionFlagsBits } = require('discord.js');
 const channels = require('../config/channels');
 const { createEmbed } = require('../utils/embeds');
@@ -147,6 +148,10 @@ async function sendModerationLog({
         );
     }
 
+    if (moderationCase.action === 'clear') {
+        details.push(`Deleted: **${moderationCase.metadata?.deleted ?? 'Unknown'}** messages`);
+    }
+
     const reason = String(
         moderationCase.reason || 'No reason provided.'
     ).slice(0, 1500);
@@ -173,7 +178,8 @@ async function recordModerationAction({
     metadata = {},
     active = true,
     expiresAt = null,
-    target = null
+    target = null,
+    log = true
 }) {
     const moderationCase = await createCase({
         guildId: guild.id,
@@ -190,7 +196,8 @@ async function recordModerationAction({
     });
 
     try {
-        await sendModerationLog({ guild, moderationCase, target });
+        if (log) await sendModerationLog({ guild, moderationCase, target });
+        recordAction({ guild, userId, action, metadata });
     } catch (error) {
         console.error('Moderation log failed:', error);
     }

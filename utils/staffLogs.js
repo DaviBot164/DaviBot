@@ -1,3 +1,5 @@
+const { isManagedDeletion, isRecordedModerationAudit } = require('./logTracking');
+const { avatarSnapshots } = require('./avatarSnapshot');
 const {
     AuditLogEvent,
     EmbedBuilder
@@ -32,7 +34,7 @@ function isLogChannel(channelId) {
     ].includes(channelId);
 }
 
-async function sendLog(guild, embed, channelId = channels.staffLogs) {
+async function sendLog(guild, embed, channelId = channels.staffLogs, files = []) {
     try {
         const channel = await guild.channels.fetch(channelId);
 
@@ -46,6 +48,7 @@ async function sendLog(guild, embed, channelId = channels.staffLogs) {
 
         await channel.send({
             embeds: [embed],
+            ...(files.length ? { files } : {}),
             allowedMentions: { parse: [] }
         });
     } catch (error) {
@@ -68,6 +71,7 @@ function messageText(message) {
 }
 
 async function logMessageDelete(message) {
+    if (message.guild && isManagedDeletion(message.guild.id, message.id)) return;
     if (!message.guild || isLogChannel(message.channelId)) return;
 
     const embed = new EmbedBuilder()
@@ -103,16 +107,24 @@ async function logMessageDelete(message) {
             name: 'Attachments',
             value: shorten(
                 [...message.attachments.values()]
-                    .map(file => file.name || file.id)
+                    .map(file => file.url ? `[Attachment ${file.id}](${file.url})` : file.name || file.id)
                     .join('\n')
             )
         });
     }
 
+    const image = [...(message.attachments?.values() ?? [])].find(file =>
+        file.url && (/^image\//i.test(file.contentType ?? '') || /\.(png|jpe?g|webp|gif)(?:\?|$)/i.test(file.url))
+    );
+    if (image) embed.setImage(image.url);
+
     await sendLog(message.guild, embed);
 }
 
 async function logBulkDelete(messages, channel) {
+    if (!channel.guild) return;
+    messages = messages.filter(message => !isManagedDeletion(channel.guild.id, message.id));
+    if (!messages.size) return;
     if (!channel.guild || isLogChannel(channel.id)) return;
 
     const sample = [...messages.values()]
@@ -212,7 +224,9 @@ async function logAuditEntry(entry, guild) {
         AuditLogEvent.MessageBulkDelete
     ].includes(entry.action);
 
-    if (messageAction && isLogChannel(channelId)) return;
+    // Message events carry the content; do not publish a second deletion audit.
+    if (messageAction) return;
+    if (await isRecordedModerationAudit(entry, guild)) return;
 
     const timeoutChanged =
         entry.action === AuditLogEvent.MemberUpdate &&
@@ -297,34 +311,20 @@ async function logAuditEntry(entry, guild) {
 }
 
 async function logAvatarChange(guild, user, oldURL, newURL, server = false) {
+    const channel = await guild.channels.fetch(channels.staffLogs);
+    if (!channel?.isTextBased() || typeof channel.send !== 'function') throw new Error('Avatar log channel unavailable.');
+    const images = await avatarSnapshots(channel, oldURL, newURL);
     const embed = new EmbedBuilder()
         .setColor('#C8A45D')
-        .setTitle(
-            server ? '🖼️ Server Avatar Changed' : '🖼️ Account Avatar Changed'
-        )
-        .setDescription(
-            `<@${user.id}> • ${user.id}\n` +
-            (server
-                ? 'Their avatar for this server was updated.'
-                : 'Their account avatar was updated.')
-        )
+        .setTitle(server ? '🖼️ Server Avatar Changed' : '🖼️ Account Avatar Changed')
+        .setDescription(`<@${user.id}> • ${user.id}\n${server ? 'Server avatar updated.' : 'Account avatar updated.'}`)
         .addFields(
-            {
-                name: 'Before',
-                value: oldURL
-                    ? `[Open previous avatar](${oldURL})`
-                    : 'Previous avatar unavailable.'
-            },
-            {
-                name: 'After',
-                value: `[Open current avatar](${newURL})`
-            }
-        )
-        .setImage(newURL);
-
-    if (oldURL) embed.setThumbnail(oldURL);
-
-    await sendLog(guild, embed);
+            { name: 'Before', value: oldURL ? `[Open previous avatar](${oldURL})` : 'Previous avatar unavailable.' },
+            { name: 'After', value: newURL ? `[Open current avatar](${newURL})` : 'Current avatar unavailable.' }
+        );
+    if (images.before) embed.setThumbnail(images.before);
+    if (images.after) embed.setImage(images.after);
+    await sendLog(guild, embed, channels.staffLogs, images.files);
 }
 
 module.exports = {
