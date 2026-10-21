@@ -1,7 +1,4 @@
-const {
-    createCanvas,
-    loadImage
-} = require('@napi-rs/canvas');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
 const { getProgress } = require('../leveling');
 const { getRank } = require('../../handlers/factionHandler');
@@ -9,167 +6,187 @@ const { FACTIONS } = require('../../config/progression');
 const brand = require('../../config/brand');
 
 const WIDTH = 1100;
-const HEIGHT = 620;
+const HEIGHT = 700;
 
-const COLORS = {
-    background: '#08090B',
-    surface: '#151014',
-    crimson: '#9B1C31',
-    gold: '#C8A45D',
-    white: '#F5F5F5',
-    muted: '#AFAFAF',
+const COLORS = Object.freeze({
+    background: '#090A0E',
+    panel: '#13141B',
+    white: '#F2F0F2',
+    muted: '#AAA6B1',
+    gold: '#D5B779',
+    crimson: '#B42D48',
+    blue: '#70A9EF',
+    green: '#7CC9A0',
     border: 'rgba(255,255,255,0.08)'
-};
+});
+
+function number(value) {
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
 
 function formatNumber(value) {
-    return Number(value || 0).toLocaleString('en-US');
+    return number(value).toLocaleString('en-US');
 }
 
-function fitText(ctx, value, maxWidth, size = 28, min = 12) {
-    const text = String(value ?? '');
-
-    while (size > min) {
-        ctx.font = `700 ${size}px sans-serif`;
-
-        if (ctx.measureText(text).width <= maxWidth) {
-            break;
-        }
-
-        size -= 2;
-    }
-
-    return size;
-}
-
-function trimText(ctx, value, maxWidth) {
-    let text = String(value ?? '');
-
-    if (ctx.measureText(text).width <= maxWidth) {
-        return text;
-    }
-
-    while (
-        text.length &&
-        ctx.measureText(`${text}…`).width > maxWidth
-    ) {
-        text = text.slice(0, -1);
-    }
-
-    return `${text}…`;
-}
-
-function roundRect(ctx, x, y, width, height, radius, color) {
-    ctx.fillStyle = color;
+function rounded(ctx, x, y, width, height, radius, fill) {
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, radius);
+    ctx.fillStyle = fill;
     ctx.fill();
 }
 
-function drawText(
+function panel(ctx, x, y, width, height) {
+    rounded(ctx, x, y, width, height, 16, COLORS.panel);
+
+    ctx.strokeStyle = COLORS.border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+
+function fittedText(ctx, value, maxWidth, size, weight) {
+    const characters = Array.from(
+        String(value ?? '').replace(/[\r\n\t]+/gu, ' ')
+    );
+
+    let fontSize = size;
+
+    while (fontSize > 14) {
+        ctx.font = `${weight} ${fontSize}px sans-serif`;
+
+        if (ctx.measureText(characters.join('')).width <= maxWidth) {
+            return characters.join('');
+        }
+
+        fontSize -= 1;
+    }
+
+    ctx.font = `${weight} ${fontSize}px sans-serif`;
+
+    while (
+        characters.length &&
+        ctx.measureText(`${characters.join('')}…`).width > maxWidth
+    ) {
+        characters.pop();
+    }
+
+    return characters.length ? `${characters.join('')}…` : '';
+}
+
+function text(
     ctx,
     value,
     x,
     y,
+    width,
     size = 20,
     color = COLORS.white,
     weight = 600,
-    maxWidth = null
+    align = 'left'
 ) {
-    ctx.font = `${weight} ${size}px sans-serif`;
+    ctx.save();
+
+    const display = fittedText(ctx, value, width, size, weight);
+
     ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(display, x, y);
 
-    const text = maxWidth
-        ? trimText(ctx, value, maxWidth)
-        : String(value ?? '');
-
-    ctx.fillText(text, x, y);
+    ctx.restore();
 }
 
-function drawStat(ctx, x, y, label, value, accent = COLORS.gold) {
-    const width = 242;
-    const height = 76;
+function label(ctx, value, x, y, width) {
+    text(ctx, value, x, y, width, 12, COLORS.muted, 600);
+}
 
-    roundRect(
-        ctx,
-        x,
-        y,
-        width,
-        height,
-        15,
-        'rgba(255,255,255,0.045)'
-    );
+function stat(ctx, x, y, labelText, value, accent = COLORS.gold) {
+    const width = 244;
 
-    ctx.strokeStyle = COLORS.border;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(x, y, width, height, 15);
-    ctx.stroke();
+    panel(ctx, x, y, width, 76);
+    rounded(ctx, x + 16, y + 19, 3, 13, 1, accent);
 
-    roundRect(ctx, x + 14, y + 17, 3, 14, 2, accent);
-
-    drawText(
-        ctx,
-        label.toUpperCase(),
-        x + 26,
-        y + 29,
-        13,
-        COLORS.muted,
-        600
-    );
-
-    ctx.font = '700 26px sans-serif';
-
-    const display = trimText(
-        ctx,
-        formatNumber(value),
-        width - 36
-    );
-
-    drawText(
-        ctx,
-        display,
-        x + 18,
-        y + 62,
-        26
-    );
+    label(ctx, labelText.toUpperCase(), x + 28, y + 30, width - 44);
+    text(ctx, value, x + 18, y + 61, width - 36, 25);
 }
 
 function getFaction(user) {
     if (user.faction === FACTIONS.SLAYER) {
-        return {
-            name: 'SLAYER',
-            color: '#4A90E2'
-        };
+        return { name: 'Slayer', color: COLORS.blue };
     }
 
     if (user.faction === FACTIONS.DEMON) {
-        return {
-            name: 'DEMON',
-            color: COLORS.crimson
-        };
+        return { name: 'Demon', color: COLORS.crimson };
     }
 
-    return {
-        name: 'UNCHOSEN',
-        color: COLORS.muted
-    };
+    return { name: 'Not chosen', color: COLORS.muted };
 }
 
 function formatDate(value) {
-    if (!value) {
-        return 'Unknown';
-    }
+    if (!value) return 'Unknown';
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
-        return 'Unknown';
-    }
+    if (Number.isNaN(date.getTime())) return 'Unknown';
 
     return date.toLocaleDateString('en-US', {
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'UTC'
     });
+}
+
+async function drawAvatar(ctx, member, accent) {
+    const x = 64;
+    const y = 99;
+    const size = 142;
+    const centerX = x + size / 2;
+    const centerY = y + size / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, size / 2, 0, Math.PI * 2);
+    ctx.clip();
+
+    ctx.fillStyle = '#25212B';
+    ctx.fillRect(x, y, size, size);
+
+    try {
+        const avatar = await loadImage(
+            member.displayAvatarURL({
+                extension: 'png',
+                size: 256
+            })
+        );
+
+        ctx.drawImage(avatar, x, y, size, size);
+    } catch (error) {
+        const initial = Array.from(
+            member.user.username || '?'
+        )[0].toUpperCase();
+
+        text(
+            ctx,
+            initial,
+            centerX,
+            centerY + 18,
+            size - 24,
+            52,
+            COLORS.gold,
+            700,
+            'center'
+        );
+
+        console.error('Profile avatar could not be loaded:', error.message);
+    } finally {
+        ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, size / 2 + 5, 0, Math.PI * 2);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 3;
+    ctx.stroke();
 }
 
 async function createProfileCard(
@@ -184,388 +201,208 @@ async function createProfileCard(
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext('2d');
 
-    const background = ctx.createLinearGradient(
-        0,
-        0,
-        WIDTH,
-        HEIGHT
-    );
-
+    const background = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
     background.addColorStop(0, COLORS.background);
-    background.addColorStop(0.55, COLORS.surface);
-    background.addColorStop(1, '#350A12');
+    background.addColorStop(1, '#211019');
 
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     const glow = ctx.createRadialGradient(
-        950, 80, 15,
-        950, 80, 280
+        1040, 0, 0,
+        1040, 0, 430
     );
 
-    glow.addColorStop(0, 'rgba(155,28,49,0.35)');
-    glow.addColorStop(1, 'rgba(155,28,49,0)');
+    glow.addColorStop(0, 'rgba(180,45,72,0.17)');
+    glow.addColorStop(1, 'rgba(180,45,72,0)');
 
     ctx.fillStyle = glow;
-    ctx.fillRect(650, 0, 450, 370);
-
-    ctx.fillStyle = 'rgba(200,164,93,0.09)';
-    ctx.beginPath();
-    ctx.arc(960, 100, 62, 0, Math.PI * 2);
-    ctx.fill();
-
-    roundRect(
-        ctx,
-        22,
-        22,
-        1056,
-        576,
-        25,
-        'rgba(0,0,0,0.25)'
-    );
-
-    roundRect(
-        ctx,
-        22,
-        22,
-        7,
-        576,
-        4,
-        COLORS.crimson
-    );
-
-    drawText(
-        ctx,
-        `${brand.server.toUpperCase()} • SOUL PROFILE`,
-        58,
-        65,
-        19,
-        COLORS.gold,
-        700,
-        700
-    );
-
-    drawText(
-        ctx,
-        'AKANE • PLAYER IDENTITY',
-        58,
-        95,
-        13,
-        COLORS.muted
-    );
+    ctx.fillRect(600, 0, 500, 430);
 
     const faction = getFaction(user);
-
     const rank = user.faction && user.rank
         ? getRank(user.faction, user.rank)
         : null;
 
     const progress = getProgress(user.level, user.xp);
+    const current = number(progress.current);
+    const required = number(progress.required);
+    const remaining = Math.max(0, required - current);
 
-    const percentage = Math.max(
-        0,
-        Math.min(100, Number(progress.percentage) || 0)
+    const percentage = Math.min(
+        100,
+        Math.max(0, number(progress.percentage))
     );
 
-    const avatar = await loadImage(
-        member.user.displayAvatarURL({
-            extension: 'png',
-            size: 256
-        })
+    const serverName = String(
+        brand.server ?? brand.serverName ?? 'Blood Moon'
     );
 
-    const centerX = 170;
-    const centerY = 225;
-    const radius = 105;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.clip();
-
-    ctx.drawImage(
-        avatar,
-        centerX - radius,
-        centerY - radius,
-        radius * 2,
-        radius * 2
+    text(
+        ctx,
+        serverName.toUpperCase(),
+        40, 43, 650, 17,
+        COLORS.gold, 700
     );
 
-    ctx.restore();
+    text(
+        ctx,
+        'SOUL PROFILE',
+        1060, 43, 300, 12,
+        COLORS.muted, 600, 'right'
+    );
 
-    ctx.strokeStyle = faction.color;
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
-    ctx.stroke();
+    // Identity: avatar, name and equipped title.
+    panel(ctx, 40, 70, 1020, 198);
 
-    ctx.strokeStyle = 'rgba(200,164,93,0.45)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius + 12, 0, Math.PI * 2);
-    ctx.stroke();
+    await drawAvatar(ctx, member, faction.color);
 
-    const displayName =
-        member.displayName &&
+    const displayName = member.displayName &&
         /[\p{L}\p{N}]/u.test(member.displayName)
-            ? member.displayName
-            : member.user.username;
+        ? member.displayName
+        : member.user.username;
 
-    const nameSize = fitText(
-        ctx,
-        displayName,
-        550,
-        42,
-        24
-    );
+    text(ctx, displayName, 240, 122, 785, 36, COLORS.white, 700);
 
-    drawText(
-        ctx,
-        displayName,
-        330,
-        151,
-        nameSize,
-        COLORS.white,
-        700,
-        550
-    );
-
-    drawText(
+    text(
         ctx,
         `@${member.user.username}`,
-        332,
-        180,
-        17,
-        COLORS.muted,
-        500,
-        550
+        242, 151, 780, 17,
+        COLORS.muted, 500
     );
 
-    if (title) {
-        drawText(
-            ctx,
-            `「 ${title.name.toUpperCase()} 」`,
-            332,
-            211,
-            18,
-            COLORS.gold,
-            600,
-            550
+    text(
+        ctx,
+        title?.name ?? 'No title equipped',
+        242, 183, 780, 19,
+        title ? COLORS.gold : COLORS.muted,
+        500
+    );
+
+    label(ctx, 'PATH', 242, 218, 200);
+    text(ctx, faction.name, 242, 245, 270, 21, faction.color, 700);
+
+    label(ctx, 'RANK', 570, 218, 440);
+    text(
+        ctx,
+        rank?.name ?? 'Unranked',
+        570, 245, 450, 21,
+        COLORS.white, 700
+    );
+
+    // Level and XP have their own uninterrupted section.
+    panel(ctx, 40, 284, 1020, 142);
+
+    label(ctx, 'SERVER PROGRESSION', 60, 310, 500);
+
+    text(
+        ctx,
+        `Level ${formatNumber(user.level)}`,
+        60, 346, 550, 30,
+        COLORS.white, 700
+    );
+
+    text(
+        ctx,
+        `${formatNumber(remaining)} XP to next level`,
+        1040, 345, 420, 16,
+        COLORS.muted, 500, 'right'
+    );
+
+    const barX = 60;
+    const barY = 363;
+    const barWidth = 980;
+    const barHeight = 12;
+
+    rounded(ctx, barX, barY, barWidth, barHeight, 6, '#292631');
+
+    if (percentage > 0) {
+        const fill = ctx.createLinearGradient(
+            barX, barY, barX + barWidth, barY
         );
-    }
 
-    drawText(
-        ctx,
-        faction.name,
-        332,
-        244,
-        18,
-        faction.color,
-        700
-    );
+        fill.addColorStop(0, COLORS.crimson);
+        fill.addColorStop(1, COLORS.gold);
 
-    drawText(
-        ctx,
-        rank ? rank.name.toUpperCase() : 'UNRANKED',
-        332,
-        273,
-        17,
-        COLORS.muted,
-        600,
-        550
-    );
-
-    drawText(
-        ctx,
-        `LEVEL ${formatNumber(user.level)}`,
-        332,
-        322,
-        32,
-        COLORS.white,
-        700
-    );
-
-    const barX = 332;
-    const barY = 339;
-    const barWidth = 665;
-    const barHeight = 15;
-
-    roundRect(
-        ctx,
-        barX,
-        barY,
-        barWidth,
-        barHeight,
-        8,
-        '#29292E'
-    );
-
-    const filledWidth = barWidth * percentage / 100;
-
-    if (filledWidth > 0) {
-        const barGradient = ctx.createLinearGradient(
+        // Clip the fill so very small values keep the rounded bar shape.
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barWidth, barHeight, 6);
+        ctx.clip();
+        ctx.fillStyle = fill;
+        ctx.fillRect(
             barX,
             barY,
-            barX + barWidth,
-            barY
+            barWidth * percentage / 100,
+            barHeight
         );
-
-        barGradient.addColorStop(0, COLORS.crimson);
-        barGradient.addColorStop(1, COLORS.gold);
-
-        roundRect(
-            ctx,
-            barX,
-            barY,
-            filledWidth,
-            barHeight,
-            8,
-            barGradient
-        );
+        ctx.restore();
     }
 
-    drawText(
+    text(
         ctx,
-        `${formatNumber(progress.current)} / ${formatNumber(progress.required)} XP`,
-        barX,
-        377,
-        15,
-        COLORS.muted
+        `${formatNumber(current)} / ${formatNumber(required)} XP`,
+        60, 405, 740, 15,
+        COLORS.muted, 500
     );
 
-    ctx.textAlign = 'right';
-
-    drawText(
+    text(
         ctx,
         `${Math.round(percentage)}%`,
-        barX + barWidth,
-        377,
-        15,
-        COLORS.gold
+        1040, 405, 150, 15,
+        COLORS.gold, 600, 'right'
     );
 
-    ctx.textAlign = 'left';
+    label(ctx, 'ACTIVITY & PROGRESSION', 42, 453, 650);
 
-    const columns = [47, 306, 565, 824];
+    const columns = [40, 299, 558, 817];
 
-    const firstRow = 405;
-    const secondRow = 497;
+    stat(ctx, columns[0], 466, 'Messages', formatNumber(user.messages));
+    stat(ctx, columns[1], 466, 'Achievements', formatNumber(achievementCount));
+    stat(ctx, columns[2], 466, 'Rank Points', formatNumber(user.rankPoints));
+    stat(ctx, columns[3], 466, 'Daily Streak', formatNumber(stats?.dailyStreak));
 
-    drawStat(
+    stat(
         ctx,
-        columns[0],
-        firstRow,
-        'Messages',
-        user.messages
-    );
-
-    drawStat(
-        ctx,
-        columns[1],
-        firstRow,
-        'Achievements',
-        achievementCount
-    );
-
-    drawStat(
-        ctx,
-        columns[2],
-        firstRow,
-        'Rank Points',
-        user.rankPoints
-    );
-
-    drawStat(
-        ctx,
-        columns[3],
-        firstRow,
+        columns[0], 556,
         'Duel Wins',
-        stats?.duelWins || 0,
-        '#4CAF50'
+        formatNumber(stats?.duelWins),
+        COLORS.green
     );
 
-    drawStat(
+    stat(
         ctx,
-        columns[0],
-        secondRow,
+        columns[1], 556,
         'Duel Losses',
-        stats?.duelLosses || 0,
+        formatNumber(stats?.duelLosses),
         COLORS.crimson
     );
 
-    drawStat(
-        ctx,
-        columns[1],
-        secondRow,
-        'Daily Streak',
-        stats?.dailyStreak || 0
-    );
+    stat(ctx, columns[2], 556, 'Event Points', formatNumber(stats?.eventPoints));
 
-    drawStat(
+    stat(
         ctx,
-        columns[2],
-        secondRow,
-        'Event Points',
-        stats?.eventPoints || 0
-    );
-
-    roundRect(
-        ctx,
-        columns[3],
-        secondRow,
-        242,
-        76,
-        15,
-        'rgba(255,255,255,0.045)'
-    );
-
-    drawText(
-        ctx,
-        'JOINED SERVER',
-        columns[3] + 18,
-        secondRow + 29,
-        13,
-        COLORS.muted
-    );
-
-    drawText(
-        ctx,
+        columns[3], 556,
+        'Joined Server',
         formatDate(member.joinedAt),
-        columns[3] + 18,
-        secondRow + 61,
-        24,
-        COLORS.white,
-        700
+        COLORS.blue
     );
 
-    drawText(
+    text(
         ctx,
-        'Forged beneath the Blood Moon.',
-        50,
-        594,
-        14,
-        COLORS.muted,
-        400
+        'Your journey beneath the Blood Moon.',
+        42, 674, 550, 13,
+        COLORS.muted, 400
     );
 
-    ctx.textAlign = 'right';
-
-    drawText(
+    text(
         ctx,
-        brand.footer,
-        1055,
-        594,
-        13,
-        COLORS.muted,
-        500,
-        400
+        brand.footer ?? 'Akane • Blood Moon',
+        1059, 674, 430, 13,
+        COLORS.muted, 500, 'right'
     );
-
-    ctx.textAlign = 'left';
 
     return canvas.toBuffer('image/png');
 }
 
-module.exports = {
-    createProfileCard
-};
+module.exports = { createProfileCard };
