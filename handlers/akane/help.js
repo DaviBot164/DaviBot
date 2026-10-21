@@ -24,7 +24,7 @@ function plainHelp() {
         'Yes/no works only after a yes/no question.',
         '',
         '`akane stop` or `bye` during a conversation — End it.',
-        'Wait **10 seconds** between requests; **5 seconds** between channel responses.',
+        'Wait **3 seconds** between requests; **2 seconds** between channel responses.',
         'Preset character dialogue: unfamiliar sentences may need a clearer request.'
     ].join('\n');
 }

@@ -6,8 +6,8 @@ const {
 } = require('../../config/akaneReactions');
 
 const OWNER_ID = personality.ownerId;
-const USER_COOLDOWN = 10_000;
-const CHANNEL_COOLDOWN = 5_000;
+const USER_COOLDOWN = 3_000;
+const CHANNEL_COOLDOWN = 2_000;
 const SESSION_TTL = 120_000;
 const STATE_TTL = 30 * 60_000;
 
