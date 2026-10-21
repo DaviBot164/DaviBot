@@ -89,6 +89,8 @@ function recognize(value) {
     const normalized=tidy(raw);
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
+    const directSocial=recognizeSocial(prepareSentence(normalized),raw);
+    if(directSocial) return directSocial;
     const text=prepareSentence(stripMarkers(normalized));
     const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
