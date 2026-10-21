@@ -205,6 +205,23 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildResponse(message, request) {
+    if(request.category==='repair_answer') {
+        const tone=toneFor(message.author.id);
+        return {payload:{content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+'you meant my answer, not me. Understood. I can rephrase the answer.'},category:request.context??'general',session:true,question:false,pending:null};
+    }
+    if(request.category==='simplify') {
+        const short={
+            study_start:'Pick one small task to start.',
+            study_step:'Read one short section. Then answer one question about it.',
+            study_breakdown:'Make the task smaller: one sentence or one exercise.',
+            study_alternative:'Try explaining one idea aloud instead of reading it again.',
+            pick:'I chose randomly from your options.',
+            topic_boundary:'You do not have to discuss that subject.'
+        };
+        const tone=toneFor(message.author.id);
+        const content=short[request.context]??practical.explanations[request.context]??'Which sentence should I simplify? Give me the part you mean.';
+        return {payload:{content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+content},category:request.context??'clarify',session:true,question:false,pending:request.conversation?.pending??null};
+    }
     if(request.category==='explain_gentle') {
         const explained=buildResponse(message,{...request,category:'explain',followup:Boolean(request.context)});
         return {...explained,modeChange:'gentle'};

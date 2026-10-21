@@ -149,4 +149,10 @@ function recognize(value) {
     if(/^(?:ha){2,8}$|^(?:he){2,8}$|^l(?:o+l+)+$|^lmao+$|^lmfao+$|^rofl$|^xd+$/u.test(text))return 'laugh';
     return null;
 }
-module.exports={canonical,recognize,extractChoice,detectEnglishReaction:reaction};
+function correctedChoice(value) {
+ const text=prepareSentence(stripMarkers(tidy(value)));
+ const match=text.match(/^i meant (.{1,100}?) (?:or|\/) (.{1,100})$/u);
+ if(!match || match.slice(1).some(part=>/\b(?:or|and|but)\b/u.test(part)))return null;
+ return match.slice(1).join(' / ');
+}
+module.exports={canonical,recognize,extractChoice,correctedChoice,detectEnglishReaction:reaction};

@@ -11,7 +11,7 @@ for (const [category, values] of Object.entries({
     tone_gentle: ['be nice','be nicer please','please be nicer','gentle please','be nicer','be nice to me','be gentle','stop teasing','less teasing','easy on me','ცოტა რბილად','ნუ მეუხეშები','ნუ მეხუმრები'],
     tone_serious: ['be serious','serious mode','no jokes','no jokes please','be serious please','seriously please','სერიოზულად მიპასუხე','ხუმრობის გარეშე'],
     tone_reset: ['normal mode','back to normal','tease me again','ჩვეულებრივად','ისევ გამეხუმრე'],
-    repair: ["that's not what i meant",'that is not what i meant','you misunderstood','you got me wrong','not what i meant','wrong meaning','ეგ არ მიგულისხმია','არასწორად გაიგე','სხვას ვგულისხმობდი']
+    repair: ['you misunderstood me','you got me wrong there',"that's not what i meant",'that is not what i meant','you misunderstood','you got me wrong','not what i meant','wrong meaning','ეგ არ მიგულისხმია','არასწორად გაიგე','სხვას ვგულისხმობდი']
 })) for (const value of values) controls.set(normalize(value), category);
 function contextualCategory(raw, session) {
     const text = prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim());
@@ -34,6 +34,7 @@ function contextualCategory(raw, session) {
     if (session && ['not anymore','not any more','no longer','not now anymore'].includes(text)) return 'context_changed';
     if (session && ['maybe','perhaps','possibly','i guess','not sure','i am not sure'].includes(text)) return ['mood','choices'].includes(session.pending?.kind) ? 'uncertain' : 'context_hesitant';
     if (session && (['feeling_bad','not_well','emotional_detail','bad_day_context'].includes(session.category) || ['mood','mood_support','wellbeing'].includes(session.pending?.kind)) && /^(?:because|because of) (?:i (?:had|have) (?:a )?(?:bad|rough|terrible|awful) day|my (?:bad|rough|terrible|awful) day)$/u.test(text)) return 'bad_day_context';
+    if(session?.pending?.kind==='repair' && /^(?:i meant (?:your|the) (?:answer|reply|response) not you|your (?:answer|reply|response) not you)$/u.test(text)) return 'repair_answer';
     const detail = followupCategory(text,session); if(detail) return detail;
     const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';

@@ -1,5 +1,7 @@
 // Everyday speech repairs found in real conversations. All matches are bounded.
 function recognizePractical(text) {
+ if(/^(?:let us|lets|let's|can we|could we) (?:please )?talk about (?:something (?:fun|funny|light|lighter|else)|a different topic)(?: instead)?$/u.test(text))return 'topic_change';
+ if(/^(?:(?:can|could|would) you (?:please )?)?(?:explain (?:it|that|your answer) (?:more simply|in simpler words)|make (?:it|that) simpler|say (?:it|that) more simply)$/u.test(text))return 'simplify';
  if(/^(?:i (?:do not|would rather not|do not really) want to|i would rather not) (?:talk|speak)(?: about (?:it|that|this))?(?: (?:right now|anymore|please))?$/u.test(text))return 'topic_boundary';
  if(/^(?:that is|thats|that's|this is|it is|that sounds|this sounds) (?:much |a lot )?better(?: now)?$/u.test(text))return 'feedback_better';
  if(/^(?:let us|lets|let's|can we|could we) (?:please )?(?:change (?:the subject|topic)|talk about something else)$/u.test(text))return 'topic_change';
@@ -23,6 +25,7 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ study_alternative:['Try a different route: explain the idea aloud as if teaching someone, then check the part you could not explain.','Instead of reading again, turn one heading into a question and try answering it from memory.','Switch the format: make a small sketch or a two-line summary of one idea, then compare it with the material.'],
  topic_boundary:['You do not have to talk about it. We can leave that subject there.','Understood. No explanation needed. Another subject, or a pause?','That topic can stay closed. You choose what we discuss next.'],
  feedback_better:['Good. I will keep that tone.','Noted. We can carry on like this.','Glad that fits better. Go ahead.'],
  bad_day_context:['A rough day, then. I will leave the sharp teasing aside.','That gives the feeling some context. We can keep this gentle.','Sounds like the day took a lot out of you. No need to explain every part.'] ,
@@ -59,6 +62,7 @@ for(const [category,lines] of Object.entries(publicPools)){
 pools.owner.reaction_reassurance=['I heard the kindness in that, handsome.','That is sweet of you, Davi. We can leave the misunderstanding behind.','A little reassurance, sweetheart. I understood you.'];
 pools.mae.reaction_reassurance=['I hear you, Mae. Thank you for clarifying.','That was kind of you, Mae.','No misunderstanding, Mae. We can keep talking.'];
 const explanations={
+ study_alternative:'The first method did not fit, so I offered a different way to work with the material.',
  topic_boundary:'You said you did not want to discuss that subject. I respected the boundary.',
  feedback_better:'You said the answer or tone was better, so I acknowledged that feedback.',
  bad_day_context:'You added a rough day as the reason for your mood. I connected it to the ongoing conversation.',

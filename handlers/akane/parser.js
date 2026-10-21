@@ -2,7 +2,7 @@ const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
 
-const { recognize, extractChoice, canonical } = require('./language');
+const { recognize, extractChoice, correctedChoice, canonical } = require('./language');
 const { contextualCategory } = require('./context');
 const { reactionClauses, prepareSentence } = require('./sentenceParser');
 const { recognizeSocial } = require('./socialIntent');
@@ -23,7 +23,7 @@ function parseRequest(message, now) {
     const text = normalize(raw);
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
     const category = englishOnly ? (contextualCategory(raw, session) ?? recognize(raw)) : null;
-    const choice = englishOnly ? extractChoice(raw) : null;
+    const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw) : null) ?? extractChoice(raw)) : null;
 
     if (!trigger && !replying) {
         if (
@@ -71,7 +71,7 @@ function parseRequest(message, now) {
                 ? { category, ...followup, followup: Boolean(session?.question) }
                 : { category: 'clarify', ...followup };
         }
-        if (['why', 'really', 'explain', 'again'].includes(category)) {
+        if (['why', 'really', 'explain', 'again', 'simplify'].includes(category)) {
             return context ? { category, ...followup } : { category: 'clarify', ...followup };
         }
         return { category, ...followup };
