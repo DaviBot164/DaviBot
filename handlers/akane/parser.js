@@ -1,29 +1,32 @@
 const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
-const { detectReaction } = require('../../config/akaneReactions');
-const conversation = require('../../config/akaneConversation');
 
-const { recognize } = require('./language');
+const { recognize, extractChoice } = require('./language');
 const { contextualCategory } = require('./context');
 
 function parseRequest(message, now) {
     const content = String(message.content ?? '').trim();
-    const trigger = content.match(
-        /^(?:akane|აკანე)(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
+    const namedTrigger = content.match(
+        /^akane(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
     );
+    const botMention = content.match(/^<@!?(\d+)>[\s,:;.!?…]*(.*)$/su);
+    const trigger = namedTrigger ?? (botMention && botMention[1] === message.client?.user?.id
+        ? [botMention[0], botMention[2]] : null);
     const previous = getSession(message, now);
     const replying = Boolean(previous && message.reference?.messageId === previous.messageId);
     // A reply to someone else's message must not borrow Akane's context.
     const session = !message.reference || replying ? previous : null;
     const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
-    const category = contextualCategory(raw, session) ?? recognize(raw);
+    const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
+    const category = englishOnly ? (contextualCategory(raw, session) ?? recognize(raw)) : null;
+    const choice = englishOnly ? extractChoice(raw) : null;
 
     if (!trigger && !replying) {
         if (
             message.reference || !session ||
-            now >= (session.implicitUntil ?? 0) || !category
+            now >= (session.implicitUntil ?? 0) || (!category && !choice)
         ) return null;
     }
 
@@ -35,9 +38,9 @@ function parseRequest(message, now) {
         conversation: session
     };
 
-    if (!text || /^[\s\p{P}\p{S}]*$/u.test(text)) return { category: 'general', ...followup };
-    if (DAVI_NAMES.has(text)) return { category: 'davi', ...followup };
-    if (['mae', 'მეი', 'მაე'].includes(text)) return { category: 'mae', ...followup };
+    if (!category && (!text || /^[\s\p{P}\p{S}]*$/u.test(text))) return { category: 'general', ...followup };
+    if (['davi', 'daviti'].includes(text)) return { category: 'davi', ...followup };
+    if (['mae'].includes(text)) return { category: 'mae', ...followup };
 
     const mention = raw.match(/^<@!?(\d+)>[.!?…]*$/u);
     if (mention) {
@@ -53,8 +56,7 @@ function parseRequest(message, now) {
         };
     }
 
-    const choice = raw.match(/^(?:pick|choose|აირჩიე)\s+(.+)$/isu);
-    if (choice) return { category: 'pick', argument: choice[1], ...followup };
+    if (choice) return { category: 'pick', argument: choice, ...followup };
     if (['context_choices','repair_detail'].includes(category)) return { category, argument: raw, ...followup };
 
     if (category) {
@@ -69,8 +71,6 @@ function parseRequest(message, now) {
         return { category, ...followup };
     }
 
-    const reaction = detectReaction(raw);
-    if (reaction && reactionPools[reaction]?.length) return { category: `reaction_${reaction}`, ...followup };
     return { category: /[?？]/u.test(raw) ? 'reaction_question' : 'fallback', ...followup };
 }
 

@@ -1,38 +1,115 @@
-// Conservative phrase recognition: never replace pieces inside other words.
-const { normalize } = require('./aliases');
+const { normalize, aliases } = require('./aliases');
 const conversation = require('../../config/akaneConversation');
-const { aliases } = require('./aliases');
-const known = new Map(aliases);
-for (const [category, phrases] of Object.entries(conversation.aliases)) {
-    for (const phrase of phrases) known.set(normalize(phrase), category);
-}
-const expansions = new Map(Object.entries({
-    idk: 'i do not know', idc: 'i do not care', tbh: 'to be honest',
-    ngl: 'not going to lie', rn: 'right now', atm: 'at the moment',
-    pls: 'please', plz: 'please', bc: 'because', cuz: 'because',
-    u: 'you', ur: 'your', im: 'i am', "i'm": 'i am',
-    "you're": 'you are', "don't": 'do not', dont: 'do not',
-    "can't": 'cannot', cant: 'cannot', r: 'are',
-    wyd: 'what are you doing', hru: 'how are you',
-    wdym: 'what do you mean', wym: 'what do you mean', wsym: 'what do you mean'
-}));
+const english = require('../../config/akaneEnglish');
+const OWNER_ID='1357721282061533311';
+const MAX_INPUT=2000;
 function canonical(value) {
-    return normalize(value).replace(/[\p{L}\p{N}]+(?:'[\p{L}]+)?/gu,
-        token => expansions.get(token) ?? token);
+    return normalize(value).slice(0,MAX_INPUT)
+        .replace(/\b(he+y+|hi+i+|helloo+|hii+)\b/gu,'hello')
+        .replace(/\b(ple+a+se+|ple+ase+|plz+)\b/gu,'please')
+        .replace(/\bso+r+y+\b/gu,'sorry')
+        .replace(/[a-z0-9]+(?:'[a-z]+)?/gu,word=>english.slang[word]??word)
+        .replace(/\bur\s+(?=(?:so |really |very |pretty |kind of |not |a |an |just )*(?:cute|nice|sweet|beautiful|pretty|funny|stupid|dumb|ugly|useless|rude|mean|adorable|lovely|bot|robot)\b)/gu,'you are ')
+        .replace(/\bur\b/gu,'your')
+        .replace(/\s+/gu,' ').trim();
 }
-const canonicalKnown = new Map();
-for (const [phrase, category] of known) canonicalKnown.set(canonical(phrase), category);
-canonicalKnown.set('i do not know', 'uncertain');
-canonicalKnown.set('what are you doing', 'curious');
-canonicalKnown.set('i do not care', 'disagree');
+function tidy(value) {
+    return canonical(value).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim();
+}
+function stripMarkers(value) {
+    return value.replace(/^(?:(?:to be honest|not going to lie|in my opinion|honestly|well|okay|ok|actually|by the way|for real|oh my god)[,\s]+)+/u,'')
+        .replace(/^(?:hey|hello|yo)\s+(?=i |you |can |could |would |how |what |be |stop )/u,'')
+        .replace(/(?:\s+(?:please|right now|at the moment|though|honestly|today|bro|dude|mate|for real|lol|lmao|haha|xd))+$/u,'').trim();
+}
+const known=new Map();
+function add(category,phrase){
+    if(!/[a-z]/iu.test(phrase)||/[^\x00-\x7f]/u.test(phrase))return;
+    known.set(tidy(phrase),category==='affection'?'reaction_affection':category);
+}
+for(const [phrase,category]of aliases)add(category,phrase);
+for(const [category,phrases]of Object.entries(conversation.aliases))for(const phrase of phrases)add(category,phrase);
+for(const [category,phrases]of Object.entries(english.phrases))for(const phrase of phrases)add(category,phrase);
+const intensifier='(?:(?:really|very|so|pretty|quite|super|extremely|a little|a bit|kind of|sort of|too|absolutely|just) )*';
+function emotion(text) {
+    // Present-tense self-reports only: not somebody else's mood or a past event.
+    const m=text.match(/^(?:i am|i feel|i am feeling|feeling) (.+)$/u);
+    if(!m)return null;
+    const detail=m[1].split(/\s+(?:because|since|after)\s+/u)[0].replace(/^not (?:very|really|so) /u,'not ');
+    const families=[
+        ['feeling_bad','sad|upset|unhappy|down|miserable|stressed|anxious|frustrated|angry|overwhelmed|not happy|not okay|not ok|not good|not doing well'],
+        ['tired','tired|sleepy|exhausted|drained|worn out|burnt out|burned out'],
+        ['feeling_good','happy|good|great|amazing|fantastic|excited|doing well|doing great'],
+        ['feeling_neutral','okay|ok|fine|alright|all right|not bad|not sad|not tired'],
+        ['bored','bored|bored out of my mind'],['hungry','hungry|starving'],['lonely','lonely|alone']
+    ];
+    for(const [category,words]of families)if(new RegExp(`^${intensifier}(?:${words})$`,'u').test(detail))return category;
+    return null;
+}
+function reaction(value) {
+    const raw=String(value??'');
+    const text=stripMarkers(tidy(raw.replace(new RegExp(`<@!?${OWNER_ID}>`,'gu'),' Davi ')));
+    // Quoted or reported speech should not become a personal accusation.
+    if(/["“”]/u.test(raw)||/\b(?:said|says|told|quoted|quote|someone|my friend|my brother|my sister)\b/u.test(text))return null;
+    const negative='stupid|dumb|ugly|useless|trash|annoying|idiot|boring';
+    const nice='cute|beautiful|pretty|sweet|lovely|adorable|gorgeous|nice|funny|amazing';
+    const clauses=text.split(/\s+(?:but|however|yet|and)\s+/u);
+    let best=null;let priority=0;
+    const offer=(category,p)=>{if(p>priority){best=category;priority=p;}};
+    for(let clause of clauses){
+        clause=clause.replace(/^(?:i think |i feel like |honestly |sorry )/u,'').replace(/^(?:can|could|would) you (?=be my )/u,'').trim();
+        if(new RegExp(`^(?:you are not|you are never|i do not think you are) ${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^i do not hate you$/u.test(clause))offer('reassurance',4);
+        else if(new RegExp(`^(?:you are|you look|you sound|you) ${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^(?:i hate you|you suck|trash bot|stupid bot)$/u.test(clause))offer('insult',10);
+        if(new RegExp(`^(?:davi|daviti) (?:is |looks |sounds )?${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^i hate davi$/u.test(clause))offer('davi_insult',11);
+        else if(/^(?:(?:do you|you) (?:like|love|know|miss) (?:davi|daviti)|(?:tell me|what do you think) about (?:davi|daviti)|(?:davi|daviti)(?: is .+)?|i (?:like|love|miss) davi)$/u.test(clause))offer('davi',5);
+        if(/^(?:who are you|what are you|what is your name|tell me about yourself)$/u.test(clause))offer('identity',7);
+        if(/^(?:are you (?:angry|mad|upset)|why are you (?:angry|mad)|why so angry)$/u.test(clause))offer('anger',7);
+        if(/^(?:you are (?:just |only )?a (?:bot|robot)|are you (?:a )?(?:bot|robot|real)|just a bot)$/u.test(clause))offer('bot',7);
+        if(new RegExp(`^(?:you are (?:being )?${intensifier}(?:rude|mean)|why are you ${intensifier}(?:rude|mean)|that was rude|be nicer)$`,'u').test(clause))offer('rude',9);
+        if(/^(?:shut up|be quiet|go away|who asked)$/u.test(clause))offer('dismissive',8);
+        if(/^(?:you are mine|you belong to me)$/u.test(clause))offer('possessive',8);
+        if(/^(?:be my (?:gf|bf|girlfriend|boyfriend|wife|husband)|(?:will|would) you be my (?:girlfriend|boyfriend)|marry me|date me|are you single|do you love me|do you like me|do you have a (?:boyfriend|girlfriend))$/u.test(clause))offer('romance',6);
+        if(new RegExp(`^(?:you are|you look|you sound) ${intensifier}(?:${nice})$`,'u').test(clause)||/^(?:i love you(?: too|so much)?|love you|good girl|kiss me)$/u.test(clause))offer('affection',6);
+        if(/^(?:sorry|i am sorry|my bad|i apologize|my mistake)(?: for .+)?$/u.test(clause))offer('apology',2);
+    }
+    return best;
+}
+function extractChoice(value) {
+    const text=String(value??'').normalize('NFKC').trim();
+    const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
+    return m?m[1].replace(/[?]+$/u,'').replace(/\s+(?:please|pls|plz)[.!?]*$/iu,'').trim():null;
+}
 function recognize(value) {
-    let text = normalize(value);
-    if (known.has(text)) return known.get(text);
-    text = canonical(text);
-    // Discourse markers change delivery, not the subject of the sentence.
-    text = text.replace(/^(?:(?:to be honest|not going to lie|honestly|well|okay|ok)[,\s]+)+/u, '')
-        .replace(/(?:[,\s]+(?:please|right now|at the moment|though|honestly))+$/u, '')
-        .replace(/[!?.,…:;]+$/u, '').trim();
-    return canonicalKnown.get(text) ?? null;
+    const raw=String(value??'');if(raw.length>MAX_INPUT)return null;
+    if(/[^\x00-\x7f]/u.test(raw)&&/[\p{L}]/u.test(raw.replace(/[a-z]/giu,'')))return null;
+    if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
+    if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
+    const normalized=tidy(raw);const text=stripMarkers(normalized);
+    // Negation and directed reactions take precedence over shallow keyword matches.
+    if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
+    const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;
+    if(known.has(text))return known.get(text);
+    if(known.has(normalized))return known.get(normalized);
+    if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return 'self_doubt';
+    const mood=emotion(text);if(mood)return mood;
+    if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return 'feeling_bad';
+    if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return 'feeling_good';
+    const request=text.replace(/^(?:(?:can|could|would) you |i (?:want|need) you to |i would like you to |please )/u,'');
+    const requests=[
+        ['nice',/^(?:give me (?:a |another )?compliment|compliment me|say something nice(?: to me)?|tell me something nice)$/u],
+        ['roast',/^(?:roast me|tease me|give me (?:a |another )?roast|make fun of me)$/u],
+        ['tip',/^(?:give me (?:some |a little |a piece of )?advice|give me a tip|help me decide|any advice)$/u],
+        ['secret',/^(?:tell me (?:a |your )?(?:little )?secret|share a secret)$/u],
+        ['rate',/^(?:rate me|give me a rating|give me a score)$/u],
+        ['curious',/^(?:tell me something|talk to me|say something|what are you doing|what are you thinking about)$/u],
+        ['bored',/^(?:distract me|entertain me|cheer me up|make me laugh)$/u],
+        ['explain',/^(?:explain(?: that| it| your answer)?|tell me what you mean|say that again in simpler words)$/u],
+        ['repair',/^(?:that is not what i (?:meant|asked)|you (?:misunderstood|missed my point)|i meant something else)$/u],
+        ['tone_gentle',/^(?:do not (?:roast|tease|insult) me|do not be (?:mean|rude)|stop being (?:mean|rude)|be (?:a little |a bit )?(?:nicer|gentler|nice|gentle)|stop teasing(?: me)?|soften your tone)$/u],
+        ['tone_serious',/^(?:be serious|stop joking|no jokes|answer seriously)$/u],
+        ['topic_change',/^(?:change (?:the subject|topic)|talk about something else)$/u]
+    ];
+    for(const [category,pattern]of requests)if(pattern.test(request))return category;
+    if(/^(?:ha){2,8}$|^(?:he){2,8}$|^l(?:o+l+)+$|^lmao+$|^lmfao+$|^rofl$|^xd+$/u.test(text))return 'laugh';
+    return null;
 }
-module.exports = { recognize, canonical };
+module.exports={canonical,recognize,extractChoice,detectEnglishReaction:reaction};
