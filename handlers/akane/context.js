@@ -1,6 +1,6 @@
 const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
-// Bounded, temporary conversation context. No user text is retained.
+// Bounded, temporary topics and choice labels; no full-message transcript is retained.
 const { normalize } = require('./aliases');
 const { canonical } = require('./language');
 const { prepareSentence } = require('./sentenceParser');
@@ -33,6 +33,7 @@ function contextualCategory(raw, session) {
     }
     if (session && ['not anymore','not any more','no longer','not now anymore'].includes(text)) return 'context_changed';
     if (session && ['maybe','perhaps','possibly','i guess','not sure','i am not sure'].includes(text)) return ['mood','choices'].includes(session.pending?.kind) ? 'uncertain' : 'context_hesitant';
+    if (session && (['feeling_bad','not_well','emotional_detail','bad_day_context'].includes(session.category) || ['mood','mood_support','wellbeing'].includes(session.pending?.kind)) && /^(?:because|because of) (?:i (?:had|have) (?:a )?(?:bad|rough|terrible|awful) day|my (?:bad|rough|terrible|awful) day)$/u.test(text)) return 'bad_day_context';
     const detail = followupCategory(text,session); if(detail) return detail;
     const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';
@@ -46,6 +47,7 @@ function memoryAfter(previous, request, response) {
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     return {
         mode,
+        pickOptions: response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
         noAdviceRemaining: request.category === 'decline_advice' ? 4 : request.category === 'tip' ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
         pending: response.pending ?? null,
         history: [...(old.history ?? []), { request: request.category, topic: response.category }].slice(-4)

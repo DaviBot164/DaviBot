@@ -1,5 +1,12 @@
 // Everyday speech repairs found in real conversations. All matches are bounded.
 function recognizePractical(text) {
+ if(/^(?:i (?:do not|would rather not|do not really) want to|i would rather not) (?:talk|speak)(?: about (?:it|that|this))?(?: (?:right now|anymore|please))?$/u.test(text))return 'topic_boundary';
+ if(/^(?:that is|thats|that's|this is|it is|that sounds|this sounds) (?:much |a lot )?better(?: now)?$/u.test(text))return 'feedback_better';
+ if(/^(?:let us|lets|let's|can we|could we) (?:please )?(?:change (?:the subject|topic)|talk about something else)$/u.test(text))return 'topic_change';
+ if(/^(?:why did you (?:choose|pick) (?:that|it)|why that (?:one|option)|why (?:that|this) choice)$/u.test(text))return 'explain';
+ if(/^(?:choose|pick)(?: (?:again|another|once more)| a different one)$/u.test(text))return 'again';
+ if(/^(?:can|could|would) you (?:please )?explain (?:that|it)(?: to me)? without (?:making fun of me|teasing me|mocking me|jokes)$/u.test(text))return 'explain_gentle';
+ if(/^i (?:like|enjoy|love) your jokes but not when i am (?:upset|sad|angry|stressed)$/u.test(text))return 'tone_gentle';
  if(/^my (?:friend|brother|sister|teammate) (?:said|says|thinks) (?:that )?you are (?:so |really |very )?(?:useless|stupid|annoying|dumb|an idiot|a clown) but i (?:disagree|do not agree|do not think so)$/u.test(text))return 'reported_disagreement';
  if(/^are you (?:always|usually) (?:this |so )?(?:dramatic|sarcastic|mysterious|playful)(?: or (?:is it )?just today)?$/u.test(text))return 'playful_question';
  if (/^(?:thanks|thank you)(?: (?:so|very) much| a lot)? for (?:helping(?: me| us)?|your help|the help|that|being (?:here|kind|nice)|listening|the (?:advice|tip|compliment))$/u.test(text)) return 'thanks';
@@ -16,6 +23,9 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ topic_boundary:['You do not have to talk about it. We can leave that subject there.','Understood. No explanation needed. Another subject, or a pause?','That topic can stay closed. You choose what we discuss next.'],
+ feedback_better:['Good. I will keep that tone.','Noted. We can carry on like this.','Glad that fits better. Go ahead.'],
+ bad_day_context:['A rough day, then. I will leave the sharp teasing aside.','That gives the feeling some context. We can keep this gentle.','Sounds like the day took a lot out of you. No need to explain every part.'] ,
  reported_disagreement:['I heard your disagreement, not an insult from you. What made you bring it up?','That is their opinion, and you made your own position clear. No quarrel with you.','You are reporting someone else and disagreeing. I will not mistake that for your own insult.'],
  playful_question:['The dramatic timing is a character specialty. Today merely provided the lighting.','A little sarcasm comes with the fox. The theatrical pause was optional.','Call it a consistent artistic choice. What gave me away?'],
  decline_advice:['No advice, understood. We can just talk.','Got it. I will leave the suggestions aside. What would you like to talk about?','You do not need a solution from me. We can keep this a conversation.'],
@@ -49,6 +59,9 @@ for(const [category,lines] of Object.entries(publicPools)){
 pools.owner.reaction_reassurance=['I heard the kindness in that, handsome.','That is sweet of you, Davi. We can leave the misunderstanding behind.','A little reassurance, sweetheart. I understood you.'];
 pools.mae.reaction_reassurance=['I hear you, Mae. Thank you for clarifying.','That was kind of you, Mae.','No misunderstanding, Mae. We can keep talking.'];
 const explanations={
+ topic_boundary:'You said you did not want to discuss that subject. I respected the boundary.',
+ feedback_better:'You said the answer or tone was better, so I acknowledged that feedback.',
+ bad_day_context:'You added a rough day as the reason for your mood. I connected it to the ongoing conversation.',
  reported_disagreement:'You reported someone else’s criticism and said you disagreed. I did not attribute their words to you.',
  playful_question:'I took your question about the dramatic character style as playful conversation.',
  decline_advice:'You declined advice. I acknowledged that and offered to keep talking without suggestions.',

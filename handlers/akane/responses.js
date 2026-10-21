@@ -152,6 +152,11 @@ function buildBaseResponse(message, request) {
     if (request.followup && ['why', 'really', 'explain'].includes(category)) {
         return response(contextualReply(request, tone), request.context, request.question ?? false);
     }
+    if (category === 'again' && request.context === 'pick') {
+        const options=request.conversation?.pickOptions;
+        if (!Array.isArray(options) || options.length < 2) return response('I do not have the previous options here. Send `akane pick` with the options separated by `/`.', 'fallback');
+        return buildBaseResponse(message,{...request,category:'pick',argument:options.join('/'),followup:false});
+    }
     if (category === 'again') {
         category = REPEATABLE.has(request.context) ? request.context : 'again';
     }
@@ -174,7 +179,7 @@ function buildBaseResponse(message, request) {
         const choice = escapeMarkdown(options[randomInt(options.length)]);
         const suffix = tone === 'owner' ? ', handsome. A random pick for you.'
             : tone === 'mae' ? '. A random pick, Mae.' : '. Randomly chosen. The imaginary committee has spoken.';
-        return response(`**${choice}**${suffix}`, 'pick');
+        return {...response(`**${choice}**${suffix}`, 'pick'),pickOptions:options};
     }
 
     // Do not deliver a cold introduction to Mae, even when she asks about someone.
@@ -200,6 +205,10 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildResponse(message, request) {
+    if(request.category==='explain_gentle') {
+        const explained=buildResponse(message,{...request,category:'explain',followup:Boolean(request.context)});
+        return {...explained,modeChange:'gentle'};
+    }
     if (request.category === 'reaction_question') request = {...request,category:'clarify'};
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;

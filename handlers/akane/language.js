@@ -41,7 +41,7 @@ for(const [category,phrases]of Object.entries(english.phrases))for(const phrase 
 const intensifier='(?:(?:really|very|so|pretty|quite|super|extremely|a little|a bit|kind of|sort of|too|absolutely|just) )*';
 function emotion(text) {
     // Present-tense self-reports only: not somebody else's mood or a past event.
-    const transition=text.match(/^i was (?:sad|upset|happy|tired|angry|okay|fine)(?: (?:earlier|before|yesterday))? but (?:now )?i am (.+?)(?: now)?$/u);
+    const transition=text.match(/^i was (?:sad|upset|happy|tired|angry|okay|fine|calm)(?: (?:earlier|before|yesterday))? but (?:now )?i am (.+?)(?: now)?$/u);
     if(transition)return emotion('i am '+transition[1]);
     const contrast=text.match(/^i am (tired|sleepy) but (?:i am )?not (?:tired|sleepy)$/u);
     if(contrast)return 'tired';
@@ -52,7 +52,7 @@ function emotion(text) {
         ['feeling_bad','sad|upset|unhappy|down|miserable|stressed|anxious|frustrated|angry|overwhelmed|not happy|not okay|not ok|not good|not doing well'],
         ['tired','tired|sleepy|exhausted|drained|worn out|burnt out|burned out'],
         ['feeling_good','happy|good|great|amazing|fantastic|excited|doing well|doing great'],
-        ['feeling_neutral','okay|ok|fine|alright|all right|not bad|not sad|not tired'],
+        ['feeling_neutral','calm|relaxed|okay|ok|fine|alright|all right|not bad|not sad|not tired'],
         ['bored','bored|bored out of my mind'],['hungry','hungry|starving'],['lonely','lonely|alone']
     ];
     for(const [category,words]of families)if(new RegExp(`^${intensifier}(?:${words})$`,'u').test(detail))return category;
@@ -89,6 +89,7 @@ function reaction(value) {
 }
 function extractChoice(value) {
     const text=String(value??'').normalize('NFKC').trim();
+    if (/^(?:choose|pick)(?: (?:again|another|once more)| a different one)$/iu.test(text)) return null;
     const undecided=prepareSentence(stripMarkers(tidy(text))).match(/^i (?:do not know|cannot decide|am not sure) (?:whether to|if i should|whether i should) (.{1,100}?) or (.{1,100})$/u);
     if(undecided && !undecided.slice(1).some(part=>/\b(?:and|or|but)\b/u.test(part))) return undecided.slice(1).join(' / ');
     const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
