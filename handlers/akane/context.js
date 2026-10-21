@@ -1,3 +1,4 @@
+const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
 // Bounded, temporary conversation context. No user text is retained.
 const { normalize } = require('./aliases');
@@ -32,6 +33,7 @@ function contextualCategory(raw, session) {
     }
     if (session && ['not anymore','not any more','no longer','not now anymore'].includes(text)) return 'context_changed';
     if (session && ['maybe','perhaps','possibly','i guess','not sure','i am not sure'].includes(text)) return ['mood','choices'].includes(session.pending?.kind) ? 'uncertain' : 'context_hesitant';
+    const detail = followupCategory(text,session); if(detail) return detail;
     const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';
     if (session?.pending?.kind === 'choices' && raw.includes('/')) return 'context_choices';

@@ -14,6 +14,14 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ emotional_detail:['Your mood, understood. We can keep this gentle. Would you prefer advice, a distraction, or a pause?','I meant to check which kind of rough day you were having. Advice, a distraction, or a quiet pause?','Got it: emotionally. No sharp teasing for that. Would advice or a distraction suit you?'],
+ physical_detail:['Physically, understood. I will leave the teasing aside. We can pause here or keep the chat quiet.','Your body rather than your mood, got it. No need to keep the conversation going if you would prefer a pause.','Understood. A quieter conversation or a pause is fine.'],
+ mixed_wellbeing:['Both, understood. We can keep this gentle and take one part at a time.','A bit of both, then. You do not have to explain everything at once.','Got it. We can leave the teasing aside and slow down.'],
+ study_start:['Studying, got it. Pick one small topic and one short task to begin. Want a first step?','Start with one subject and one manageable task. Shall I break the first step down?','Schoolwork, then. Choose one task rather than the whole pile. Want a simple starting step?'],
+ study_step:['Open the material, pick one short section, and write down one question you want to answer. Start with just that.','Choose one exercise or one paragraph. Try it, then note the part you did not understand.','Make the task concrete: one page to read, one question to answer, or one exercise to attempt.'],
+ study_breakdown:['Make it smaller: one sentence or one exercise. Put one distraction aside, then try that single step.','One tiny task is enough to begin. Choose a short section and write a single note about it.','Leave the whole pile for later. Pick the smallest task you can describe in one sentence.'],
+ activity_start:['Something to do, then. A relaxed game, a little exercise, or a creative task? I can randomly pick if you give me options separated by `/`.','You are looking for an activity. Would you prefer something quiet or competitive?','An activity idea: a short game, a small creative project, or a conversation. Which sounds closest?'],
+ choice_start:['Send two or more options separated by `/`, and I can make a random pick.','What are the options? Try `akane pick tea / coffee` with your own choices.','Give me the options separated by `/`. I can choose randomly, or you can ask for a general tip.'],
  feeling_stuck:['What are you stuck on: choosing something, starting a task, or finding something to do?','Let us make it smaller. Tell me what you are trying to decide.','No grand plan required. Do you want an activity idea or help choosing between options?'],
  not_well:['Do you mean your mood, or that you feel physically unwell?','Sorry you are feeling rough. Is it an emotional day or a physical discomfort?','We can slow down. When you say you do not feel good, what kind of feeling do you mean?'],
  not_tired:['Not tired, understood. What would you like to do?','Got it. I will not assume you need a rest. What is next?','An important distinction. A game, a conversation, or another subject?'],
@@ -28,6 +36,14 @@ for(const [category,lines] of Object.entries(publicPools)){
  pools.mae[category]=lines.map(line=>'Mae, '+(line.startsWith('I ')?line:line[0].toLowerCase()+line.slice(1)));
 }
 const explanations={
+ emotional_detail:'You clarified that you meant your mood, so I offered a gentler conversation.',
+ physical_detail:'You clarified that you meant physical discomfort. I acknowledged that and offered a quieter chat or a pause.',
+ mixed_wellbeing:'You said both your mood and your body felt off, so I acknowledged both without guessing the cause.',
+ study_start:'You said studying was the task you were struggling to start. I suggested one small task.',
+ study_step:'You asked for a starting step, so I suggested one small reading task or exercise.',
+ study_breakdown:'You said the task felt too hard or distracting. I reduced it to a smaller step.',
+ activity_start:'You clarified that you wanted an activity idea.',
+ choice_start:'You said you needed help choosing. I asked for the options.',
  feeling_stuck:'You sounded unsure what to do next, so I asked what you were trying to choose or start.',
  not_well:'Not feeling good can mean a low mood or physical discomfort. I asked which you meant.',
  not_tired:'You said you were not tired. That alone does not tell me your mood or what you want to do.',

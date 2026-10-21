@@ -40,7 +40,7 @@ for(const [category,phrases]of Object.entries(english.phrases))for(const phrase 
 const intensifier='(?:(?:really|very|so|pretty|quite|super|extremely|a little|a bit|kind of|sort of|too|absolutely|just) )*';
 function emotion(text) {
     // Present-tense self-reports only: not somebody else's mood or a past event.
-    const m=text.match(/^(?:i am|i feel|i am feeling|feeling) (.+)$/u);
+    const m=text.match(/^(?:i am|i (?:just |really )?feel|i am feeling|feeling) (.+)$/u);
     if(!m)return null;
     const detail=m[1].split(/\s+(?:because|since|after)\s+/u)[0].replace(/^not (?:very|really|so) /u,'not ');
     const families=[

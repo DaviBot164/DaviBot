@@ -1,3 +1,4 @@
+const { attachExpectation } = require('./followups');
 const { escapeMarkdown } = require('discord.js');
 const { randomInt } = require('node:crypto');
 const { OWNER_ID, replies, dialogue } = require('./settings');
@@ -239,6 +240,6 @@ function buildResponse(message, request) {
     const final = decorate(base, toneFor(message.author.id), request);
     if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};
     if (['hi','returning','morning'].includes(final.category) && /how (?:are you(?: doing)?|is your day(?: starting| going)?)\?/iu.test(final.payload.content ?? '')) final.pending = {kind:'mood'};
-    return final;
+    return attachExpectation(final,request);
 }
 module.exports = { buildResponse, toneFor };
