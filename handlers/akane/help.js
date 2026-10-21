@@ -25,6 +25,8 @@ function plainHelp() {
         '',
         '`akane stop` or `bye` during a conversation — End it.',
         'Wait **3 seconds** between requests; **2 seconds** between channel responses.',
+        'Tone: `be nicer` / `be serious` (next 4 replies); `normal mode` restores the usual tone.',
+        'Misunderstood? Try `that is not what I meant`. After a mood question, `good` / `bad` works.',
         'Preset character dialogue: unfamiliar sentences may need a clearer request.'
     ].join('\n');
 }

@@ -17,6 +17,7 @@ const {
 const { parseRequest } = require('./akane/parser');
 const { buildResponse } = require('./akane/responses');
 const { plainHelp } = require('./akane/help');
+const { memoryAfter } = require('./akane/context');
 
 async function handleAkaneReply(message) {
     if (
@@ -110,6 +111,7 @@ async function handleAkaneReply(message) {
 
             if (response.session) {
                 sessions.set(key, {
+                    ...memoryAfter(request.conversation, request, response),
                     messageId: sent.id,
                     category: response.category,
                     question: response.question ?? false,

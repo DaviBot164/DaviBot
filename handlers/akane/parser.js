@@ -5,6 +5,7 @@ const { detectReaction } = require('../../config/akaneReactions');
 const conversation = require('../../config/akaneConversation');
 
 const { recognize } = require('./language');
+const { contextualCategory } = require('./context');
 
 function parseRequest(message, now) {
     const content = String(message.content ?? '').trim();
@@ -17,7 +18,7 @@ function parseRequest(message, now) {
     const session = !message.reference || replying ? previous : null;
     const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
-    const category = recognize(raw);
+    const category = contextualCategory(raw, session) ?? recognize(raw);
 
     if (!trigger && !replying) {
         if (
@@ -30,12 +31,13 @@ function parseRequest(message, now) {
     const followup = {
         context,
         followup: Boolean(context),
-        question: session?.question ?? false
+        question: session?.question ?? false,
+        conversation: session
     };
 
-    if (!text || /^[\s\p{P}\p{S}]*$/u.test(text)) return { category: 'general' };
-    if (DAVI_NAMES.has(text)) return { category: 'davi' };
-    if (['mae', 'მეი', 'მაე'].includes(text)) return { category: 'mae' };
+    if (!text || /^[\s\p{P}\p{S}]*$/u.test(text)) return { category: 'general', ...followup };
+    if (DAVI_NAMES.has(text)) return { category: 'davi', ...followup };
+    if (['mae', 'მეი', 'მაე'].includes(text)) return { category: 'mae', ...followup };
 
     const mention = raw.match(/^<@!?(\d+)>[.!?…]*$/u);
     if (mention) {
@@ -45,29 +47,31 @@ function parseRequest(message, now) {
         if (!member && !user) return { category: 'fallback' };
         return {
             category: id === OWNER_ID ? 'davi' : id === dialogue.maeId ? 'mae' : 'member',
+            ...followup,
             targetId: id,
             target: member?.displayName ?? user.username
         };
     }
 
     const choice = raw.match(/^(?:pick|choose|აირჩიე)\s+(.+)$/isu);
-    if (choice) return { category: 'pick', argument: choice[1] };
+    if (choice) return { category: 'pick', argument: choice[1], ...followup };
+    if (category === 'context_choices') return { category, argument: raw, ...followup };
 
     if (category) {
         if (['yes', 'no'].includes(category)) {
             return session?.question
                 ? { category, ...followup }
-                : { category: 'clarify' };
+                : { category: 'clarify', ...followup };
         }
         if (['why', 'really', 'explain', 'again'].includes(category)) {
-            return context ? { category, ...followup } : { category: 'clarify' };
+            return context ? { category, ...followup } : { category: 'clarify', ...followup };
         }
         return { category, ...followup };
     }
 
     const reaction = detectReaction(raw);
-    if (reaction && reactionPools[reaction]?.length) return { category: `reaction_${reaction}` };
-    return { category: /[?？]/u.test(raw) ? 'reaction_question' : 'fallback' };
+    if (reaction && reactionPools[reaction]?.length) return { category: `reaction_${reaction}`, ...followup };
+    return { category: /[?？]/u.test(raw) ? 'reaction_question' : 'fallback', ...followup };
 }
 
 module.exports = { parseRequest };

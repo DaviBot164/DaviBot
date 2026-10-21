@@ -88,7 +88,7 @@ function contextualReply(request, tone) {
     return content;
 }
 
-function buildResponse(message, request) {
+function buildBaseResponse(message, request) {
     const tone = toneFor(message.author.id);
     const state = getReplyState(message);
     let category = request.category;
@@ -153,4 +153,17 @@ function buildResponse(message, request) {
     return response(content, category, question);
 }
 
+const { decorate } = require('./context');
+function buildResponse(message, request) {
+    const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail'];
+    let base;
+    if (controls.includes(request.category)) {
+        base = { payload: { content: '' }, category: request.category, session: true };
+    } else {
+        const effective = request.category === 'context_choices'
+            ? { ...request, category: 'pick' } : request;
+        base = buildBaseResponse(message, effective);
+    }
+    return decorate(base, toneFor(message.author.id), request);
+}
 module.exports = { buildResponse, toneFor };
