@@ -36,13 +36,14 @@ function isStaff(member) {
 }
 
 function normalizeContent(content) {
-    return content
+    return String(content ?? '')
+        .normalize('NFKC')
         .toLowerCase()
+        .replace(/[\u200B-\u200D\uFEFF]/gu, '')
         .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-        .replace(/\s+/g, ' ')
+        .replace(/\s+/gu, ' ')
         .trim();
 }
-
 function containsConfiguredSevereWord(content) {
     const normalized = ` ${normalizeContent(content)} `;
 
@@ -257,7 +258,7 @@ async function deleteBlockedMessage(message, type) {
     return result;
 }
 
-async function runGuardian(message) {
+async function evaluateGuardian(message) {
     if (
         !guardian.enabled ||
         !message.inGuild() ||
@@ -288,6 +289,65 @@ async function runGuardian(message) {
     }
 
     return { blocked: false };
+}
+
+const guardianQueues = new Map();
+
+let nextGuardianCleanup = 0;
+
+function cleanGuardianState(now) {
+    if (now < nextGuardianCleanup) return;
+
+    nextGuardianCleanup = now + 60_000;
+
+    for (const [key, history] of spamHistory) {
+        const current = history.filter(
+            entry => now - entry.time <= guardian.spam.windowMs
+        );
+
+        if (current.length) {
+            spamHistory.set(key, current);
+        } else {
+            spamHistory.delete(key);
+        }
+    }
+
+    for (const [key, strike] of spamStrikes) {
+        if (now - strike.lastStrike > guardian.spam.strikeWindowMs) {
+            spamStrikes.delete(key);
+        }
+    }
+}
+
+async function runGuardian(message) {
+    if (
+        !guardian.enabled ||
+        !message.inGuild() ||
+        message.author.bot ||
+        message.webhookId
+    ) {
+        return { blocked: false };
+    }
+
+    cleanGuardianState(Date.now());
+
+    const key = getSpamKey(message);
+    const previous = guardianQueues.get(key) ?? Promise.resolve();
+
+    // Serialize this member only. Other members remain independent.
+    const task = previous
+        .catch(() => undefined)
+        .then(() => evaluateGuardian(message));
+
+    guardianQueues.set(key, task);
+
+    try {
+        return await task;
+    } finally {
+        if (guardianQueues.get(key) === task) {
+            guardianQueues.delete(key);
+        }
+    }
 }
 
 module.exports = { runGuardian };

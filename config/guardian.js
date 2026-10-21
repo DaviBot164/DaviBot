@@ -11,34 +11,29 @@ module.exports = Object.freeze({
     spam: Object.freeze({
         windowMs: 10_000,
 
-        // Normal rapid chatting is allowed.
+        // Up to eight messages within the window.
         maxMessages: 8,
 
-        // Repeated messages require several copies
-        // before Guardian considers them spam.
+        // Five matching messages of at least 12 characters.
         duplicateLimit: 5,
         duplicateMinLength: 12,
 
-        // Large repeated messages are detected sooner.
+        // Three matching messages of at least 120 characters.
         longMessageLength: 120,
         longMessageLimit: 3,
 
-        // First spam incident warns.
-        // Repeated spam can trigger a timeout.
         strikesForTimeout: 2,
         strikeWindowMs: 5 * 60_000,
         timeoutMs: 5 * 60_000
     }),
 
     severeWords: Object.freeze([
-        // Georgian — severe mother-directed insults.
-        'შენი დედა',
-        'დედაშენი',
+        // Explicit insults; neutral references to family are allowed.
         'დედას გიტყნავ',
         'დედას მოგიტყნავ',
         'დედას შეგეცი',
 
-        // Zero-tolerance.
+        // Existing zero-tolerance terms.
         'პედო',
         'პედოფილი',
         'pedo',
@@ -46,6 +41,6 @@ module.exports = Object.freeze({
     ]),
 
     allowedInviteGuilds: Object.freeze([
-        // Add allowed Discord server IDs here.
+        // Reserved for invite allowlist support.
     ])
 });
