@@ -392,87 +392,157 @@ function ownerCategory(category) {
     return replies[key]?.length ? key : 'owner_general';
 }
 
-function contextualReply(request, owner) {
+function contextualReply(request, owner = false) {
     const context = request.context;
+    const why = request.category === 'why';
 
     const answers = {
+        general: [
+            'You called me. I assumed you had something in mind.',
+            'You have my attention. What would you like next?'
+        ],
+        hi: [
+            'You said hello. I decided to be almost welcoming.',
+            'Yes. That was a greeting. An unusually civil one.'
+        ],
         nice: [
-            'You asked for something nice. I decided to oblige.',
-            'Yes. Accept the compliment before you turn it into an interview.'
+            'You asked for something nice. Let yourself enjoy it.',
+            'Yes. Take the compliment before this becomes an interview.'
         ],
         roast: [
-            'You asked me to tease you. That was the playful version.',
-            'It was a joke, not your biography. You’re allowed to laugh.'
+            'You asked for playful teasing. That was the joke.',
+            'A joke, not your biography. No need to frame it.'
         ],
         rate: [
-            'The score is random. There is no hidden assessment behind it.',
-            'Really random. The imaginary judges don’t keep records.'
+            'The score is random. There is no hidden assessment.',
+            'Entirely random. The imaginary judges keep no records.'
         ],
         luck: [
-            'A little pretend prediction. Enjoy it without planning around it.',
-            'It’s theatre, not a forecast. A charming distinction.'
+            'It is a pretend prediction, not a reliable forecast.',
+            'Just a little theatre. Do not plan your life around it.'
         ],
         tip: [
-            'It’s a suggestion. Keep what fits your situation.',
-            'Yes—as advice to consider, rather than an order.'
+            'It is a suggestion to consider. Keep what fits your situation.',
+            'Yes, as advice to consider rather than an order.'
+        ],
+        secret: [
+            'A little fictional mystery suits the character.',
+            'A character secret. Enjoy the dramatic delivery.'
+        ],
+        mood: [
+            'The mood is part of my character. The sarcasm is deliberate.',
+            'A theatrical mood. No actual anger behind the expression.'
+        ],
+        pick: [
+            'I chose randomly from the options you gave me.',
+            'Yes. A random choice delivered with unnecessary confidence.'
         ],
         davi: [
-            'Because Davi gets the softer side of my attitude.',
+            'Davi gets the softer side of my attitude.',
             'Yes. I was saying something lovely about Davi.'
         ],
         member: [
-            'A dramatic introduction. Not a serious assessment of that member.',
+            'That was a dramatic introduction, not a serious assessment.',
             'Just a little attitude for the introduction.'
+        ],
+        reaction_davi: [
+            'Davi has a reserved place in my softer dialogue.',
+            'Mention Davi and my manners improve. Quite deliberate.'
+        ],
+        reaction_davi_insult: [
+            'You can criticize what Davi did without insulting him.',
+            'Explain the disagreement. A personal insult adds very little.'
         ],
         reaction_apology: [
             'You apologized. We can leave the argument behind.',
-            'We’re fine. You don’t need a second apology.'
+            'We are fine. No second apology required.'
         ],
         reaction_romance: [
-            'A little flirting can stay a joke without becoming a commitment.',
-            'Yes. A bold line doesn’t automatically get a yes.'
+            'Flirting can stay a joke without becoming a commitment.',
+            'A bold proposal does not automatically get a yes.'
+        ],
+        reaction_affection: [
+            'You said something kind. I noticed.',
+            'Yes. I accepted the compliment. Stay composed.'
         ],
         reaction_possessive: [
             'Attention and ownership are different things.',
-            'Yes. Keep the joke charming.'
+            'Keep the joke charming, not possessive.'
+        ],
+        reaction_insult: [
+            'We can trade jokes without making it genuinely unpleasant.',
+            'Try a better joke instead of a sharper insult.'
+        ],
+        reaction_dismissive: [
+            'You can close the conversation with `akane stop`.',
+            'We can leave the conversation here if you prefer.'
         ],
         reaction_bot: [
-            'Because I am a Discord bot playing a character.',
-            'Yes. A fictional personality, not a human behind the messages.'
+            'I am a Discord bot playing a fictional character.',
+            'A fictional personality, not a human behind the messages.'
         ],
         reaction_identity: [
             'You asked who I am. That was my introduction.',
-            'Yes. Akane, your server’s rather dramatic bot.'
+            'Akane, your server bot with a dramatic personality.'
+        ],
+        reaction_anger: [
+            'The expression is theatrical. There is no actual anger.',
+            'I am teasing. We can keep it gentler.'
+        ],
+        reaction_reassurance: [
+            'You said something reassuring. I accepted it.',
+            'Yes. I noticed the kindness.'
         ],
         reaction_question: [
-            'I don’t know that answer. I’d rather say so than invent one.',
-            'Yes. That question is outside the replies I understand.'
+            'That question is outside the replies I understand.',
+            'I would rather admit I do not know than invent an answer.'
+        ],
+        fallback: [
+            'I did not recognize the request. Try `akane help`.',
+            'I understood that you called me, but not what you wanted.'
+        ],
+        thanks: [
+            'You thanked me. I acknowledged the good manners.',
+            'Yes. You are welcome.'
+        ],
+        rude: [
+            'The sharp tone is part of the character. We can ease up.',
+            'We can keep the teasing lighter.'
+        ],
+        yes: [
+            'You answered my question. I acknowledged it.',
+            'Your answer was understood.'
+        ],
+        no: [
+            'You said no. We can leave that question behind.',
+            'Of course. A no is enough.'
         ]
     };
 
-    const pair = answers[context];
-    const index = request.category === 'why' ? 0 : 1;
-
-    let content = pair?.[index] ?? (
-        request.category === 'why'
-            ? 'A little teasing is part of the character. Nothing personal.'
-            : 'Mm-hm. The dramatic delivery was extra.'
-    );
-
-    if (owner) {
-        if (['nice', 'davi', 'general', 'hi'].includes(context)) {
-            content = request.category === 'why'
-                ? 'Because being sweet to you comes rather easily, handsome.'
-                : 'Yes, Davi. Let me be sweet to you without an interrogation.';
-        } else {
-            content = `Handsome, ${content[0].toLowerCase()}${content.slice(1)}`;
-        }
+    if (
+        owner &&
+        [
+            'general', 'hi', 'nice', 'davi',
+            'reaction_davi', 'reaction_affection',
+            'reaction_romance', 'reaction_possessive'
+        ].includes(context)
+    ) {
+        return why
+            ? 'Because a little warmth suits you, handsome.'
+            : 'Yes, Davi. No hidden sting. Let me be sweet to you.';
     }
 
-    return content;
-}
+    const content = answers[context]?.[why ? 0 : 1] ?? (
+        why
+            ? 'Which part did you mean? I may need a clearer request.'
+            : 'Which part would you like me to clarify?'
+    );
 
-function buildResponse(message, request, state) {
+    return owner
+        ? `Handsome, ${content[0].toLowerCase()}${content.slice(1)}`
+        : content;
+}
+function buildBaseResponse(message, request, state) {
     const owner = message.author.id === OWNER_ID;
     let category = request.category;
 
@@ -610,6 +680,119 @@ function plainHelp() {
     ].join('\n');
 }
 
+function buildResponse(message, request, state) {
+    const owner = message.author.id === OWNER_ID;
+    const category = request.category;
+    const context = request.context;
+
+    function response(content, nextContext, question = false) {
+        return {
+            payload: { content },
+            category: nextContext,
+            session: true,
+            question
+        };
+    }
+
+    if (
+        request.followup &&
+        ['why', 'really'].includes(category)
+    ) {
+        return response(
+            contextualReply(request, owner),
+            context,
+            request.question ?? false
+        );
+    }
+
+    if (
+        request.followup &&
+        ['yes', 'no'].includes(category)
+    ) {
+        if (
+            category === 'yes' &&
+            ['nice', 'roast', 'davi'].includes(context)
+        ) {
+            return buildBaseResponse(
+                message,
+                { ...request, category: context, followup: false },
+                state
+            );
+        }
+
+        if (context === 'mood' && category === 'yes') {
+            return response(
+                (owner
+                    ? 'A little thought for you, handsome:\n\n'
+                    : 'Then consider this:\n\n') +
+                drawReply(state, 'tip'),
+                'tip'
+            );
+        }
+
+        const answers = {
+            general: {
+                yes: owner
+                    ? 'Then stay a little, handsome. What would you like next?'
+                    : 'You missed the attitude? What do you want next?',
+                no: owner
+                    ? 'That is fine, Davi. What brought you here, handsome?'
+                    : 'Fair enough. What did you need, then?'
+            },
+            hi: {
+                yes: owner
+                    ? 'Lovely, handsome. Tell me what you have in mind.'
+                    : 'A promising answer. Keep the good manners.',
+                no: owner
+                    ? 'A mischievous entrance? Keep it sweet, handsome.'
+                    : 'At least you are honest. Keep the mischief harmless.'
+            },
+            mood: {
+                no: owner
+                    ? 'No pressure, Davi. We can choose another subject.'
+                    : 'Think for yourself. We can change the subject.'
+            },
+            nice: {
+                no: owner
+                    ? 'Keep that compliment, handsome. We can change the subject.'
+                    : 'One compliment was enough? Remarkable restraint.'
+            },
+            roast: {
+                no: owner
+                    ? 'Then I will put the teasing away, sweetheart.'
+                    : 'All right. The teasing ends here.'
+            },
+            davi: {
+                no: owner
+                    ? 'All right, handsome. I will save the next compliment.'
+                    : 'You disagree? My fondness for Davi remains.'
+            }
+        };
+
+        const content = answers[context]?.[category] ??
+            drawReply(state, owner ? `owner_${category}` : category);
+
+        return response(content, category);
+    }
+
+    const ownerOverrides = {
+        reaction_davi: 'owner_nice',
+        reaction_davi_insult: 'owner_tension',
+        reaction_reassurance: 'owner_thanks'
+    };
+
+    if (owner && ownerOverrides[category]) {
+        const content = drawReply(state, ownerOverrides[category]);
+
+        return response(
+            content,
+            category,
+            content.includes('Reply yes or no.')
+        );
+    }
+
+    return buildBaseResponse(message, request, state);
+}
 async function handleAkaneReply(message) {
     if (
         !message.inGuild() ||
