@@ -97,6 +97,11 @@ const replies = {
     )
 };
 
+const dialogue = require('../config/akaneDialogue');
+
+for (const [name, pool] of Object.entries(dialogue.pools)) {
+    replies[`dialogue_${name}`] = pool;
+}
 const DAVI_NAMES = new Set([
     'davi',
     'daviti',
@@ -240,7 +245,22 @@ function parseRequest(message, now) {
     );
 
     // Ordinary server messages do not start a conversation.
-    if (!trigger && !replying) return null;
+    if (!trigger && !replying) {
+        const shortFollowup = aliases.get(normalize(content));
+
+        const allowed = [
+            'why', 'really', 'thanks', 'rude', 'stop'
+        ].includes(shortFollowup);
+
+        if (
+            message.reference ||
+            !session ||
+            now >= (session.implicitUntil ?? 0) ||
+            !allowed
+        ) {
+            return null;
+        }
+    }
 
     const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
@@ -268,6 +288,7 @@ function parseRequest(message, now) {
 
         return {
             category: id === OWNER_ID ? 'davi' : 'member',
+            targetId: id,
             target: target?.displayName ?? user.username
         };
     }
@@ -359,9 +380,9 @@ function buildHelp(message) {
             {
                 name: 'CONTINUE',
                 value: [
-                    'Reply to my latest answer to you within **2 minutes**.',
+                    'Reply within **2 minutes**, or type `why`, `really`, `thanks` or `rude` directly within **30 seconds**.',
                     'Try `why`, `really`, `thanks`, or another request.',
-                    '`yes` / `no` work when I ask a yes-or-no question.',
+                    'For yes/no questions, use Reply or `akane yes` / `akane no`.',
                     '`akane stop` — Close your conversation',
                     '`აკანე როგორ ხარ` · `აკანე მადლობა`',
                     'Wait **10 seconds** between requests; channel cooldown: **5 seconds**.',
@@ -670,7 +691,7 @@ function plainHelp() {
         '`akane rate` · `luck` · `secret`',
         '`akane @member` · `akane davi`',
         '`akane pick pvp / training`',
-        'Reply to my latest answer within 2 minutes.',
+        'Reply within 2 minutes. Short follow-ups also work directly for 30 seconds.',
         'Try `why`, `really`, `thanks`, or another request.',
         '`yes` / `no` work when I ask.',
         '`akane stop` — Close the conversation.',
@@ -680,7 +701,7 @@ function plainHelp() {
     ].join('\n');
 }
 
-function buildResponse(message, request, state) {
+function buildExistingResponse(message, request, state) {
     const owner = message.author.id === OWNER_ID;
     const category = request.category;
     const context = request.context;
@@ -793,6 +814,186 @@ function buildResponse(message, request, state) {
 
     return buildBaseResponse(message, request, state);
 }
+function buildResponse(message, request, state) {
+    const mae = message.author.id === dialogue.maeId;
+    const owner = message.author.id === OWNER_ID;
+    const category = request.category;
+
+    function response(content, context = category, question = false) {
+        return {
+            payload: { content },
+            category: context,
+            session: true,
+            question
+        };
+    }
+
+    const namedMae = request.targetId === dialogue.maeId ||
+        ['mae', 'მეი', 'მაე'].includes(
+            normalize(message.content).replace(
+                /^(?:akane|აკანე)[\s,:;.!?…]*/iu,
+                ''
+            )
+        );
+
+    if (namedMae) {
+        return response(
+            drawReply(state, 'dialogue_maeMention'),
+            'member'
+        );
+    }
+
+    if (!mae) {
+        // Preserve Davi's existing warm dialogue.
+        const key = `dialogue_${category}`;
+
+        if (
+            !owner &&
+            !request.followup &&
+            replies[key]?.length
+        ) {
+            return response(drawReply(state, key));
+        }
+
+        return buildExistingResponse(message, request, state);
+    }
+
+    if (category === 'help') {
+        return buildExistingResponse(message, request, state);
+    }
+
+    if (category === 'pick') {
+        const result = buildExistingResponse(message, request, state);
+
+        if (result.payload.content) {
+            result.payload.content = result.payload.content.replace(
+                'There. A decision.',
+                'That would be my pick, Mae.'
+            );
+        }
+
+        return result;
+    }
+
+    if (
+        request.followup &&
+        ['why', 'really'].includes(category)
+    ) {
+        const explanations = {
+            nice: [
+                'Because you asked for something kind, Mae. Let yourself enjoy it.',
+                'Yes, Mae. Take the compliment.'
+            ],
+            roast: [
+                'You asked me to tease you, Mae. I meant it playfully.',
+                'Just a gentle joke, Mae. We can stop whenever you like.'
+            ],
+            rate: [
+                'The score is random, Mae. There’s no hidden assessment.',
+                'Entirely random. It doesn’t say anything about your worth.'
+            ],
+            luck: [
+                'A pretend prediction for fun, Mae.',
+                'Just a playful forecast, Mae. Nothing to rely on.'
+            ],
+            pick: [
+                'I chose randomly from your options, Mae.',
+                'Yes, Mae. That was my random pick.'
+            ],
+            reaction_davi: [
+                'Davi gets the warmer side of my character, Mae.',
+                'Yes, Mae. I was saying something nice about Davi.'
+            ]
+        };
+
+        const pair = explanations[request.context];
+
+        const content = pair
+            ? pair[category === 'why' ? 0 : 1]
+            : category === 'why'
+                ? 'Which part did you mean, Mae? I can try to make it clearer.'
+                : 'Yes, Mae. Was there a particular part you wanted to ask about?';
+
+        return response(
+            content,
+            request.context,
+            request.question ?? false
+        );
+    }
+
+    let next = category;
+
+    if (
+        request.followup &&
+        category === 'yes' &&
+        ['nice', 'roast'].includes(request.context)
+    ) {
+        next = request.context;
+    }
+
+    if (next === 'tip') {
+        return response(
+            `A little thought for you, Mae:\n\n${drawReply(state, 'tip')}`,
+            'tip'
+        );
+    }
+
+    if (['davi', 'reaction_davi', 'reaction_davi_insult'].includes(next)) {
+        return response(
+            drawReply(
+                state,
+                next === 'davi' ? 'davi' : next
+            ),
+            next
+        );
+    }
+
+    if (next === 'member') {
+        return response(
+            'I’ll keep introductions civil, Mae. A hello is a good place to start.',
+            'member'
+        );
+    }
+
+    const mapping = {
+        reaction_romance: 'romance',
+        reaction_possessive: 'romance',
+        reaction_affection: 'affection',
+        reaction_insult: 'tension',
+        reaction_dismissive: 'tension',
+        reaction_anger: 'tension',
+        rude: 'tension',
+        reaction_apology: 'apology',
+        reaction_identity: 'identity',
+        reaction_bot: 'identity',
+        reaction_question: 'fallback',
+        reaction_reassurance: 'reassurance',
+        clarify: 'fallback'
+    };
+
+    const key = `dialogue_mae_${mapping[next] ?? next}`;
+
+    let content = drawReply(
+        state,
+        replies[key]?.length ? key : 'dialogue_mae_fallback'
+    );
+
+    if (next === 'rate') {
+        content = content.replace(
+            /\{score\}/gu,
+            String(randomInt(1, 11))
+        );
+    }
+
+    if (next === 'stop') {
+        return {
+            payload: { content },
+            session: false
+        };
+    }
+
+    return response(content, next);
+}
 async function handleAkaneReply(message) {
     if (
         !message.inGuild() ||
@@ -888,6 +1089,7 @@ async function handleAkaneReply(message) {
                     messageId: sent.id,
                     category: response.category,
                     question: response.question ?? false,
+                    implicitUntil: Date.now() + 30_000,
                     expiresAt: Date.now() + SESSION_TTL
                 });
             }
