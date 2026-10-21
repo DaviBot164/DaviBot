@@ -41,9 +41,13 @@ for(const [category,phrases]of Object.entries(english.phrases))for(const phrase 
 const intensifier='(?:(?:really|very|so|pretty|quite|super|extremely|a little|a bit|kind of|sort of|too|absolutely|just) )*';
 function emotion(text) {
     // Present-tense self-reports only: not somebody else's mood or a past event.
-    const m=text.match(/^(?:i am|i (?:just |really )?feel|i am feeling|feeling) (.+)$/u);
+    const transition=text.match(/^i was (?:sad|upset|happy|tired|angry|okay|fine)(?: (?:earlier|before|yesterday))? but (?:now )?i am (.+?)(?: now)?$/u);
+    if(transition)return emotion('i am '+transition[1]);
+    const contrast=text.match(/^i am (tired|sleepy) but (?:i am )?not (?:tired|sleepy)$/u);
+    if(contrast)return 'tired';
+    const m=text.match(/^(?:i am(?: (?:(?:just|really) )?feeling)?|i (?:just |really )?feel|feeling) (.+)$/u);
     if(!m)return null;
-    const detail=m[1].split(/\s+(?:because|since|after)\s+/u)[0].replace(/^not (?:very|really|so) /u,'not ');
+    const detail=m[1].replace(/ (?:now|at the moment)$/u,'').split(/\s+(?:because|since|after)\s+/u)[0].replace(/^not (?:very|really|so) /u,'not ');
     const families=[
         ['feeling_bad','sad|upset|unhappy|down|miserable|stressed|anxious|frustrated|angry|overwhelmed|not happy|not okay|not ok|not good|not doing well'],
         ['tired','tired|sleepy|exhausted|drained|worn out|burnt out|burned out'],
@@ -73,6 +77,7 @@ function reaction(value) {
         if(/^(?:who are you|what are you|what is your name|tell me about yourself)$/u.test(clause))offer('identity',7);
         if(/^(?:are you (?:angry|mad|upset)|why are you (?:angry|mad)|why so angry)$/u.test(clause))offer('anger',7);
         if(/^(?:you are (?:just |only )?a (?:bot|robot)|are you (?:a )?(?:bot|robot|real)|just a bot)$/u.test(clause))offer('bot',7);
+        if(/^(?:your (?:answer|reply|response)|that) (?:was|is) (?:really |very |so )?(?:rude|mean|harsh)$/u.test(clause))offer('rude',9);
         if(new RegExp(`^(?:you are (?:being )?${intensifier}(?:rude|mean)|why are you ${intensifier}(?:rude|mean)|that was rude|be nicer)$`,'u').test(clause))offer('rude',9);
         if(/^(?:shut up|be quiet|go away|who asked)$/u.test(clause))offer('dismissive',8);
         if(/^(?:you are mine|you belong to me)$/u.test(clause))offer('possessive',8);
@@ -84,6 +89,8 @@ function reaction(value) {
 }
 function extractChoice(value) {
     const text=String(value??'').normalize('NFKC').trim();
+    const undecided=prepareSentence(stripMarkers(tidy(text))).match(/^i (?:do not know|cannot decide|am not sure) (?:whether to|if i should|whether i should) (.{1,100}?) or (.{1,100})$/u);
+    if(undecided && !undecided.slice(1).some(part=>/\b(?:and|or|but)\b/u.test(part))) return undecided.slice(1).join(' / ');
     const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
     return m?m[1].replace(/[?]+$/u,'').replace(/\s+(?:please|pls|plz)[.!?]*$/iu,'').trim():null;
 }
@@ -97,7 +104,7 @@ function recognize(value) {
     if(acknowledgement) return acknowledgement;
     const negativeIntent=recognizeNegation(prepareSentence(stripMarkers(normalized)));
     if(negativeIntent) return negativeIntent;
-    const practical=recognizePractical(prepareSentence(stripMarkers(normalized)));
+    const practical=recognizePractical(prepareSentence(normalized)) ?? recognizePractical(prepareSentence(stripMarkers(normalized)));
     if(practical) return practical;
     const directSocial=recognizeSocial(prepareSentence(normalized),raw);
     if(directSocial) return directSocial;
@@ -118,8 +125,8 @@ function recognize(value) {
     if(known.has(text))return known.get(text);
     if(known.has(normalized))return known.get(normalized);
     if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return 'self_doubt';
-    const mixed=resolveMixedMood(text,emotion);if(mixed)return mixed;
     const mood=emotion(text);if(mood)return mood;
+    const mixed=resolveMixedMood(text,emotion);if(mixed)return mixed;
     if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return 'feeling_bad';
     if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return 'feeling_good';
     const request=text.replace(/^(?:(?:can|could|would) you |i (?:want|need) you to |i would like you to |please )/u,'');

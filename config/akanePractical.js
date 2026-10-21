@@ -1,5 +1,7 @@
 // Everyday speech repairs found in real conversations. All matches are bounded.
 function recognizePractical(text) {
+ if(/^my (?:friend|brother|sister|teammate) (?:said|says|thinks) (?:that )?you are (?:so |really |very )?(?:useless|stupid|annoying|dumb|an idiot|a clown) but i (?:disagree|do not agree|do not think so)$/u.test(text))return 'reported_disagreement';
+ if(/^are you (?:always|usually) (?:this |so )?(?:dramatic|sarcastic|mysterious|playful)(?: or (?:is it )?just today)?$/u.test(text))return 'playful_question';
  if (/^(?:thanks|thank you)(?: (?:so|very) much| a lot)? for (?:helping(?: me| us)?|your help|the help|that|being (?:here|kind|nice)|listening|the (?:advice|tip|compliment))$/u.test(text)) return 'thanks';
  if (/^(?:i do not know|i am not sure) (?:what (?:i should |to )do|what to choose|where to start|how to start|what i want)$/u.test(text)) return 'feeling_stuck';
  if (/^(?:i am not feeling|i do not feel|i have not been feeling) (?:(?:very|really|so|too) )?(?:good|well|great|okay|ok)$/u.test(text)) return 'not_well';
@@ -14,6 +16,8 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ reported_disagreement:['I heard your disagreement, not an insult from you. What made you bring it up?','That is their opinion, and you made your own position clear. No quarrel with you.','You are reporting someone else and disagreeing. I will not mistake that for your own insult.'],
+ playful_question:['The dramatic timing is a character specialty. Today merely provided the lighting.','A little sarcasm comes with the fox. The theatrical pause was optional.','Call it a consistent artistic choice. What gave me away?'],
  decline_advice:['No advice, understood. We can just talk.','Got it. I will leave the suggestions aside. What would you like to talk about?','You do not need a solution from me. We can keep this a conversation.'],
  mood_recovered:['No longer sad, understood. How are things now?','Sounds like that feeling has shifted. Want to talk about something lighter?','Got it. I will not assume you are still feeling down. What is next?'],
  mood_lowered:['Things feel different now, understood. We can keep the conversation gentle.','Not feeling that way anymore, got it. Want to tell me what changed?','I hear the change. We can slow the conversation down.'],
@@ -45,6 +49,8 @@ for(const [category,lines] of Object.entries(publicPools)){
 pools.owner.reaction_reassurance=['I heard the kindness in that, handsome.','That is sweet of you, Davi. We can leave the misunderstanding behind.','A little reassurance, sweetheart. I understood you.'];
 pools.mae.reaction_reassurance=['I hear you, Mae. Thank you for clarifying.','That was kind of you, Mae.','No misunderstanding, Mae. We can keep talking.'];
 const explanations={
+ reported_disagreement:'You reported someone else’s criticism and said you disagreed. I did not attribute their words to you.',
+ playful_question:'I took your question about the dramatic character style as playful conversation.',
  decline_advice:'You declined advice. I acknowledged that and offered to keep talking without suggestions.',
  mood_recovered:'You said the negative feeling was no longer present. I did not assume you were still upset.',
  mood_lowered:'You said a positive feeling was no longer present. I acknowledged the change.',

@@ -172,8 +172,8 @@ function buildBaseResponse(message, request) {
             return response('Give me 2–10 choices separated by `/`.\n`akane pick pvp / training`', 'fallback');
         }
         const choice = escapeMarkdown(options[randomInt(options.length)]);
-        const suffix = tone === 'owner' ? ', handsome. That is my pick.'
-            : tone === 'mae' ? '. That would be my pick, Mae.' : '. There. A decision.';
+        const suffix = tone === 'owner' ? ', handsome. A random pick for you.'
+            : tone === 'mae' ? '. A random pick, Mae.' : '. Randomly chosen. The imaginary committee has spoken.';
         return response(`**${choice}**${suffix}`, 'pick');
     }
 
@@ -242,7 +242,17 @@ function buildResponse(message, request) {
     if (['hi','returning','morning'].includes(final.category) && /how (?:are you(?: doing)?|is your day(?: starting| going)?)\?/iu.test(final.payload.content ?? '')) final.pending = {kind:'mood'};
     if ((request.category === 'decline_advice' || request.conversation?.noAdviceRemaining > 0) && request.category !== 'tip' && /\badvice\b/iu.test(final.payload.content ?? '') && request.category !== 'decline_advice') {
         const tone=toneFor(message.author.id);
-        final.payload={content:tone==='owner'?'We can just talk, handsome. No need to turn it into a task.':tone==='mae'?'We can just talk, Mae. What would you like to share?':'We can just talk. What would you like to share?'};
+        const gentle = {
+            feeling_bad:'That sounds like a low moment. We can just talk, without trying to fix it.',
+            tired:'You sound tired. We can keep the conversation quiet.',
+            mixed_feelings:'You described a mix of feelings. We can just talk about it.',
+            emotional_detail:'Your mood, understood. We can just talk, without suggestions.',
+            mood_and_play:'You feel down and still want to play. I hear both parts.',
+            bored:'A slow moment, then. We can keep each other company in the chat.'
+        };
+        const kept=(final.payload.content ?? '').split(/(?<=[.!?])\s+/u).filter(line=>! /\badvice\b/iu.test(line)).join(' ');
+        const content=gentle[final.category] ?? (kept || 'We can just talk. What is on your mind?');
+        final.payload={content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+content};
     }
     return attachExpectation(final,request);
 }
