@@ -1,3 +1,4 @@
+const { recognizePractical } = require('../../config/akanePractical');
 const { recognizeSocial, acknowledge } = require('./socialIntent');
 const { prepareSentence, reactionClauses, resolveMixedMood } = require('./sentenceParser');
 const { recognizeEveryday } = require('../../config/akaneEveryday');
@@ -13,7 +14,7 @@ function canonical(value) {
         .replace(/\b(ple+a+se+|ple+ase+|plz+)\b/gu,'please')
         .replace(/\bso+r+y+\b/gu,'sorry')
         .replace(/[a-z0-9]+(?:'[a-z]+)?/gu,word=>english.slang[word]??word)
-        .replace(/\bur\s+(?=(?:so |really |very |pretty |kind of |not |a |an |just )*(?:cute|nice|sweet|beautiful|pretty|funny|stupid|dumb|ugly|useless|rude|mean|adorable|lovely|bot|robot)\b)/gu,'you are ')
+        .replace(new RegExp('\\bur\\s+(?=(?:(?:so|really|very|pretty|kind of|not|a|an|just|actually|incredibly|quite) )*(?:'+[...socialVocabulary.positive,...socialVocabulary.negative,'rude','mean','bot','robot'].join('|')+')\\b)','gu'),'you are ')
         .replace(/\bur\b/gu,'your')
         .replace(/\bso{3,}\b/gu,'so')
         .replace(/\bver{1,}y{2,}\b/gu,'very')
@@ -93,6 +94,8 @@ function recognize(value) {
     const normalized=tidy(raw);
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
+    const practical=recognizePractical(prepareSentence(stripMarkers(normalized)));
+    if(practical) return practical;
     const directSocial=recognizeSocial(prepareSentence(normalized),raw);
     if(directSocial) return directSocial;
     const text=prepareSentence(stripMarkers(normalized));

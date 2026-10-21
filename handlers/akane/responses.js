@@ -43,6 +43,10 @@ for (const [tone, categories] of Object.entries(repairs.pools)) {
     }
 }
 
+const practical = require('../../config/akanePractical');
+for (const [tone,categories] of Object.entries(practical.pools)) {
+    for (const [category,pool] of Object.entries(categories)) replies[`conversation_${tone}_${category}`]=pool;
+}
 const social = require('../../config/akaneSocialReplies');
 for (const [tone,categories] of Object.entries(social.pools)) {
     for (const [category,pool] of Object.entries(categories)) {
@@ -198,8 +202,8 @@ function buildResponse(message, request) {
     if (request.category === 'reaction_question') request = {...request,category:'clarify'};
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
-    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context])) {
-        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
+    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context] || practical.explanations[request.context])) {
+        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,...practical.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
         const tone=toneFor(message.author.id);
         const content=(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+(meanings[request.context] ?? 'I did not understand the exact request. Please give me the main point in a short sentence.');
         return {payload:{content},category:request.context,question:false,session:true,pending:request.conversation?.pending??null};

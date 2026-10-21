@@ -76,7 +76,7 @@ function decorate(base, tone, request) {
         return {payload:{content},category:'general',session:true,question:false,pending:null};
     }
     if (control === 'repair') {
-        return result('I read that the wrong way. Was it the topic, the tone, or the request? Try a clearer request, or say `be nicer` / `be serious`.',request.context??'general',{pending:{kind:'repair'}});
+        return result('I may have misread that. What did you mean?',request.context??'general',{pending:{kind:'repair'}});
     }
     if (control === 'repair_detail') {
         const detail = normalize(request.argument ?? '');
