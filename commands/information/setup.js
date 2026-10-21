@@ -53,8 +53,8 @@ const SETUP_ITEMS = [
         emoji: '📜'
     },
     {
-        label: 'Training Grounds',
-        description: 'Publish or update the interactive training panel.',
+        label: 'Mission Control',
+        description: 'Update Daily Drop, Missions and profile buttons.',
         value: 'training_grounds',
         emoji: '🥋'
     },
@@ -75,26 +75,21 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        if (!interaction.inGuild() || !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+            await interaction.reply({content:'Manage Server permission is required.',flags:MessageFlags.Ephemeral});
+            return;
+        }
         const embed = createEmbed(
-            'Blood Moon Setup',
-            [
-                'Configure and publish the main Blood Moon server content.',
-                '',
-                'Select what you want Akane to set up.',
-                '',
-                '📜 **Sacred Laws** — Server rules',
-                '📖 **Moon Guide** — Server guide',
-                '⛩️ **Verification Guide** — Bloxlink instructions',
-                '🎭 **Role Guide** — Roles and hierarchy',
-                '⚔️ **Progression Guides** — Slayer and Demon ranks',
-                '🗺️ **Game Guide** — Slayers 2 guides',
-                '📜 **Support Guide** — Support information',
-                '🥋 **Training Grounds** — Interactive training panel',
-                '🌙 **Full Setup** — Publish core server content'
-            ].join('\n')
-        ).setFooter({
-            text: brand.footer
-        });
+            '🌙 Blood Moon • Setup Studio',
+            '**Give every entrance a little atmosphere.**\nChoose a section below to publish or refresh its content.'
+        ).setColor('#781D32').addFields(
+            {name:'01 · First impressions',value:'📜 **Sacred Laws** — Short, clear community rules\n📖 **Moon Guide** — A member’s first steps\n⛩️ **Verification** — Bloxlink and account access'},
+            {name:'02 · Build the journey',value:'🎭 **Roles** — Ranks, milestones and staff\n⚔️ **Progression** — Slayer and Demon paths\n🦊 **Mission Control** — Daily Drop, Missions and profile'},
+            {name:'03 · Find your way',value:'🗺️ **Game Guide** — Community guides and parties\n🎫 **Support** — Questions, reports and appeals'},
+            {name:'🌙 Full Setup',value:'Refresh the guides, path selection, ticket panel and Mission Control together. Sections publish one after another; a failure may leave earlier sections updated.'}
+        ).setFooter({text:brand.footer});
+        const icon=interaction.guild.iconURL({size:256});
+        if(icon)embed.setThumbnail(icon);
 
         const menu = new StringSelectMenuBuilder()
             .setCustomId('akane:setup')

@@ -1,5 +1,4 @@
-
-const { MessageFlags } = require('discord.js');
+const { MessageFlags, PermissionFlagsBits } = require('discord.js');
 
 const {
     publishSacredLaws
@@ -60,6 +59,11 @@ async function handleSetupSelect(interaction) {
         interaction.customId !== 'akane:setup'
     ) {
         return false;
+    }
+
+    if (!interaction.inGuild() || !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        await interaction.reply({content:'Manage Server permission is required.',flags:MessageFlags.Ephemeral});
+        return true;
     }
 
     await interaction.deferReply({
@@ -222,7 +226,8 @@ async function handleSetupSelect(interaction) {
                                 '🗺️ Game Guide',
                                 '⚔️ Path Selection',
                                 '📜 Support Guide',
-                                '🎫 Ticket Panel'
+                                '🎫 Ticket Panel',
+                                '🦊 Mission Control'
                             ].join('\n')
                         )
                     ]

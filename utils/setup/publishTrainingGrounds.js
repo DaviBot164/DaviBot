@@ -1,3 +1,4 @@
+const { buildGuide } = require('./guidePresentation');
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -16,32 +17,15 @@ const TRAINING_IDS = Object.freeze({
     quests: 'akane:training:quests'
 });
 
-function buildTrainingPanel() {
-    const embed = createEmbed(
-        '🦊 AKANE • MISSION CONTROL',
-        [
-            '*Your next little victory starts here.*',
-            '',
-            'Train your soul, strengthen your resolve,',
-            'and forge your legacy beneath the Blood Moon.',
-            '',
-            '🌙 **Daily Drop**',
-            'Collect XP, build a streak, and reach 3/7/14/30-day bonus drops.',
-            '',
-            '🎴 **Soul Profile**',
-            'View your level, rank, and progression.',
-            '',
-            '🏆 **Achievements**',
-            'Discover the milestones you have unlocked.',
-            '',
-            '📜 **Mission Board**',
-            'Complete three missions for XP. Collect all three rewards for a +50 XP clear bonus.',
-            '',
-            '━━━━━━━━━━━━━━━━━━━━',
-            '*Your journey begins here, warrior.*'
-        ].join('\n')
-    ).setFooter({
-        text: brand.footer
+function buildTrainingPanel(guild = null) {
+    const embed = buildGuide(guild ?? {iconURL:()=>null},{
+        title:'🦊 AKANE • MISSION CONTROL',
+        intro:'**Your next little victory starts here.**\nCollect a drop, clear a mission, and make your progress visible.',
+        fields:[
+            {name:'🌙 Daily Drop',value:'Claim XP every 24 hours. Keep a 24–48 hour rhythm to continue your streak. Bonus drops at 3 / 7 / 14 / 30 days; the track repeats every 30 claims.',inline:false},
+            {name:'📜 Mission Board',value:'Three missions per cycle: 15 and 30 XP-eligible messages, plus your daily drop. Collect all three rewards for an extra **+50 XP**.',inline:false},
+            {name:'🎴 Profile & achievements',value:'Check your level, faction, battle statistics and milestones with the buttons below.',inline:false}
+        ],quote:'Small steps count. Empty spam does not.'
     });
 
     const firstRow = new ActionRowBuilder()
@@ -145,7 +129,7 @@ async function publishTrainingGrounds(guild) {
 
             if (message) {
                 const updated = await message.edit(
-                    buildTrainingPanel()
+                    buildTrainingPanel(guild)
                 );
 
                 await client.query('COMMIT');
@@ -156,7 +140,7 @@ async function publishTrainingGrounds(guild) {
         }
 
         createdMessage = await channel.send(
-            buildTrainingPanel()
+            buildTrainingPanel(guild)
         );
 
         await client.query(

@@ -1,3 +1,4 @@
+const { publishTrainingGrounds } = require('./publishTrainingGrounds');
 const {
     publishSacredLaws
 } = require('./publishSacredLaws');
@@ -94,6 +95,8 @@ async function publishFullSetup(guild) {
             guild
         )
     );
+
+    results.push(await publishTrainingGrounds(guild));
 
     return results;
 }

@@ -49,52 +49,17 @@ function buildPathComponents() {
     ];
 }
 
+const { publishGuide } = require('./guidePresentation');
 async function publishPathSelection(guild) {
-    const channel =
-        guild.channels.cache.get(
-            channels.slayers2
-        );
-
-    if (!channel?.isTextBased()) {
-        throw new Error(
-            'Slayers 2 channel could not be found.'
-        );
-    }
-
-    const title =
-        'Choose Your Path';
-
-    const embed =
-        createEmbed(
-            title,
-            [
-                'The Blood Moon watches as two paths stand before you.',
-                '',
-                '⚔️ **Slayer Path**',
-                'Join the Demon Slayer Corps, grow stronger and rise through the Slayer ranks.',
-                '',
-                '🩸 **Demon Path**',
-                'Embrace the night, grow in power and ascend through the Demon ranks.',
-                '',
-                '**Choose carefully. Your path defines your progression.**'
-            ].join('\n')
-        )
-            .setFooter({
-                text:
-                    brand.footer
-            });
-
-    return publishSetupMessage(
-        channel,
-        {
-            embeds: [
-                embed
-            ],
-            components:
-                buildPathComponents()
-        },
-        title
-    );
+    return publishGuide(guild,channels.slayers2,{
+        title:'Choose Your Path',
+        intro:'**Two paths. One Blood Moon. Your next chapter.**',
+        fields:[
+            {name:'⚔️ Slayer',value:'Join the Corps. Advance through Slayer, Mizunoe and Kinoe; aim for Hashira through Trials or staff promotion.',inline:true},
+            {name:'🩸 Demon',value:'Step into the night. Advance through Demon and Lower Moon; aim for Upper Moon through Trials or staff promotion.',inline:true},
+            {name:'Before you choose',value:'This selects your Blood Moon server faction. It does not change your Roblox character or in-game progression.'}
+        ],quote:'Choose the path you want to build. Then give it a little effort.'
+    },buildPathComponents());
 }
 
 module.exports = {

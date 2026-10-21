@@ -16,55 +16,14 @@ const {
     publishSetupMessage
 } = require('./publishSetupMessage');
 
+const { publishGuide } = require('./guidePresentation');
 async function publishTicketPanel(guild) {
-    const channel =
-        guild.channels.cache.get(
-            channels.openTicket
-        );
-
-    if (!channel?.isTextBased()) {
-        throw new Error(
-            'Ticket channel could not be found.'
-        );
-    }
-
-    const title =
-        '🎫 Blood Moon Support';
-
-    const embed =
-        createEmbed(
-            title,
-            [
-                'Need help beneath the Blood Moon?',
-                '',
-                'Open a private ticket and choose the category that best matches your request.',
-                '',
-                '🛟 **Support** — General help',
-                '🚨 **Report** — Report a member or problem',
-                '⚖️ **Appeal** — Appeal a moderation action',
-                '📜 **Other** — Anything else',
-                '',
-                '*Please open a ticket only when needed.*'
-            ].join('\n')
-        )
-            .setFooter({
-                text:
-                    brand.footer
-            });
-
-    return publishSetupMessage(
-        channel,
-        {
-            embeds: [
-                embed
-            ],
-            components:
-                buildTicketPanelComponents()
-        },
-        title
-    );
+    return publishGuide(guild,channels.openTicket,{
+        title:'🎫 Blood Moon Support',
+        intro:'**Need a hand? Start with the right ticket.**\nChoose a category below and describe the issue in your first message.',
+        fields:[{name:'Choose your route',value:'🛟 **Support** — Questions, verification or bot issues\n🚨 **Report** — A member, message or community concern\n⚖️ **Appeal** — Request a moderation review\n📜 **Other** — A request that does not fit elsewhere'},
+        {name:'A little preparation helps',value:'Bring relevant message links or screenshots. Keep related information in one ticket. Never send passwords, tokens or verification codes.'}],
+        quote:'A clear explanation makes a much better entrance than ten pings.'
+    },buildTicketPanelComponents());
 }
-
-module.exports = {
-    publishTicketPanel
-};
+module.exports={publishTicketPanel};
