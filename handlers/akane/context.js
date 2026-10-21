@@ -46,6 +46,7 @@ function memoryAfter(previous, request, response) {
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     return {
         mode,
+        noAdviceRemaining: request.category === 'decline_advice' ? 4 : request.category === 'tip' ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
         pending: response.pending ?? null,
         history: [...(old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };

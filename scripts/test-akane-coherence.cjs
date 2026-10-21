@@ -9,7 +9,7 @@ const cases=[
  ['you are not obnoxious but gorgeous','reaction_affection'],
  ['you are not obnoxious at all','reaction_reassurance'],
  ['you soooo annoying','reaction_insult'],['you veryyy cute','reaction_affection'],
- ['i never said you were stupid','repair'],['i did not mean that','repair'],
+ ['i never said you were stupid','disavow_insult'],['i did not mean that','repair'],
  ['my friend is clever but incompetent',null],['he said you are adorable but obnoxious',null],
  ['i am not sad and tired',null],['you are not ugly and stupid','reaction_reassurance']
 ];

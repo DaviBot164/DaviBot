@@ -1,3 +1,4 @@
+const { recognizeNegation } = require('./negation');
 const { recognizePractical } = require('../../config/akanePractical');
 const { recognizeSocial, acknowledge } = require('./socialIntent');
 const { prepareSentence, reactionClauses, resolveMixedMood } = require('./sentenceParser');
@@ -94,6 +95,8 @@ function recognize(value) {
     const normalized=tidy(raw);
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
+    const negativeIntent=recognizeNegation(prepareSentence(stripMarkers(normalized)));
+    if(negativeIntent) return negativeIntent;
     const practical=recognizePractical(prepareSentence(stripMarkers(normalized)));
     if(practical) return practical;
     const directSocial=recognizeSocial(prepareSentence(normalized),raw);

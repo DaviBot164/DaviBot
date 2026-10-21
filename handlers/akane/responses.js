@@ -240,6 +240,10 @@ function buildResponse(message, request) {
     const final = decorate(base, toneFor(message.author.id), request);
     if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};
     if (['hi','returning','morning'].includes(final.category) && /how (?:are you(?: doing)?|is your day(?: starting| going)?)\?/iu.test(final.payload.content ?? '')) final.pending = {kind:'mood'};
+    if ((request.category === 'decline_advice' || request.conversation?.noAdviceRemaining > 0) && request.category !== 'tip' && /\badvice\b/iu.test(final.payload.content ?? '') && request.category !== 'decline_advice') {
+        const tone=toneFor(message.author.id);
+        final.payload={content:tone==='owner'?'We can just talk, handsome. No need to turn it into a task.':tone==='mae'?'We can just talk, Mae. What would you like to share?':'We can just talk. What would you like to share?'};
+    }
     return attachExpectation(final,request);
 }
 module.exports = { buildResponse, toneFor };

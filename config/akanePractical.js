@@ -14,6 +14,13 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ decline_advice:['No advice, understood. We can just talk.','Got it. I will leave the suggestions aside. What would you like to talk about?','You do not need a solution from me. We can keep this a conversation.'],
+ mood_recovered:['No longer sad, understood. How are things now?','Sounds like that feeling has shifted. Want to talk about something lighter?','Got it. I will not assume you are still feeling down. What is next?'],
+ mood_lowered:['Things feel different now, understood. We can keep the conversation gentle.','Not feeling that way anymore, got it. Want to tell me what changed?','I hear the change. We can slow the conversation down.'],
+ tension_clear:['Understood. I will not treat that as anger aimed at me.','No hard feelings, then. We can keep talking.','Got it. We can leave that little misunderstanding behind.'],
+ disavow_insult:['Understood. You are denying the insult, not making one. We can move on.','Got it. I will not put words in your mouth.','A correction, understood. What did you actually mean?'],
+ talk_choice:['Talking rather than playing, understood. What is on your mind?','A conversation it is. What would you like to talk about?','No game, just a chat. Go ahead.'],
+ reaction_reassurance:['A vote of confidence. I will try not to look too pleased.','I hear the kind part. A surprisingly civilized turn of events.','No insult there. You may keep talking; that was almost charming.'],
  emotional_detail:['Your mood, understood. We can keep this gentle. Would you prefer advice, a distraction, or a pause?','I meant to check which kind of rough day you were having. Advice, a distraction, or a quiet pause?','Got it: emotionally. No sharp teasing for that. Would advice or a distraction suit you?'],
  physical_detail:['Physically, understood. I will leave the teasing aside. We can pause here or keep the chat quiet.','Your body rather than your mood, got it. No need to keep the conversation going if you would prefer a pause.','Understood. A quieter conversation or a pause is fine.'],
  mixed_wellbeing:['Both, understood. We can keep this gentle and take one part at a time.','A bit of both, then. You do not have to explain everything at once.','Got it. We can leave the teasing aside and slow down.'],
@@ -35,7 +42,16 @@ for(const [category,lines] of Object.entries(publicPools)){
  pools.owner[category]=lines.map(line=>'Handsome, '+(line.startsWith('I ')?line:line[0].toLowerCase()+line.slice(1)));
  pools.mae[category]=lines.map(line=>'Mae, '+(line.startsWith('I ')?line:line[0].toLowerCase()+line.slice(1)));
 }
+pools.owner.reaction_reassurance=['I heard the kindness in that, handsome.','That is sweet of you, Davi. We can leave the misunderstanding behind.','A little reassurance, sweetheart. I understood you.'];
+pools.mae.reaction_reassurance=['I hear you, Mae. Thank you for clarifying.','That was kind of you, Mae.','No misunderstanding, Mae. We can keep talking.'];
 const explanations={
+ decline_advice:'You declined advice. I acknowledged that and offered to keep talking without suggestions.',
+ mood_recovered:'You said the negative feeling was no longer present. I did not assume you were still upset.',
+ mood_lowered:'You said a positive feeling was no longer present. I acknowledged the change.',
+ tension_clear:'You clarified that your anger was not directed at me.',
+ disavow_insult:'You denied having made an insult. That is different from insulting me.',
+ talk_choice:'You chose talking and rejected playing. I followed the activity you wanted.',
+ reaction_reassurance:'Your sentence denied a negative description of me, so I treated it as reassurance.',
  emotional_detail:'You clarified that you meant your mood, so I offered a gentler conversation.',
  physical_detail:'You clarified that you meant physical discomfort. I acknowledged that and offered a quieter chat or a pause.',
  mixed_wellbeing:'You said both your mood and your body felt off, so I acknowledged both without guessing the cause.',

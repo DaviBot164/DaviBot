@@ -1,7 +1,7 @@
 // Structured expectations only: no raw conversation text is stored.
 const EXPECTATIONS = Object.freeze({
  not_well:'wellbeing', feeling_stuck:'help_topic', help_offer:'help_topic',
- emotional_detail:'mood_support', study_start:'study_step'
+ emotional_detail:'mood_support', study_start:'study_step', study_step:'study_step', study_breakdown:'study_step'
 });
 const answers = {
  wellbeing:{
