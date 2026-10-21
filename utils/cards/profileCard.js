@@ -50,18 +50,21 @@ function fittedText(ctx, value, maxWidth, size, weight) {
     );
 
     let fontSize = size;
-
-    while (fontSize > 14) {
-        ctx.font = `${weight} ${fontSize}px sans-serif`;
-
-        if (ctx.measureText(characters.join('')).width <= maxWidth) {
-            return characters.join('');
-        }
-
-        fontSize -= 1;
-    }
+    const minSize = Math.min(size, 14);
 
     ctx.font = `${weight} ${fontSize}px sans-serif`;
+
+    while (
+        fontSize > minSize &&
+        ctx.measureText(characters.join('')).width > maxWidth
+    ) {
+        fontSize -= 1;
+        ctx.font = `${weight} ${fontSize}px sans-serif`;
+    }
+
+    if (ctx.measureText(characters.join('')).width <= maxWidth) {
+        return characters.join('');
+    }
 
     while (
         characters.length &&
@@ -72,7 +75,6 @@ function fittedText(ctx, value, maxWidth, size, weight) {
 
     return characters.length ? `${characters.join('')}…` : '';
 }
-
 function text(
     ctx,
     value,
@@ -97,7 +99,7 @@ function text(
 }
 
 function label(ctx, value, x, y, width) {
-    text(ctx, value, x, y, width, 12, COLORS.muted, 600);
+    text(ctx, value, x, y, width, 16, COLORS.muted, 600);
 }
 
 function stat(ctx, x, y, labelText, value, accent = COLORS.gold) {
