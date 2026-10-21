@@ -1,7 +1,7 @@
 // Structured expectations only: no raw conversation text is stored.
 const EXPECTATIONS = Object.freeze({
  not_well:'wellbeing', feeling_stuck:'help_topic', help_offer:'help_topic',
- emotional_detail:'mood_support', study_start:'study_step', study_step:'study_step', study_breakdown:'study_step', study_alternative:'study_step'
+ emotional_detail:'mood_support', study_start:'study_step', study_step:'study_step', study_breakdown:'study_step', study_alternative:'study_step', study_understanding:'study_step'
 });
 const answers = {
  wellbeing:{
@@ -16,7 +16,8 @@ const answers = {
   tip:['advice','some advice','a tip'], help:['commands','server commands','a command']
  },
  study_step:{
-  study_alternative:['i already tried that','already tried that','i tried that already','that did not work','it did not work','another way','a different approach','can you suggest a different approach','can you suggest another way','something different'],
+  study_understanding:['i do not understand the topic','i do not understand it','the topic is confusing','i do not get it','i do not understand the idea'],
+  study_alternative:['i already tried reading it twice','i tried reading it twice','i already read it twice','i already tried that','already tried that','i tried that already','that did not work','it did not work','another way','a different approach','can you suggest a different approach','can you suggest another way','something different'],
   study_step:['yes','yeah','sure','okay','ok','how','how do i start','what first','what should i do first','first step','show me'],
   study_breakdown:['too much','it is too much','that is too much','too hard','i cannot focus','i cannot concentrate','i keep getting distracted']
  },

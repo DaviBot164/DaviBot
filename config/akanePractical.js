@@ -1,5 +1,7 @@
 // Everyday speech repairs found in real conversations. All matches are bounded.
 function recognizePractical(text) {
+ if(/^(?:can|could|would) you (?:please )?help me (?:with|start|understand) (?:studying|my studies|homework|my homework|schoolwork|learning|a school topic)$/u.test(text) || /^i need help with (?:studying|my studies|homework|my homework|schoolwork)$/u.test(text))return 'study_start';
+ if(/^(?:yes |yeah |exactly )?(?:that is|thats|that's) (?:exactly )?what i meant$/u.test(text))return 'feedback_understood';
  if(/^(?:let us|lets|let's|can we|could we) (?:please )?talk about (?:something (?:fun|funny|light|lighter|else)|a different topic)(?: instead)?$/u.test(text))return 'topic_change';
  if(/^(?:(?:can|could|would) you (?:please )?)?(?:explain (?:it|that|your answer) (?:more simply|in simpler words)|make (?:it|that) simpler|say (?:it|that) more simply)$/u.test(text))return 'simplify';
  if(/^(?:i (?:do not|would rather not|do not really) want to|i would rather not) (?:talk|speak)(?: about (?:it|that|this))?(?: (?:right now|anymore|please))?$/u.test(text))return 'topic_boundary';
@@ -25,6 +27,10 @@ function recognizePractical(text) {
  return null;
 }
 const publicPools = {
+ choices_rejected:['Neither option, understood. I will leave those choices behind.','Changed your mind? That is fine. We can start with new options or a new subject.','Neither it is. No need to stick with that choice.'],
+ mental_tired:['Mentally tired, understood. We can keep the conversation light.','Your mind rather than your body, got it. No need to make this a demanding conversation.','I hear the distinction. We can leave the sharp teasing aside.'],
+ study_understanding:['Try finding one worked example. Compare each step with the explanation and mark where the link stops making sense.','Try explaining one sentence in your own words. Mark the word or step you cannot explain; that is the smaller question to work on.','Instead of rereading the whole topic, pick one term and find one concrete example of it. Build from that small piece.'],
+ feedback_understood:['Good, we are on the same page now.','Understood. We can continue from there.','That clears it up. What is next?'],
  study_alternative:['Try a different route: explain the idea aloud as if teaching someone, then check the part you could not explain.','Instead of reading again, turn one heading into a question and try answering it from memory.','Switch the format: make a small sketch or a two-line summary of one idea, then compare it with the material.'],
  topic_boundary:['You do not have to talk about it. We can leave that subject there.','Understood. No explanation needed. Another subject, or a pause?','That topic can stay closed. You choose what we discuss next.'],
  feedback_better:['Good. I will keep that tone.','Noted. We can carry on like this.','Glad that fits better. Go ahead.'],
@@ -62,6 +68,10 @@ for(const [category,lines] of Object.entries(publicPools)){
 pools.owner.reaction_reassurance=['I heard the kindness in that, handsome.','That is sweet of you, Davi. We can leave the misunderstanding behind.','A little reassurance, sweetheart. I understood you.'];
 pools.mae.reaction_reassurance=['I hear you, Mae. Thank you for clarifying.','That was kind of you, Mae.','No misunderstanding, Mae. We can keep talking.'];
 const explanations={
+ choices_rejected:'You rejected both choices or changed your mind. I cleared the previous options.',
+ mental_tired:'You clarified that the tiredness was mental rather than physical.',
+ study_understanding:'You said the topic was unclear. I suggested working with one example or a smaller part instead of simply reading it again.',
+ feedback_understood:'You confirmed that I had understood your meaning.',
  study_alternative:'The first method did not fit, so I offered a different way to work with the material.',
  topic_boundary:'You said you did not want to discuss that subject. I respected the boundary.',
  feedback_better:'You said the answer or tone was better, so I acknowledged that feedback.',

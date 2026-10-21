@@ -35,6 +35,7 @@ function contextualCategory(raw, session) {
     if (session && ['maybe','perhaps','possibly','i guess','not sure','i am not sure'].includes(text)) return ['mood','choices'].includes(session.pending?.kind) ? 'uncertain' : 'context_hesitant';
     if (session && (['feeling_bad','not_well','emotional_detail','bad_day_context'].includes(session.category) || ['mood','mood_support','wellbeing'].includes(session.pending?.kind)) && /^(?:because|because of) (?:i (?:had|have) (?:a )?(?:bad|rough|terrible|awful) day|my (?:bad|rough|terrible|awful) day)$/u.test(text)) return 'bad_day_context';
     if(session?.pending?.kind==='repair' && /^(?:i meant (?:your|the) (?:answer|reply|response) not you|your (?:answer|reply|response) not you)$/u.test(text)) return 'repair_answer';
+    if(session && ['tired','mental_tired','emotional_detail'].includes(session.category) && /^(?:not physically mentally|mentally not physically|mentally|mental tiredness|my mind)$/u.test(text)) return 'mental_tired';
     const detail = followupCategory(text,session); if(detail) return detail;
     const acceptance = acknowledge(text,session); if(acceptance) return acceptance;
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';

@@ -3,6 +3,8 @@ const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const negative = vocabulary.negative.map(escape).join('|');
 // Bounded sentence forms: do not infer sentiment from a stray "not".
 function recognizeNegation(text) {
+ if(/^(?:just )?(?:talk|chat) (?:to|with) me (?:and )?do not (?:give|offer) me (?:any )?advice$/u.test(text))return 'decline_advice';
+ if(/^(?:neither|neither one|neither of them|none of those)(?: i (?:have )?changed my mind)?$/u.test(text))return 'choices_rejected';
  if (/^(?:please )?(?:do not|stop|quit) (?:be|being) (?:so |really |very )?(?:rude|mean|harsh)(?: (?:to|with) me)?(?: please)?$/u.test(text)) return 'tone_gentle';
  if (/^(?:i (?:do not|would not) want|i do not need|no|not looking for) (?:any |your |some )?(?:advice|tips|suggestions)(?: (?:right now|please))?$/u.test(text)) return 'decline_advice';
  if (/^(?:i am|i feel) (?:not (?:sad|upset|down|angry|stressed|anxious) (?:anymore|any more)|no longer (?:sad|upset|down|angry|stressed|anxious))$/u.test(text)) return 'mood_recovered';
