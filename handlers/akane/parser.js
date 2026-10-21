@@ -4,15 +4,7 @@ const { getSession } = require('./state');
 const { detectReaction } = require('../../config/akaneReactions');
 const conversation = require('../../config/akaneConversation');
 
-const known = new Map(aliases);
-for (const [category, phrases] of Object.entries(conversation.aliases)) {
-    for (const phrase of phrases) known.set(normalize(phrase), category);
-}
-const implicit = new Set([
-    'hi', 'mood', 'thanks', 'really', 'why', 'explain', 'again',
-    'nice', 'roast', 'tip', 'rude', 'reaction_apology',
-    'reaction_affection', 'stop', 'laugh', 'feeling_good', 'feeling_bad', 'tired'
-]);
+const { recognize } = require('./language');
 
 function parseRequest(message, now) {
     const content = String(message.content ?? '').trim();
@@ -25,12 +17,12 @@ function parseRequest(message, now) {
     const session = !message.reference || replying ? previous : null;
     const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
-    const category = known.get(text);
+    const category = recognize(raw);
 
     if (!trigger && !replying) {
         if (
             message.reference || !session ||
-            now >= (session.implicitUntil ?? 0) || !implicit.has(category)
+            now >= (session.implicitUntil ?? 0) || !category
         ) return null;
     }
 
@@ -70,7 +62,7 @@ function parseRequest(message, now) {
         if (['why', 'really', 'explain', 'again'].includes(category)) {
             return context ? { category, ...followup } : { category: 'clarify' };
         }
-        return { category };
+        return { category, ...followup };
     }
 
     const reaction = detectReaction(raw);
