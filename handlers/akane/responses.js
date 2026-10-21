@@ -155,7 +155,7 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildResponse(message, request) {
-    const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail'];
+    const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
     if (controls.includes(request.category)) {
         base = { payload: { content: '' }, category: request.category, session: true };

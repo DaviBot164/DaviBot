@@ -1,15 +1,20 @@
 // Bounded, temporary conversation context. No user text is retained.
 const { normalize } = require('./aliases');
+const { canonical } = require('./language');
+const { randomInt } = require('node:crypto');
 const controls = new Map();
 for (const [category, values] of Object.entries({
-    tone_gentle: ['be nicer','be nice to me','be gentle','stop teasing','less teasing','easy on me','ცოტა რბილად','ნუ მეუხეშები','ნუ მეხუმრები'],
-    tone_serious: ['be serious','serious mode','no jokes','seriously please','სერიოზულად მიპასუხე','ხუმრობის გარეშე'],
+    topic_change: ['something else','change the subject','change topic','new topic','another topic','different topic','სხვა თემა','თემა შეცვალე','სხვა რამე'],
+    tone_gentle: ['be nice','be nicer please','please be nicer','gentle please','be nicer','be nice to me','be gentle','stop teasing','less teasing','easy on me','ცოტა რბილად','ნუ მეუხეშები','ნუ მეხუმრები'],
+    tone_serious: ['be serious','serious mode','no jokes','no jokes please','be serious please','seriously please','სერიოზულად მიპასუხე','ხუმრობის გარეშე'],
     tone_reset: ['normal mode','back to normal','tease me again','ჩვეულებრივად','ისევ გამეხუმრე'],
     repair: ["that's not what i meant",'that is not what i meant','you misunderstood','you got me wrong','not what i meant','wrong meaning','ეგ არ მიგულისხმია','არასწორად გაიგე','სხვას ვგულისხმობდი']
 })) for (const value of values) controls.set(normalize(value), category);
 function contextualCategory(raw, session) {
     const text = normalize(raw);
     if (controls.has(text)) return controls.get(text);
+    const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
+    if (controls.has(plain)) return controls.get(plain);
     if (session?.pending?.kind === 'mood') {
         if (['bad','not good','awful','terrible','ცუდად','ცუდი'].includes(text)) return 'feeling_bad';
         if (['good','fine','great','კარგად','კარგი'].includes(text)) return 'feeling_good';
@@ -37,6 +42,9 @@ function decorate(base, tone, request) {
     const label = tone === 'owner' ? 'handsome' : tone === 'mae' ? 'Mae' : null;
     const address = text => label ? `${label === 'handsome' ? 'Of course, handsome' : 'Mae'}. ${text}` : text;
     const result = (content, category, extra={}) => ({payload:{content:address(content)},category,session:true,question:false,...extra});
+    if (control === 'rude') {
+        return result('Understood. I will soften the next four replies.', request.context ?? 'general', {modeChange:'gentle',pending:previous.pending??null,question:previous.question??false});
+    }
     if (control.startsWith('tone_')) {
         const name = control === 'tone_gentle' ? 'gentle' : control === 'tone_serious' ? 'serious' : 'normal';
         const content = name === 'normal' ? 'Back to the usual playful tone.'
@@ -44,11 +52,28 @@ function decorate(base, tone, request) {
             : 'I will keep the next four replies straightforward. No jokes.';
         return result(content,request.context ?? 'general',{modeChange:name,pending:previous.pending??null,question:previous.question??false});
     }
+    if (control === 'topic_change') {
+        const options = tone === 'owner'
+            ? ['A fresh subject, handsome. A compliment, a secret, or a little advice?', 'Of course, Davi. Shall we try a secret or a random choice?']
+            : tone === 'mae' ? ['A fresh subject, Mae. A compliment, a secret, or some advice?', 'Sure, Mae. We can try a secret or a random choice.']
+            : ['New subject. A compliment, a secret, or advice? Choose your trouble.', 'That scene has ended. Try a secret, a compliment, or a random choice.'];
+        const content = previous.mode?.remaining > 0
+            ? address('We can change the subject. Try a compliment, a secret, advice, or a random choice.')
+            : options[randomInt(options.length)];
+        return {payload:{content},category:'general',session:true,question:false,pending:null};
+    }
     if (control === 'repair') {
         return result('I read that the wrong way. Was it the topic, the tone, or the request? Try a clearer request, or say `be nicer` / `be serious`.',request.context??'general',{pending:{kind:'repair'}});
     }
     if (control === 'repair_detail') {
-        return result('Understood. Write the request again in a short sentence, or use `be nicer` / `be serious` to change the tone.', request.context ?? 'general', {pending:{kind:'repair'}});
+        const detail = normalize(request.argument ?? '');
+        if (['tone','ტონი'].includes(detail)) {
+            return result('I will ease up. The next four replies will be gentler. You can also say `be serious` or `normal mode`.', request.context ?? 'general', {modeChange:'gentle',pending:null});
+        }
+        if (['topic','თემა'].includes(detail)) {
+            return result('Let us leave that topic behind. Try a compliment, a secret, advice, or `akane pick tea / coffee`.', 'general', {pending:null});
+        }
+        return result('Tell me what you wanted me to do: `nice`, `roast`, `tip`, `secret`, or `akane pick tea / coffee`. I will start from that request.', 'general', {pending:null});
     }
     if (control === 'context_choices') {
         return {...base, pending:base.category === 'fallback' ? {kind:'choices'} : null};

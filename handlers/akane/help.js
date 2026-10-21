@@ -27,6 +27,7 @@ function plainHelp() {
         'Wait **3 seconds** between requests; **2 seconds** between channel responses.',
         'Tone: `be nicer` / `be serious` (next 4 replies); `normal mode` restores the usual tone.',
         'Misunderstood? Try `that is not what I meant`. After a mood question, `good` / `bad` works.',
+        'Change subject: `something else`. If misunderstood, say `that is not what I meant`, then `topic`, `tone`, or `request`.',
         'Preset character dialogue: unfamiliar sentences may need a clearer request.'
     ].join('\n');
 }

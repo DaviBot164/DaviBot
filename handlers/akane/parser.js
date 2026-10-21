@@ -55,7 +55,7 @@ function parseRequest(message, now) {
 
     const choice = raw.match(/^(?:pick|choose|აირჩიე)\s+(.+)$/isu);
     if (choice) return { category: 'pick', argument: choice[1], ...followup };
-    if (category === 'context_choices') return { category, argument: raw, ...followup };
+    if (['context_choices','repair_detail'].includes(category)) return { category, argument: raw, ...followup };
 
     if (category) {
         if (['yes', 'no'].includes(category)) {
