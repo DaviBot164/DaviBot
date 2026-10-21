@@ -19,7 +19,7 @@ function tidy(value) {
 function stripMarkers(value) {
     return value.replace(/^(?:(?:to be honest|not going to lie|in my opinion|honestly|well|okay|ok|actually|by the way|for real|oh my god)[,\s]+)+/u,'')
         .replace(/^(?:hey|hello|yo)\s+(?=i |you |can |could |would |how |what |be |stop )/u,'')
-        .replace(/(?:\s+(?:please|right now|at the moment|though|honestly|today|bro|dude|mate|for real|lol|lmao|haha|xd))+$/u,'').trim();
+        .replace(/(?:\s+(?:please|right now|at the moment|though|honestly|today|bro|dude|mate|for real|lol|lmao|haha|xd|not going to lie|to be honest|in my opinion|actually|by the way))+$/u,'').trim();
 }
 const known=new Map();
 function add(category,phrase){
