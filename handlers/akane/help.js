@@ -1,7 +1,7 @@
 const { createEmbed } = require('../../utils/embeds');
 function plainHelp(){return [
  '**Talk to Akane 🦊**','Start with `akane hi`, or mention the bot at the start of your message. English input and replies.',
- '', '**Talk naturally**','`akane could you give me a compliment pls?`','`akane ngl im really tired rn`','`akane can u pick between tea / coffee?`',
+ '', '**Talk naturally**','`akane where r u?` / `akane wyd?` / `akane wanna play?`','`akane could you give me a compliment pls?`','`akane ngl im really tired rn`','`akane can u pick between tea / coffee?`',
  '', '**Keep going**','Use Reply to my latest answer to you, or send a recognized phrase in the same channel within 2 minutes.',
  '`idk` · `wdym` · `hbu` · `ikr` · `tbh im bored` · `brb` · `gn`',
  '`tell me more` · `something else` · `that is not what I meant`',

@@ -27,6 +27,14 @@ for (const [tone, categories] of Object.entries(expansion)) {
     }
 }
 
+const everyday = require('../../config/akaneEveryday');
+for (const [tone, categories] of Object.entries(everyday.pools)) {
+    for (const [category, pool] of Object.entries(categories)) {
+        const key = `conversation_${tone}_${category}`;
+        replies[key] = [...new Set([...(replies[key] ?? []), ...pool])];
+    }
+}
+
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',
@@ -173,8 +181,8 @@ const { decorate } = require('./context');
 function buildResponse(message, request) {
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
-    if (['why', 'really', 'explain'].includes(request.category) && request.context && english.pools.public[request.context]) {
-        const meanings = {hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
+    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context])) {
+        const meanings = {...everyday.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
         const tone=toneFor(message.author.id);
         const content=(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+(meanings[request.context] ?? 'I did not understand the exact request. Please give me the main point in a short sentence.');
         return {payload:{content},category:request.context,question:false,session:true,pending:request.conversation?.pending??null};
@@ -186,6 +194,22 @@ function buildResponse(message, request) {
             ? { ...request, category: 'pick' } : request;
         base = buildBaseResponse(message, effective);
     }
-    return decorate(base, toneFor(message.author.id), request);
+    if (request.conversation?.mode?.remaining > 0 && everyday.explanations[request.category]) {
+        const calm = {
+            location:'I am here in this Discord chat. I do not have a physical location.',
+            activity:'I am replying in this chat. What would you like to talk about?',
+            game_invite:'I cannot join games as a player. I can help you choose an activity or recruit players with `/match`.',
+            availability:'You have my attention here in the chat. Go ahead.',
+            plans:'I do not have real plans outside this chat. We can choose a topic or an activity.',
+            day_chat:'I do not have a human day outside the chat. How was your day?',
+            preferences:'The character likes dark red, moonlit settings and gentle mischief. Those are fictional preferences.',
+            gaming_identity:'I do not play games myself. I can help with choices and the server match system.'
+        };
+        const tone=toneFor(message.author.id);
+        base={...base,payload:{content:(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+calm[request.category]}};
+    }
+    const final = decorate(base, toneFor(message.author.id), request);
+    if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};
+    return final;
 }
 module.exports = { buildResponse, toneFor };

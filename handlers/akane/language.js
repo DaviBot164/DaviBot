@@ -1,3 +1,4 @@
+const { recognizeEveryday } = require('../../config/akaneEveryday');
 const { normalize, aliases } = require('./aliases');
 const conversation = require('../../config/akaneConversation');
 const english = require('../../config/akaneEnglish');
@@ -87,6 +88,7 @@ function recognize(value) {
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
     const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;
+    const everyday = recognizeEveryday(text); if(everyday) return everyday;
     if(known.has(text))return known.get(text);
     if(known.has(normalized))return known.get(normalized);
     if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return 'self_doubt';
