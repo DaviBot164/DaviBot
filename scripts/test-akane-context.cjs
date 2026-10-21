@@ -10,7 +10,7 @@ function eq(a,b){assert.deepEqual(a,b);count++;}
 const base=(cat,content='Base reply')=>({payload:{content},category:cat,question:false,session:true});
 eq(contextualCategory('bad',null),null);
 eq(contextualCategory('bad',{pending:{kind:'mood'}}),'feeling_bad');
-eq(contextualCategory('fine',{pending:{kind:'mood'}}),'feeling_good');
+eq(contextualCategory('fine',{pending:{kind:'mood'}}),'feeling_neutral');
 eq(contextualCategory('bad',{pending:{kind:'repair'}}),null);
 eq(contextualCategory('be serious',null),'tone_serious');
 eq(contextualCategory("that's not what I meant",null),'repair');

@@ -1,6 +1,7 @@
 // Bounded, temporary conversation context. No user text is retained.
 const { normalize } = require('./aliases');
 const { canonical } = require('./language');
+const { prepareSentence } = require('./sentenceParser');
 const { randomInt } = require('node:crypto');
 const controls = new Map();
 for (const [category, values] of Object.entries({
@@ -11,13 +12,14 @@ for (const [category, values] of Object.entries({
     repair: ["that's not what i meant",'that is not what i meant','you misunderstood','you got me wrong','not what i meant','wrong meaning','ეგ არ მიგულისხმია','არასწორად გაიგე','სხვას ვგულისხმობდი']
 })) for (const value of values) controls.set(normalize(value), category);
 function contextualCategory(raw, session) {
-    const text = normalize(raw);
+    const text = prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim());
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);
     if (session?.pending?.kind === 'mood') {
+        if (['fine','okay','ok','all right','alright','not bad','so so'].includes(text)) return 'feeling_neutral';
         if (['bad','not good','awful','terrible','ცუდად','ცუდი'].includes(text)) return 'feeling_bad';
-        if (['good','fine','great','კარგად','კარგი'].includes(text)) return 'feeling_good';
+        if (['good','great','pretty good','really good','კარგად','კარგი'].includes(text)) return 'feeling_good';
         if (['tired','sleepy','დაღლილი'].includes(text)) return 'tired';
     }
     if (session?.pending?.kind === 'repair' && ['topic','tone','request','თემა','ტონი','თხოვნა'].includes(text)) return 'repair_detail';
@@ -116,6 +118,7 @@ function decorate(base, tone, request) {
             curious: 'I can offer a compliment, a random choice, a character secret, or a little advice.'
         };
         const effective = control === 'again' ? base.category : control;
+        if (effective === 'joke' && mode === 'serious') return result('I will skip jokes while the straightforward tone is active. Say `normal mode` to restore the playful tone.', 'joke');
         if (effective === 'rate') {
             const score = base.payload.content.match(/(?:^|\s)(10|[1-9])\/10/u)?.[1];
             if (score) return result(`${score}/10. A random score for fun, not a judgment.`, 'rate');

@@ -61,8 +61,8 @@ function parseRequest(message, now) {
 
     if (category) {
         if (['yes', 'no'].includes(category)) {
-            return session?.question
-                ? { category, ...followup }
+            return session?.question || category === 'no'
+                ? { category, ...followup, followup: Boolean(session?.question) }
                 : { category: 'clarify', ...followup };
         }
         if (['why', 'really', 'explain', 'again'].includes(category)) {

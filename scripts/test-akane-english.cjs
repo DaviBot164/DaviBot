@@ -25,7 +25,7 @@ const cases=[
  ['i am listening to music','music'],['play some music','music'],['i am useless','self_doubt'],
  ['i feel so stressed','feeling_bad'],['i feel a bit exhausted','tired'],['my day was awful','feeling_bad'],
  ['i had a good day','feeling_good'],['i am sad because work was rough','feeling_bad'],
- ['i am sad but happy',null],['the word idk appears here',null],['idk but this is a complicated story',null],
+ ['i am sad but happy','mixed_feelings'],['the word idk appears here',null],['idk but this is a complicated story',null],
  ['do you like Davi','reaction_davi'],['Davi is not stupid','reaction_davi'],['Davi is stupid','reaction_davi_insult'],
  ['what do you think about Mae','mae'],['you are rude','rude'],['ur just a bot','reaction_bot'],
  ['are u a bot','reaction_bot'],['do you love me','reaction_romance'],['love u','reaction_affection'],

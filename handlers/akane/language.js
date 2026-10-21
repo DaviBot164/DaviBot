@@ -1,3 +1,4 @@
+const { prepareSentence, reactionClauses, resolveMixedMood } = require('./sentenceParser');
 const { recognizeEveryday } = require('../../config/akaneEveryday');
 const { normalize, aliases } = require('./aliases');
 const conversation = require('../../config/akaneConversation');
@@ -53,11 +54,11 @@ function reaction(value) {
     if(/["“”]/u.test(raw)||/\b(?:said|says|told|quoted|quote|someone|my friend|my brother|my sister)\b/u.test(text))return null;
     const negative='stupid|dumb|ugly|useless|trash|annoying|idiot|boring';
     const nice='cute|beautiful|pretty|sweet|lovely|adorable|gorgeous|nice|funny|amazing';
-    const clauses=text.split(/\s+(?:but|however|yet|and)\s+/u);
+    const clauses=reactionClauses(text);
     let best=null;let priority=0;
     const offer=(category,p)=>{if(p>priority){best=category;priority=p;}};
     for(let clause of clauses){
-        clause=clause.replace(/^(?:i think |i feel like |honestly |sorry )/u,'').replace(/^(?:can|could|would) you (?=be my )/u,'').trim();
+        clause=clause.replace(/ at all$/u,'').replace(/^(?:i think |i feel like |honestly |sorry )/u,'').replace(/^(?:can|could|would) you (?=be my )/u,'').trim();
         if(new RegExp(`^(?:you are not|you are never|i do not think you are) ${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^i do not hate you$/u.test(clause))offer('reassurance',4);
         else if(new RegExp(`^(?:you are|you look|you sound|you) ${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^(?:i hate you|you suck|trash bot|stupid bot)$/u.test(clause))offer('insult',10);
         if(new RegExp(`^(?:davi|daviti) (?:is |looks |sounds )?${intensifier}(?:an? )?(?:${negative})$`,'u').test(clause)||/^i hate davi$/u.test(clause))offer('davi_insult',11);
@@ -84,14 +85,22 @@ function recognize(value) {
     if(/[^\x00-\x7f]/u.test(raw)&&/[\p{L}]/u.test(raw.replace(/[a-z]/giu,'')))return null;
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
-    const normalized=tidy(raw);const text=stripMarkers(normalized);
+    const normalized=tidy(raw);const text=prepareSentence(stripMarkers(normalized));
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
     const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;
+    if (/^(?:(?:can|could|would) you (?:please )?)?(?:tell me (?:a |another )?(?:funny )?joke|give me a joke|say something funny|joke)$/u.test(text)) return 'joke';
+    if (/^(?:(?:can|could|would) you (?:please )?)?(?:help me|give me some help|i need (?:some )?help|i need your help)$/u.test(text)) return 'help_offer';
+    if (/^(?:what is your (?:favorite|favourite) (?:food|drink)|what do you like to (?:eat|drink)|do you (?:eat|drink|like food))$/u.test(text)) return 'food_preferences';
+    if (['commands','server commands'].includes(text)) return 'help';
+    if (text==='why not') return 'why';
+    if (text==='distraction') return 'bored';
+    if (text==='quiet') return 'pause';
     const everyday = recognizeEveryday(text); if(everyday) return everyday;
     if(known.has(text))return known.get(text);
     if(known.has(normalized))return known.get(normalized);
     if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return 'self_doubt';
+    const mixed=resolveMixedMood(text,emotion);if(mixed)return mixed;
     const mood=emotion(text);if(mood)return mood;
     if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return 'feeling_bad';
     if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return 'feeling_good';
