@@ -15,10 +15,10 @@ const {
 } = require('../config/akaneReactions');
 
 const OWNER_ID = personality.ownerId;
-
 const USER_COOLDOWN = 10_000;
 const CHANNEL_COOLDOWN = 5_000;
 const SESSION_TTL = 120_000;
+const STATE_TTL = 30 * 60_000;
 
 const users = new Map();
 const channels = new Map();
@@ -26,60 +26,48 @@ const sessions = new Map();
 
 const ownerExtra = {
     mood: [
-        'A little softer now that you’re here, Davi.',
-        'In the mood for a nice conversation with you, handsome.',
-        'Trying to look mysterious. You’re making that difficult.',
-        'Quite lovely, Davi. What about you?',
-        'Feeling playful. You arrived at a good moment.'
+        'Better now that you’re here, handsome. How was your day?',
+        'Trying to look unapproachable. You’re making that difficult.',
+        'A little distracted, Davi. You can take the credit.'
     ],
 
     rate: [
-        '{score}/10, handsome. Entirely random, so don’t let it steal your confidence.',
-        'The imaginary judges gave you {score}/10. I gave you a smile.',
-        '{score}/10 for the game, Davi. Your charm wasn’t part of the calculation.',
-        'A playful {score}/10. Come on, handsome—no arguing with imaginary numbers.',
-        '{score}/10. A random number, a very deliberate warm welcome.'
+        '{score}/10 from the imaginary judges. A smile from me, handsome.',
+        'A random {score}/10, Davi. My fondness wasn’t part of the calculation.',
+        '{score}/10 for the game. Come here, handsome—no arguing with imaginary numbers.'
     ],
 
     luck: [
-        'My little prediction? You’ll find a reason to smile today, Davi.',
-        'A playful forecast: one small victory and a well-earned break, handsome.',
-        'Good timing, a little patience, and a smile. That’s my wish for you today.',
-        'I predict a charming entrance. Oh, you already made it.',
-        'A pretend prediction, Davi: something ordinary may turn into a lovely moment.'
+        'A little pretend prediction, Davi: a small victory and a reason to smile.',
+        'My wish for you? Good timing, a quiet moment, and something lovely.',
+        'I predict a charming entrance. Oh, you already made it.'
     ],
 
     secret: [
-        'A secret? I find it terribly easy to soften my tone around you.',
-        'I was going to act unimpressed. Then you said hello.',
-        'Your name makes a rather good entrance, Davi.',
-        'I rehearse being mysterious. You keep making me smile instead.',
-        'I rather like this gentle little side of our conversations.'
+        'I had a sharp reply ready. Then I saw your name.',
+        'You make that softer voice far too easy to find, Davi.',
+        'I try to look mysterious. You keep catching me smiling.'
     ],
 
     identity: [
-        'Akane, handsome. A Discord bot with a little drama and a soft reply for you.',
-        'I’m Akane, Davi—a fictional character brought to life through preset replies.',
-        'Your server’s Akane. A bot, a little attitude, and some very deliberate charm.'
+        'Akane, handsome. Your Discord bot with a dramatic streak.',
+        'I’m Akane, Davi. A fictional character using preset replies.'
     ],
 
     bot: [
-        'I am, Davi. We can still have a sweet little exchange.',
-        'Yes, handsome—a bot playing a character. The playful tone is intentional.',
-        'A bot, Davi. No mystery there. Shall we keep the conversation lovely?'
+        'Yes, handsome. A bot playing a character—and saving a warm reply for you.',
+        'I am, Davi. Shall we keep our little exchange sweet?'
     ],
 
     question: [
-        'Davi, I don’t quite know that one. Shall we try something from `akane help`?',
-        'A little clearer for me, handsome? I only understand the phrases written for me.',
-        'I’d rather be honest with you, Davi: I can’t answer that freely. Try `akane help`.'
+        'I don’t know that one, handsome. Give me a request from `akane help`.',
+        'You have my attention, Davi. I just don’t have an answer to that question.'
     ],
 
     rude: [
-        'Then I’ll soften the teasing, Davi.',
-        'All right, handsome. A gentler answer for you.',
-        'A little less mischief from me, then. Thank you for saying it.',
-        'Let’s make the next exchange sweeter, Davi.'
+        'Then I’ll soften the teasing, handsome.',
+        'All right, Davi. A gentler answer for you.',
+        'Tell me what bothered you. No sharp reply from me.'
     ]
 };
 
@@ -87,7 +75,9 @@ const replies = {
     ...baseReplies,
     general: personality.general,
     member: personality.member,
-    davi: personality.davi,
+
+    // These lines talk ABOUT Davi rather than addressing the caller as Davi.
+    davi: baseReplies.davi,
 
     ...Object.fromEntries(
         Object.entries(reactionPools).map(([name, pool]) => [
@@ -114,79 +104,63 @@ const DAVI_NAMES = new Set([
     'დავითი'
 ]);
 
-const ALIASES = new Map([
-    ['hi', 'hi'],
-    ['hello', 'hi'],
-    ['გამარჯობა', 'hi'],
+const aliases = new Map();
 
-    ['mood', 'mood'],
-    ['how are you', 'mood'],
-    ['როგორ ხარ', 'mood'],
-    ['განწყობა', 'mood'],
-
-    ['nice', 'nice'],
-    ['compliment', 'nice'],
-    ['კომპლიმენტი', 'nice'],
-
-    ['roast', 'roast'],
-    ['გამეხუმრე', 'roast'],
-
-    ['tip', 'tip'],
-    ['advice', 'tip'],
-    ['რჩევა', 'tip'],
-
-    ['pick', 'pick'],
-    ['აირჩიე', 'pick'],
-
-    ['rate', 'rate'],
-    ['შეფასება', 'rate'],
-
-    ['luck', 'luck'],
-    ['იღბალი', 'luck'],
-
-    ['secret', 'secret'],
-    ['საიდუმლო', 'secret'],
-
-    ['help', 'help'],
-    ['დახმარება', 'help'],
-
-    ['stop', 'stop'],
-    ['გაჩერდი', 'stop']
-]);
-
-const FOLLOWUPS = new Map([
-    ['yes', 'yes'],
-    ['კი', 'yes'],
-    ['დიახ', 'yes'],
-
-    ['no', 'no'],
-    ['არა', 'no'],
-
-    ['rude', 'rude'],
-    ['უხეში ხარ', 'rude'],
-
-    ['thanks', 'thanks'],
-    ['thank you', 'thanks'],
-    ['მადლობა', 'thanks'],
-
-    ['really', 'really'],
-    ['მართლა', 'really'],
-
-    ['why', 'why'],
-    ['რატომ', 'why'],
-
-    ['stop', 'stop'],
-    ['გაჩერდი', 'stop']
-]);
-
-function normalize(text) {
-    return String(text ?? '')
+function normalize(value) {
+    return String(value ?? '')
         .normalize('NFKC')
         .toLowerCase()
+        .replace(/[\u200B-\u200D\uFEFF]/gu, '')
+        .replace(/[’‘]/gu, "'")
         .trim()
         .replace(/[!?.,…:;]+$/u, '')
         .trim()
-        .replace(/\s+/g, ' ');
+        .replace(/\s+/gu, ' ');
+}
+
+function addAliases(category, values) {
+    for (const value of values) {
+        aliases.set(normalize(value), category);
+    }
+}
+
+addAliases('hi', [
+    'hi', 'hello', 'hey', 'გამარჯობა', 'სალამი'
+]);
+
+addAliases('mood', [
+    'mood', 'how are you', 'how are you doing',
+    'როგორ ხარ', 'განწყობა'
+]);
+
+addAliases('nice', [
+    'nice', 'compliment', 'compliment me',
+    'კომპლიმენტი', 'კომპლიმენტი მითხარი'
+]);
+
+addAliases('roast', [
+    'roast', 'roast me', 'გამეხუმრე'
+]);
+
+addAliases('tip', [
+    'tip', 'advice', 'give me advice', 'რჩევა'
+]);
+
+addAliases('pick', ['pick', 'choose', 'აირჩიე']);
+addAliases('rate', ['rate', 'rate me', 'შეფასება', 'შემაფასე']);
+addAliases('luck', ['luck', 'იღბალი']);
+addAliases('secret', ['secret', 'საიდუმლო']);
+addAliases('help', ['help', 'დახმარება']);
+addAliases('stop', ['stop', 'გაჩერდი']);
+addAliases('thanks', ['thanks', 'thank you', 'მადლობა']);
+addAliases('rude', ['rude', 'you are rude', 'უხეში ხარ']);
+addAliases('really', ['really', 'მართლა']);
+addAliases('why', ['why', 'რატომ']);
+addAliases('yes', ['yes', 'yeah', 'კი', 'დიახ']);
+addAliases('no', ['no', 'nope', 'არა']);
+
+function sessionKey(message) {
+    return `${message.guildId}:${message.channelId}:${message.author.id}`;
 }
 
 function cleanExpired(now) {
@@ -197,38 +171,31 @@ function cleanExpired(now) {
     for (const [key, session] of sessions) {
         if (session.expiresAt <= now) sessions.delete(key);
     }
-}
 
-function closeSessions(userId, channelId) {
-    for (const [key, session] of sessions) {
-        if (
-            session.userId === userId &&
-            session.channelId === channelId
-        ) {
-            sessions.delete(key);
+    for (const [key, state] of channels) {
+        if (!state.busy && now - state.lastUsed >= STATE_TTL) {
+            channels.delete(key);
         }
     }
 }
 
 function drawReply(state, category) {
-    const pool = replies[category];
+    const requested = replies[category];
+    const key = requested?.length ? category : 'fallback';
+    const pool = replies[key];
 
-    if (!pool?.length) {
-        throw new Error(`Missing Akane reply category: ${category}`);
+    if (!Array.isArray(pool) || !pool.length) {
+        throw new Error(`Missing Akane reply pool: ${key}`);
     }
 
-    let bag = state.bags.get(category);
+    let bag = state.bags.get(key);
 
     if (!bag?.remaining.length) {
         const remaining = pool.map((_, index) => index);
 
         for (let i = remaining.length - 1; i > 0; i--) {
             const j = randomInt(i + 1);
-
-            [remaining[i], remaining[j]] = [
-                remaining[j],
-                remaining[i]
-            ];
+            [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
         }
 
         if (
@@ -236,7 +203,6 @@ function drawReply(state, category) {
             remaining.at(-1) === bag?.last
         ) {
             const end = remaining.length - 1;
-
             [remaining[0], remaining[end]] = [
                 remaining[end],
                 remaining[0]
@@ -244,69 +210,44 @@ function drawReply(state, category) {
         }
 
         bag = { remaining, last: bag?.last };
-        state.bags.set(category, bag);
+        state.bags.set(key, bag);
     }
 
     const index = bag.remaining.pop();
-
     bag.last = index;
 
     return pool[index];
 }
 
+function getSession(message, now) {
+    const session = sessions.get(sessionKey(message));
+
+    return session?.expiresAt > now ? session : null;
+}
+
 function parseRequest(message, now) {
-    const content = message.content.trim();
+    const content = String(message.content ?? '').trim();
 
     const trigger = content.match(
-        /^(?:akane|აკანე)(?=$|[\s!?.,…:;♡♥❤🩸👋🔪🌙])[\s!?.,…:;]*(.*)$/iu
+        /^(?:akane|აკანე)(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
     );
 
-    if (!trigger) {
-        const session = sessions.get(message.reference?.messageId);
+    const session = getSession(message, now);
 
-        if (
-            !session ||
-            session.userId !== message.author.id ||
-            session.channelId !== message.channelId ||
-            session.expiresAt <= now
-        ) {
-            return null;
-        }
+    const replying = Boolean(
+        session &&
+        message.reference?.messageId === session.messageId
+    );
 
-        const category = FOLLOWUPS.get(normalize(content));
+    // Ordinary server messages do not start a conversation.
+    if (!trigger && !replying) return null;
 
-        if (category) {
-            if (
-                ['yes', 'no'].includes(category) &&
-                !session.question
-            ) {
-                return null;
-            }
-
-            return {
-                category,
-                followup: true,
-                context: session.category
-            };
-        }
-
-        const reaction = detectReaction(content);
-
-        if (reaction) {
-            return { category: `reaction_${reaction}` };
-        }
-
-        if (/[?？]/u.test(content)) {
-            return { category: 'reaction_question' };
-        }
-
-        return null;
-    }
-
-    const raw = trigger[1].trim();
+    const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
 
-    if (!text || /^[\s\p{P}\p{S}\uFE0F]*$/u.test(text)) {
+    const context = session?.category ?? null;
+
+    if (!text || /^[\s\p{P}\p{S}]*$/u.test(text)) {
         return { category: 'general' };
     }
 
@@ -314,226 +255,221 @@ function parseRequest(message, now) {
         return { category: 'davi' };
     }
 
-    const direct = ALIASES.get(text);
-
-    if (direct) return { category: direct };
-
-    const [first, ...rest] = text.split(' ');
-    const category = ALIASES.get(first);
-    const argument = rest.join(' ');
-
-    if (category === 'pick') {
-        return {
-            category,
-            argument: raw.slice(first.length).trim()
-        };
-    }
-
-    if (
-        ['nice', 'roast', 'rate'].includes(category) &&
-        ['me', 'მე'].includes(argument)
-    ) {
-        return { category };
-    }
-
-    const mention = text.match(/^<@!?(\d+)>$/u);
+    const mention = raw.match(/^<@!?(\d+)>[.!?…]*$/u);
 
     if (mention) {
-        const member = message.mentions.members?.get(mention[1]);
+        const id = mention[1];
+        const target = message.mentions.members?.get(id);
+        const user = message.mentions.users?.get(id);
 
-        if (!member) return { category: 'fallback' };
+        if (!target && !user) {
+            return { category: 'fallback' };
+        }
 
         return {
-            category: member.id === OWNER_ID ? 'davi' : 'member',
-            target: member.displayName
+            category: id === OWNER_ID ? 'davi' : 'member',
+            target: target?.displayName ?? user.username
         };
     }
 
-    const followup = FOLLOWUPS.get(text);
+    const choice = raw.match(/^(?:pick|choose|აირჩიე)\s+(.+)$/isu);
 
-    if (followup === 'thanks' || followup === 'rude') {
-        return { category: followup };
+    if (choice) {
+        return {
+            category: 'pick',
+            argument: choice[1]
+        };
+    }
+
+    const category = aliases.get(text);
+
+    if (category) {
+        if (['yes', 'no'].includes(category)) {
+            if (!session?.question) {
+                return { category: 'clarify' };
+            }
+
+            return {
+                category,
+                context,
+                followup: true
+            };
+        }
+
+        if (['why', 'really'].includes(category)) {
+            return {
+                category: context ? category : 'clarify',
+                context,
+                followup: Boolean(context),
+                question: session?.question ?? false
+            };
+        }
+
+        return { category };
     }
 
     const reaction = detectReaction(raw);
 
-    if (reaction) {
+    if (reaction && reactionPools[reaction]?.length) {
         return { category: `reaction_${reaction}` };
     }
 
-    if (/[?？]/u.test(raw)) {
-        return { category: 'reaction_question' };
-    }
-
-    if (
-        !category &&
-        /^[\p{L}\p{N}_ -]{1,64}$/u.test(text)
-    ) {
-        return { category: 'member', target: raw };
-    }
-
-    return { category: 'fallback' };
-}
-
-function buildHelp(message, owner) {
-    return createEmbed(
-        '🩸 Akane • Chat Help',
-        [
-            owner
-                ? 'Hello, Davi. Here is the short version, handsome.'
-                : 'Call my name. Then tell me what you want.',
-            'Use **akane** or **აკანე**. Replies are in English.'
-        ].join('\n')
-    ).setThumbnail(
-        message.client.user.displayAvatarURL({ size: 256 })
-    ).addFields(
-        {
-            name: 'BASIC',
-            value: [
-                '`akane` — Get my attention',
-                '`akane hi` — Say hello',
-                '`akane nice` — Get a compliment',
-                '`akane roast` — Get a playful roast',
-                '`akane tip` — Get advice',
-                '`akane help` — Show this guide'
-            ].join('\n')
-        },
-        {
-            name: 'PEOPLE & CHOICES',
-            value: [
-                '`akane @member` — Hear my reaction to a member',
-                '`akane davi` — Ask about Davi',
-                '`akane pick pvp / training` — Let me choose',
-                'Davi aliases: `davi`, `daviti`, `დავი`, `დავითი`.'
-            ].join('\n')
-        },
-        {
-            name: 'MORE',
-            value: [
-                '`akane mood` — My fictional mood',
-                '`akane rate` — A random score for fun',
-                '`akane luck` — A pretend prediction',
-                '`akane secret` — A little character secret',
-                '`akane stop` — End your current conversation'
-            ].join('\n')
-        },
-        {
-            name: 'TALK TO ME',
-            value: [
-                '`akane who are you?`',
-                '`akane are you angry?`',
-                '`akane be my gf`',
-                '`akane you are just a bot`',
-                '`აკანე ბოდიში`'
-            ].join('\n')
-        },
-        {
-            name: 'USE REPLY',
-            value: [
-                'Reply to my latest response to **you** within **2 minutes**.',
-                '`thanks` / `მადლობა` · `rude` / `უხეში ხარ`',
-                '`really?` / `მართლა?` · `why?` / `რატომ?`',
-                '`yes` / `no` or `კი` / `არა` — when I ask.',
-                'Recognized flirting, apologies and jokes also work.',
-                '`stop` / `გაჩერდი` — close the conversation.'
-            ].join('\n')
-        },
-        {
-            name: 'GOOD TO KNOW',
-            value: [
-                '**10 seconds** between your requests.',
-                '**5 seconds** between channel responses.',
-                'Stop clears your session immediately;',
-                'the confirmation still follows the cooldown.',
-                'This is a fictional character using preset dialogue.'
-            ].join('\n')
-        }
-    );
-}
-
-function contextualReply(request) {
-    const category = request.context ?? 'general';
-
-    if (request.category === 'really') {
-        const answers = {
-            davi: 'Yes, Davi. Let me say something lovely without cross-examination.',
-            nice: 'Yes. Take the compliment. You’re making this difficult.',
-            roast: 'You asked for a joke. Don’t turn it into a biography.',
-            rate: 'The number is random. The dramatic pause was mine.',
-            luck: 'It’s a little pretend prediction. Don’t book a flight over it.',
-            reaction_apology: 'We’re fine. You can stop rehearsing the apology.',
-            reaction_romance: 'You heard me. Bold entrance, questionable outcome.',
-            reaction_affection: 'Mm-hm. I accepted the compliment. Try to stay composed.',
-            reaction_anger: 'We’re joking. No real grudge behind the expression.'
-        };
-
-        return answers[category]
-            ?? 'Mm-hm. That was the answer. The raised eyebrow was extra.';
-    }
-
-    const reasons = {
-        davi: 'Because I can be sweet about Davi. Let me enjoy the moment.',
-        nice: 'You asked for something nice. I decided not to make you work for it.',
-        roast: 'Because you asked me to tease you. Gently, by my standards.',
-        rate: 'It’s a random score for fun. There isn’t a secret judgment behind it.',
-        luck: 'A little theatre. Nothing you should mistake for a real forecast.',
-        tip: 'It’s a suggestion, not an order. Keep what fits your situation.',
-        member: 'That’s the cold greeting. It isn’t a serious judgment of them.',
-        mood: 'A little dramatic mood suits the conversation.',
-        secret: 'Because some things sound better whispered theatrically.',
-        reaction_apology: 'Because you apologized. We can move on.',
-        reaction_romance: 'A little flirting can stay a joke without becoming a commitment.',
-        reaction_affection: 'Because you said something sweet. I noticed.',
-        reaction_insult: 'We can tease each other without making it personal.',
-        reaction_dismissive: 'You can end the conversation. No argument needed.',
-        reaction_possessive: 'Attention is one thing. Ownership is another.',
-        reaction_bot: 'Because I am a bot playing a character. You asked directly.',
-        reaction_identity: 'You asked who I am. I gave you the introduction.',
-        reaction_anger: 'The sharp tone is part of the character, not actual anger.',
-        reaction_question: 'I don’t know that answer. Better to say so than invent one.'
+    // Unknown sentences are never treated as people's names.
+    return {
+        category: /[?？]/u.test(raw)
+            ? 'reaction_question'
+            : 'fallback'
     };
+}
 
-    return reasons[category]
-        ?? 'A little teasing, a little theatre. Nothing personal.';
+function buildHelp(message) {
+    return createEmbed(
+        '🩸 Akane • Chat',
+        [
+            'Start with **akane** or **აკანე**.',
+            'English and Georgian requests • English replies'
+        ].join('\n')
+    )
+        .setThumbnail(
+            message.client.user.displayAvatarURL({ size: 256 })
+        )
+        .addFields(
+            {
+                name: 'QUICK REQUESTS',
+                value: [
+                    '`akane hi` — Hello',
+                    '`akane nice` — Compliment',
+                    '`akane roast` — Playful teasing',
+                    '`akane tip` — Advice',
+                    '`akane mood` — Mood',
+                    '`akane rate` — Random score',
+                    '`akane luck` — Pretend prediction',
+                    '`akane secret` — Character secret'
+                ].join('\n')
+            },
+            {
+                name: 'PEOPLE & CHOICES',
+                value: [
+                    '`akane @member` — Reaction to a member',
+                    '`akane davi` — About Davi',
+                    '`akane pick pvp / training` — Choose',
+                    'Also: `daviti`, `დავი`, `დავითი`'
+                ].join('\n')
+            },
+            {
+                name: 'CONTINUE',
+                value: [
+                    'Reply to my latest answer to you within **2 minutes**.',
+                    'Try `why`, `really`, `thanks`, or another request.',
+                    '`yes` / `no` work when I ask a yes-or-no question.',
+                    '`akane stop` — Close your conversation',
+                    '`აკანე როგორ ხარ` · `აკანე მადლობა`',
+                    'Wait **10 seconds** between requests; channel cooldown: **5 seconds**.',
+                    'Preset character dialogue; unfamiliar questions may need a clearer request.'
+                ].join('\n')
+            }
+        );
 }
 
 function ownerCategory(category) {
-    if (category.startsWith('owner_')) return category;
-
     const mapping = {
-        general: 'general',
-        hi: 'hi',
-        nice: 'nice',
         davi: 'nice',
-        roast: 'roast',
-        mood: 'mood',
-        rate: 'rate',
-        luck: 'luck',
-        secret: 'secret',
-        thanks: 'thanks',
-        rude: 'rude',
-        yes: 'yes',
-        no: 'no',
-        really: 'really',
-        why: 'why',
-        fallback: 'fallback',
-
         reaction_romance: 'flirt',
         reaction_affection: 'flirt',
         reaction_possessive: 'flirt',
         reaction_ownerFlirt: 'flirt',
-
         reaction_apology: 'apology',
         reaction_insult: 'tension',
         reaction_dismissive: 'tension',
         reaction_anger: 'tension',
-
         reaction_identity: 'identity',
         reaction_bot: 'bot',
         reaction_question: 'question'
     };
 
-    return `owner_${mapping[category] ?? 'general'}`;
+    const key = `owner_${mapping[category] ?? category}`;
+
+    return replies[key]?.length ? key : 'owner_general';
+}
+
+function contextualReply(request, owner) {
+    const context = request.context;
+
+    const answers = {
+        nice: [
+            'You asked for something nice. I decided to oblige.',
+            'Yes. Accept the compliment before you turn it into an interview.'
+        ],
+        roast: [
+            'You asked me to tease you. That was the playful version.',
+            'It was a joke, not your biography. You’re allowed to laugh.'
+        ],
+        rate: [
+            'The score is random. There is no hidden assessment behind it.',
+            'Really random. The imaginary judges don’t keep records.'
+        ],
+        luck: [
+            'A little pretend prediction. Enjoy it without planning around it.',
+            'It’s theatre, not a forecast. A charming distinction.'
+        ],
+        tip: [
+            'It’s a suggestion. Keep what fits your situation.',
+            'Yes—as advice to consider, rather than an order.'
+        ],
+        davi: [
+            'Because Davi gets the softer side of my attitude.',
+            'Yes. I was saying something lovely about Davi.'
+        ],
+        member: [
+            'A dramatic introduction. Not a serious assessment of that member.',
+            'Just a little attitude for the introduction.'
+        ],
+        reaction_apology: [
+            'You apologized. We can leave the argument behind.',
+            'We’re fine. You don’t need a second apology.'
+        ],
+        reaction_romance: [
+            'A little flirting can stay a joke without becoming a commitment.',
+            'Yes. A bold line doesn’t automatically get a yes.'
+        ],
+        reaction_possessive: [
+            'Attention and ownership are different things.',
+            'Yes. Keep the joke charming.'
+        ],
+        reaction_bot: [
+            'Because I am a Discord bot playing a character.',
+            'Yes. A fictional personality, not a human behind the messages.'
+        ],
+        reaction_identity: [
+            'You asked who I am. That was my introduction.',
+            'Yes. Akane, your server’s rather dramatic bot.'
+        ],
+        reaction_question: [
+            'I don’t know that answer. I’d rather say so than invent one.',
+            'Yes. That question is outside the replies I understand.'
+        ]
+    };
+
+    const pair = answers[context];
+    const index = request.category === 'why' ? 0 : 1;
+
+    let content = pair?.[index] ?? (
+        request.category === 'why'
+            ? 'A little teasing is part of the character. Nothing personal.'
+            : 'Mm-hm. The dramatic delivery was extra.'
+    );
+
+    if (owner) {
+        if (['nice', 'davi', 'general', 'hi'].includes(context)) {
+            content = request.category === 'why'
+                ? 'Because being sweet to you comes rather easily, handsome.'
+                : 'Yes, Davi. Let me be sweet to you without an interrogation.';
+        } else {
+            content = `Handsome, ${content[0].toLowerCase()}${content.slice(1)}`;
+        }
+    }
+
+    return content;
 }
 
 function buildResponse(message, request, state) {
@@ -542,8 +478,7 @@ function buildResponse(message, request, state) {
 
     if (category === 'help') {
         return {
-            payload: { embeds: [buildHelp(message, owner)] },
-            category,
+            payload: { embeds: [buildHelp(message)] },
             session: false
         };
     }
@@ -553,93 +488,87 @@ function buildResponse(message, request, state) {
             payload: {
                 content: owner
                     ? drawReply(state, 'owner_stop')
-                    : 'All right. We’ll leave it there.'
+                    : 'All right. We’ll leave it here.'
             },
-            category,
+            session: false
+        };
+    }
+
+    if (category === 'clarify') {
+        return {
+            payload: {
+                content: owner
+                    ? 'Which part, handsome? Start a request with `akane`, or reply to my latest answer.'
+                    : 'Which part? Give me a request, or reply to my latest answer to you.'
+            },
             session: false
         };
     }
 
     if (category === 'pick') {
-        const options = [
-            ...new Set(
-                (request.argument ?? '')
-                    .split('/')
-                    .map(option => option.trim())
-                    .filter(Boolean)
-            )
-        ];
+        const options = [...new Set(
+            (request.argument ?? '')
+                .split('/')
+                .map(value => value.trim())
+                .filter(Boolean)
+        )];
 
-        const valid =
-            options.length >= 2 &&
+        const valid = options.length >= 2 &&
             options.length <= 10 &&
-            options.every(option => option.length <= 100);
+            options.every(value => value.length <= 100);
 
-        let content;
+        const choice = valid
+            ? escapeMarkdown(options[randomInt(options.length)])
+            : null;
 
-        if (valid) {
-            const choice = escapeMarkdown(
-                options[randomInt(options.length)]
-            );
-
-            content = owner
-                ? `**${choice}**, handsome. That’s my pick. What do you think?`
-                : `**${choice}**. There. Someone made a decision.`;
-        } else {
-            content = owner
-                ? 'Give me 2–10 choices, Davi, separated by `/`.\n' +
-                  'Like this: `akane pick pvp / training`'
-                : 'Give me 2–10 choices separated by `/`.\n' +
-                  '`akane pick pvp / training`';
-        }
-
-        return {
-            payload: { content },
-            category,
-            session: false
-        };
-    }
-
-    if (
-        request.followup &&
-        ['really', 'why'].includes(category)
-    ) {
         return {
             payload: {
-                content: owner
-                    ? drawReply(state, ownerCategory(category))
-                    : contextualReply(request)
+                content: valid
+                    ? owner
+                        ? `**${choice}**, handsome. That’s my pick.`
+                        : `**${choice}**. There. A decision.`
+                    : 'Give me 2–10 choices separated by `/`.\n' +
+                      '`akane pick pvp / training`'
             },
-            category: request.context,
-            session: true,
+            category: 'pick',
+            session: valid,
             question: false
         };
     }
 
     if (
         request.followup &&
+        ['why', 'really'].includes(category)
+    ) {
+        return {
+            payload: {
+                content: contextualReply(request, owner)
+            },
+            category: request.context,
+            session: true,
+            question: request.question
+        };
+    }
+
+    if (
+        request.followup &&
         category === 'yes' &&
-        [
-            'nice',
-            'roast',
-            'davi',
-            'owner_nice',
-            'owner_roast'
-        ].includes(request.context)
+        ['nice', 'roast', 'davi'].includes(request.context)
     ) {
         category = request.context;
     }
 
-    let poolCategory = category;
+    const pool = owner && !['tip', 'member'].includes(category)
+        ? ownerCategory(category)
+        : category;
 
-    if (owner && category !== 'member' && category !== 'tip') {
-        poolCategory = ownerCategory(category);
-    }
-
-    let content = drawReply(state, poolCategory);
+    let content = drawReply(state, pool);
 
     if (category === 'rate') {
-        content = content.replace('{score}', String(randomInt(1, 11)));
+        content = content.replace(
+            /\{score\}/gu,
+            String(randomInt(1, 11))
+        );
     }
 
     if (owner && category === 'tip') {
@@ -647,7 +576,7 @@ function buildResponse(message, request, state) {
     }
 
     if (owner && category === 'member') {
-        content = `For you, Davi, an introduction—with a little attitude:\n\n${content}`;
+        content = `For you, Davi, a little dramatic introduction:\n\n${content}`;
     }
 
     if (request.target) {
@@ -659,9 +588,26 @@ function buildResponse(message, request, state) {
     return {
         payload: { content },
         category,
-        session: category !== 'fallback',
+        session: true,
         question: content.includes('Reply yes or no.')
     };
+}
+
+function plainHelp() {
+    return [
+        '**Akane • Chat**',
+        '`akane hi` · `nice` · `roast` · `tip` · `mood`',
+        '`akane rate` · `luck` · `secret`',
+        '`akane @member` · `akane davi`',
+        '`akane pick pvp / training`',
+        'Reply to my latest answer within 2 minutes.',
+        'Try `why`, `really`, `thanks`, or another request.',
+        '`yes` / `no` work when I ask.',
+        '`akane stop` — Close the conversation.',
+        'Use `akane` or `აკანე`; replies are English.',
+        '10-second user cooldown; 5-second channel cooldown.',
+        'Preset character dialogue.'
+    ].join('\n');
 }
 
 async function handleAkaneReply(message) {
@@ -674,108 +620,111 @@ async function handleAkaneReply(message) {
     }
 
     const now = Date.now();
-
     cleanExpired(now);
 
-    const request = parseRequest(message, now);
+    try {
+        const request = parseRequest(message, now);
 
-    if (!request) return false;
+        if (!request) return false;
 
-    if (request.category === 'stop') {
-        closeSessions(message.author.id, message.channelId);
-    }
+        const key = sessionKey(message);
 
-    const bot = message.guild.members.me;
-    const permissions = bot
-        ? message.channel.permissionsFor(bot)
-        : null;
+        // Stop always clears context, even during cooldown.
+        if (request.category === 'stop') {
+            sessions.delete(key);
+        }
 
-    const sendPermission = message.channel.isThread()
-        ? PermissionFlagsBits.SendMessagesInThreads
-        : PermissionFlagsBits.SendMessages;
+        const bot = message.guild.members.me;
+        const permissions = bot
+            ? message.channel.permissionsFor(bot)
+            : null;
 
-    if (
-        !permissions?.has([
+        const sendPermission = message.channel.isThread()
+            ? PermissionFlagsBits.SendMessagesInThreads
+            : PermissionFlagsBits.SendMessages;
+
+        if (!permissions?.has([
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.ReadMessageHistory,
             sendPermission
-        ])
-    ) {
-        return false;
-    }
+        ])) {
+            return false;
+        }
 
-    const userKey = `${message.guildId}:${message.author.id}`;
+        let state = channels.get(message.channelId);
 
-    let state = channels.get(message.channelId);
+        if (!state) {
+            state = {
+                busy: false,
+                until: 0,
+                lastUsed: now,
+                bags: new Map()
+            };
 
-    if (!state) {
-        state = {
-            until: 0,
-            busy: false,
-            bags: new Map()
-        };
+            channels.set(message.channelId, state);
+        }
 
-        channels.set(message.channelId, state);
-    }
-
-    if (
-        state.busy ||
-        now < state.until ||
-        now < (users.get(userKey) ?? 0)
-    ) {
-        return false;
-    }
-
-    state.busy = true;
-    users.set(userKey, now + USER_COOLDOWN);
-
-    try {
-        const response = buildResponse(message, request, state);
+        const userKey = `${message.guildId}:${message.author.id}`;
 
         if (
-            response.payload.embeds &&
-            !permissions.has(PermissionFlagsBits.EmbedLinks)
+            state.busy ||
+            now < state.until ||
+            now < (users.get(userKey) ?? 0)
         ) {
-            response.payload = {
-                content: response.payload.embeds
-                    .map(embed => [
-                        embed.data.title,
-                        embed.data.description,
-                        ...(embed.data.fields ?? []).map(field =>
-                            `**${field.name}**\n${field.value}`
-                        )
-                    ].filter(Boolean).join('\n\n'))
-                    .join('\n\n')
-            };
+            return false;
         }
 
-        const sent = await message.reply({
-            ...response.payload,
-            allowedMentions: {
-                parse: [],
-                repliedUser: false
+        state.busy = true;
+        state.lastUsed = now;
+
+        const expiry = now + USER_COOLDOWN;
+        users.set(userKey, expiry);
+
+        try {
+            const response = buildResponse(message, request, state);
+
+            if (
+                response.payload.embeds &&
+                !permissions.has(PermissionFlagsBits.EmbedLinks)
+            ) {
+                response.payload = { content: plainHelp() };
             }
-        });
 
-        closeSessions(message.author.id, message.channelId);
-
-        if (response.session) {
-            sessions.set(sent.id, {
-                userId: message.author.id,
-                channelId: message.channelId,
-                category: response.category,
-                question: response.question ?? false,
-                expiresAt: Date.now() + SESSION_TTL
+            const sent = await message.reply({
+                ...response.payload,
+                allowedMentions: {
+                    parse: [],
+                    repliedUser: false
+                }
             });
-        }
 
-        return true;
+            sessions.delete(key);
+
+            if (response.session) {
+                sessions.set(key, {
+                    messageId: sent.id,
+                    category: response.category,
+                    question: response.question ?? false,
+                    expiresAt: Date.now() + SESSION_TTL
+                });
+            }
+
+            return true;
+        } catch (error) {
+            // A failed send does not consume the user's cooldown.
+            if (users.get(userKey) === expiry) {
+                users.delete(userKey);
+            }
+
+            throw error;
+        } finally {
+            state.busy = false;
+            state.lastUsed = Date.now();
+            state.until = state.lastUsed + CHANNEL_COOLDOWN;
+        }
     } catch (error) {
         console.error('Akane reply failed:', error);
         return false;
-    } finally {
-        state.busy = false;
-        state.until = Date.now() + CHANNEL_COOLDOWN;
     }
 }
 
