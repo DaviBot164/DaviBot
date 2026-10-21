@@ -18,6 +18,15 @@ for (const [tone, categories] of Object.entries(english.pools)) {
     }
 }
 
+// Extend existing bags rather than replacing the established dialogue.
+const expansion = require('../../config/akaneDialogueExpansion');
+for (const [tone, categories] of Object.entries(expansion)) {
+    for (const [category, pool] of Object.entries(categories)) {
+        const key = `conversation_${tone}_${category}`;
+        replies[key] = [...new Set([...(replies[key] ?? []), ...pool])];
+    }
+}
+
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',
