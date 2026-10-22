@@ -1,5 +1,5 @@
 // Reasons need a compatible active topic; do not attach "because of work" to a random choice.
-const dayTopics = new Set(['day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
+const dayTopics = new Set(['day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
 function recognizeDayConversation(text, session = null) {
  if (/^(?:let us|lets|let's|can we) (?:just )?(?:talk|chat) (?:normally|normal|like normal)(?: now|again)?$/u.test(text)) return 'normal_chat';
  if (/^(?:today|my day) (?:was|is|has been) (?:(?:pretty|quite|mostly|actually) )?(?:okay|ok|fine|alright)(?: overall)?$/u.test(text)) return 'day_okay';
@@ -9,6 +9,13 @@ function recognizeDayConversation(text, session = null) {
  if(/^my (?:boss|manager|teacher) (?:kept giving me|gave me|keeps giving me|assigned me) (?:extra|more|too much) (?:work|tasks|homework)$/u.test(text))return 'day_tasks';
  if(/^(?:but |and )?(?:talking about (?:it|this|that)|saying it out loud) (?:helped|helps)(?: (?:a little|a bit|somewhat))?$/u.test(text))return 'day_relief';
  if (session && ['day_okay','day_ordinary','normal_chat'].includes(session.category) && /^(?:nothing (?:special|much|interesting|unusual) (?:really )?happened|not much happened|it was (?:just )?(?:an ordinary|a normal|a quiet) day)$/u.test(text)) return 'day_ordinary';
+ // The first complete statement identifies its topic; short corrections need that topic.
+ if(/^(?:work|my job|school|studying) (?:has been|is|keeps) (?:getting on my nerves|stressing me out|wearing me down)(?: lately|recently)?$/u.test(text))return /^(?:work|my job)\b/u.test(text)?'day_work_stress':'day_study';
+ if(session && ['day_work','day_work_stress','day_study','day_tiring'].includes(session.category) && /^(?:not (?:the |my )?(?:work|job|school|studying)(?: itself)? (?:but )?(?:mostly |mainly )?(?:the )?people|it is (?:mostly |mainly )?(?:the )?people not (?:the |my )?(?:job|work|school))$/u.test(text))return 'day_people';
+ if(session && ['day_people','day_work_stress','day_privacy'].includes(session.category) && /^i (?:do not want to|would rather not|do not wish to) (?:name (?:anyone|anybody|names)|say (?:their|any) names)$/u.test(text))return 'day_privacy';
+ const listening=session && (session.noAdviceRemaining>0 || ['effort_stuck','effort_continue'].includes(session.category));
+ if(listening && /^i (?:keep|am still) trying (?:but|and) (?:nothing (?:seems to work|is working)|it (?:does not|never seems to) work)$/u.test(text))return 'effort_stuck';
+ if(listening && /^(?:but )?i (?:am not|will not) (?:giving up|give up|quitting|quit)(?: yet)?$/u.test(text))return 'effort_continue';
  if(!session || !dayTopics.has(session.category))return null;
  if(/^(?:and )?i (?:barely had time for (?:a )?break|did not (?:get|have|take) (?:a |any )?break|had no time (?:for a break|to rest))$/u.test(text))return 'day_no_break';
  if(/^(?:(?:that is|thats) why|which is why) i (?:am|feel) (?:so |really |very )?(?:tired|drained|exhausted)$/u.test(text))return 'day_explanation';

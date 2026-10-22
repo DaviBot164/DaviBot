@@ -64,7 +64,7 @@ function memoryAfter(previous, request, response) {
         mode: restarted?null:mode,
         pickSelected: !restarted && response.category==='pick' ? (response.pickSelected ?? old.pickSelected ?? null) : null,
         pickOptions: !restarted && response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
-        noAdviceRemaining: restarted ? 0 : (request.category === 'decline_advice' || request.declineAdvice) ? 4 : request.category === 'tip' ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
+        noAdviceRemaining: restarted ? 0 : (request.category === 'decline_advice' || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
         pending: restarted ? null : response.pending ?? null,
         history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };

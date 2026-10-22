@@ -1,4 +1,9 @@
 const publicPools={
+ day_work_stress:["Work has been getting under your skin lately. What has been the hardest part?", "That sounds frustrating. You can tell me what has been happening at work.", "Work has been wearing on you, then. I am listening."],
+ day_privacy:["You do not have to name anyone. We can talk about what happened without names.", "No names needed. Share only the part you want to discuss.", "That is fine. You can keep their identity private."],
+ effort_stuck:["You have been trying and not seeing the result you hoped for. That sounds frustrating.", "It is discouraging when the effort keeps going in and the result does not change. I am listening.", "You are still trying, even though it has not been working out. You can tell me more."],
+ effort_continue:["You are frustrated, but you are not giving up. I hear both parts.", "Still willing to keep trying, then. I am listening.", "You have not given up. That is an important distinction."],
+
  day_ordinary:['A quiet day, then. We do not need a big story to keep talking. What have you been listening to lately?','Nothing unusual, understood. Want to talk about music or games?','An ordinary day, then. Was there anything you enjoyed, even something small?'],
  day_okay:['An okay day, then. Anything stand out, or was it fairly ordinary?','Fair enough. Not every day needs a dramatic story. What have you been up to?','An ordinary day can be welcome. Was there a good moment in it?'],
  day_tasks:['Extra tasks kept coming, then. That sounds like a lot to carry through the day.','More work on top of everything else. I am following.','That sounds like the tasks kept piling up. I am listening.'],
@@ -19,6 +24,10 @@ const ownerPools={
  day_easing:['A little better... I am glad. We can keep this quiet.','That is good to hear. You do not have to rush into being cheerful.','A lighter moment, then. I am glad you told me.']
 };
 module.exports={pools:{public:publicPools,owner:{...publicPools,...ownerPools},mae:{...publicPools}},explanations:{
+ day_work_stress:'You said work had been frustrating lately. I followed that topic.',
+ day_privacy:'You did not want to name anyone. I accepted that boundary.',
+ effort_stuck:'You said you kept trying without seeing results. I reflected that without giving advice.',
+ effort_continue:'You clarified that you had not given up. I acknowledged the distinction.',
  day_ordinary:'You said nothing special happened. I followed the ordinary-day conversation without inventing an event.',
  day_okay:'You described your day as okay. I acknowledged that without assuming you felt upset.',
  day_tasks:'You described extra tasks being assigned to you.',

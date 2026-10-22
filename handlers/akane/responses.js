@@ -232,6 +232,14 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='advice_resume') {
+        const work=['day_work','day_work_stress','day_people','day_privacy'].includes(request.context);
+        const study=/^study_/u.test(request.context??'');
+        const content=work?'Advice is welcome now, understood. Start with one specific interaction you want to handle differently. What happened?'
+            :study?'Advice is welcome now. Choose one part of the material you are stuck on. What is the topic?'
+            :'Advice is welcome now, understood. What are you trying to do, and which part is not working?';
+        return {payload:{content},category:'help_offer',session:true,question:false,pending:{kind:'help_topic'}};
+    }
     if(request.category==='explain_serious')return {...repairExplanation({...request,category:'explain_fresh'}),modeChange:'serious'};
     if(['explain_fresh','repetition_feedback'].includes(request.category))return repairExplanation(request);
     if(request.category==='decline_advice') {

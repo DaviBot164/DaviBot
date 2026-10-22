@@ -1,5 +1,6 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ if(/^(?:(?:now|actually) )?(?:(?:a little|some|a bit of|your) )?advice (?:would|could|might) help(?: me)?(?: now|after all)?$/u.test(text) || /^i (?:would like|want|could use|need) (?:(?:a little|some|a bit of|your) )?advice (?:now|after all)$/u.test(text))return 'advice_resume';
  const worn='(?:tired|exhausted|drained|worn out)';
  // Explicit mind/body contrast, without inferring a mental state from generic tiredness.
  if(new RegExp(`^(?:(?:it is|its|it's) )?my (?:mind|brain|head) (?:is|that is|thats|that's) ${worn} (?:but )?not my body$`,'u').test(text) || new RegExp(`^my (?:mind|brain) (?:is|feels) ${worn}$`,'u').test(text))return 'mental_tired';
