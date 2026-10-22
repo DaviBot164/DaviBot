@@ -27,7 +27,8 @@ const answers = {
  }
 };
 function followupCategory(text,session) {
- const options=answers[session?.pending?.kind];
+ const kind=session?.pending?.kind??(/^study_/u.test(session?.topicCategory??'')?EXPECTATIONS[session.topicCategory]:null);
+ const options=answers[kind];
  if(!options)return null;
  for(const [category,phrases]of Object.entries(options))if(phrases.includes(text))return category;
  return null;

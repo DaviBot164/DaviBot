@@ -1,3 +1,4 @@
+const {understandingResult} = require('./understandingResult');
 const learningConfig = require('../../config/akaneLearning');
 const {learningPhrase} = require('./learningPhrases');
 const { OWNER_ID, reactionPools, dialogue } = require('./settings');
@@ -9,7 +10,7 @@ const { contextualCategory } = require('./context');
 const { reactionClauses, prepareSentence } = require('./sentenceParser');
 const { recognizeSocial } = require('./socialIntent');
 
-function parseRequest(message, now, learnedAliases = null) {
+function parseRequestInternal(message, now, learnedAliases = null) {
     const content = String(message.content ?? '').trim();
     const namedTrigger = content.match(
         /^akane(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
@@ -29,10 +30,12 @@ function parseRequest(message, now, learnedAliases = null) {
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
     const frame=englishOnly?prepareInput(raw):null;
     const details=englishOnly?recognizeDetails(raw,frame):{};
-    let category = englishOnly ? (contextualCategory(raw, session, frame) ?? details.category) : null;
+    const contextual=englishOnly?contextualCategory(raw,session,frame):null;
+    let category = contextual??details.category??null;
+    let recognition = contextual?{source:'context',rule:'contextual_followup'}:details.understanding;
     if(!category && englishOnly && learnedAliases) {
         const learned=learnedAliases.get(learningPhrase(raw));
-        if(Object.values(learningConfig.intents).includes(learned))category=learned;
+        if(Object.values(learningConfig.intents).includes(learned)){category=learned;recognition={source:'learned',rule:'approved_alias'};}
     }
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
     const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw) : null) ?? extractChoice(raw)) : null;
@@ -49,6 +52,7 @@ function parseRequest(message, now, learnedAliases = null) {
     const mixedSocial = meanings.includes('reaction_affection') && meanings.includes('reaction_insult');
     const context = session?.category ?? null;
     const followup = {
+        recognition,
         context,
         declineAdvice: Boolean(details.declineAdvice),
         mixedSocial,
@@ -93,4 +97,11 @@ function parseRequest(message, now, learnedAliases = null) {
     return { category: /[?？]/u.test(raw) ? 'reaction_question' : 'fallback', ...followup };
 }
 
+function parseRequest(message,now,learnedAliases=null){
+ const request=parseRequestInternal(message,now,learnedAliases);
+ if(!request)return null;
+ const {recognition,...rest}=request;
+ const source=request.category==='pick'?{source:'choice',rule:'choice_request'}:request.targetId?{source:'mention',rule:'mentioned_member'}:recognition??{source:'parser',rule:'parser_fallback'};
+ return {...rest,understanding:understandingResult(request.category,{...source,declineAdvice:request.declineAdvice})};
+}
 module.exports = { parseRequest };

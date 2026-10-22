@@ -1,3 +1,4 @@
+const {understandingResult} = require('./understandingResult');
 const {meaningVariants,compoundMeaning} = require('./meaningVariants');
 const {recognizeMemberBoundary} = require('./memberBoundaries');
 const {recognizeProvocation} = require('./provocation');
@@ -113,54 +114,55 @@ function extractChoice(value) {
     const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
     return m?m[1].replace(/[?]+$/u,'').replace(/\s+(?:please|pls|plz)[.!?]*$/iu,'').trim():null;
 }
-function recognizeCore(value, suppliedFrame=null) {
+// Earlier entries have higher precedence. Normal recognition stops at the first.
+function recognitionRules(frame) {
+ const raw=frame.raw,text=frame.sentence,plain=frame.plainSentence;
+ return [
+  ['member_boundary',()=>recognizeMemberBoundary(text,raw)],
+  ['provocation',()=>recognizeProvocation(text,raw)],
+  ['explanation_repair',()=>recognizeExplanationRepair(text)],
+  ['day_statement',()=>recognizeDayConversation(text)],
+  ['mood_boundary',()=>moodBoundary(text)?.category],
+  ['sentence_form',()=>requestForm(text)],
+  ['pragmatics',()=>analyzePragmatics(text,raw,OWNER_ID)?.category],
+  ['chat_abuse',()=>analyzeChatAbuse(text,raw)?.category],
+  ['acknowledgement',()=>acknowledge(plain,null)],
+  ['utterance',()=>recognizeUtterance(plain,raw,OWNER_ID)??recognizeUtterance(text,raw,OWNER_ID)],
+  ['negation',()=>recognizeNegation(text)],
+  ['practical',()=>recognizePractical(plain)??recognizePractical(text)],
+  ['direct_social',()=>recognizeSocial(plain,raw)],
+  ['request_social',()=>recognizeSocial(requestEnglish(text),raw)]
+ ];
+}
+function recognizeCore(value, suppliedFrame=null, onMatch=null) {
     const raw=String(value??'');
     const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
     if(!frame.valid)return null;
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
     const normalized=frame.normalized;
-    const memberBoundary=recognizeMemberBoundary(frame.sentence,value);if(memberBoundary)return memberBoundary;
-    const provocation=recognizeProvocation(frame.sentence,raw);if(provocation)return provocation;
-    const repair=recognizeExplanationRepair(frame.sentence);if(repair)return repair;
-    const day=recognizeDayConversation(frame.sentence);if(day)return day;
-    const compound=moodBoundary(frame.sentence);if(compound)return compound.category;
-    const form=requestForm(frame.sentence);if(form)return form;
-    const framed=analyzePragmatics(frame.sentence,raw,OWNER_ID);
-    if(framed)return framed.category;
-    const abuse=analyzeChatAbuse(frame.sentence,raw);
-    if(abuse)return abuse.category;
-    const acknowledgement=acknowledge(frame.plainSentence,null);
-    if(acknowledgement) return acknowledgement;
-    const utterance=recognizeUtterance(frame.plainSentence,raw,OWNER_ID) ?? recognizeUtterance(frame.sentence,raw,OWNER_ID);
-    if(utterance)return utterance;
-    const negativeIntent=recognizeNegation(frame.sentence);
-    if(negativeIntent) return negativeIntent;
-    const practical=recognizePractical(frame.plainSentence) ?? recognizePractical(frame.sentence);
-    if(practical) return practical;
-    const directSocial=recognizeSocial(frame.plainSentence,raw);
-    if(directSocial) return directSocial;
+    const select=(rule,category)=>{if(onMatch)onMatch(rule,category);return category;};
+    for(const [rule,run]of recognitionRules(frame)) {const category=run();if(category)return select(rule,category);}
     const text=requestEnglish(frame.sentence);
-    const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
-    if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
-    if (/^(?:i (?:never|did not) (?:say|said|mean) (?:that|you (?:are|were) .+)|that is not what i said)$/u.test(text)) return 'repair';
-    const found=reaction(raw);if(found)return found==='rude'?'rude':`reaction_${found}`;
-    if (/^(?:(?:can|could|would) you (?:please )?)?(?:tell me (?:a |another )?(?:funny )?joke|give me a joke|say something funny|joke)$/u.test(text)) return 'joke';
-    if (/^(?:(?:can|could|would) you (?:please )?)?(?:help me|give me some help|i need (?:some )?help|i need your help)$/u.test(text)) return 'help_offer';
-    if (/^(?:what is your (?:favorite|favourite) (?:food|drink)|what do you like to (?:eat|drink)|do you (?:eat|drink|like food))$/u.test(text)) return 'food_preferences';
-    if (['commands','server commands'].includes(text)) return 'help';
-    if (text==='why not') return 'why';
-    if (text==='distraction') return 'bored';
-    if (text==='quiet') return 'pause';
-    const everyday = recognizeEveryday(text); if(everyday) return everyday;
-    if(known.has(text))return known.get(text);
-    if(known.has(normalized))return known.get(normalized);
-    if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return 'self_doubt';
-    const mood=emotion(text);if(mood)return mood;
-    const mixed=resolveMixedMood(text,emotion);if(mixed)return mixed;
-    if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return 'feeling_bad';
-    if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return 'feeling_good';
+    if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return select('legacy.mae','mae');
+    if (/^(?:i (?:never|did not) (?:say|said|mean) (?:that|you (?:are|were) .+)|that is not what i said)$/u.test(text)) return select('legacy.repair','repair');
+    const found=reaction(raw);if(found)return select('direct_reaction',found==='rude'?'rude':`reaction_${found}`);
+    if (/^(?:(?:can|could|would) you (?:please )?)?(?:tell me (?:a |another )?(?:funny )?joke|give me a joke|say something funny|joke)$/u.test(text)) return select('legacy.joke','joke');
+    if (/^(?:(?:can|could|would) you (?:please )?)?(?:help me|give me some help|i need (?:some )?help|i need your help)$/u.test(text)) return select('legacy.help_offer','help_offer');
+    if (/^(?:what is your (?:favorite|favourite) (?:food|drink)|what do you like to (?:eat|drink)|do you (?:eat|drink|like food))$/u.test(text)) return select('legacy.food_preferences','food_preferences');
+    if (['commands','server commands'].includes(text)) return select('legacy.help','help');
+    if (text==='why not') return select('legacy.why','why');
+    if (text==='distraction') return select('legacy.bored','bored');
+    if (text==='quiet') return select('legacy.pause','pause');
+    const everyday = recognizeEveryday(text); if(everyday) return select('everyday',everyday);
+    if(known.has(text))return select('known_alias',known.get(text));
+    if(known.has(normalized))return select('known_alias',known.get(normalized));
+    if(/^(?:am i (?:stupid|ugly|useless)|i hate myself|i am (?:so |really |such )?(?:an? )?(?:stupid|dumb|ugly|useless|a failure)|i feel (?:stupid|useless)|i suck)$/u.test(text))return select('legacy.self_doubt','self_doubt');
+    const mood=emotion(text);if(mood)return select('self_state',mood);
+    const mixed=resolveMixedMood(text,emotion);if(mixed)return select('mixed_state',mixed);
+    if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return select('legacy.feeling_bad','feeling_bad');
+    if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return select('legacy.feeling_good','feeling_good');
     const request=requestEnglish(text).replace(/^(?:(?:can|could|would) you (?:please )?|i (?:want|need) you to |i would like you to |please )/u,'');
     const requests=[
         ['nice',/^(?:give me (?:a |another )?compliment|compliment me|say something nice(?: to me)?|tell me something nice)$/u],
@@ -176,8 +178,8 @@ function recognizeCore(value, suppliedFrame=null) {
         ['tone_serious',/^(?:be serious|stop joking|no jokes|answer seriously)$/u],
         ['topic_change',/^(?:change (?:the subject|topic)|talk about something else)$/u]
     ];
-    for(const [category,pattern]of requests)if(pattern.test(request))return category;
-    if(/^(?:ha){2,8}$|^(?:he){2,8}$|^l(?:o+l+)+$|^lmao+$|^lmfao+$|^rofl$|^xd+$/u.test(text))return 'laugh';
+    for(const [category,pattern]of requests)if(pattern.test(request))return select('request.'+category,category);
+    if(/^(?:ha){2,8}$|^(?:he){2,8}$|^l(?:o+l+)+$|^lmao+$|^lmfao+$|^rofl$|^xd+$/u.test(text))return select('legacy.laugh','laugh');
     return null;
 }
 function correctedChoice(value) {
@@ -189,24 +191,30 @@ function correctedChoice(value) {
 function recognizeDetails(value, suppliedFrame=null) {
  const raw=String(value??'');
  const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
- if(!frame.valid)return {category:null};
+ const finish=(details,rule,source='rules')=>({...details,understanding:understandingResult(details.category,{...details,rule,source})});
+ if(!frame.valid)return finish({category:null},'input.invalid','input');
  const compound=moodBoundary(frame.sentence);
- if(compound)return compound;
- const direct=recognizeCore(raw,frame);
- if(direct)return {category:direct};
- // Established rules win. Structural variants run only when those rules do not match.
- const lookup=text=>recognizeCore(text);
- const composed=compoundMeaning(frame.sentence,raw,lookup);
- if(composed)return composed;
+ if(compound)return finish(compound,'mood_boundary');
+ let selected='legacy';
+ const direct=recognizeCore(raw,frame,rule=>{selected=rule;});
+ if(direct)return finish({category:direct},selected);
+ const composed=compoundMeaning(frame.sentence,raw,text=>recognizeCore(text));
+ if(composed)return finish(composed,'compound.mood_and_listening','composition');
  for(const alternative of meaningVariants(frame.sentence,raw)) {
   const candidateFrame=prepareInput(alternative);
   const candidateCompound=moodBoundary(candidateFrame.sentence);
-  if(candidateCompound)return candidateCompound;
-  const category=recognizeCore(alternative,candidateFrame);
-  if(category)return {category};
+  if(candidateCompound)return finish(candidateCompound,'variant.mood_boundary','variant');
+  const category=recognizeCore(alternative,candidateFrame,rule=>{selected=rule;});
+  if(category)return finish({category},'variant.'+selected,'variant');
  }
- return {category:null};
+ return finish({category:null},'unmatched','none');
 }
+function inspectUnderstanding(value){
+ const frame=prepareInput(value),details=recognizeDetails(value,frame);
+ const candidates=frame.valid?recognitionRules(frame).flatMap(([rule,run],priority)=>{const category=run();return category?[{rule,priority,category}]:[];}):[];
+ return {prepared:{valid:frame.valid,normalized:frame.normalized,sentence:frame.sentence},...details,candidates,overlap:new Set(candidates.map(x=>x.category)).size>1};
+}
+
 function recognize(value) {return recognizeDetails(value).category;}
 
-module.exports={canonical,prepareInput,recognize,recognizeDetails,extractChoice,correctedChoice,detectEnglishReaction:reaction};
+module.exports={canonical,prepareInput,recognize,recognizeDetails,inspectUnderstanding,extractChoice,correctedChoice,detectEnglishReaction:reaction};

@@ -5,7 +5,7 @@ const root = process.argv[2] || path.resolve(__dirname, '..');
 // Current offline dialogue suites. language.cjs aliases english.cjs, so run it once.
 // The original dialogue.cjs needs the live package environment; logs/missions/setup
 // have their own systems and are intentionally outside this dialogue command.
-const suites = ['english','dialogue-bank','everyday','understanding','social','defiance','coherence','practical','followups','meaning','nuance','continuity','repairs','refinement','voice','pragmatics','chat','continuation','abuse','emoji','mixed-feedback','context','polish','system-audit','day-chat','listening','expressions','story','learning','corrections','boundaries','social-scope','compound-chat','live-chat','member-boundaries','abuse-forms','listening-forms','listening-continuity','understanding-core'];
+const suites = ['english','dialogue-bank','everyday','understanding','social','defiance','coherence','practical','followups','meaning','nuance','continuity','repairs','refinement','voice','pragmatics','chat','continuation','abuse','emoji','mixed-feedback','context','polish','system-audit','day-chat','listening','expressions','story','learning','corrections','boundaries','social-scope','compound-chat','live-chat','member-boundaries','abuse-forms','listening-forms','listening-continuity','understanding-core','internal-contract'];
 let failed = 0;
 for (const name of suites) {
     const run = spawnSync(process.execPath, [path.join(root, 'scripts', `test-akane-${name}.cjs`), root], {encoding: 'utf8'});

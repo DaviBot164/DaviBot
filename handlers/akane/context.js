@@ -1,3 +1,4 @@
+const {nextTopic} = require('./understandingResult');
 const {recognizeDayConversation} = require('./dayConversation');
 const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
@@ -19,7 +20,8 @@ function contextualCategory(raw, session, suppliedFrame=null) {
     if(!frame.valid)return String(raw??'').length<=2000 ? controls.get(normalize(raw))??null : null;
     const text=frame.sentence;
     if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
-    const day=recognizeDayConversation(text,session);if(day)return day;
+    const topicSession=session?.topicCategory?{...session,category:session.topicCategory}:session;
+    const day=recognizeDayConversation(text,session)??(topicSession!==session?recognizeDayConversation(text,topicSession):null);if(day)return day;
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);
@@ -54,6 +56,8 @@ function memoryAfter(previous, request, response) {
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     const restarted=request.category==='restart_chat';
     return {
+        topicCategory: nextTopic(old,request,response),
+        mood: restarted||request.category==='topic_change'?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,
