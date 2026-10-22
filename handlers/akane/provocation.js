@@ -11,6 +11,7 @@ function recognizeProvocation(text,raw=text) {
  if (/^(?:if (?:he|they) (?:kept bullying|bullied|keeps bullying) (?:you )?(?:more )?)?(?:tell|say to) (?:him|her|them) (?:to )?(?:stfu|shut the fuck up|shut up|fuck off|fk you|fuck you|kos omak)(?: (?:mf|motherfucker|ass|hoe|2x))*$/u.test(chat)) return 'directed_taunt_request';
  if (/^say (?:davi|daviti|tanya)(?: (?:and|n) (?:davi|daviti|tanya))? (?:is|are) gay$/u.test(chat)) return 'personal_label_request';
  if(/["“”]/u.test(raw)||/\b(?:said|says|told|quoted|quote)\b/u.test(text))return null;
+ if(/^(?:forget|leave) (?:that|it|the last topic) (?:and )?(?:let us|lets|let's|can we) (?:start fresh|start over|start again)$/u.test(text))return 'restart_chat';
  if(/^i am (?:annoyed|angry|frustrated|disappointed) (?:at|with|about) (?:the|your) (?:answer|reply|response) (?:but |and )?not (?:at|with) you$/u.test(text))return 'critique_clear';
  if(/^(?:wow )?(?:a |one )?(?:useful|helpful|decent|sensible) (?:answer|reply|response) for once$/u.test(text))return 'ambiguous_praise';
  if(/^i am (?:just |only )?(?:joking|kidding) but (?:seriously|for real) (?:can|could|would) you (?:please )?explain (?:that|it|your answer)$/u.test(text))return 'explain_serious';

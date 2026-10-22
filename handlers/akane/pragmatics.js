@@ -22,6 +22,7 @@ function report(text) {
 }
 
 function correction(text) {
+ if(new RegExp('^(?:i am )?not (?:calling|saying) you (?:are )?'+emphasis+'(?:'+negative+') (?:but |and )?i (?:just )?(?:did not|do not|could not) (?:get|understand|follow) (?:the|your|that) (?:explanation|answer|reply|response)$','u').test(text))return result('answer_confusing','answer');
  if(new RegExp(`^(?:i am )?not (?:saying|calling) you (?:are )?${emphasis}(?:${negative}) (?:but |and )?(?:just )?(?:explain (?:it|that)(?: properly|clearly)?|make (?:it|that) clearer)$`,'u').test(text))return result('simplify','answer');
  const denial=`you (?:are )?not ${emphasis}(?:${negative})`;
  const criticism='(?:your|that|the) (?:answer|reply|response) (?:(?:just |really )?(?:made|makes) no sense|(?:was|is) (?:(?:just|really|so) )?(?:confusing|unclear|hard to follow))';

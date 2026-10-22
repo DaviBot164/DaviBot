@@ -1,5 +1,6 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ if(/^(?:(?:yes|yeah|okay|right) )?(?:that|it|your explanation) (?:makes|is making) (?:(?:much|a lot) )?(?:more )?sense(?: to me)?(?: now)?$/u.test(text))return 'feedback_understood';
  if(/^(?:(?:now|actually) )?(?:(?:a little|some|a bit of|your) )?advice (?:would|could|might) help(?: me)?(?: now|after all)?$/u.test(text) || /^i (?:would like|want|could use|need) (?:(?:a little|some|a bit of|your) )?advice (?:now|after all)$/u.test(text))return 'advice_resume';
  const worn='(?:tired|exhausted|drained|worn out)';
  // Explicit mind/body contrast, without inferring a mental state from generic tiredness.
@@ -21,6 +22,9 @@ function moodBoundary(text) {
  return {category,declineAdvice:true};
 }
 function wantsListening(text) {
+ const noSolution='(?:i )?do not (?:need|want) (?:(?:a|any|your|another) )?(?:fix|solution|advice|tips|suggestions)';
+ const finish='(?:please )?(?:just |only )?(?:let me finish(?: talking)?|let me explain|hear me out)';
+ if(new RegExp('^(?:'+finish+'|'+noSolution+' (?:but |and )?'+finish+'|'+finish+' (?:but |and )?'+noSolution+')$','u').test(text))return true;
  // Match desires and refusals as clauses; a mention of "advice" alone is insufficient.
  const company='(?:(?:just |only )?(?:some )?(?:company|someone to (?:talk to|listen)|a listening ear))';
  const solution='(?:(?:a |any |your )?(?:solution|solutions|advice|tips|suggestions))';

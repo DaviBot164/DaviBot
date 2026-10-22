@@ -13,6 +13,8 @@ function recognizeDayConversation(text, session = null) {
  if(/^(?:work|my job|school|studying) (?:has been|is|keeps) (?:getting on my nerves|stressing me out|wearing me down)(?: lately|recently)?$/u.test(text))return /^(?:work|my job)\b/u.test(text)?'day_work_stress':'day_study';
  if(session && ['day_work','day_work_stress','day_study','day_tiring'].includes(session.category) && /^(?:not (?:the |my )?(?:work|job|school|studying)(?: itself)? (?:but )?(?:mostly |mainly )?(?:the )?people|it is (?:mostly |mainly )?(?:the )?people not (?:the |my )?(?:job|work|school))$/u.test(text))return 'day_people';
  if(session && ['day_people','day_work_stress','day_privacy'].includes(session.category) && /^i (?:do not want to|would rather not|do not wish to) (?:name (?:anyone|anybody|names)|say (?:their|any) names)$/u.test(text))return 'day_privacy';
+ // Correct the cause only inside the speaker's active day/wellbeing topic.
+ if(session && dayTopics.has(session.category) && /^(?:it is|its|it's) not (?:(?:really|actually) )?(?:the |my )?(?:work|job|school)(?: itself)? (?:but )?(?:it is|its|it's) (?:(?:mostly|mainly) )?(?:how|the way) (?:(?:the|my) )?(?:people|coworkers|colleagues|classmates) (?:treat|talk to|speak to) me$/u.test(text))return 'day_people';
  const listening=session && (session.noAdviceRemaining>0 || ['effort_stuck','effort_continue'].includes(session.category));
  if(listening && /^i (?:keep|am still) trying (?:but|and) (?:nothing (?:seems to work|is working)|it (?:does not|never seems to) work)$/u.test(text))return 'effort_stuck';
  if(listening && /^(?:but )?i (?:am not|will not) (?:giving up|give up|quitting|quit)(?: yet)?$/u.test(text))return 'effort_continue';
