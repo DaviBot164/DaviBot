@@ -1,10 +1,11 @@
 const vocabulary = require('../../config/akaneSocialVocabulary');
 const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const bad = vocabulary.negative.map(escape).join('|');
+const possession=new RegExp('\\bur (?=(?:(?:'+[...vocabulary.positive,...vocabulary.negative,'beloved','favorite','favourite'].map(escape).join('|')+') )?(?:davi|daviti|david|friend|brother|sister|teammate|owner)\\b)','gu');
 const emphasis='(?:(?:so|really|very|fucking|damn|just|such|a|an) )*';
 // Common surface forms become the same sentence shape before intent matching.
 function surfaceEnglish(text) {
- return text.replace(/\blemme\b/gu,'let me').replace(/\bgimme\b/gu,'give me')
+ return text.replace(possession,'your ').replace(/\blemme\b/gu,'let me').replace(/\bgimme\b/gu,'give me')
   .replace(/\bi dunno\b/gu,'i do not know')
   .replace(/\b(?:can|could|would) you (?:maybe|possibly) /gu,'can you ')
   .replace(/^please ((?:can|could|would) you) /u,'$1 please ')

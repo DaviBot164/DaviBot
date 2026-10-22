@@ -131,6 +131,8 @@ function decorate(base, tone, request) {
             hi: 'Hello. How are you doing?',
             roast: 'I will skip the sharp roast while the gentler tone is active. Try a compliment or a little advice.',
             reaction_davi_insult: 'Please keep criticism of Davi respectful. Tell me the issue without the insults.',
+            sarcastic_challenge: 'I can try again. Tell me the specific question.',
+            answer_feedback: 'I understand that you mean the answer. I can rephrase it.',
             reaction_insult: 'We can reset this conversation. Tell me what bothered you.',
             reaction_dismissive: 'We can pause. Use `akane stop` to end the conversation.',
             reaction_anger: 'The dramatic tone is fictional. I can keep this calm.',
