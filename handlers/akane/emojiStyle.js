@@ -15,12 +15,16 @@ function applyEmojiStyle(response, tone, request) {
     // Both meanings must be light: an explanation of sadness must stay plain too.
     const allowed = category => config.warm.includes(category) || (tone === 'public' && config.sharp.includes(category));
     if (turns < config.interval || !allowed(request.category) || !allowed(response.category)) return plain;
-    const pool = tone === 'owner' ? config.pools.owner : tone === 'mae' ? config.pools.mae
-        : config.sharp.includes(request.category) ? config.pools.public : config.pools.publicWarm;
-    const candidates = pool.filter(value => value !== previous.emojiLast);
-    // Rotate deterministically; no random state or failed-send mutation.
-    const index = (previous.emojiCount ?? 0) % candidates.length;
-    const selected = candidates[index];
+    const category=request.category;
+    const expression=category==='thanks'?'thanks':category==='secret'?'secret': ['laugh','joke'].includes(category)?'amused':tone==='owner'&&['nice','reaction_affection','reaction_romance'].includes(category)?'shy':null;
+    const pool = config.expressions[expression]?.[tone] ?? (tone === 'owner' ? config.pools.owner : tone === 'mae' ? config.pools.mae
+        : config.sharp.includes(category) ? config.pools.public : config.pools.publicWarm);
+    const key = value => value.replace(/\uFE0F/gu,'');
+    const recent = (previous.emojiRecent ?? [previous.emojiLast]).filter(Boolean).slice(-2).map(key);
+    // Advance through the chosen expression without changing state before sending.
+    const ordered=pool.map((_,index)=>pool[((previous.emojiCount??0)+index)%pool.length]);
+    const selected=ordered.find(value=>!recent.includes(key(value)))
+        ?? ordered.find(value=>key(value)!==key(previous.emojiLast??'')) ?? ordered[0];
     return {...plain, payload: {...response.payload, content: `${content} ${selected}`}, emojiTurns: 0, emojiLast: selected, emojiAdded: true};
 }
 module.exports = {applyEmojiStyle};

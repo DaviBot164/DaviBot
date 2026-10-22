@@ -13,7 +13,7 @@ function applySpeechStyle(response,tone,request) {
  const suppressed=request.category==='nickname_boundary'||request.conversation?.noPetNames;
  if(owner){
   content=content.replace(/^Davi[,.!…]+\s*/u,'').replace(/,\s*Davi(?=[,.!?])/gu,'');
-  content=content.replace(/^Of course\.\s*/u,'');
+  content=content.replace(/^Of course[.!…]+\s*/u,'');
  }
  content=content ? content[0].toUpperCase()+content.slice(1) : 'I am listening.';
  let ownerAddressUsed=false;

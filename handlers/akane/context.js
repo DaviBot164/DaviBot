@@ -54,6 +54,8 @@ function memoryAfter(previous, request, response) {
     return {
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,
+        emojiRecent: response.emojiLast && response.emojiTurns===0
+            ? [...(old.emojiRecent??[]),response.emojiLast].slice(-2) : old.emojiRecent??[],
         emojiCount: (old.emojiCount ?? 0) + (response.emojiAdded ? 1 : 0),
         noPetNames: request.category==='nickname_boundary' || Boolean(old.noPetNames),
         ownerTurns: (old.ownerTurns??0)+(response.ownerStyle?1:0),
