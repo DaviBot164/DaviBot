@@ -1,3 +1,4 @@
+const {recognizeMemberBoundary} = require('./memberBoundaries');
 const {recognizeProvocation} = require('./provocation');
 const {recognizeExplanationRepair} = require('./explanationRepair');
 const {recognizeDayConversation} = require('./dayConversation');
@@ -110,6 +111,7 @@ function recognize(value) {
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
     const normalized=tidy(raw);
+    const memberBoundary=recognizeMemberBoundary(prepareSentence(stripMarkers(normalized)),value);if(memberBoundary)return memberBoundary;
     const provocation=recognizeProvocation(prepareSentence(stripMarkers(normalized)),raw);if(provocation)return provocation;
     const repair=recognizeExplanationRepair(prepareSentence(stripMarkers(normalized)));if(repair)return repair;
     const day=recognizeDayConversation(prepareSentence(stripMarkers(normalized)));if(day)return day;
