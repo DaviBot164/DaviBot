@@ -186,10 +186,11 @@ function buildBaseResponse(message, request) {
         if (options.length < 2 || options.length > 10 || options.some(x => x.length > 100)) {
             return response('Give me 2–10 choices separated by `/`.\n`akane pick pvp / training`', 'fallback');
         }
-        const choice = escapeMarkdown(options[randomInt(options.length)]);
+        const selected = options[randomInt(options.length)];
+        const choice = escapeMarkdown(selected);
         const suffix = tone === 'owner' ? ', handsome. A random pick for you.'
             : tone === 'mae' ? '. A random pick, Mae.' : '. Randomly chosen. The imaginary committee has spoken.';
-        return {...response(`**${choice}**${suffix}`, 'pick'),pickOptions:options};
+        return {...response(`**${choice}**${suffix}`, 'pick'),pickOptions:options,pickSelected:selected};
     }
 
     // Do not deliver a cold introduction to Mae, even when she asks about someone.
@@ -215,6 +216,23 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='pick_other') {
+        const options=request.conversation?.pickOptions;
+        const selected=request.conversation?.pickSelected;
+        if(!Array.isArray(options)||options.length!==2||!options.includes(selected)) {
+            return {payload:{content:'I need two options and a previous choice to know which one you mean. Try `akane pick tea / coffee`.'},category:'clarify',session:true,question:false};
+        }
+        const other=options.find(option=>option!==selected);
+        return {payload:{content:`**${escapeMarkdown(other)}**. The other option.`},category:'pick',session:true,question:false,pickOptions:options,pickSelected:other};
+    }
+    if(request.category==='explain_wait') {
+        const base=buildBaseResponse(message,request);
+        return {...base,category:request.context??'general',pending:{kind:'repair'}};
+    }
+    if(request.category==='confirm_request') {
+        if(request.context)return buildUnstyledResponse(message,{...request,category:'really',followup:true});
+        return {payload:{content:'Which part are you asking about?'},category:'clarify',session:true,question:false};
+    }
     if(request.category==='feedback_better' && /^study_/u.test(request.context??'')) {
         return {payload:{content:'That method sounds more useful, then. We can continue with it.'},category:'feedback_better',session:true,question:false,pending:request.conversation?.pending??null};
     }

@@ -19,7 +19,9 @@ function report(text) {
 }
 
 function correction(text) {
- if(new RegExp(`^(?:${negative}) is (?:not|never) what i (?:called|call) you$`,'u').test(text))return result('disavow_insult','correction');
+ if(new RegExp(`^your (?:answer|reply|response) (?:was|is) ${emphasis}(?:${negative}) (?:i )?did not (?:say|mean) you (?:were|are)$`,'u').test(text))return result('answer_feedback','answer');
+ if(new RegExp(`^your (?:answer|reply|response) (?:was|is) not ${emphasis}(?:${negative}) (?:it (?:was|is) )?(?:just|only) (?:confusing|unclear|hard to follow)$`,'u').test(text))return result('answer_confusing','answer');
+ if(new RegExp(`^(?:${negative}) (?:is|was) (?:not|never) what i (?:called|call) you$`,'u').test(text))return result('disavow_insult','correction');
  if(new RegExp(`^i (?:said|meant|called) your (?:answer|reply|response) (?:was |is )?${emphasis}(?:${negative}) (?:and )?not you$`,'u').test(text))return result('answer_feedback','answer');
  if(/^(?:i did not mean to (?:sound|be|come across as) rude|mean to (?:sound|be|come across as) rude i did not)$/u.test(text))return result('intent_clear','correction');
  return null;
@@ -34,6 +36,8 @@ function moodFragment(text) {
 }
 
 function evaluation(text) {
+ if(/^(?:nice|great|brilliant|lovely) (?:answer|reply|response) (?:did|do) you even (?:read(?: (?:it|that|the question))?|look at (?:it|the question))$/u.test(text))return result('answer_feedback','answer');
+ if(/^(?:wow )?you are (?:a )?(?:genius|so clever|so smart|brilliant) (?:are not you|are you)$/u.test(text))return result('ambiguous_tease','ambiguous');
  if(new RegExp(`^are you ${emphasis}(?:actually |always )?(?:this |so )?(?:${negative}) or (?:(?:are you )?(?:just |only )?(?:pretending|joking|messing with me)|what)$`,'u').test(text))return result('reaction_insult','addressee');
  if(/^(?:a|one) (?:useful|sensible|coherent|decent) (?:answer|reply|response) (?:can|could) you (?:manage|give|produce) (?:that|one)(?: for once)?$/u.test(text))return result('sarcastic_challenge','answer');
  if(new RegExp(`^(?:(?:wow|great|nice|oh good) )?(?:another|yet another) ${emphasis}(?:${negative}) (?:answer|reply|response)(?: (?:impressive|amazing|brilliant|well done))?$`,'u').test(text))return result('answer_feedback','answer');

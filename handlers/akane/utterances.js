@@ -5,7 +5,12 @@ const possession=new RegExp('\\bur (?=(?:(?:'+[...vocabulary.positive,...vocabul
 const emphasis='(?:(?:so|really|very|fucking|damn|just|such|a|an) )*';
 // Common surface forms become the same sentence shape before intent matching.
 function surfaceEnglish(text) {
- return text.replace(possession,'your ').replace(/\blemme\b/gu,'let me').replace(/\bgimme\b/gu,'give me')
+ return text.replace(/\b(?:wasnt|wasn't)\b/gu,'was not')
+  .replace(/\b(?:werent|weren't)\b/gu,'were not')
+  .replace(/\b(?:couldnt|couldn't)\b/gu,'could not')
+  .replace(/\b(?:shouldnt|shouldn't)\b/gu,'should not')
+  .replace(/^(?:bro|dude|mate) (?=(?:what|why|how|are|can|could|do|did|you)\b)/u,'')
+  .replace(possession,'your ').replace(/\blemme\b/gu,'let me').replace(/\bgimme\b/gu,'give me')
   .replace(/\bi dunno\b/gu,'i do not know')
   .replace(/\b(?:can|could|would) you (?:maybe|possibly) /gu,'can you ')
   .replace(/^please ((?:can|could|would) you) /u,'$1 please ')
@@ -24,6 +29,11 @@ function recognizeUtterance(text,raw=text,ownerId='1357721282061533311') {
  text=text.replace(target,'davi');
  if(/["“”]/u.test(raw)||/\b(?:said|says|told|quoted|quote)\b/u.test(text))return null;
  if(/^(?:please )?(?:do not|stop) (?:call(?:ing)? me|use|using) (?:handsome|sweetheart|darling|pet names|nicknames)(?: (?:please|again|anymore))?$/u.test(text))return 'nickname_boundary';
+ if(/^(?:(?:i )?(?:was not|am not|were not) talking about|i did not mean) you(?: (?:though|by the way))?$/u.test(text))return 'target_correction';
+ if(/^(?:(?:no|nah|nope) )?(?:(?:pick|choose|give me) )?(?:the )?other (?:one|option|choice)(?: (?:please|instead))?$/u.test(text))return 'pick_other';
+ if(/^(?:wait (?:let me explain|i can explain)|let me explain|hold on (?:let me explain|a second))$/u.test(text))return 'explain_wait';
+ if(/^(?:you (?:for real|serious)|are you (?:for real|serious)|for real)$/u.test(text))return 'confirm_request';
+ if(/^what (?:are you|do you mean|were you) (?:on about|talking about)$/u.test(text))return 'explain';
  const name='(?:davi|daviti|david)';
  if(new RegExp(`^(?:fuck|screw)(?: off)? ${name}$|^i hate ${name}$|^${name} (?:sucks|is ${emphasis}(?:${bad}))$|^${name} you (?:suck|are ${emphasis}(?:${bad}))$|^tell ${name} to (?:fuck off|shut up)$`,'u').test(text))return 'reaction_davi_insult';
  if(new RegExp(`^${name} is (?:not |never )(?:an? )?(?:${bad})$`,'u').test(text))return 'reaction_davi';

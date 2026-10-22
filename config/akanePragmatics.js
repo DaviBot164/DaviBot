@@ -1,5 +1,9 @@
 const pools={
  public:{
+  target_correction:['Understood. You were not talking about me.','Got it. I will not make myself the subject of that sentence.','That clears up who you meant. We can move on.'],
+  explain_wait:['Go ahead. I am listening.','All right. Take your time and explain.','You have the floor. What did you mean?'],
+  answer_confusing:['Unclear, rather than stupid. Understood. I can try saying it more simply.','You mean the explanation was confusing. I can rephrase it.','Fair distinction. I can try a clearer version of the answer.'],
+  ambiguous_tease:['A genius? Let us keep the expectations manageable. What is the question?','That came with a raised eyebrow, I suspect. Go on.','A compliment with a question mark. I am listening.'],
   answer_feedback:[
    'You mean the answer. Fair enough. Point me to the part that missed, and I can try again.',
    'A sharp review. If the answer missed your point, I can rephrase it.',
@@ -24,6 +28,10 @@ const pools={
   ]
  },
  owner:{
+  target_correction:['Oh... understood. You were not talking about me.','That clears it up. I will follow your meaning.','Got it. No need to worry about that misunderstanding.'],
+  explain_wait:['Of course. Take your time... I am listening.','Go ahead. You do not need to rush the explanation.','All right... tell me what you meant.'],
+  answer_confusing:['You meant it was confusing. I understand... I can try a clearer version.','That is a helpful distinction. Let me try saying it more simply.','The explanation was unclear, then. We can try again.'],
+  ambiguous_tease:['Oh... I cannot tell if you are teasing. You caught me off guard.','A genius? That is a little more confidence than I was prepared for.','I will take that gently... what did you want to ask?'],
   answer_feedback:['You meant the answer. I understand... I can try saying it another way.','That reply missed, then. Let me try a clearer version.','You can tell me when the answer feels wrong. I would rather understand you.'],
   intent_clear:['I understand. You did not mean to sound that way. We can start again.','That is all right... thank you for clarifying.','No need for a perfect explanation. I understand what you meant about the tone.'],
   sarcastic_challenge:['A little challenge? All right... give me the question.','I can try again. Tell me the part you wanted answered.','You caught me off balance. Let us try a clearer question together.'],
@@ -31,6 +39,10 @@ const pools={
   reported_insult_question:['I understand that you are quoting someone else. I can try a clearer answer.','Their remark does not tell me what failed. What part should I explain?','A little context would help... which answer were they talking about?']
  },
  mae:{
+  target_correction:['Understood, Mae. You were not talking about me.','That clears it up, Mae.','Got it, Mae. No misunderstanding.'],
+  explain_wait:['Go ahead, Mae. I am listening.','Take your time, Mae.','Of course, Mae. What did you mean?'],
+  answer_confusing:['You meant the reply was confusing, Mae. I can try a clearer version.','Fair distinction, Mae. I can rephrase it.','Understood, Mae. A simpler explanation, then.'],
+  ambiguous_tease:['A little teasing, Mae? Go ahead with the question.','A genius might be setting the expectations high, Mae.','I cannot quite tell the tone, Mae. What would you like to ask?'],
   answer_feedback:['You mean the answer, Mae. I can try rephrasing it.','Fair feedback, Mae. I can make the reply simpler.','The reply missed your point, Mae. We can try again.'],
   intent_clear:['Understood, Mae. We can leave that misunderstanding behind.','That clears it up, Mae.','No problem, Mae. We can start again.'],
   sarcastic_challenge:['Give me the specific question, Mae, and I can try again.','A little sharp, Mae. What did you want answered?','We can keep this friendly, Mae. Tell me the actual question.'],
@@ -39,6 +51,10 @@ const pools={
  }
 };
 const explanations={
+ target_correction:'You clarified that you were not talking about me.',
+ explain_wait:'You asked for a moment to explain. I left room for the correction.',
+ answer_confusing:'You denied calling the reply stupid and said it was confusing. I acknowledged the clarity problem.',
+ ambiguous_tease:'The wording could be praise or teasing. I answered lightly instead of assuming an insult.',
  answer_feedback:'I understood the criticism as being about the answer, rather than treating it as a personal insult.',
  intent_clear:'You clarified that you did not intend to sound rude.',
  sarcastic_challenge:'I understood the question as a sarcastic challenge and asked for the specific request.',

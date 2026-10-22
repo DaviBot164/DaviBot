@@ -108,7 +108,7 @@ function recognize(value) {
     if(framed)return framed.category;
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
-    const utterance=recognizeUtterance(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
+    const utterance=recognizeUtterance(prepareSentence(normalized),raw,OWNER_ID) ?? recognizeUtterance(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
     if(utterance)return utterance;
     const negativeIntent=recognizeNegation(prepareSentence(stripMarkers(normalized)));
     if(negativeIntent) return negativeIntent;
