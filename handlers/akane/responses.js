@@ -228,6 +228,7 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='explain_serious')return {...repairExplanation({...request,category:'explain_fresh'}),modeChange:'serious'};
     if(['explain_fresh','repetition_feedback'].includes(request.category))return repairExplanation(request);
     if(request.category==='decline_advice') {
         const base=buildBaseResponse(message,request);

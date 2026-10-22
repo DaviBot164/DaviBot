@@ -56,7 +56,12 @@ pools.owner.ambiguous_praise=['I may be missing your tone... did that answer hel
 pools.owner.sarcasm_clear=['Oh... sarcasm. I understand. What did I miss?','Got it. Tell me which part needs another try.','I missed your tone there. What would you like me to clarify?'];
 pools.mae.ambiguous_praise=['I may be missing your tone, Mae. Did the answer help?','Praise or sarcasm, Mae? I would rather ask.','Did that answer your question, Mae? I am not sure how you meant that.'];
 pools.mae.sarcasm_clear=['Sarcasm, understood, Mae. What did I miss?','Got it, Mae. Which part should I clarify?','I understand your tone now, Mae. What should I try again?'];
+for(const tone of ['public','owner','mae'])pools[tone].reported_distance = tone==='owner'
+ ? ['I understand... you are telling me what someone else called me.','Those were their words, not yours. I understand.','You are reporting it, rather than saying it yourself. What did you want to discuss?']
+ : tone==='mae' ? ['You are reporting their words, Mae. I will not treat them as yours.','That was their wording, Mae. What did you want to discuss?','Understood, Mae. You are not the one calling me that.']
+ : ['You are reporting their words, not calling me that yourself.','Those are their words. What did you want to discuss?','I heard the distinction. I will not pin their wording on you.'];
 const explanations={
+ reported_distance:'You said someone else used the insult and denied using it yourself. I kept the speakers separate.',
  ambiguous_praise:'The wording could be sincere praise or sarcasm. I asked rather than assuming.',
  sarcasm_clear:'You explicitly said you were being sarcastic, so I acknowledged the correction.',
  target_correction:'You clarified that you were not talking about me.',

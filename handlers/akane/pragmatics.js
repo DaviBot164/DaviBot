@@ -9,10 +9,12 @@ const result=(category,scope)=>({category,scope});
 function report(text) {
  const clean=expandAbuse(text.replace(/["“”]/gu,'').replace(/\s+/gu,' ').trim());
  const source='(?:someone|somebody|my friend|my teammate|he|she|they)';
+ if(new RegExp(`^${source} (?:called|calls) you ${emphasis}(?:${negative}) (?:but )?i (?:did not|never did)$`,'u').test(clean))return result('reported_distance','reported');
  const disagreement='(?:but i (?:disagree|do not agree|do not think so))';
  const opinion='(?:what do you think(?: about that)?|do you agree|is that fair)';
  const attack=`(?:you (?:are )?${emphasis}(?:${negative})|you (?:suck|are useless)|(?:fuck|screw) you|shut (?:the fuck )?up)`;
  if(new RegExp(`^${source} (?:said|says|called|calls|told me) (?:that )?${attack} ${disagreement}$`,'u').test(clean))return result('reported_disagreement','reported');
+ if(new RegExp(`^${source} (?:told|tells) ${names} to (?:shut (?:the fuck )?up|fuck off|go away) ${opinion}$`,'u').test(clean))return result('reported_davi_quote','reported');
  const daviAttack=`(?:(?:fuck|screw) ${names}|${names} (?:is )?${emphasis}(?:${negative}))`;
  if(new RegExp(`^${source} (?:said|says|called|calls|told me) (?:that )?${daviAttack} (?:${disagreement}|${opinion})$`,'u').test(clean))return result('reported_davi_quote','reported');
  if(new RegExp(`^${source} (?:said|says|called|calls|told me) (?:that )?${attack} ${opinion}$`,'u').test(clean))return result('reported_insult_question','reported');

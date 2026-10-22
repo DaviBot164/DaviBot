@@ -5,7 +5,7 @@ const vocabulary = require('../../config/akaneSocialVocabulary');
 const escape = word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const HURTFUL=vocabulary.negative.map(escape).join('|');
 const POSITIVE=vocabulary.positive.map(escape).join('|');
-const QUALIFIERS='(?:(?:so|really|very|just|fucking|damn|bloody|absolutely|incredibly|extremely|quite|pretty|totally|such|an?|a) )*';
+const QUALIFIERS='(?:(?:so|really|very|just|fucking|damn|bloody|absolutely|incredibly|extremely|quite|pretty|totally|kind of|sort of|a bit|a little|super|such|an?|a) )*';
 function acknowledge(text,session){
  if(DECLINE.has(text))return 'no';
  if(!ACCEPT.has(text))return null;

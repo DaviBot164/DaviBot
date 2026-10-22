@@ -1,7 +1,7 @@
 const vocabulary = require('../../config/akaneSocialVocabulary');
 const descriptions = new Set([...vocabulary.positive, ...vocabulary.negative, 'rude', 'mean']);
 function bareDescription(text) {
-    return descriptions.has(text.replace(/^(?:not )?(?:(?:really|very|so|just|quite|extremely|absolutely|fucking) )*/u, ''));
+    return descriptions.has(text.replace(/^(?:not )?(?:(?:really|very|so|just|quite|extremely|absolutely|fucking|kind of|sort of|a bit|a little|super) )*/u, ''));
 }
 // Pure sentence-shape helpers. No Discord state or reply text belongs here.
 function prepareSentence(text) {
