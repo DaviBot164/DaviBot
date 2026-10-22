@@ -11,6 +11,7 @@ const pageOption=option=>option.setName('page').setDescription('Page number, 10 
 const data=new SlashCommandBuilder().setName('akane').setDescription('Teach and review Akane conversation phrases. Owner only.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator).setDMPermission(false)
     .addSubcommand(sub=>sub.setName('unknown').setDescription('Review unfamiliar phrases, grouped by normalized wording.').addIntegerOption(pageOption))
+    .addSubcommand(sub=>sub.setName('clearunknown').setDescription('Clear all unknown phrases in this server. Learned phrases stay saved.'))
     .addSubcommand(sub=>sub.setName('learned').setDescription('Review the phrases you have taught.').addIntegerOption(pageOption))
     .addSubcommand(sub=>sub.setName('teach').setDescription('Connect an unfamiliar phrase to an existing meaning.').addStringOption(phraseOption)
         .addStringOption(option=>option.setName('meaning').setDescription('The meaning this phrase expresses.').setRequired(true)
@@ -26,11 +27,17 @@ async function execute(interaction) {
     if(!runtime.enabled())return reply('Learning needs the existing PostgreSQL connection to be enabled.');
     try {
         const sub=interaction.options.getSubcommand();
+        if(sub==='clearunknown') {
+            const removed=await repo.clearUnknownPhrases(interaction.guildId);
+            return reply(removed
+                ? '🦊 Cleared '+removed+' unknown phrase'+(removed===1?'':'s')+' from this server. Learned phrases are still saved. New unknown messages can appear again.'
+                : '🦊 The unknown list is already empty. Learned phrases are still saved.');
+        }
         if(sub==='unknown'||sub==='learned') {
             const page=interaction.options.getInteger('page')??1;
             const rows=await (sub==='unknown'?repo.listUnknownPhrases:repo.listLearnedPhrases)(interaction.guildId,page);
             const lines=rows.map(row=>`• ${escapeMarkdown(row.phrase)} — ${sub==='unknown'?row.seen_count+' sightings':row.intent.replace(/_/g,' ')}`);
-            return reply(`🦊 ${sub==='unknown'?'Unknown':'Learned'} phrases • Page ${page}\n${lines.join('\n')||'No phrases on this page.'}\n\nTeach: /akane teach • Review: /akane learned • Remove: /akane forget\nOnly approved meanings are used. No automatic training or external AI API.`);
+            return reply(`🦊 ${sub==='unknown'?'Unknown':'Learned'} phrases • Page ${page}\n${lines.join('\n')||'No phrases on this page.'}\n\nTeach: /akane teach • Review: /akane learned • Remove learned: /akane forget • Clear unknown: /akane clearunknown\nOnly approved meanings are used. No automatic training or external AI API.`);
         }
         const raw=interaction.options.getString('phrase',true),phrase=learningPhrase(raw);
         if(!phrase)return reply('Use a short English phrase without the Akane prefix, links, mentions, long numbers or private tokens.');
@@ -48,7 +55,7 @@ async function execute(interaction) {
             return reply(removed?'Learned connection removed. Built-in understanding is unchanged.':'No learned connection was found for that phrase.');
         }
         if(sub==='dismiss')return reply(await repo.dismissUnknownPhrase(interaction.guildId,phrase)?'Unknown phrase removed from the list.':'That phrase is not in the unknown list.');
-        return reply('Choose unknown, learned, teach, forget or dismiss.');
+        return reply('Choose unknown, clearunknown, learned, teach, forget or dismiss.');
     } catch(error) {
         if(/^Learned phrase limit reached\./u.test(error.message))return reply(error.message);
         console.error('Akane learning command failed:',error.code??'database error');

@@ -80,4 +80,11 @@ async function dismissUnknownPhrase(guildId,phrase) {
     return withClient(async client=>(await run(client,
         'DELETE FROM akane_unknown_phrases WHERE guild_id=$1 AND phrase=$2 RETURNING phrase',[guildId,phrase])).rows.length>0);
 }
-module.exports={getLearnedPhrases,teachPhrase,forgetPhrase,recordUnknownPhrase,listUnknownPhrases,listLearnedPhrases,dismissUnknownPhrase};
+async function clearUnknownPhrases(guildId) {
+    return locked(guildId,async client=>{
+        const result=await run(client,'DELETE FROM akane_unknown_phrases WHERE guild_id=$1',[guildId]);
+        return result.rowCount;
+    });
+}
+
+module.exports={clearUnknownPhrases,getLearnedPhrases,teachPhrase,forgetPhrase,recordUnknownPhrase,listUnknownPhrases,listLearnedPhrases,dismissUnknownPhrase};
