@@ -66,6 +66,8 @@ const pragmatics = require('../../config/akanePragmatics');
 for(const [tone,categories]of Object.entries(pragmatics.pools)){
     for(const [category,pool]of Object.entries(categories))replies[`conversation_${tone}_${category}`]=pool;
 }
+const chatAbuse = require('../../config/akaneChatAbuse');
+replies.conversation_public_reaction_insult = [...new Set([...(replies.conversation_public_reaction_insult??[]),...chatAbuse.publicReplies])];
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',

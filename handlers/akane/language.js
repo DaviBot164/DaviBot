@@ -1,3 +1,4 @@
+const { analyzeChatAbuse, expandAbuse } = require('./chatAbuse');
 const { analyzePragmatics } = require('./pragmatics');
 const { surfaceEnglish, requestEnglish, recognizeUtterance } = require('./utterances');
 const { recognizeNegation } = require('./negation');
@@ -12,7 +13,7 @@ const OWNER_ID='1357721282061533311';
 const MAX_INPUT=2000;
 const socialVocabulary = require('../../config/akaneSocialVocabulary');
 function canonical(value) {
-    return surfaceEnglish(normalize(value).slice(0,MAX_INPUT)
+    return surfaceEnglish(expandAbuse(normalize(value).slice(0,MAX_INPUT))
         .replace(/\b(he+y+|hi+i+|helloo+|hii+)\b/gu,'hello')
         .replace(/\b(ple+a+se+|ple+ase+|plz+)\b/gu,'please')
         .replace(/\bso+r+y+\b/gu,'sorry')
@@ -106,6 +107,8 @@ function recognize(value) {
     const normalized=tidy(raw);
     const framed=analyzePragmatics(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
     if(framed)return framed.category;
+    const abuse=analyzeChatAbuse(prepareSentence(stripMarkers(normalized)),raw);
+    if(abuse)return abuse.category;
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
     const utterance=recognizeUtterance(prepareSentence(normalized),raw,OWNER_ID) ?? recognizeUtterance(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
