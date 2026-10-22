@@ -3,7 +3,7 @@ module.exports = Object.freeze({
     interval: 4,
     ownerFoxEvery: 3,
     warm: freeze(['hi','returning','morning','general','nice','thanks','laugh','joke','secret','reaction_affection','reaction_romance','chat_open','ambiguous_tease','pick']),
-    sharp: freeze(['roast','reaction_insult','reaction_dismissive','sarcastic_challenge']),
+    sharp: freeze(['roast','reaction_insult','reaction_dismissive','sarcastic_challenge','verbal_challenge','joke_challenge','transaction_bait']),
     pools: Object.freeze({
         owner: freeze(['🤭','🫣','🦊','🙈','☺️','😳','😌','🌸','✨','🤫','🌙']),
         mae: freeze(['😌','✨','🦊','😊','🌸','🌙','🤫','😄']),

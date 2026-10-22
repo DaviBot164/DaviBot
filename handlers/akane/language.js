@@ -1,3 +1,4 @@
+const {recognizeProvocation} = require('./provocation');
 const {recognizeExplanationRepair} = require('./explanationRepair');
 const {recognizeDayConversation} = require('./dayConversation');
 const {requestForm,moodBoundary} = require('./sentenceForms');
@@ -109,6 +110,7 @@ function recognize(value) {
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
     const normalized=tidy(raw);
+    const provocation=recognizeProvocation(prepareSentence(stripMarkers(normalized)),raw);if(provocation)return provocation;
     const repair=recognizeExplanationRepair(prepareSentence(stripMarkers(normalized)));if(repair)return repair;
     const day=recognizeDayConversation(prepareSentence(stripMarkers(normalized)));if(day)return day;
     const compound=moodBoundary(prepareSentence(stripMarkers(normalized)));if(compound)return compound.category;
