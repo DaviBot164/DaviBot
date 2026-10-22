@@ -15,6 +15,7 @@ for (const [category, values] of Object.entries({
 })) for (const value of values) controls.set(normalize(value), category);
 function contextualCategory(raw, session) {
     const text = prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim());
+    if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);

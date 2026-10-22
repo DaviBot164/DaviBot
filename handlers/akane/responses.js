@@ -216,6 +216,9 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='choice_preference') {
+        return {payload:{content:'A different kind of option, got it. Send me two new choices, like `akane pick iced tea / cold water`.'},category:'choice_preference',session:true,question:false,pending:{kind:'choices'}};
+    }
     if(request.category==='pick_other') {
         const options=request.conversation?.pickOptions;
         const selected=request.conversation?.pickSelected;
@@ -247,6 +250,9 @@ function buildUnstyledResponse(message, request) {
             study_breakdown:'Make the task smaller: one sentence or one exercise.',
             study_alternative:'Try explaining one idea aloud instead of reading it again.',
             pick:'I chose randomly from your options.',
+            answer_confusing:'I understood that my answer was unclear. Tell me which part needs explaining.',
+            answer_feedback:'You are criticizing the answer. Tell me what it missed so I can try again.',
+            target_correction:'You meant something else, rather than me.',
             topic_boundary:'You do not have to discuss that subject.'
         };
         const tone=toneFor(message.author.id);

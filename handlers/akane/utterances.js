@@ -34,6 +34,12 @@ function recognizeUtterance(text,raw=text,ownerId='1357721282061533311') {
  if(/^(?:wait (?:let me explain|i can explain)|let me explain|hold on (?:let me explain|a second))$/u.test(text))return 'explain_wait';
  if(/^(?:you (?:for real|serious)|are you (?:for real|serious)|for real)$/u.test(text))return 'confirm_request';
  if(/^what (?:are you|do you mean|were you) (?:on about|talking about)$/u.test(text))return 'explain';
+ // Request shapes, not arbitrary keyword hits: preserve subject and negation.
+ if(/^(?:(?:i )?(?:was not|am not) asking for|i (?:did not ask for|do not need|do not want)) (?:any |your |some )?(?:advice|tips|suggestions)(?: (?:though|by the way|right now))?$/u.test(text))return 'decline_advice';
+ if(/^(?:i )?(?:just |only )?(?:want|wanted|need|needed) (?:someone|somebody) to (?:talk|chat) (?:to|with)$/u.test(text))return 'chat_open';
+ if(/^(?:(?:can|could|would) you )?(?:please )?(?:say (?:it|that|this) (?:another|a different) way|rephrase (?:it|that|this)|put (?:it|that|this) (?:another|a different) way)(?: please)?$/u.test(text))return 'simplify';
+ if(/^(?:relax |hey )?(?:i (?:was|am) (?:just |only )?(?:joking|kidding)|just kidding|only joking)(?: (?:though|by the way))?$/u.test(text))return 'joke_repair';
+ if(/^(?:(?:i )?(?:was not|am not) talking about you )?i meant (?:your|the) (?:answer|reply|response)(?: not you)?$/u.test(text))return 'repair_answer';
  const name='(?:davi|daviti|david)';
  if(new RegExp(`^(?:fuck|screw)(?: off)? ${name}$|^i hate ${name}$|^${name} (?:sucks|is ${emphasis}(?:${bad}))$|^${name} you (?:suck|are ${emphasis}(?:${bad}))$|^tell ${name} to (?:fuck off|shut up)$`,'u').test(text))return 'reaction_davi_insult';
  if(new RegExp(`^${name} is (?:not |never )(?:an? )?(?:${bad})$`,'u').test(text))return 'reaction_davi';
