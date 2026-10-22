@@ -1,8 +1,10 @@
+const {wantsListening} = require('./sentenceForms');
 const vocabulary = require('../../config/akaneSocialVocabulary');
 const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const negative = vocabulary.negative.map(escape).join('|');
 // Bounded sentence forms: do not infer sentiment from a stray "not".
 function recognizeNegation(text) {
+ if(wantsListening(text))return 'decline_advice';
  if(/^(?:just )?(?:talk|chat) (?:to|with) me (?:and )?do not (?:give|offer) me (?:any )?advice$/u.test(text))return 'decline_advice';
  if(/^(?:neither|neither one|neither of them|none of those)(?: i (?:have )?changed my mind)?$/u.test(text))return 'choices_rejected';
  if (/^(?:please )?(?:do not|stop|quit) (?:be|being) (?:so |really |very )?(?:rude|mean|harsh)(?: (?:to|with) me)?(?: please)?$/u.test(text)) return 'tone_gentle';

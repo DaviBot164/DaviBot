@@ -85,12 +85,10 @@ function decorate(base, tone, request) {
     }
     if (control === 'topic_change') {
         const options = tone === 'owner'
-            ? ['A fresh subject, handsome. A compliment, a secret, or a little advice?', 'Of course, Davi. Shall we try a secret or a random choice?']
-            : tone === 'mae' ? ['A fresh subject, Mae. A compliment, a secret, or some advice?', 'Sure, Mae. We can try a secret or a random choice.']
-            : ['New subject. A compliment, a secret, or advice? Choose your trouble.', 'That scene has ended. Try a secret, a compliment, or a random choice.'];
-        const content = previous.mode?.remaining > 0
-            ? address('We can change the subject. Try a compliment, a secret, advice, or a random choice.')
-            : options[randomInt(options.length)];
+            ? ['Of course... we can leave that behind. What is on your mind?', 'A fresh subject, then. What would you like to talk about?']
+            : tone === 'mae' ? ['Sure, Mae. We can leave that topic behind. What is on your mind?', 'A new subject is fine, Mae. Go ahead.']
+            : ['Sure. We can leave that behind. What is on your mind?', 'New subject, then. What would you like to talk about?'];
+        const content = options[randomInt(options.length)];
         return {payload:{content},category:'general',session:true,question:false,pending:null};
     }
     if (control === 'repair') {

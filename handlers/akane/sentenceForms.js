@@ -11,4 +11,10 @@ function moodBoundary(text) {
  const category=/\b(?:tired|exhausted|drained)\b/u.test(match[1])?'tired':/\blonely\b/u.test(match[1])?'lonely':'feeling_bad';
  return {category,declineAdvice:true};
 }
-module.exports={requestForm,moodBoundary};
+function wantsListening(text) {
+ const listen='(?:(?:please )?(?:just |only )?(?:listen(?: to me)?|hear me out)|let me vent)';
+ const refusal='(?:(?:i )?(?:do not want|do not need|am not looking for)|not looking for|no) (?:any |your )?(?:advice|tips|suggestions|solutions)';
+ if(new RegExp(`^(?:${listen}|${refusal} (?:and |but )?${listen}|${listen} (?:and |but )?${refusal})$`,'u').test(text))return true;
+ return /^(?:i (?:just |only )?(?:need|want|wanted) to vent|(?:can|could) i (?:just )?vent|i (?:just )?need to get (?:this|that|it) off my chest|(?:i am )?not looking for (?:any )?solutions)$/u.test(text);
+}
+module.exports={requestForm,moodBoundary,wantsListening};

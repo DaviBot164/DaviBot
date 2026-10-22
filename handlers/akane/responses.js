@@ -223,6 +223,13 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='decline_advice') {
+        const base=buildBaseResponse(message,request);
+        return {...base,category:request.context??'decline_advice',pending:request.conversation?.pending??null};
+    }
+    if(request.conversation?.noAdviceRemaining>0 && /^study_/u.test(request.category)) {
+        return attachExpectation({payload:{content:'That part is difficult, understood. I can listen without turning this into another task.'},category:request.category,session:true,question:false},request);
+    }
     if(request.category==='normal_chat')return {...buildBaseResponse(message,request),modeChange:'serious'};
     if(request.declineAdvice && ['feeling_bad','tired','lonely'].includes(request.category)) {
         const meaning={feeling_bad:'You are having a low moment',tired:'You are feeling worn out',lonely:'You want a little company'}[request.category];
