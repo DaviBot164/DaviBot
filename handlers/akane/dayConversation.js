@@ -7,6 +7,7 @@ function recognizeDayConversation(text, session = null) {
  if(/^(?:but |and )?i (?:am(?: feeling)?|feel) (?:(?:a bit|a little|much|slightly) )?better(?: now|already)?$/u.test(text))return 'day_easing';
  if(/^my (?:boss|manager|teacher) (?:kept giving me|gave me|keeps giving me|assigned me) (?:extra|more|too much) (?:work|tasks|homework)$/u.test(text))return 'day_tasks';
  if(/^(?:but |and )?(?:talking about (?:it|this|that)|saying it out loud) (?:helped|helps)(?: (?:a little|a bit|somewhat))?$/u.test(text))return 'day_relief';
+ if (session && ['day_okay','day_ordinary','normal_chat'].includes(session.category) && /^(?:nothing (?:special|much|interesting|unusual) (?:really )?happened|not much happened|it was (?:just )?(?:an ordinary|a normal|a quiet) day)$/u.test(text)) return 'day_ordinary';
  if(!session || !dayTopics.has(session.category))return null;
  if(/^(?:and )?i (?:barely had time for (?:a )?break|did not (?:get|have|take) (?:a |any )?break|had no time (?:for a break|to rest))$/u.test(text))return 'day_no_break';
  if(/^(?:(?:that is|thats) why|which is why) i (?:am|feel) (?:so |really |very )?(?:tired|drained|exhausted)$/u.test(text))return 'day_explanation';

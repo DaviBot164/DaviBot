@@ -23,6 +23,8 @@ function parseRequest(message, now, learnedAliases = null) {
     const session = !message.reference || replying ? previous : null;
     const raw = trigger ? trigger[1].trim() : content;
     if(raw.length>2000)return null;
+    // Empty attachments, stickers and link-only replies are not text requests.
+    if (!trigger && (!raw || /^https?:\/\/\S+$/iu.test(raw))) return null;
     const text = normalize(raw);
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
     const details=englishOnly?recognizeDetails(raw):{};

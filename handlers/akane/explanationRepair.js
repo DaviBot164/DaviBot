@@ -1,5 +1,7 @@
 // Targeted response repairs; never pretend to explain an arbitrary unseen passage.
 function recognizeExplanationRepair(text) {
+ if (/^(?:(?:can|could|would) you (?:please )?)?(?:try (?:explaining|saying) (?:it|that|your answer) (?:differently|another way)|(?:explain|say) (?:it|that|your answer) (?:differently|in another way))(?: please)?$/u.test(text)) return 'explain_fresh';
+ if (/^(?:that|the|your) (?:answer|reply|response) (?:was|is) not (?:very |really )?(?:helpful|useful|clear) (?:but |and )?i am not (?:blaming|insulting|attacking) you$/u.test(text)) return 'answer_feedback';
  if(/^(?:(?:can|could|would) you (?:please )?)?explain (?:it|that|your answer) without (?:repeating yourself|repeating (?:it|that|the same thing)|saying the same thing)$/u.test(text))return 'explain_fresh';
  if(/^(?:(?:that is|thats|that's|it is|this is) (?:still |just )?(?:the )?same (?:answer|reply|explanation)|you (?:are )?(?:still )?repeating yourself)$/u.test(text))return 'repetition_feedback';
  if(/^(?:i am not insulting you|not an insult|i am not attacking you) (?:but |and )?i am (?:just )?asking for (?:a )?(?:better|clearer|simpler) (?:explanation|answer)$/u.test(text))return 'explain_fresh';

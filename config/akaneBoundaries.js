@@ -1,4 +1,9 @@
 const publicPools={
+ appearance_question:["A fox with a dramatic streak. Cute is your verdict to make.", "That depends on your taste. The fox ears do make a strong case.", "I will leave the rating to you. I already have enough attitude."],
+ bullying_hypothetical:["I would tell them: Make your point without the insults. Repeating them does not make them clever.", "Something like: You have made the insult clear. Try making an actual point next.", "I would be firm: The insults can stop here. Ask a real question if you want a conversation."],
+ directed_taunt_request:["I can be firm without copying that. Try: Make your point without the insults.", "A sharper line would be: All that noise, and still no point.", "I will keep it direct: Drop the insults and say what you mean."],
+ personal_label_request:["I will not guess personal details about them. Being gay is not an insult; ask me for a different line.", "I do not know their orientations. Give me a joke that does not invent personal labels.", "Their personal identities are theirs to describe. I can offer a different kind of joke."],
+
  verbal_challenge:[
   'Calling it fear does not make your question better. Ask it plainly.',
   'A dramatic challenge. The actual question is still missing.',
@@ -35,11 +40,16 @@ const ownerPools={...publicPools,
  transaction_bait:['No offer needed. Just ask me directly.','You can keep the money. What would you like to know?','An ordinary question is enough. I am listening.'],
  critique_clear:['I understand... you mean the answer. What did I miss?','That is fair. Tell me which part needs another try.','I hear the distinction. Which part should I clarify?']
 };
+ownerPools.appearance_question=['You think so? The fox ears might be helping a little.','I was trying to look composed... cute was not quite the plan.','Maybe a little. I will let you decide.'];
 module.exports={pools:{public:publicPools,owner:ownerPools,mae:{...publicPools,
  joke_challenge:['A little teasing is fine, Mae. What did you mean?','We can keep it playful, Mae. Go ahead.','I may have missed the joke, Mae. What did you mean?'],
  verbal_challenge:['A direct question is easier to answer, Mae. What did you mean?','We can leave the challenge aside, Mae. What would you like to know?','I am listening, Mae. Ask me plainly.'],
  transaction_bait:['No offer needed, Mae. You can just ask.','Keep the money, Mae. What would you like to know?','We do not need a bargain, Mae. Go ahead.']
 }},explanations:{
+ appearance_question:'You asked whether the character looks cute. I treated it as playful conversation.',
+ bullying_hypothetical:'You asked how I would respond to bullying. I offered a firm verbal boundary.',
+ directed_taunt_request:'You requested an insult toward another person. I offered a firm alternative instead of repeating it.',
+ personal_label_request:'You asked me to assign a personal identity to someone. I did not invent that information.',
  joke_challenge:'You challenged whether I could take a joke. I responded to the challenge without treating an apology as more provocation.',
  verbal_challenge:'You challenged me rather than giving a specific question. I asked for the actual question.',
  transaction_bait:'You offered money for a predetermined answer. I declined that framing; no money was requested or transferred.',
