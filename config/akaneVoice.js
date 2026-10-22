@@ -7,7 +7,7 @@ const publicPools={
  topic_offer:['Try music, a joke, or a little gaming talk. Pick whichever sounds interesting.','A character secret or a joke would make a start.','Music, gaming, or a joke. Which direction?'],
  expression_uncertain:['You do not need a perfect explanation. A few words are enough; we can take it slowly.','Hard to put into words? We can leave it unfinished for a moment.','That is all right. You do not have to turn the feeling into a polished sentence.'],
  joke_repair:['Understood. I will take that as a clarification. We can move on.','A joke, then. Keep the next one charming.','Got it. We can leave that misunderstanding behind.'],
- restart_chat:['A fresh start. Hello again. What would you like to talk about?','All right. We can start again. A joke, music, or a new subject?','Fresh start accepted. Go ahead.'],
+ restart_chat:['A fresh start. Hello again. What would you like to talk about?','All right. We can start again. What is on your mind?','Fresh start accepted. Go ahead.'],
  reaction_davi_insult:[
   'Leave Davi out of the cheap shots. If you have a point, make it.',
   'That was an insult, not an argument. Speak about Davi with a little respect.',

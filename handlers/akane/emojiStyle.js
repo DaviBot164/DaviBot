@@ -23,7 +23,8 @@ function applyEmojiStyle(response, tone, request) {
     const recent = (previous.emojiRecent ?? [previous.emojiLast]).filter(Boolean).slice(-2).map(key);
     // Advance through the chosen expression without changing state before sending.
     const ordered=pool.map((_,index)=>pool[((previous.emojiCount??0)+index)%pool.length]);
-    const selected=ordered.find(value=>!recent.includes(key(value)))
+    const fox=tone==='owner' && (previous.emojiCount??0)%config.ownerFoxEvery===0 && pool.includes('🦊') && !recent.includes('🦊');
+    const selected=fox?'🦊':ordered.find(value=>!recent.includes(key(value)))
         ?? ordered.find(value=>key(value)!==key(previous.emojiLast??'')) ?? ordered[0];
     return {...plain, payload: {...response.payload, content: `${content} ${selected}`}, emojiTurns: 0, emojiLast: selected, emojiAdded: true};
 }

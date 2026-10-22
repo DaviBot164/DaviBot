@@ -1,5 +1,7 @@
 const pools={
  public:{
+  ambiguous_praise:['Was that praise or a raised eyebrow? Did the answer help?','I might be missing your tone. Did I answer the question?','That could go either way. Did the reply actually help?'],
+  sarcasm_clear:['Sarcasm, understood. What did the answer miss?','Got it. You were not praising the answer. What should I clarify?','I hear the sarcasm now. Which part should I try again?'],
   target_correction:['Understood. You were not talking about me.','Got it. I will not make myself the subject of that sentence.','That clears up who you meant. We can move on.'],
   explain_wait:['Go ahead. I am listening.','All right. Take your time and explain.','You have the floor. What did you mean?'],
   answer_confusing:['Unclear, rather than stupid. Understood. I can try saying it more simply.','You mean the explanation was confusing. I can rephrase it.','Fair distinction. I can try a clearer version of the answer.'],
@@ -50,10 +52,16 @@ const pools={
   reported_insult_question:['I hear that it was someone else’s comment, Mae. Which answer did they mean?','We can discuss the answer, Mae. I will not treat their remark as yours.','A reported opinion, Mae. What part should I explain?']
  }
 };
+pools.owner.ambiguous_praise=['I may be missing your tone... did that answer help?','Was that a little sarcasm? Tell me if I missed your question.','I am not quite sure how you meant that. Did the answer help?'];
+pools.owner.sarcasm_clear=['Oh... sarcasm. I understand. What did I miss?','Got it. Tell me which part needs another try.','I missed your tone there. What would you like me to clarify?'];
+pools.mae.ambiguous_praise=['I may be missing your tone, Mae. Did the answer help?','Praise or sarcasm, Mae? I would rather ask.','Did that answer your question, Mae? I am not sure how you meant that.'];
+pools.mae.sarcasm_clear=['Sarcasm, understood, Mae. What did I miss?','Got it, Mae. Which part should I clarify?','I understand your tone now, Mae. What should I try again?'];
 const explanations={
+ ambiguous_praise:'The wording could be sincere praise or sarcasm. I asked rather than assuming.',
+ sarcasm_clear:'You explicitly said you were being sarcastic, so I acknowledged the correction.',
  target_correction:'You clarified that you were not talking about me.',
  explain_wait:'You asked for a moment to explain. I left room for the correction.',
- answer_confusing:'You denied calling the reply stupid and said it was confusing. I acknowledged the clarity problem.',
+ answer_confusing:'You said the answer was unclear or made no sense. I acknowledged the clarity problem.',
  ambiguous_tease:'The wording could be praise or teasing. I answered lightly instead of assuming an insult.',
  answer_feedback:'I understood the criticism as being about the answer, rather than treating it as a personal insult.',
  intent_clear:'You clarified that you did not intend to sound rude.',

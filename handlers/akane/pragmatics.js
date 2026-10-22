@@ -20,6 +20,7 @@ function report(text) {
 }
 
 function correction(text) {
+ if(new RegExp(`^(?:i am )?not (?:saying|calling) you (?:are )?${emphasis}(?:${negative}) (?:but |and )?(?:just )?(?:explain (?:it|that)(?: properly|clearly)?|make (?:it|that) clearer)$`,'u').test(text))return result('simplify','answer');
  const denial=`you (?:are )?not ${emphasis}(?:${negative})`;
  const criticism='(?:your|that|the) (?:answer|reply|response) (?:(?:just |really )?(?:made|makes) no sense|(?:was|is) (?:(?:just|really|so) )?(?:confusing|unclear|hard to follow))';
  if(new RegExp(`^(?:${denial} (?:but |and )?${criticism}|${criticism} (?:but |and )?${denial})$`,'u').test(text))return result('answer_confusing','answer');
@@ -41,6 +42,9 @@ function moodFragment(text) {
 }
 
 function evaluation(text) {
+ if(/^(?:your|that|the) (?:answer|reply|response) (?:made|makes) no sense$/u.test(text))return result('answer_confusing','answer');
+ if(/^(?:wow |oh )?(?:so |very )?(?:helpful|useful|brilliant) (?:totally |really )?answered my (?:question|request)$/u.test(text))return result('ambiguous_praise','ambiguous');
+ if(/^(?:i (?:was|am) being sarcastic|i (?:was|am) sarcastic|that was sarcasm)(?: (?:by the way|though))?$/u.test(text))return result('sarcasm_clear','correction');
  if(/^(?:(?:wow|oh great|oh good) )?(?:another |yet another )?(?:nice|great|brilliant|amazing|wonderful|genius) (?:answer|reply|response) (?:did|do) you even (?:read|understand)(?: (?:it|that|(?:my|the) (?:question|message|request)))?$/u.test(text))return result('answer_feedback','answer');
 
  if(/^(?:nice|great|brilliant|lovely) (?:answer|reply|response) (?:did|do) you even (?:read(?: (?:it|that|the question))?|look at (?:it|the question))$/u.test(text))return result('answer_feedback','answer');

@@ -1,5 +1,7 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ if(/^(?:(?:can|could|would) you (?:please )?)?(?:make (?:it|that|your answer) (?:shorter|simpler)|shorten (?:it|that|your answer)|keep it short)(?: please)?$/u.test(text))return 'simplify';
+ if(/^(?:(?:yes|yeah|okay|right) )?(?:that is|thats|that's|that sounds|it is) (?:(?:much|a lot) )?(?:clearer|easier to understand)$/u.test(text))return 'feedback_understood';
  if(/^(?:(?:can|could|would) you (?:please )?)?(?:pick|choose)(?: (?:again|another|once more)| a different one)(?: please)?$/u.test(text))return 'again';
  if(/^(?:can|could|would) you (?:please )?help me (?:study|learn|with (?:my )?(?:studies|school work|homework))$/u.test(text))return 'study_start';
  if(/^(?:i (?:do not|do not really) understand (?:your|that|the) (?:answer|reply|response)|i am not sure what you mean|what do you mean by (?:that|this))$/u.test(text))return 'explain';
@@ -12,6 +14,7 @@ function moodBoundary(text) {
  return {category,declineAdvice:true};
 }
 function wantsListening(text) {
+ text=text.replace(/ (?:for (?:a |one )?(?:minute|second|moment|sec)|a sec)$/u,'');
  const listen='(?:(?:please )?(?:just |only )?(?:listen(?: to me)?|hear me out)|let me vent)';
  const refusal='(?:(?:i )?(?:do not want|do not need|am not looking for)|not looking for|no) (?:any |your )?(?:advice|tips|suggestions|solutions)';
  if(new RegExp(`^(?:${listen}|${refusal} (?:and |but )?${listen}|${listen} (?:and |but )?${refusal})$`,'u').test(text))return true;

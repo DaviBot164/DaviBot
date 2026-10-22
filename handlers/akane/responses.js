@@ -269,7 +269,7 @@ function buildUnstyledResponse(message, request) {
             study_breakdown:'Make the task smaller: one sentence or one exercise.',
             study_alternative:'Try explaining one idea aloud instead of reading it again.',
             pick:'I chose randomly from your options.',
-            answer_confusing:'My answer was unclear. Which part should I explain again?',
+            answer_confusing:'Which part was unclear?',
             answer_feedback:'I meant: tell me which part was wrong, and I will try again.',
             target_correction:'You meant something else, rather than me.',
             topic_boundary:'You do not have to discuss that subject.'
