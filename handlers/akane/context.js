@@ -50,6 +50,9 @@ function memoryAfter(previous, request, response) {
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     const restarted=request.category==='restart_chat';
     return {
+        emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
+        emojiLast: response.emojiLast ?? old.emojiLast ?? null,
+        emojiCount: (old.emojiCount ?? 0) + (response.emojiAdded ? 1 : 0),
         noPetNames: request.category==='nickname_boundary' || Boolean(old.noPetNames),
         ownerTurns: (old.ownerTurns??0)+(response.ownerStyle?1:0),
         ownerAddressUsed: Boolean(response.ownerAddressUsed),

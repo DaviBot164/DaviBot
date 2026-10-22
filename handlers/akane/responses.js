@@ -1,3 +1,4 @@
+const { applyEmojiStyle } = require('./emojiStyle');
 const { applySpeechStyle } = require('./speechStyle');
 const { attachExpectation } = require('./followups');
 const { escapeMarkdown } = require('discord.js');
@@ -323,6 +324,6 @@ function buildUnstyledResponse(message, request) {
     return attachExpectation(final,request);
 }
 function buildResponse(message,request) {
-    return applySpeechStyle(buildUnstyledResponse(message,request),toneFor(message.author.id),request);
+    return applyEmojiStyle(applySpeechStyle(buildUnstyledResponse(message,request),toneFor(message.author.id),request),toneFor(message.author.id),request);
 }
 module.exports = { buildResponse, toneFor };
