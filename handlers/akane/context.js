@@ -47,12 +47,16 @@ function memoryAfter(previous, request, response) {
     const mode = response.modeChange === 'normal' ? null : response.modeChange
         ? { name: response.modeChange, remaining: 4 }
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
+    const restarted=request.category==='restart_chat';
     return {
-        mode,
-        pickOptions: response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
-        noAdviceRemaining: request.category === 'decline_advice' ? 4 : request.category === 'tip' ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
-        pending: response.pending ?? null,
-        history: [...(old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
+        noPetNames: request.category==='nickname_boundary' || Boolean(old.noPetNames),
+        ownerTurns: (old.ownerTurns??0)+(response.ownerStyle?1:0),
+        ownerAddressUsed: Boolean(response.ownerAddressUsed),
+        mode: restarted?null:mode,
+        pickOptions: !restarted && response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
+        noAdviceRemaining: restarted ? 0 : request.category === 'decline_advice' ? 4 : request.category === 'tip' ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
+        pending: restarted ? null : response.pending ?? null,
+        history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };
 }
 function decorate(base, tone, request) {
@@ -126,6 +130,7 @@ function decorate(base, tone, request) {
             general: 'You have my attention. What would you like to talk about?',
             hi: 'Hello. How are you doing?',
             roast: 'I will skip the sharp roast while the gentler tone is active. Try a compliment or a little advice.',
+            reaction_davi_insult: 'Please keep criticism of Davi respectful. Tell me the issue without the insults.',
             reaction_insult: 'We can reset this conversation. Tell me what bothered you.',
             reaction_dismissive: 'We can pause. Use `akane stop` to end the conversation.',
             reaction_anger: 'The dramatic tone is fictional. I can keep this calm.',

@@ -1,3 +1,4 @@
+const { applySpeechStyle } = require('./speechStyle');
 const { attachExpectation } = require('./followups');
 const { escapeMarkdown } = require('discord.js');
 const { randomInt } = require('node:crypto');
@@ -56,6 +57,11 @@ for (const [tone,categories] of Object.entries(social.pools)) {
     }
 }
 
+const voice = require('../../config/akaneVoice');
+for (const [tone,categories] of Object.entries(voice.pools)) {
+    for (const [category,pool] of Object.entries(categories)) replies[`conversation_${tone}_${category}`]=pool;
+}
+for(const category of ['reaction_possessive','reaction_ownerFlirt']) replies[`conversation_owner_${category}`]=voice.pools.owner.reaction_romance;
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',
@@ -204,7 +210,10 @@ function buildBaseResponse(message, request) {
 }
 
 const { decorate } = require('./context');
-function buildResponse(message, request) {
+function buildUnstyledResponse(message, request) {
+    if(request.category==='feedback_better' && /^study_/u.test(request.context??'')) {
+        return {payload:{content:'That method sounds more useful, then. We can continue with it.'},category:'feedback_better',session:true,question:false,pending:request.conversation?.pending??null};
+    }
     if(request.category==='repair_answer') {
         const tone=toneFor(message.author.id);
         return {payload:{content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+'you meant my answer, not me. Understood. I can rephrase the answer.'},category:request.context??'general',session:true,question:false,pending:null};
@@ -223,14 +232,14 @@ function buildResponse(message, request) {
         return {payload:{content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+content},category:request.context??'clarify',session:true,question:false,pending:request.conversation?.pending??null};
     }
     if(request.category==='explain_gentle') {
-        const explained=buildResponse(message,{...request,category:'explain',followup:Boolean(request.context)});
+        const explained=buildUnstyledResponse(message,{...request,category:'explain',followup:Boolean(request.context)});
         return {...explained,modeChange:'gentle'};
     }
     if (request.category === 'reaction_question') request = {...request,category:'clarify'};
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
-    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context] || practical.explanations[request.context])) {
-        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,...practical.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
+    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context] || practical.explanations[request.context] || voice.explanations[request.context])) {
+        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,...practical.explanations,...voice.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
         const tone=toneFor(message.author.id);
         const content=(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+(meanings[request.context] ?? 'I did not understand the exact request. Please give me the main point in a short sentence.');
         return {payload:{content},category:request.context,question:false,session:true,pending:request.conversation?.pending??null};
@@ -280,6 +289,10 @@ function buildResponse(message, request) {
         const content=gentle[final.category] ?? (kept || 'We can just talk. What is on your mind?');
         final.payload={content:(tone==='owner'?'Handsome, ':tone==='mae'?'Mae, ':'')+content};
     }
+    if(request.category==='tip_offer')final.pending={kind:'offered_tip'};
     return attachExpectation(final,request);
+}
+function buildResponse(message,request) {
+    return applySpeechStyle(buildUnstyledResponse(message,request),toneFor(message.author.id),request);
 }
 module.exports = { buildResponse, toneFor };

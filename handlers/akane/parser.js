@@ -22,7 +22,8 @@ function parseRequest(message, now) {
     const raw = trigger ? trigger[1].trim() : content;
     const text = normalize(raw);
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
-    const category = englishOnly ? (contextualCategory(raw, session) ?? recognize(raw)) : null;
+    let category = englishOnly ? (contextualCategory(raw, session) ?? recognize(raw)) : null;
+    if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
     const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw) : null) ?? extractChoice(raw)) : null;
 
     if (!trigger && !replying) {

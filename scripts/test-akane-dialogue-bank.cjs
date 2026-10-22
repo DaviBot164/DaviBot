@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),path=require('node:path'),Module=require('node:module');
 const root=process.argv[2]||path.resolve(__dirname,'..');
 const bank=require(path.join(root,'config/akaneDialogueExpansion'));
+const voice=require(path.join(root,'config/akaneVoice'));
 let count=0;const check=(truth,label)=>{assert.ok(truth,label);count++;};
 let total=0;
 for(const [tone,categories]of Object.entries(bank)){
@@ -29,7 +30,8 @@ for(const [tone,id]of [['public','member'],['owner',settings.OWNER_ID],['mae',se
  const message={guildId:'g',channelId:'c',author:{id}};
  for(const [category,pool]of Object.entries(bank[tone])){
   const key=`conversation_${tone}_${category}`;
-  check(pool.every(line=>replies[key].includes(line)),'Every added line registered');
+  const active=voice.pools[tone]?.[category]??pool;
+  check(active.every(line=>replies[key].includes(line)),'The active personality pool is registered');
   const next=response.buildResponse(message,{category});
   check(typeof next.payload.content==='string'&&next.payload.content.length<2000,'Working response');
   const drawState={bags:new Map()};

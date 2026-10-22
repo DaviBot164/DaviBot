@@ -1,3 +1,4 @@
+const { surfaceEnglish, requestEnglish, recognizeUtterance } = require('./utterances');
 const { recognizeNegation } = require('./negation');
 const { recognizePractical } = require('../../config/akanePractical');
 const { recognizeSocial, acknowledge } = require('./socialIntent');
@@ -10,11 +11,11 @@ const OWNER_ID='1357721282061533311';
 const MAX_INPUT=2000;
 const socialVocabulary = require('../../config/akaneSocialVocabulary');
 function canonical(value) {
-    return normalize(value).slice(0,MAX_INPUT)
+    return surfaceEnglish(normalize(value).slice(0,MAX_INPUT)
         .replace(/\b(he+y+|hi+i+|helloo+|hii+)\b/gu,'hello')
         .replace(/\b(ple+a+se+|ple+ase+|plz+)\b/gu,'please')
         .replace(/\bso+r+y+\b/gu,'sorry')
-        .replace(/[a-z0-9]+(?:'[a-z]+)?/gu,word=>english.slang[word]??word)
+        .replace(/[a-z0-9]+(?:'[a-z]+)?/gu,word=>english.slang[word]??word))
         .replace(new RegExp('\\bur\\s+(?=(?:(?:so|really|very|pretty|kind of|not|a|an|just|actually|incredibly|quite) )*(?:'+[...socialVocabulary.positive,...socialVocabulary.negative,'rude','mean','bot','robot'].join('|')+')\\b)','gu'),'you are ')
         .replace(/\bur\b/gu,'your')
         .replace(/\bso{3,}\b/gu,'so')
@@ -103,13 +104,15 @@ function recognize(value) {
     const normalized=tidy(raw);
     const acknowledgement=acknowledge(prepareSentence(normalized),null);
     if(acknowledgement) return acknowledgement;
+    const utterance=recognizeUtterance(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
+    if(utterance)return utterance;
     const negativeIntent=recognizeNegation(prepareSentence(stripMarkers(normalized)));
     if(negativeIntent) return negativeIntent;
     const practical=recognizePractical(prepareSentence(normalized)) ?? recognizePractical(prepareSentence(stripMarkers(normalized)));
     if(practical) return practical;
     const directSocial=recognizeSocial(prepareSentence(normalized),raw);
     if(directSocial) return directSocial;
-    const text=prepareSentence(stripMarkers(normalized));
+    const text=requestEnglish(prepareSentence(stripMarkers(normalized)));
     const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
@@ -130,7 +133,7 @@ function recognize(value) {
     const mixed=resolveMixedMood(text,emotion);if(mixed)return mixed;
     if(/^(?:i (?:had|have) (?:a |such a )?(?:really |very )?(?:bad|rough|terrible|awful) day|my day (?:was|is) (?:bad|rough|terrible|awful))$/u.test(text))return 'feeling_bad';
     if(/^(?:i (?:had|have) (?:a )?(?:great|good|lovely|amazing) day|my day (?:was|is) (?:great|good|lovely|amazing))$/u.test(text))return 'feeling_good';
-    const request=text.replace(/^(?:(?:can|could|would) you |i (?:want|need) you to |i would like you to |please )/u,'');
+    const request=requestEnglish(text).replace(/^(?:(?:can|could|would) you (?:please )?|i (?:want|need) you to |i would like you to |please )/u,'');
     const requests=[
         ['nice',/^(?:give me (?:a |another )?compliment|compliment me|say something nice(?: to me)?|tell me something nice)$/u],
         ['roast',/^(?:roast me|tease me|give me (?:a |another )?roast|make fun of me)$/u],
