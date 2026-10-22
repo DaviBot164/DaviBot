@@ -11,7 +11,7 @@ function applyEmojiStyle(response, tone, request) {
     const plain = {...response, emojiTurns: turns, emojiLast: previous.emojiLast ?? null};
     const mode = response.modeChange ?? (previous.mode?.remaining > 0 ? previous.mode.name : null);
     if (mode && mode !== 'normal') return plain;
-    if (response.payload.embeds?.length || response.payload.files?.length || content.length > 1900 || previous.noAdviceRemaining > 0) return plain;
+    if (response.payload.embeds?.length || response.payload.files?.length || content.length > 1900 || previous.noAdviceRemaining > 0 || request.declineAdvice) return plain;
     // Both meanings must be light: an explanation of sadness must stay plain too.
     const allowed = category => config.warm.includes(category) || (tone === 'public' && config.sharp.includes(category));
     if (turns < config.interval || !allowed(request.category) || !allowed(response.category)) return plain;

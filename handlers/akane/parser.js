@@ -2,7 +2,7 @@ const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
 
-const { recognize, extractChoice, correctedChoice, canonical } = require('./language');
+const { recognize, recognizeDetails, extractChoice, correctedChoice, canonical } = require('./language');
 const { contextualCategory } = require('./context');
 const { reactionClauses, prepareSentence } = require('./sentenceParser');
 const { recognizeSocial } = require('./socialIntent');
@@ -20,9 +20,11 @@ function parseRequest(message, now) {
     // A reply to someone else's message must not borrow Akane's context.
     const session = !message.reference || replying ? previous : null;
     const raw = trigger ? trigger[1].trim() : content;
+    if(raw.length>2000)return null;
     const text = normalize(raw);
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
-    let category = englishOnly ? (contextualCategory(raw, session) ?? recognize(raw)) : null;
+    const details=englishOnly?recognizeDetails(raw):{};
+    let category = englishOnly ? (contextualCategory(raw, session) ?? details.category) : null;
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
     const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw) : null) ?? extractChoice(raw)) : null;
 
@@ -39,6 +41,7 @@ function parseRequest(message, now) {
     const context = session?.category ?? null;
     const followup = {
         context,
+        declineAdvice: Boolean(details.declineAdvice),
         mixedSocial,
         followup: Boolean(context),
         question: session?.question ?? false,

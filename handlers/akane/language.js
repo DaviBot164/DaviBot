@@ -1,3 +1,4 @@
+const {requestForm,moodBoundary} = require('./sentenceForms');
 const { analyzeChatAbuse, expandAbuse } = require('./chatAbuse');
 const { analyzePragmatics } = require('./pragmatics');
 const { surfaceEnglish, requestEnglish, recognizeUtterance } = require('./utterances');
@@ -92,6 +93,7 @@ function reaction(value) {
     return best;
 }
 function extractChoice(value) {
+    if(requestForm(prepareSentence(stripMarkers(tidy(value))))==='again')return null;
     const text=String(value??'').normalize('NFKC').trim();
     if (/^(?:choose|pick)(?: (?:again|another|once more)| a different one)$/iu.test(text)) return null;
     const undecided=prepareSentence(stripMarkers(tidy(text))).match(/^i (?:do not know|cannot decide|am not sure) (?:whether to|if i should|whether i should) (.{1,100}?) or (.{1,100})$/u);
@@ -105,6 +107,8 @@ function recognize(value) {
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
     const normalized=tidy(raw);
+    const compound=moodBoundary(prepareSentence(stripMarkers(normalized)));if(compound)return compound.category;
+    const form=requestForm(prepareSentence(stripMarkers(normalized)));if(form)return form;
     const framed=analyzePragmatics(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
     if(framed)return framed.category;
     const abuse=analyzeChatAbuse(prepareSentence(stripMarkers(normalized)),raw);
@@ -165,4 +169,9 @@ function correctedChoice(value) {
  if(!match || match.slice(1).some(part=>/\b(?:or|and|but)\b/u.test(part)))return null;
  return match.slice(1).join(' / ');
 }
-module.exports={canonical,recognize,extractChoice,correctedChoice,detectEnglishReaction:reaction};
+function recognizeDetails(value) {
+ const text=prepareSentence(stripMarkers(tidy(value)));
+ const compound=String(value??'').length<=MAX_INPUT?moodBoundary(text):null;
+ return compound??{category:recognize(value)};
+}
+module.exports={canonical,recognize,recognizeDetails,extractChoice,correctedChoice,detectEnglishReaction:reaction};

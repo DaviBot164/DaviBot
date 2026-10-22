@@ -219,6 +219,10 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.declineAdvice && ['feeling_bad','tired','lonely'].includes(request.category)) {
+        const meaning={feeling_bad:'You are having a low moment',tired:'You are feeling worn out',lonely:'You want a little company'}[request.category];
+        return {payload:{content:meaning+'. No advice; I am listening.'},category:request.category,session:true,question:false};
+    }
     if(request.category==='choice_preference') {
         return {payload:{content:'A different kind of option, got it. Send me two new choices, like `akane pick iced tea / cold water`.'},category:'choice_preference',session:true,question:false,pending:{kind:'choices'}};
     }
@@ -306,7 +310,7 @@ function buildUnstyledResponse(message, request) {
     const final = decorate(base, toneFor(message.author.id), request);
     if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};
     if (['hi','returning','morning'].includes(final.category) && /how (?:are you(?: doing)?|is your day(?: starting| going)?)\?/iu.test(final.payload.content ?? '')) final.pending = {kind:'mood'};
-    if ((request.category === 'decline_advice' || request.conversation?.noAdviceRemaining > 0) && request.category !== 'tip' && /\badvice\b/iu.test(final.payload.content ?? '') && request.category !== 'decline_advice') {
+    if ((request.category === 'decline_advice' || request.declineAdvice || request.conversation?.noAdviceRemaining > 0) && request.category !== 'tip' && /\badvice\b/iu.test(final.payload.content ?? '') && request.category !== 'decline_advice') {
         const tone=toneFor(message.author.id);
         const gentle = {
             feeling_bad:'That sounds like a low moment. We can just talk, without trying to fix it.',

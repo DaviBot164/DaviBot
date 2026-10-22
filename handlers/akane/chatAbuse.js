@@ -9,7 +9,7 @@ function expandAbuse(value) {
   const match=word.match(/^([("“]*)(.*?)([,.!?;:"”)]+)$/u);
   return match && tokens[match[2]] ? match[1]+tokens[match[2]]+match[3] : word;
  })
-  .replace(/\b(?:you r|ur) (?=(?:(?:a|an|so|such|fucking|really|very|total|complete) )*(?:bitch|cunt|motherfucker|asshole|bastard|idiot|loser|dumb|stupid|useless)\b)/gu,'you are ')
+  .replace(/\b(?:you r|ur) (?=(?:(?:not|never|a|an|so|such|fucking|really|very|total|complete) )*(?:bitch|cunt|motherfucker|asshole|bastard|idiot|loser|dumb|stupid|useless)\b)/gu,'you are ')
   .replace(/\b(?:stfu|s t f u)\b/gu,'shut the fuck up')
   .replace(/\bgtfo\b/gu,'get the fuck out')
   .replace(/\b(?:fu|f u)\b/gu,'fuck you')
@@ -25,6 +25,8 @@ function analyzeChatAbuse(value,raw=value) {
  if(/^(?:what the fuck|wtf|what the hell|wth|ffs|for fucks sake|for fuck sake|damn|shit|fuck)$/u.test(text))return {category:'frustration',severity:'none'};
  if(new RegExp(`^(?:(?:fuck|screw) (?:davi|daviti|david)|(?:davi|daviti|david) (?:is )?${emphasis}${negative})$`,'u').test(text))return {category:'reaction_davi_insult',severity:'severe'};
  if(/^(?:shut (?:the fuck )?up|get the fuck out)$/u.test(text))return {category:'reaction_dismissive',severity:'severe'};
+ const question=new RegExp(`^(?:are you|why are you|why are you being) ${emphasis}${negative}(?: or (?:just )?(?:pretending|what))?$`,'u');
+ if(question.test(text))return {category:'reaction_insult',severity:new RegExp(strong,'u').test(text)?'severe':'mild'};
  const direct=new RegExp(`^(?:you (?:are )?${emphasis}${negative}(?: (?:as fuck|af|as hell))?|${negative}(?: you)?|(?:fuck|screw) you(?: too)?|you (?:suck|suck ass)|shut (?:the fuck )?up(?: you ${emphasis}${negative})?|get the fuck out|kys|kill yourself)$`,'u');
  if(direct.test(text))return {category:'reaction_insult',severity:new RegExp(strong+'|fuck|kys|kill yourself','u').test(text)?'severe':'mild'};
  return null;

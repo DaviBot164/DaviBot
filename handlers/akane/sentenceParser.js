@@ -5,6 +5,10 @@ function bareDescription(text) {
 }
 // Pure sentence-shape helpers. No Discord state or reply text belongs here.
 function prepareSentence(text) {
+    // Remove decorative edge emoji only; leave quoted text and inner words intact.
+    const pictograph='[\\p{Extended_Pictographic}\\p{Regional_Indicator}](?:[\\uFE0F\\u200D\\p{Emoji_Modifier}]|[\\p{Extended_Pictographic}\\p{Regional_Indicator}])*';
+    text=text.replace(new RegExp(`^(?:${pictograph}\\s*)+|(?:\\s*${pictograph})+$`,'gu'),'').trim();
+    text=text.replace(/(?:\s+(?:right now|at the moment|though|by the way|lol|lmao|haha|xd))+$/u,'').trim();
     const withoutMarkers = text.replace(/\b(?:not going to lie|to be honest|in my opinion|honestly|actually)\b/gu,' ').replace(/\s+/gu,' ').trim();
     let result=withoutMarkers || text;
     result=result.replace(/^(?:(?:can|could|would) you (?:please )?(?:tell me|explain to me) |(?:please )?tell me |i (?:want|wanted) to (?:know|ask) )(?=(?:where|what|how|whether|if)\b)/u,'');
