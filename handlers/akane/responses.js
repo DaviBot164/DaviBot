@@ -250,8 +250,8 @@ function buildUnstyledResponse(message, request) {
         return attachExpectation({payload:{content:'That part is difficult, understood. I can listen without turning this into another task.'},category:request.category,session:true,question:false},request);
     }
     if(request.category==='normal_chat')return {...buildBaseResponse(message,request),modeChange:'serious'};
-    if(request.declineAdvice && ['feeling_bad','tired','lonely'].includes(request.category)) {
-        const meaning={feeling_bad:'You are having a low moment',tired:'You are feeling worn out',lonely:'You want a little company'}[request.category];
+    if(request.declineAdvice && ['feeling_bad','tired','mental_tired','lonely','bored','feeling_good','feeling_neutral'].includes(request.category)) {
+        const meaning={feeling_bad:'You are having a low moment',tired:'You are feeling worn out',lonely:'You want a little company',mental_tired:'You are mentally worn out',bored:'You are feeling bored',feeling_good:'You are feeling good',feeling_neutral:'You are feeling okay'}[request.category];
         return {payload:{content:meaning+'. No advice; I am listening.'},category:request.category,session:true,question:false};
     }
     if(request.category==='choice_preference') {

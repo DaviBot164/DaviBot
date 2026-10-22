@@ -4,7 +4,7 @@ const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
 
-const { recognize, recognizeDetails, extractChoice, correctedChoice, canonical } = require('./language');
+const { recognize, recognizeDetails, extractChoice, correctedChoice, canonical, prepareInput } = require('./language');
 const { contextualCategory } = require('./context');
 const { reactionClauses, prepareSentence } = require('./sentenceParser');
 const { recognizeSocial } = require('./socialIntent');
@@ -27,8 +27,9 @@ function parseRequest(message, now, learnedAliases = null) {
     if (!trigger && (!raw || /^https?:\/\/\S+$/iu.test(raw))) return null;
     const text = normalize(raw);
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
-    const details=englishOnly?recognizeDetails(raw):{};
-    let category = englishOnly ? (contextualCategory(raw, session) ?? details.category) : null;
+    const frame=englishOnly?prepareInput(raw):null;
+    const details=englishOnly?recognizeDetails(raw,frame):{};
+    let category = englishOnly ? (contextualCategory(raw, session, frame) ?? details.category) : null;
     if(!category && englishOnly && learnedAliases) {
         const learned=learnedAliases.get(learningPhrase(raw));
         if(Object.values(learningConfig.intents).includes(learned))category=learned;
@@ -43,7 +44,7 @@ function parseRequest(message, now, learnedAliases = null) {
         ) return null;
     }
 
-    const parts = reactionClauses(prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim()));
+    const parts = reactionClauses(frame?.plainSentence??'');
     const meanings = parts.length > 1 && parts.length <= 3 ? parts.map(part => recognizeSocial(part,raw)) : [];
     const mixedSocial = meanings.includes('reaction_affection') && meanings.includes('reaction_insult');
     const context = session?.category ?? null;

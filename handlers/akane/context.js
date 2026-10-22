@@ -3,7 +3,7 @@ const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
 // Bounded, temporary topics and choice labels; no full-message transcript is retained.
 const { normalize } = require('./aliases');
-const { canonical } = require('./language');
+const { canonical, prepareInput } = require('./language');
 const { prepareSentence } = require('./sentenceParser');
 const { randomInt } = require('node:crypto');
 const controls = new Map();
@@ -14,8 +14,10 @@ for (const [category, values] of Object.entries({
     tone_reset: ['normal mode','back to normal','tease me again','ჩვეულებრივად','ისევ გამეხუმრე'],
     repair: ['you misunderstood me','you got me wrong there',"that's not what i meant",'that is not what i meant','you misunderstood','you got me wrong','not what i meant','wrong meaning','ეგ არ მიგულისხმია','არასწორად გაიგე','სხვას ვგულისხმობდი']
 })) for (const value of values) controls.set(normalize(value), category);
-function contextualCategory(raw, session) {
-    const text = prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim());
+function contextualCategory(raw, session, suppliedFrame=null) {
+    const frame=suppliedFrame?.raw===String(raw??'')?suppliedFrame:prepareInput(raw);
+    if(!frame.valid)return String(raw??'').length<=2000 ? controls.get(normalize(raw))??null : null;
+    const text=frame.sentence;
     if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
     const day=recognizeDayConversation(text,session);if(day)return day;
     if (controls.has(text)) return controls.get(text);

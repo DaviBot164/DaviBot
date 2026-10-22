@@ -1,3 +1,4 @@
+const {meaningVariants,compoundMeaning} = require('./meaningVariants');
 const {recognizeMemberBoundary} = require('./memberBoundaries');
 const {recognizeProvocation} = require('./provocation');
 const {recognizeExplanationRepair} = require('./explanationRepair');
@@ -38,6 +39,13 @@ function stripMarkers(value) {
     return value.replace(/^(?:(?:to be honest|not going to lie|in my opinion|honestly|well|okay|ok|actually|by the way|for real|oh my god)[,\s]+)+/u,'')
         .replace(/^(?:hey|hello|yo)\s+(?=i |you |can |could |would |how |what |be |stop )/u,'')
         .replace(/(?:\s+(?:please|right now|at the moment|though|honestly|today|bro|dude|mate|for real|lol|lmao|haha|xd|not going to lie|to be honest|in my opinion|actually|by the way))+$/u,'').trim();
+}
+function prepareInput(value) {
+    const raw=String(value??'');
+    const valid=raw.length<=MAX_INPUT && !/[\p{L}]/u.test(raw.replace(/[a-z]/giu,''));
+    if(!valid)return Object.freeze({raw,valid:false,normalized:'',sentence:'',plainSentence:''});
+    const normalized=tidy(raw);
+    return Object.freeze({raw,valid:true,normalized,sentence:prepareSentence(stripMarkers(normalized)),plainSentence:prepareSentence(normalized)});
 }
 const known=new Map();
 function add(category,phrase){
@@ -105,33 +113,34 @@ function extractChoice(value) {
     const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
     return m?m[1].replace(/[?]+$/u,'').replace(/\s+(?:please|pls|plz)[.!?]*$/iu,'').trim():null;
 }
-function recognize(value) {
-    const raw=String(value??'');if(raw.length>MAX_INPUT)return null;
-    if(/[^\x00-\x7f]/u.test(raw)&&/[\p{L}]/u.test(raw.replace(/[a-z]/giu,'')))return null;
+function recognizeCore(value, suppliedFrame=null) {
+    const raw=String(value??'');
+    const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
+    if(!frame.valid)return null;
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
-    const normalized=tidy(raw);
-    const memberBoundary=recognizeMemberBoundary(prepareSentence(stripMarkers(normalized)),value);if(memberBoundary)return memberBoundary;
-    const provocation=recognizeProvocation(prepareSentence(stripMarkers(normalized)),raw);if(provocation)return provocation;
-    const repair=recognizeExplanationRepair(prepareSentence(stripMarkers(normalized)));if(repair)return repair;
-    const day=recognizeDayConversation(prepareSentence(stripMarkers(normalized)));if(day)return day;
-    const compound=moodBoundary(prepareSentence(stripMarkers(normalized)));if(compound)return compound.category;
-    const form=requestForm(prepareSentence(stripMarkers(normalized)));if(form)return form;
-    const framed=analyzePragmatics(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
+    const normalized=frame.normalized;
+    const memberBoundary=recognizeMemberBoundary(frame.sentence,value);if(memberBoundary)return memberBoundary;
+    const provocation=recognizeProvocation(frame.sentence,raw);if(provocation)return provocation;
+    const repair=recognizeExplanationRepair(frame.sentence);if(repair)return repair;
+    const day=recognizeDayConversation(frame.sentence);if(day)return day;
+    const compound=moodBoundary(frame.sentence);if(compound)return compound.category;
+    const form=requestForm(frame.sentence);if(form)return form;
+    const framed=analyzePragmatics(frame.sentence,raw,OWNER_ID);
     if(framed)return framed.category;
-    const abuse=analyzeChatAbuse(prepareSentence(stripMarkers(normalized)),raw);
+    const abuse=analyzeChatAbuse(frame.sentence,raw);
     if(abuse)return abuse.category;
-    const acknowledgement=acknowledge(prepareSentence(normalized),null);
+    const acknowledgement=acknowledge(frame.plainSentence,null);
     if(acknowledgement) return acknowledgement;
-    const utterance=recognizeUtterance(prepareSentence(normalized),raw,OWNER_ID) ?? recognizeUtterance(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);
+    const utterance=recognizeUtterance(frame.plainSentence,raw,OWNER_ID) ?? recognizeUtterance(frame.sentence,raw,OWNER_ID);
     if(utterance)return utterance;
-    const negativeIntent=recognizeNegation(prepareSentence(stripMarkers(normalized)));
+    const negativeIntent=recognizeNegation(frame.sentence);
     if(negativeIntent) return negativeIntent;
-    const practical=recognizePractical(prepareSentence(normalized)) ?? recognizePractical(prepareSentence(stripMarkers(normalized)));
+    const practical=recognizePractical(frame.plainSentence) ?? recognizePractical(frame.sentence);
     if(practical) return practical;
-    const directSocial=recognizeSocial(prepareSentence(normalized),raw);
+    const directSocial=recognizeSocial(frame.plainSentence,raw);
     if(directSocial) return directSocial;
-    const text=requestEnglish(prepareSentence(stripMarkers(normalized)));
+    const text=requestEnglish(frame.sentence);
     const social = recognizeSocial(text,raw); if(social) return social;
     // Negation and directed reactions take precedence over shallow keyword matches.
     if(/^(?:what do you think (?:of|about)|tell me about) mae$/u.test(text))return 'mae';
@@ -177,9 +186,27 @@ function correctedChoice(value) {
  if(!match || match.slice(1).some(part=>/\b(?:or|and|but)\b/u.test(part)))return null;
  return match.slice(1).join(' / ');
 }
-function recognizeDetails(value) {
- const text=prepareSentence(stripMarkers(tidy(value)));
- const compound=String(value??'').length<=MAX_INPUT?moodBoundary(text):null;
- return compound??{category:recognize(value)};
+function recognizeDetails(value, suppliedFrame=null) {
+ const raw=String(value??'');
+ const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
+ if(!frame.valid)return {category:null};
+ const compound=moodBoundary(frame.sentence);
+ if(compound)return compound;
+ const direct=recognizeCore(raw,frame);
+ if(direct)return {category:direct};
+ // Established rules win. Structural variants run only when those rules do not match.
+ const lookup=text=>recognizeCore(text);
+ const composed=compoundMeaning(frame.sentence,raw,lookup);
+ if(composed)return composed;
+ for(const alternative of meaningVariants(frame.sentence,raw)) {
+  const candidateFrame=prepareInput(alternative);
+  const candidateCompound=moodBoundary(candidateFrame.sentence);
+  if(candidateCompound)return candidateCompound;
+  const category=recognizeCore(alternative,candidateFrame);
+  if(category)return {category};
+ }
+ return {category:null};
 }
-module.exports={canonical,recognize,recognizeDetails,extractChoice,correctedChoice,detectEnglishReaction:reaction};
+function recognize(value) {return recognizeDetails(value).category;}
+
+module.exports={canonical,prepareInput,recognize,recognizeDetails,extractChoice,correctedChoice,detectEnglishReaction:reaction};
