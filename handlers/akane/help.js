@@ -10,6 +10,7 @@ function plainHelp(){return [
  '', '**Requests**','`nice` · `roast` · `tip` · `mood` · `secret` · `luck` · `rate`',
  '`akane pick pvp / training` — 2–10 choices separated by `/`.',
  '`akane @member` / `akane davi` / `akane mae` — About someone.',
+ '', '**Approved phrase learning**','Unfamiliar phrases addressed to Akane may be grouped for Davi to review. Only Davi can teach new meanings with `/akane teach`.',
  '', '`akane stop` / `bye` — End the conversation.',
  'Wait **3 seconds** between your requests; **2 seconds** between channel responses.',
  'Preset character dialogue: I recognize many English patterns, but cannot understand every sentence or answer arbitrary questions.'

@@ -23,6 +23,8 @@ const {
     initializeMatchSchema
 } = require('./matchSchema');
 
+const { initializeAkaneLearningSchema } = require('./akaneLearningSchema');
+
 async function initializeDatabase() {
     await testConnection();
     await initializeSchema();
@@ -30,6 +32,7 @@ async function initializeDatabase() {
     await initializeTrainingPanels();
     await initializeQuestSchema();
     await initializeMatchSchema();
+    await initializeAkaneLearningSchema();
 }
 
 module.exports = {

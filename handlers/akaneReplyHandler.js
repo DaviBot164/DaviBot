@@ -1,3 +1,4 @@
+const learning = require('./akane/learningRuntime');
 const { PermissionFlagsBits } = require('discord.js');
 
 const {
@@ -8,6 +9,7 @@ const {
 
 const {
     users,
+    getSession,
     channels,
     sessions,
     sessionKey,
@@ -32,7 +34,15 @@ async function handleAkaneReply(message) {
     cleanExpired(now);
 
     try {
-        const request = parseRequest(message, now);
+        let request = parseRequest(message, now);
+        let learningInput = null;
+        if (!request || ['fallback','reaction_question'].includes(request.category)) {
+            learningInput = learning.inputForLearning(message, getSession(message,now), now);
+            if (learningInput && learning.enabled()) {
+                const aliases = await learning.getAliases(message.guildId);
+                if(aliases.size)request = parseRequest(message, now, aliases);
+            }
+        }
 
         if (!request) return false;
 
@@ -120,6 +130,9 @@ async function handleAkaneReply(message) {
                 });
             }
 
+            if(learningInput?.collect && ['fallback','reaction_question'].includes(request.category)) {
+                await learning.collectUnknown(message,learningInput);
+            }
             return true;
         } catch (error) {
             // A failed send does not consume the user's cooldown.

@@ -1,3 +1,5 @@
+const learningConfig = require('../../config/akaneLearning');
+const {learningPhrase} = require('./learningPhrases');
 const { OWNER_ID, reactionPools, dialogue } = require('./settings');
 const { normalize, aliases, DAVI_NAMES } = require('./aliases');
 const { getSession } = require('./state');
@@ -7,7 +9,7 @@ const { contextualCategory } = require('./context');
 const { reactionClauses, prepareSentence } = require('./sentenceParser');
 const { recognizeSocial } = require('./socialIntent');
 
-function parseRequest(message, now) {
+function parseRequest(message, now, learnedAliases = null) {
     const content = String(message.content ?? '').trim();
     const namedTrigger = content.match(
         /^akane(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
@@ -25,6 +27,10 @@ function parseRequest(message, now) {
     const englishOnly = !/[\p{L}]/u.test(raw.replace(/[a-z]/giu, ''));
     const details=englishOnly?recognizeDetails(raw):{};
     let category = englishOnly ? (contextualCategory(raw, session) ?? details.category) : null;
+    if(!category && englishOnly && learnedAliases) {
+        const learned=learnedAliases.get(learningPhrase(raw));
+        if(Object.values(learningConfig.intents).includes(learned))category=learned;
+    }
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
     const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw) : null) ?? extractChoice(raw)) : null;
 
