@@ -3,7 +3,7 @@ const publicPools={
  orientation_neutral:['I do not know his orientation, and I will not guess. Being gay is not an insult.','That does not tell me anything I should turn into a joke. Keep it respectful.','I will not speculate about someone’s orientation.'],
  tip_offer:['Go on. What is your tip?','A tip for me? Let us hear it.','All right. What would you suggest?'],
  tip_received:['I heard the suggestion. Thanks for sharing it.','Noted for this exchange. That is your suggestion, then.','Thank you. We can keep talking.'],
- chat_open:['A conversation, then. A joke, a character secret, or music?','We can chat. Music, a joke, or a little gaming talk?','You have my attention. A secret or a joke to start?'],
+ chat_open:['We can just talk. How has your day been?','I am listening. What has today been like?','An ordinary conversation is fine. How are things today?'],
  topic_offer:['Try music, a joke, or a little gaming talk. Pick whichever sounds interesting.','A character secret or a joke would make a start.','Music, gaming, or a joke. Which direction?'],
  expression_uncertain:['You do not need a perfect explanation. A few words are enough; we can take it slowly.','Hard to put into words? We can leave it unfinished for a moment.','That is all right. You do not have to turn the feeling into a polished sentence.'],
  joke_repair:['Understood. I will take that as a clarification. We can move on.','A joke, then. Keep the next one charming.','Got it. We can leave that misunderstanding behind.'],
@@ -25,7 +25,7 @@ const ownerPools={
  reaction_romance:['You are being rather bold... I can keep the scene playful, if you like.','Oh. I was not prepared for that line. Shall we keep this a little gentle?','A little flirting? All right... just give me a moment.'],
  thanks:['You are welcome. I am glad it helped.','Of course. That was kind of you to say.','You are welcome... really.'],
  secret:['A character secret? I practice sounding composed. These conversations make it difficult.','I had a mysterious entrance planned. A quiet hello seems nicer now.','Sometimes a small conversation is the nicest part of the scene.'],
- chat_open:['We can just talk. A joke, music, or a little character secret?','I would like that. Shall we start with music or a secret?','All right... a quiet conversation sounds nice. A joke to start?'],
+ chat_open:['We can just talk. I am glad you stopped by. How has your day been?','I would like that... how are things today?','All right. You do not need a perfect opening. What has today been like?'],
  topic_offer:['Maybe music, or a little character secret? You can choose.','A joke or a secret might be a nice start.','We could talk about music, or keep it playful with a joke.'],
  reaction_davi_insult:['That includes how you speak about yourself. A gentler sentence, please.','I would rather hear what bothered you than an insult about you.','Let us leave the harsh words aside. I am listening.']
 };
@@ -35,7 +35,7 @@ const explanations={
  orientation_neutral:'I do not know Davi’s orientation. Mentioning an orientation is not itself an insult.',
  tip_offer:'You offered to give a tip. I understood you as the person offering it.',
  tip_received:'I acknowledged your suggestion. This does not automatically rewrite the bot’s dialogue.',
- chat_open:'You asked to chat, so I offered a few topics this character can respond to.',
+ chat_open:'You asked to chat, so I left room to talk about your day.',
  topic_offer:'You asked for a conversation topic.',
  expression_uncertain:'You said you were unsure how to explain it, so I left room for an unfinished explanation.',
  joke_repair:'You clarified that you were joking and did not intend an insult.',

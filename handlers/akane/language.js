@@ -1,3 +1,4 @@
+const {recognizeDayConversation} = require('./dayConversation');
 const {requestForm,moodBoundary} = require('./sentenceForms');
 const { analyzeChatAbuse, expandAbuse } = require('./chatAbuse');
 const { analyzePragmatics } = require('./pragmatics');
@@ -107,6 +108,7 @@ function recognize(value) {
     if(/^(?:😂|🤣|😆)+$/u.test(raw.trim()))return 'laugh';
     if(/^(?:🙄|🤔|😭)+$/u.test(raw.trim()))return 'clarify';
     const normalized=tidy(raw);
+    const day=recognizeDayConversation(prepareSentence(stripMarkers(normalized)));if(day)return day;
     const compound=moodBoundary(prepareSentence(stripMarkers(normalized)));if(compound)return compound.category;
     const form=requestForm(prepareSentence(stripMarkers(normalized)));if(form)return form;
     const framed=analyzePragmatics(prepareSentence(stripMarkers(normalized)),raw,OWNER_ID);

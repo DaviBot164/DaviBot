@@ -1,3 +1,4 @@
+const {recognizeDayConversation} = require('./dayConversation');
 const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
 // Bounded, temporary topics and choice labels; no full-message transcript is retained.
@@ -16,6 +17,7 @@ for (const [category, values] of Object.entries({
 function contextualCategory(raw, session) {
     const text = prepareSentence(canonical(raw).replace(/[!?.,…:;]+/gu,' ').replace(/\s+/gu,' ').trim());
     if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
+    const day=recognizeDayConversation(text,session);if(day)return day;
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);
