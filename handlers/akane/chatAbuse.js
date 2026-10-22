@@ -16,11 +16,17 @@ function expandAbuse(value) {
   .replace(/\s+/gu,' ').trim();
 }
 function analyzeChatAbuse(value,raw=value) {
- if(/["“”]/u.test(raw)||/\b(?:said|says|told|called|quote|quoted)\b/u.test(value))return null;
- const text=expandAbuse(value);
+ if(/["“”]/u.test(raw))return null;
+ let text=expandAbuse(value);
+ // A denial containing "called" must be resolved before the reported-speech guard.
+ if(new RegExp(`^i (?:never|did not) (?:call(?:ed)? you|(?:say|said) you (?:were|are)) ${emphasis}${negative}$`,'u').test(text))return {category:'disavow_insult',severity:'none'};
+ if(/\b(?:said|says|told|called|quote|quoted)\b/u.test(text))return null;
+ // Local predicate repair preserves stored alias keys and possession such as "your reply".
+ text=text.replace(new RegExp(`^your (?=${emphasis}${negative}(?: |$))`,'u'),'you are ');
+ if(/^(?:what the (?:fuck|hell|heck)|wtf|wth) (?:was|is) (?:that|this|your|the) (?:answer|reply|response)$/u.test(text))return {category:'answer_feedback',severity:'criticism'};
  // Scope first: denial, criticism of an answer and a game are separate cases.
  if(new RegExp(`^you (?:are )?(?:not|never) ${emphasis}${negative}$`,'u').test(text))return {category:'reaction_reassurance',severity:'none'};
- if(new RegExp(`^your (?:answer|reply|response) (?:is|was) ${emphasis}(?:${negative}|shit|bullshit)(?: (?:as fuck|af|as hell))?$`,'u').test(text))return {category:'answer_feedback',severity:'criticism'};
+ if(new RegExp(`^(?:your|that|this|the) (?:answer|reply|response) (?:is|was) ${emphasis}(?:${negative}|shit|bullshit)(?: (?:as fuck|af|as hell))?$`,'u').test(text))return {category:'answer_feedback',severity:'criticism'};
  if(new RegExp(`^(?:this|that|the|my) (?:game|match|round) (?:is|was) ${emphasis}(?:shit|bullshit|trash|stupid|dumb)$`,'u').test(text))return {category:'frustration',severity:'none'};
  if(/^(?:what the fuck|wtf|what the hell|wth|ffs|for fucks sake|for fuck sake|damn|shit|fuck)$/u.test(text))return {category:'frustration',severity:'none'};
  if(new RegExp(`^(?:(?:fuck|screw) (?:davi|daviti|david)|(?:davi|daviti|david) (?:is )?${emphasis}${negative})$`,'u').test(text))return {category:'reaction_davi_insult',severity:'severe'};
