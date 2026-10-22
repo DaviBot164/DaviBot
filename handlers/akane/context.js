@@ -5,7 +5,6 @@ const { acknowledge } = require('./socialIntent');
 // Bounded, temporary topics and choice labels; no full-message transcript is retained.
 const { normalize } = require('./aliases');
 const { canonical, prepareInput } = require('./language');
-const { prepareSentence } = require('./sentenceParser');
 const { randomInt } = require('node:crypto');
 const controls = new Map();
 for (const [category, values] of Object.entries({

@@ -105,11 +105,14 @@ function reaction(value) {
     }
     return best;
 }
-function extractChoice(value) {
-    if(requestForm(prepareSentence(stripMarkers(tidy(value))))==='again')return null;
+function extractChoice(value, suppliedFrame=null) {
+    const raw=String(value??'');
+    const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
+    const sentence=frame.valid?frame.sentence:prepareSentence(stripMarkers(tidy(value)));
+    if(requestForm(sentence)==='again')return null;
     const text=String(value??'').normalize('NFKC').trim();
     if (/^(?:choose|pick)(?: (?:again|another|once more)| a different one)$/iu.test(text)) return null;
-    const undecided=prepareSentence(stripMarkers(tidy(text))).match(/^i (?:do not know|cannot decide|am not sure) (?:whether to|if i should|whether i should) (.{1,100}?) or (.{1,100})$/u);
+    const undecided=sentence.match(/^i (?:do not know|cannot decide|am not sure) (?:whether to|if i should|whether i should) (.{1,100}?) or (.{1,100})$/u);
     if(undecided && !undecided.slice(1).some(part=>/\b(?:and|or|but)\b/u.test(part))) return undecided.slice(1).join(' / ');
     const m=text.match(/^(?:(?:can|could|would)\s+(?:you|u)\s+)?(?:please\s+)?(?:pick|choose)(?:\s+(?:between|from))?\s+(.+)$/iu);
     return m?m[1].replace(/[?]+$/u,'').replace(/\s+(?:please|pls|plz)[.!?]*$/iu,'').trim():null;
@@ -117,21 +120,21 @@ function extractChoice(value) {
 // Earlier entries have higher precedence. Normal recognition stops at the first.
 function recognitionRules(frame) {
  const raw=frame.raw,text=frame.sentence,plain=frame.plainSentence;
+ const requestText=requestEnglish(text);
  return [
   ['member_boundary',()=>recognizeMemberBoundary(text,raw)],
   ['provocation',()=>recognizeProvocation(text,raw)],
   ['explanation_repair',()=>recognizeExplanationRepair(text)],
   ['day_statement',()=>recognizeDayConversation(text)],
-  ['mood_boundary',()=>moodBoundary(text)?.category],
   ['sentence_form',()=>requestForm(text)],
   ['pragmatics',()=>analyzePragmatics(text,raw,OWNER_ID)?.category],
   ['chat_abuse',()=>analyzeChatAbuse(text,raw)?.category],
   ['acknowledgement',()=>acknowledge(plain,null)],
-  ['utterance',()=>recognizeUtterance(plain,raw,OWNER_ID)??recognizeUtterance(text,raw,OWNER_ID)],
+  ['utterance',()=>recognizeUtterance(plain,raw,OWNER_ID)??(plain!==text?recognizeUtterance(text,raw,OWNER_ID):null)],
   ['negation',()=>recognizeNegation(text)],
-  ['practical',()=>recognizePractical(plain)??recognizePractical(text)],
+  ['practical',()=>recognizePractical(plain)??(plain!==text?recognizePractical(text):null)],
   ['direct_social',()=>recognizeSocial(plain,raw)],
-  ['request_social',()=>recognizeSocial(requestEnglish(text),raw)]
+  ['request_social',()=>requestText!==plain?recognizeSocial(requestText,raw):null]
  ];
 }
 function recognizeCore(value, suppliedFrame=null, onMatch=null) {
@@ -182,8 +185,10 @@ function recognizeCore(value, suppliedFrame=null, onMatch=null) {
     if(/^(?:ha){2,8}$|^(?:he){2,8}$|^l(?:o+l+)+$|^lmao+$|^lmfao+$|^rofl$|^xd+$/u.test(text))return select('legacy.laugh','laugh');
     return null;
 }
-function correctedChoice(value) {
- const text=prepareSentence(stripMarkers(tidy(value)));
+function correctedChoice(value, suppliedFrame=null) {
+ const raw=String(value??'');
+ const frame=suppliedFrame?.raw===raw?suppliedFrame:prepareInput(raw);
+ const text=frame.valid?frame.sentence:prepareSentence(stripMarkers(tidy(value)));
  const match=text.match(/^i meant (.{1,100}?) (?:or|\/) (.{1,100})$/u);
  if(!match || match.slice(1).some(part=>/\b(?:or|and|but)\b/u.test(part)))return null;
  return match.slice(1).join(' / ');
