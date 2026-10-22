@@ -4,7 +4,11 @@ const strong='(?:bitch|cunt|motherfucker|asshole|bastard|piece of shit|shithead)
 const negative=`(?:${mild}|${strong})`;
 const emphasis='(?:(?:so|really|very|such|a|an|fucking|damn|just|actually|total|complete|absolute) )*';
 function expandAbuse(value) {
- return value.replace(/\S+/gu,word=>tokens[word]??word)
+ return value.replace(/\S+/gu,word=>{
+  if(tokens[word])return tokens[word];
+  const match=word.match(/^([("“]*)(.*?)([,.!?;:"”)]+)$/u);
+  return match && tokens[match[2]] ? match[1]+tokens[match[2]]+match[3] : word;
+ })
   .replace(/\b(?:you r|ur) (?=(?:(?:a|an|so|such|fucking|really|very|total|complete) )*(?:bitch|cunt|motherfucker|asshole|bastard|idiot|loser|dumb|stupid|useless)\b)/gu,'you are ')
   .replace(/\b(?:stfu|s t f u)\b/gu,'shut the fuck up')
   .replace(/\bgtfo\b/gu,'get the fuck out')

@@ -1,3 +1,4 @@
+const { expandAbuse } = require('./chatAbuse');
 const vocabulary = require('../../config/akaneSocialVocabulary');
 const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const negative = vocabulary.negative.map(escape).join('|');
@@ -6,11 +7,11 @@ const names = '(?:davi|daviti|david)';
 const result=(category,scope)=>({category,scope});
 
 function report(text) {
- const clean=text.replace(/["“”]/gu,'').replace(/\s+/gu,' ').trim();
+ const clean=expandAbuse(text.replace(/["“”]/gu,'').replace(/\s+/gu,' ').trim());
  const source='(?:someone|somebody|my friend|my teammate|he|she|they)';
  const disagreement='(?:but i (?:disagree|do not agree|do not think so))';
  const opinion='(?:what do you think(?: about that)?|do you agree|is that fair)';
- const attack=`(?:you (?:are )?${emphasis}(?:${negative})|you (?:suck|are useless))`;
+ const attack=`(?:you (?:are )?${emphasis}(?:${negative})|you (?:suck|are useless)|(?:fuck|screw) you|shut (?:the fuck )?up)`;
  if(new RegExp(`^${source} (?:said|says|called|calls|told me) (?:that )?${attack} ${disagreement}$`,'u').test(clean))return result('reported_disagreement','reported');
  const daviAttack=`(?:(?:fuck|screw) ${names}|${names} (?:is )?${emphasis}(?:${negative}))`;
  if(new RegExp(`^${source} (?:said|says|called|calls|told me) (?:that )?${daviAttack} (?:${disagreement}|${opinion})$`,'u').test(clean))return result('reported_davi_quote','reported');
@@ -19,6 +20,10 @@ function report(text) {
 }
 
 function correction(text) {
+ const denial=`you (?:are )?not ${emphasis}(?:${negative})`;
+ const criticism='(?:your|that|the) (?:answer|reply|response) (?:(?:just |really )?(?:made|makes) no sense|(?:was|is) (?:(?:just|really|so) )?(?:confusing|unclear|hard to follow))';
+ if(new RegExp(`^(?:${denial} (?:but |and )?${criticism}|${criticism} (?:but |and )?${denial})$`,'u').test(text))return result('answer_confusing','answer');
+
  if(new RegExp(`^your (?:answer|reply|response) (?:was|is) ${emphasis}(?:${negative}) (?:i )?did not (?:say|mean) you (?:were|are)$`,'u').test(text))return result('answer_feedback','answer');
  if(new RegExp(`^your (?:answer|reply|response) (?:was|is) not ${emphasis}(?:${negative}) (?:it (?:was|is) )?(?:just|only) (?:confusing|unclear|hard to follow)$`,'u').test(text))return result('answer_confusing','answer');
  if(new RegExp(`^(?:${negative}) (?:is|was) (?:not|never) what i (?:called|call) you$`,'u').test(text))return result('disavow_insult','correction');
@@ -36,6 +41,8 @@ function moodFragment(text) {
 }
 
 function evaluation(text) {
+ if(/^(?:(?:wow|oh great|oh good) )?(?:another |yet another )?(?:nice|great|brilliant|amazing|wonderful|genius) (?:answer|reply|response) (?:did|do) you even (?:read|understand)(?: (?:it|that|(?:my|the) (?:question|message|request)))?$/u.test(text))return result('answer_feedback','answer');
+
  if(/^(?:nice|great|brilliant|lovely) (?:answer|reply|response) (?:did|do) you even (?:read(?: (?:it|that|the question))?|look at (?:it|the question))$/u.test(text))return result('answer_feedback','answer');
  if(/^(?:wow )?you are (?:a )?(?:genius|so clever|so smart|brilliant) (?:are not you|are you)$/u.test(text))return result('ambiguous_tease','ambiguous');
  if(new RegExp(`^are you ${emphasis}(?:actually |always )?(?:this |so )?(?:${negative}) or (?:(?:are you )?(?:just |only )?(?:pretending|joking|messing with me)|what)$`,'u').test(text))return result('reaction_insult','addressee');
