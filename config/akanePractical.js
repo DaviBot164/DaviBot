@@ -4,7 +4,7 @@ function recognizePractical(text) {
  if(/^(?:yes |yeah |exactly )?(?:that is|thats|that's) (?:exactly )?what i meant$/u.test(text))return 'feedback_understood';
  if(/^(?:let us|lets|let's|can we|could we) (?:please )?talk about (?:something (?:fun|funny|light|lighter|else)|a different topic)(?: instead)?$/u.test(text))return 'topic_change';
  if(/^(?:(?:can|could|would) you (?:please )?)?(?:explain (?:it|that|your answer) (?:more simply|in simpler words)|make (?:it|that) simpler|say (?:it|that) more simply)$/u.test(text))return 'simplify';
- if(/^(?:i (?:do not|would rather not|do not really) want to|i would rather not) (?:talk|speak)(?: about (?:it|that|this))?(?: (?:right now|anymore|please))?$/u.test(text))return 'topic_boundary';
+ if(/^(?:i (?:do not|would rather not|do not really) want to|i would rather not) (?:talk|speak)(?: about (?:it|that|this|them|those people|work|school|my boss))?(?: (?:right now|anymore|please))?$/u.test(text))return 'topic_boundary';
  if(/^(?:that is|thats|that's|this is|it is|that sounds|this sounds) (?:much |a lot )?better(?: now)?$/u.test(text))return 'feedback_better';
  if(/^(?:let us|lets|let's|can we|could we) (?:please )?(?:change (?:the subject|topic)|talk about something else)$/u.test(text))return 'topic_change';
  if(/^(?:why did you (?:choose|pick) (?:that|it)|why that (?:one|option)|why (?:that|this) choice)$/u.test(text))return 'explain';

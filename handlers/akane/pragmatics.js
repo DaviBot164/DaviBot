@@ -42,6 +42,7 @@ function moodFragment(text) {
 }
 
 function evaluation(text) {
+ if(/^(?:your|that|the) (?:answer|reply|response) (?:was|is) (?:(?:really|very|so|just) )?(?:confusing|unclear|hard to follow)$/u.test(text))return result('answer_confusing','answer');
  if(/^(?:your|that|the) (?:answer|reply|response) (?:made|makes) no sense$/u.test(text))return result('answer_confusing','answer');
  if(/^(?:wow |oh )?(?:so |very )?(?:helpful|useful|brilliant) (?:totally |really )?answered my (?:question|request)$/u.test(text))return result('ambiguous_praise','ambiguous');
  if(/^(?:i (?:was|am) being sarcastic|i (?:was|am) sarcastic|that was sarcasm)(?: (?:by the way|though))?$/u.test(text))return result('sarcasm_clear','correction');

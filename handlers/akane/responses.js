@@ -1,3 +1,4 @@
+const {repairExplanation} = require('./explanationRepair');
 const { applyEmojiStyle } = require('./emojiStyle');
 const { applySpeechStyle } = require('./speechStyle');
 const { attachExpectation } = require('./followups');
@@ -223,6 +224,7 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(['explain_fresh','repetition_feedback'].includes(request.category))return repairExplanation(request);
     if(request.category==='decline_advice') {
         const base=buildBaseResponse(message,request);
         return {...base,category:request.context??'decline_advice',pending:request.conversation?.pending??null};

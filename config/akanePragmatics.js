@@ -4,7 +4,7 @@ const pools={
   sarcasm_clear:['Sarcasm, understood. What did the answer miss?','Got it. You were not praising the answer. What should I clarify?','I hear the sarcasm now. Which part should I try again?'],
   target_correction:['Understood. You were not talking about me.','Got it. I will not make myself the subject of that sentence.','That clears up who you meant. We can move on.'],
   explain_wait:['Go ahead. I am listening.','All right. Take your time and explain.','You have the floor. What did you mean?'],
-  answer_confusing:['Unclear, rather than stupid. Understood. I can try saying it more simply.','You mean the explanation was confusing. I can rephrase it.','Fair distinction. I can try a clearer version of the answer.'],
+  answer_confusing:['The answer was unclear. Which sentence should I clarify?','You mean the explanation was confusing. I can rephrase it.','I can try another explanation. Which part did not make sense?'],
   ambiguous_tease:['A genius? Let us keep the expectations manageable. What is the question?','That came with a raised eyebrow, I suspect. Go on.','A compliment with a question mark. I am listening.'],
   answer_feedback:[
    'You mean the answer. Fair enough. Point me to the part that missed, and I can try again.',

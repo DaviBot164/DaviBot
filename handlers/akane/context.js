@@ -52,6 +52,7 @@ function memoryAfter(previous, request, response) {
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     const restarted=request.category==='restart_chat';
     return {
+        explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,
         emojiRecent: response.emojiLast && response.emojiTurns===0
