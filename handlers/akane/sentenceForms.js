@@ -8,6 +8,8 @@ function requestForm(text) {
  return null;
 }
 function moodBoundary(text) {
+ // Preserve the stated tiredness when a different emotion is denied.
+ if (/^(?:i am|i feel|i am feeling) (?:(?:really|very|so|a little|kind of) )?(?:tired|exhausted|drained) but (?:i am |i feel )?not (?:angry|mad|upset)(?: (?:at|with) you)?$/u.test(text)) return {category:'tired',declineAdvice:false};
  const match=text.match(/^((?:i am|i feel|i am feeling) (?:(?:really|very|so|kind of|a little) )?(?:sad|upset|down|unhappy|tired|exhausted|drained|lonely|stressed)) (?:but|and) (?:i (?:do not want|do not need|did not ask for)|no) (?:any |your )?(?:advice|tips|suggestions)$/u);
  if(!match)return null;
  const category=/\b(?:tired|exhausted|drained)\b/u.test(match[1])?'tired':/\blonely\b/u.test(match[1])?'lonely':'feeling_bad';
@@ -15,6 +17,7 @@ function moodBoundary(text) {
 }
 function wantsListening(text) {
  text=text.replace(/ (?:for (?:a |one )?(?:minute|second|moment|sec)|a sec)$/u,'');
+ if (/^(?:i )?(?:just |only )?(?:want to|would like to) (?:just )?(?:talk|chat)(?: (?:to|with) you)? (?:but |and )?no (?:advice|tips|suggestions)$/u.test(text) || /^no (?:advice|tips|suggestions) (?:i )?(?:just |only )?(?:want to )?(?:talk|chat)$/u.test(text)) return true;
  const listen='(?:(?:please )?(?:just |only )?(?:listen(?: to me)?|hear me out)|let me vent)';
  const refusal='(?:(?:i )?(?:do not want|do not need|am not looking for)|not looking for|no) (?:any |your )?(?:advice|tips|suggestions|solutions)';
  if(new RegExp(`^(?:${listen}|${refusal} (?:and |but )?${listen}|${listen} (?:and |but )?${refusal})$`,'u').test(text))return true;

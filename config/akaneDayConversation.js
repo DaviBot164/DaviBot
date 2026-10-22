@@ -1,4 +1,5 @@
 const publicPools={
+ day_okay:['An okay day, then. Anything stand out, or was it fairly ordinary?','Fair enough. Not every day needs a dramatic story. What have you been up to?','An ordinary day can be welcome. Was there a good moment in it?'],
  day_tasks:['Extra tasks kept coming, then. That sounds like a lot to carry through the day.','More work on top of everything else. I am following.','That sounds like the tasks kept piling up. I am listening.'],
  day_no_break:['And there was barely a pause between it all. That sounds draining.','No real break, then. I can see why the day felt long.','You hardly had a chance to stop. That adds to what you were describing.'],
  day_explanation:['That helps me follow why you felt so worn out.','I see the connection now. The tiredness makes sense in that context.','Understood. You are explaining what made the day so tiring.'],
@@ -17,6 +18,7 @@ const ownerPools={
  day_easing:['A little better... I am glad. We can keep this quiet.','That is good to hear. You do not have to rush into being cheerful.','A lighter moment, then. I am glad you told me.']
 };
 module.exports={pools:{public:publicPools,owner:{...publicPools,...ownerPools},mae:{...publicPools}},explanations:{
+ day_okay:'You described your day as okay. I acknowledged that without assuming you felt upset.',
  day_tasks:'You described extra tasks being assigned to you.',
  day_no_break:'You added that there was little or no time for a break.',
  day_explanation:'You connected the earlier details to feeling tired.',
