@@ -7,6 +7,7 @@ const { randomInt } = require('node:crypto');
 const { OWNER_ID, replies, dialogue } = require('./settings');
 const { drawReply, getReplyState } = require('./state');
 const { buildHelp } = require('./help');
+const friends = require('../../config/kitsuneFriends');
 const conversation = require('../../config/kitsuneConversation');
 
 for (const [tone, categories] of Object.entries(conversation.pools)) {
@@ -90,6 +91,11 @@ const boundaries = require('../../config/kitsuneBoundaries');
 for(const [tone,categories]of Object.entries(boundaries.pools)) {
     for(const [category,pool]of Object.entries(categories))replies[`conversation_${tone}_${category}`]=pool;
 }
+// Share friendly dialogue while keeping each friend's name and tone separate.
+for (const [key, pool] of Object.entries(replies)) {
+    if (!/^(?:conversation|dialogue)_mae_/.test(key)) continue;
+    replies[key.replace('_mae_', '_ash_')] = pool.map(line => line.replace(/\bMae\b/g, 'Ash'));
+}
 const OWNER_MAP = {
     davi: 'nice', reaction_davi: 'nice', reaction_davi_insult: 'tension',
     reaction_romance: 'flirt', reaction_affection: 'flirt',
@@ -115,7 +121,7 @@ const REPEATABLE = new Set([
 ]);
 
 function toneFor(id) {
-    return id === OWNER_ID ? 'owner' : id === dialogue.maeId ? 'mae' : 'public';
+    return id === OWNER_ID ? 'owner' : id === dialogue.maeId ? 'mae' : friends[id]?.tone ?? 'public';
 }
 
 function choosePool(tone, category) {
@@ -133,6 +139,10 @@ function choosePool(tone, category) {
     if (tone === 'owner') {
         const key = `owner_${OWNER_MAP[category] ?? category}`;
         return replies[key]?.length ? key : 'owner_fallback';
+    }
+    if (tone === 'ash') {
+        const key = `dialogue_ash_${MAE_MAP[category] ?? category}`;
+        return replies[key]?.length ? key : 'dialogue_ash_fallback';
     }
     if (tone === 'mae') {
         const key = `dialogue_mae_${MAE_MAP[category] ?? category}`;

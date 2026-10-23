@@ -2,6 +2,7 @@ const config = require('../../config/kitsuneEmoji');
 const emoji = /[\p{Extended_Pictographic}\p{Regional_Indicator}]|[#*0-9]\uFE0F?\u20E3/u;
 // Pure presentation: only memoryAfter commits cadence after a successful send.
 function applyEmojiStyle(response, tone, request) {
+    if (tone === 'ash') tone = 'mae';
     const content = response.payload?.content;
     if (typeof content !== 'string' || !content || response.session === false) return response;
     const previous = request.conversation ?? {};
