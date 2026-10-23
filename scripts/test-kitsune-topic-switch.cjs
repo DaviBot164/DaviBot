@@ -44,7 +44,7 @@ for(const start of ['', 'i mean ','i meant ','nah i meant ','no i mean ','nope i
 for(const marker of ['', 'anyway ','well ','so '])for(const request of ['let us','lets','can we','could we'])for(const subject of ['games','gaming'])for(const ending of ['',' instead',' now'])eq(recognize(marker+request+' talk about '+subject+ending),'game_chat');
 for(const category of gameTopics){
  eq(topicAnchor(category),category);
- eq(recognizeGameConversation('what about you',{category}),'game_preferences');
+ eq(recognizeGameConversation('what about you',{category}),category==='gaming'?'activity':'game_preferences');
  for(const phrase of ['pvp','mostly pvp','competitive','competitive games'])eq(recognizeGameConversation(phrase,{category}),'game_competitive');
  for(const phrase of ['pve','something relaxed','relaxed','casual games'])eq(recognizeGameConversation(phrase,{category}),'game_relaxed');
 }

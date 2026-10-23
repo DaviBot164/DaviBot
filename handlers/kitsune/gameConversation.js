@@ -7,7 +7,7 @@ function recognizeGameConversation(text,session=null){
  if(!session||!gameTopics.has(session.category))return null;
  if(/^(?:mostly |usually )?(?:pvp|competitive|competitive games|competitive matches)$/u.test(text))return 'game_competitive';
  if(/^(?:mostly |usually )?(?:pve|casual|relaxed|something relaxed|something relaxing|relaxing games|casual games)$/u.test(text))return 'game_relaxed';
- if(/^(?:what about you|how about you|and you)$/u.test(text))return 'game_preferences';
+ if(/^(?:what about you|how about you|and you)$/u.test(text))return session.category==='gaming'?'activity':'game_preferences';
  return null;
 }
 module.exports={gameTopics,recognizeGameConversation};
