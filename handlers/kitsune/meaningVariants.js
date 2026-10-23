@@ -7,6 +7,13 @@ const mood = moods.map(escape).join('|');
 function meaningVariants(text, raw=text) {
     if (text.length>1000 || /["“”]/u.test(raw) || /\b(?:said|says|told|called|quoted|quote)\b/u.test(text)) return [];
     let next=text.replace(/^(?:(?:um|uh|erm|hmm|basically) )+/u,'');
+    // A short present activity can answer a greeting without being a mood.
+    // Only these whole-sentence forms are expanded; no broad typo guessing.
+    const activity=next.match(/^(?:(?:i am|am) )?(?:just )?(playing|playng|playin|playign|gaming|gamin|gameing|working|workng|workin)$/u);
+    if(activity){
+        const verb=/^play/u.test(activity[1])?'playing':/^gam/u.test(activity[1])?'gaming':'working';
+        next='i am '+verb;
+    }
     next=next.replace(/\b(?:exhuasted|exausted)\b/gu,'exhausted').replace(/\b(?:overwelmed|overwhelmd)\b/gu,'overwhelmed');
     next=next.replace(new RegExp(`^(?:you r|your) (?=(?:being )?(?:(?:so|really|very|fucking|totally|completely|just|not|a|an) )*(?:${descriptors})(?: |$))`,'u'),'you are ');
     next=next.replace(new RegExp(`^r you (?=(?:(?:so|really|very|a|an) )*(?:${descriptors})(?: |$))`,'u'),'are you ');
