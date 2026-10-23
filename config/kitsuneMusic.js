@@ -1,4 +1,5 @@
 const publicPools={
+ music_relax:['It helps you unwind, then. What kind of music feels relaxing to you?','A way to let the day settle. Do you prefer soft music or something with more energy?'],
  music_chat:['Music, then. What do you usually put on?','A soundtrack is a respectable topic. Quiet music or something louder?','What kind of music have you been coming back to lately?'],
  music_time:['A late-night soundtrack, then. Do you go for something quiet or something with more energy?','Music at night has its own atmosphere. What kind do you usually choose?','The evening gets a soundtrack. Does the choice depend on your mood?'],
  music_mood:['Mood picks the soundtrack, then. What does a quiet evening sound like for you?','That makes sense. Sometimes the same song fits, and sometimes it really does not.','So there is no single playlist for every mood. What have you been in the mood for lately?'],
@@ -12,6 +13,7 @@ const ownerPools={
  music_preferences:['Something quiet, with a little drama... it suits my style.','For my style, a soft melody with a slightly darker edge. What would you choose?']
 };
 const explanations={
+ music_relax:'You said music helps you relax. I kept following your music topic.',
  music_chat:'We chose music as a new topic.',
  music_time:'You said you usually listen to music at night. I followed that listening habit.',
  music_mood:'You said your music choice depends on your mood. I kept the conversation about music, not a new mood check.',

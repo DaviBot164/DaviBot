@@ -62,7 +62,7 @@ function memoryAfter(previous, request, response) {
     const restarted=request.category==='restart_chat';
     return {
         topicCategory: nextTopic(old,request,response),
-        shortChat: response.shortChat ?? (request.category==='bored' ? old.shortChat ?? null : null),
+        shortChat: response.shortChat ?? ((['bored','thanks','reaction_thanks'].includes(request.category) || (old.topicCategory?.startsWith('music') && ['music_time','music_relax','music_mood','music_mix','music_preferences','music_curiosity'].includes(request.category))) ? old.shortChat ?? null : null),
         mood: restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,

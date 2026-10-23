@@ -79,6 +79,7 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     }
 
     if (choice) return { category: 'pick', argument: choice, ...followup };
+    if (category==='brief_answer') return {category,argument:frame.sentence,...followup};
     if (['context_choices','repair_detail'].includes(category)) return { category, argument: raw, ...followup };
 
     if (category) {
