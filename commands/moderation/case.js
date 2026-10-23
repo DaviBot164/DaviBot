@@ -212,7 +212,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Case Failed',
-                        'Akane could not load that moderation case.'
+                        'Kitsune could not load that moderation case.'
                     )
                 ]
             });

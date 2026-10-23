@@ -45,7 +45,7 @@ function canModerate(moderator, target) {
     if (target.id === target.guild.members.me?.id) {
         return {
             allowed: false,
-            reason: 'Akane cannot moderate herself.'
+            reason: 'Kitsune cannot moderate herself.'
         };
     }
 
@@ -71,7 +71,7 @@ function canModerate(moderator, target) {
     ) {
         return {
             allowed: false,
-            reason: 'Akane role must be above the target member.'
+            reason: 'Kitsune role must be above the target member.'
         };
     }
 

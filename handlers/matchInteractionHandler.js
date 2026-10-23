@@ -246,7 +246,7 @@ async function handleMatchInteraction(interaction) {
             interaction,
             expected
                 ? `Warning: ${message}`
-                : 'Akane could not complete this action.'
+                : 'Kitsune could not complete this action.'
         );
 
         return true;

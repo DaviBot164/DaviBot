@@ -8,13 +8,13 @@ const {
 const CORPS_IDS =
     Object.freeze({
         section:
-            'akane:corps:section',
+            'kitsune:corps:section',
 
         previous:
-            'akane:corps:previous',
+            'kitsune:corps:previous',
 
         next:
-            'akane:corps:next'
+            'kitsune:corps:next'
     });
 
 const CORPS_SECTIONS =

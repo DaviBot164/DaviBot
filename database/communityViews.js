@@ -5,7 +5,7 @@ async function getLegacyRecords(guildId, userId = null) {
         query(
             `
                 SELECT user_id, achievement_id
-                FROM akane_achievements
+                FROM kitsune_achievements
                 WHERE guild_id = $1
                   AND ($2::TEXT IS NULL OR user_id = $2)
                 ORDER BY achievement_id, user_id
@@ -15,7 +15,7 @@ async function getLegacyRecords(guildId, userId = null) {
         query(
             `
                 SELECT user_id, title_id, equipped
-                FROM akane_titles
+                FROM kitsune_titles
                 WHERE guild_id = $1
                   AND ($2::TEXT IS NULL OR user_id = $2)
                 ORDER BY title_id, user_id
@@ -43,7 +43,7 @@ async function getLeaderboard(guildId, faction = null) {
     const { rows } = await query(
         `
             SELECT user_id, level, xp, messages, faction, rank
-            FROM akane_users
+            FROM kitsune_users
             WHERE guild_id = $1
               AND ($2::TEXT IS NULL OR faction = $2)
             ORDER BY level DESC, xp DESC, user_id ASC

@@ -47,7 +47,7 @@ function formatEntry(entry) {
     const moderator =
         entry.changedBy
             ? `<@${entry.changedBy}>`
-            : 'Akane';
+            : 'Kitsune';
 
     const timestamp = Math.floor(
         new Date(
@@ -146,7 +146,7 @@ module.exports = {
                 })
             )
             .setFooter({
-                text: 'AKANE • BLOOD MOON'
+                text: 'KITSUNE • BLOOD MOON'
             });
 
         await interaction.editReply({

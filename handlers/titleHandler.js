@@ -191,7 +191,7 @@ async function handleTitleSelect(
     if (
         !interaction.isStringSelectMenu() ||
         interaction.customId !==
-            'akane:title:select'
+            'kitsune:title:select'
     ) {
         return false;
     }
@@ -275,7 +275,7 @@ async function handleTitleSelect(
             embeds: [
                 errorEmbed(
                     'Title Unavailable',
-                    'Akane could not equip this title.'
+                    'Kitsune could not equip this title.'
                 )
             ],
 

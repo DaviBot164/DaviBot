@@ -100,7 +100,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Kick Failed',
-                        'Akane cannot kick this member.'
+                        'Kitsune cannot kick this member.'
                     )
                 ]
             });
@@ -195,7 +195,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Kick Failed',
-                        'Akane could not kick this member.'
+                        'Kitsune could not kick this member.'
                     )
                 ]
             });

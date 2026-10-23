@@ -75,7 +75,7 @@ async function handleCategorySelect(
             embeds: [
                 errorEmbed(
                     'Ticket Failed',
-                    'Akane could not create your ticket.'
+                    'Kitsune could not create your ticket.'
                 )
             ],
             components: []
@@ -195,7 +195,7 @@ async function handleCloseButton(
             embeds: [
                 errorEmbed(
                     'Close Failed',
-                    'Akane could not close this ticket.'
+                    'Kitsune could not close this ticket.'
                 )
             ]
         });
@@ -311,7 +311,7 @@ async function handleReopenButton(
             embeds: [
                 errorEmbed(
                     'Reopen Failed',
-                    'Akane could not reopen this ticket.'
+                    'Kitsune could not reopen this ticket.'
                 )
             ]
         });
@@ -494,7 +494,7 @@ async function handleDeleteButton(
                 embeds: [
                     errorEmbed(
                         'Delete Failed',
-                        'Akane could not delete this ticket.'
+                        'Kitsune could not delete this ticket.'
                     )
                 ]
             }).catch(() => null);

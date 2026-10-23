@@ -24,7 +24,7 @@ async function getUser(guildId, userId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_users
+            FROM kitsune_users
             WHERE guild_id = $1
               AND user_id = $2
         `,
@@ -37,7 +37,7 @@ async function getUser(guildId, userId) {
 async function ensureUser(guildId, userId, joinedAt = null) {
     const { rows } = await query(
         `
-            INSERT INTO akane_users (
+            INSERT INTO kitsune_users (
                 guild_id,
                 user_id,
                 joined_at
@@ -46,7 +46,7 @@ async function ensureUser(guildId, userId, joinedAt = null) {
             ON CONFLICT (guild_id, user_id)
             DO UPDATE SET
                 joined_at = COALESCE(
-                    akane_users.joined_at,
+                    kitsune_users.joined_at,
                     EXCLUDED.joined_at
                 )
             RETURNING *
@@ -60,7 +60,7 @@ async function ensureUser(guildId, userId, joinedAt = null) {
 async function addActivity(guildId, userId, xp) {
     const { rows } = await query(
         `
-            UPDATE akane_users
+            UPDATE kitsune_users
             SET
                 xp = xp + $3,
                 messages = messages + 1,
@@ -78,7 +78,7 @@ async function addActivity(guildId, userId, xp) {
 async function setProgress(guildId, userId, level, xp) {
     const { rows } = await query(
         `
-            UPDATE akane_users
+            UPDATE kitsune_users
             SET
                 level = $3,
                 xp = $4,
@@ -96,7 +96,7 @@ async function setProgress(guildId, userId, level, xp) {
 async function setFaction(guildId, userId, faction, rank = null) {
     const { rows } = await query(
         `
-            UPDATE akane_users
+            UPDATE kitsune_users
             SET
                 faction = $3,
                 rank = $4,
@@ -114,7 +114,7 @@ async function setFaction(guildId, userId, faction, rank = null) {
 async function setRank(guildId, userId, rank) {
     const { rows } = await query(
         `
-            UPDATE akane_users
+            UPDATE kitsune_users
             SET
                 rank = $3,
                 updated_at = NOW()

@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { randomInt } = require('node:crypto');
 
 const { createEmbed } = require('../../utils/embeds');
-const { ownerId } = require('../../config/akanePersonality');
+const { ownerId } = require('../../config/kitsunePersonality');
 
 const REPLIES = Object.freeze([
     'Yes, I’m awake. Unfortunately for you.',
@@ -51,7 +51,7 @@ function chooseReply(owner) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Check Akane latency.'),
+        .setDescription('Check Kitsune latency.'),
 
     async execute(interaction) {
         const latency = interaction.client.ws.ping;
@@ -67,7 +67,7 @@ module.exports = {
         await interaction.reply({
             embeds: [
                 createEmbed(
-                    '🩸 Akane • Ping',
+                    '🩸 Kitsune • Ping',
                     [
                         reply,
                         '',

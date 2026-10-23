@@ -160,7 +160,7 @@ module.exports = {
             await interaction.editReply({
                 content: expected
                     ? `⚠️ ${error.message}`
-                    : '⚠️ Akane could not manage this match.'
+                    : '⚠️ Kitsune could not manage this match.'
             });
         }
     }

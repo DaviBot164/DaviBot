@@ -75,7 +75,7 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    'Akane could not create the Level preview.'
+                    'Kitsune could not create the Level preview.'
             });
         }
     }

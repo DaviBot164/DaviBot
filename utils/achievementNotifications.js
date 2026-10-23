@@ -50,7 +50,7 @@ async function sendAchievementUnlock(
                 'attachment://achievement.png'
             )
             .setFooter({
-                text: 'AKANE • BLOOD MOON'
+                text: 'KITSUNE • BLOOD MOON'
             });
 
     await channel.send({

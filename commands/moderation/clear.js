@@ -33,7 +33,7 @@ module.exports = {
             PermissionFlagsBits.ReadMessageHistory,
             PermissionFlagsBits.ManageMessages
         ])) {
-            return interaction.reply({ content: 'Akane needs View Channel, Read Message History and Manage Messages.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Kitsune needs View Channel, Read Message History and Manage Messages.', flags: MessageFlags.Ephemeral });
         }
         const amount = interaction.options.getInteger('amount', true);
         const target = interaction.options.getUser('member');
@@ -86,7 +86,7 @@ module.exports = {
         } catch (error) {
             console.error('Clear command failed:', error);
             return interaction.editReply({
-                embeds: [errorEmbed('Clear Failed', `Confirmed deleted: ${deleted}. Akane could not finish the operation or record its case. Check the runtime logs before retrying.`)],
+                embeds: [errorEmbed('Clear Failed', `Confirmed deleted: ${deleted}. Kitsune could not finish the operation or record its case. Check the runtime logs before retrying.`)],
                 allowedMentions: { parse: [] }
             });
         }

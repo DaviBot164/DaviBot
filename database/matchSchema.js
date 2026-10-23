@@ -2,7 +2,7 @@ const { query } = require('./connection');
 
 async function initializeMatchSchema() {
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_matches (
+        CREATE TABLE IF NOT EXISTS kitsune_matches (
             id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
@@ -51,9 +51,9 @@ async function initializeMatchSchema() {
     `);
 
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_match_players (
+        CREATE TABLE IF NOT EXISTS kitsune_match_players (
             match_id BIGINT NOT NULL
-                REFERENCES akane_matches(id)
+                REFERENCES kitsune_matches(id)
                 ON DELETE CASCADE,
 
             guild_id TEXT NOT NULL,
@@ -72,9 +72,9 @@ async function initializeMatchSchema() {
     `);
 
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_match_confirmations (
+        CREATE TABLE IF NOT EXISTS kitsune_match_confirmations (
             match_id BIGINT NOT NULL
-                REFERENCES akane_matches(id)
+                REFERENCES kitsune_matches(id)
                 ON DELETE CASCADE,
 
             guild_id TEXT NOT NULL,
@@ -96,12 +96,12 @@ async function initializeMatchSchema() {
     `);
 
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_match_active_players (
+        CREATE TABLE IF NOT EXISTS kitsune_match_active_players (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
 
             match_id BIGINT NOT NULL
-                REFERENCES akane_matches(id)
+                REFERENCES kitsune_matches(id)
                 ON DELETE CASCADE,
 
             PRIMARY KEY (guild_id, user_id),
@@ -111,21 +111,21 @@ async function initializeMatchSchema() {
 
     await query(`
         CREATE UNIQUE INDEX IF NOT EXISTS
-            idx_akane_match_team_captain
-        ON akane_match_players (match_id, team)
+            idx_kitsune_match_team_captain
+        ON kitsune_match_players (match_id, team)
         WHERE is_captain = TRUE;
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS
-            idx_akane_matches_guild_status
-        ON akane_matches (guild_id, status);
+            idx_kitsune_matches_guild_status
+        ON kitsune_matches (guild_id, status);
     `);
 
     await query(`
         CREATE INDEX IF NOT EXISTS
-            idx_akane_matches_creator
-        ON akane_matches (
+            idx_kitsune_matches_creator
+        ON kitsune_matches (
             guild_id,
             creator_id,
             created_at DESC
@@ -134,8 +134,8 @@ async function initializeMatchSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS
-            idx_akane_match_players_user
-        ON akane_match_players (
+            idx_kitsune_match_players_user
+        ON kitsune_match_players (
             guild_id,
             user_id
         );
@@ -143,8 +143,8 @@ async function initializeMatchSchema() {
 
     await query(`
         CREATE INDEX IF NOT EXISTS
-            idx_akane_match_active_players_match
-        ON akane_match_active_players (match_id);
+            idx_kitsune_match_active_players_match
+        ON kitsune_match_active_players (match_id);
     `);
 }
 

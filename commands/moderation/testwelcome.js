@@ -81,7 +81,7 @@ module.exports = {
 
             await interaction.editReply({
                 content:
-                    'Akane could not send the Welcome preview.'
+                    'Kitsune could not send the Welcome preview.'
             });
         }
     }

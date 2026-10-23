@@ -9,7 +9,7 @@ async function getAchievementStats(
                 achievement_id,
                 COUNT(*)::INTEGER AS unlocks
 
-            FROM akane_achievements
+            FROM kitsune_achievements
 
             WHERE guild_id = $1
 
@@ -53,7 +53,7 @@ async function getTitleStats(
                 )::INTEGER
                     AS equipped
 
-            FROM akane_titles
+            FROM kitsune_titles
 
             WHERE guild_id = $1
 
@@ -94,7 +94,7 @@ async function getLegacyTotals(
             SELECT
                 (
                     SELECT COUNT(*)
-                    FROM akane_achievements
+                    FROM kitsune_achievements
                     WHERE guild_id = $1
                 )::INTEGER
                     AS achievement_unlocks,
@@ -103,14 +103,14 @@ async function getLegacyTotals(
                     SELECT COUNT(
                         DISTINCT user_id
                     )
-                    FROM akane_achievements
+                    FROM kitsune_achievements
                     WHERE guild_id = $1
                 )::INTEGER
                     AS achievement_members,
 
                 (
                     SELECT COUNT(*)
-                    FROM akane_titles
+                    FROM kitsune_titles
                     WHERE guild_id = $1
                 )::INTEGER
                     AS title_unlocks,
@@ -119,14 +119,14 @@ async function getLegacyTotals(
                     SELECT COUNT(
                         DISTINCT user_id
                     )
-                    FROM akane_titles
+                    FROM kitsune_titles
                     WHERE guild_id = $1
                 )::INTEGER
                     AS title_members,
 
                 (
                     SELECT COUNT(*)
-                    FROM akane_users
+                    FROM kitsune_users
                     WHERE guild_id = $1
                 )::INTEGER
                     AS recorded_members

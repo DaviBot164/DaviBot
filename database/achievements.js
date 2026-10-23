@@ -20,7 +20,7 @@ async function unlockAchievement(
 ) {
     const { rows } = await query(
         `
-            INSERT INTO akane_achievements (
+            INSERT INTO kitsune_achievements (
                 guild_id,
                 user_id,
                 achievement_id
@@ -46,7 +46,7 @@ async function getAchievements(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_achievements
+            FROM kitsune_achievements
             WHERE guild_id = $1
               AND user_id = $2
             ORDER BY unlocked_at ASC
@@ -68,7 +68,7 @@ async function hasAchievement(
     const { rowCount } = await query(
         `
             SELECT 1
-            FROM akane_achievements
+            FROM kitsune_achievements
             WHERE guild_id = $1
               AND user_id = $2
               AND achievement_id = $3

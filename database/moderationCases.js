@@ -76,7 +76,7 @@ async function createCase({
     const result =
         await query(
             `
-                INSERT INTO akane_moderation_cases (
+                INSERT INTO kitsune_moderation_cases (
                     guild_id,
                     user_id,
                     moderator_id,
@@ -132,7 +132,7 @@ async function getCase(
         await query(
             `
                 SELECT *
-                FROM akane_moderation_cases
+                FROM kitsune_moderation_cases
                 WHERE
                     guild_id = $1
                     AND id = $2
@@ -167,7 +167,7 @@ async function getUserCases(
         await query(
             `
                 SELECT *
-                FROM akane_moderation_cases
+                FROM kitsune_moderation_cases
                 WHERE
                     guild_id = $1
                     AND user_id = $2
@@ -194,7 +194,7 @@ async function getActiveCases(
         await query(
             `
                 SELECT *
-                FROM akane_moderation_cases
+                FROM kitsune_moderation_cases
                 WHERE
                     guild_id = $1
                     AND user_id = $2
@@ -223,7 +223,7 @@ async function resolveCase(
     const result =
         await query(
             `
-                UPDATE akane_moderation_cases
+                UPDATE kitsune_moderation_cases
                 SET
                     active = FALSE,
                     resolved_at = NOW(),
@@ -260,7 +260,7 @@ async function resolveActiveCases(
     const result =
         await query(
             `
-                UPDATE akane_moderation_cases
+                UPDATE kitsune_moderation_cases
                 SET
                     active = FALSE,
                     resolved_at = NOW(),

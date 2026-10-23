@@ -49,13 +49,13 @@ const USERS = [
 
 async function setup() {
     await db.exec(`
-        CREATE TABLE akane_users (
+        CREATE TABLE kitsune_users (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             PRIMARY KEY (guild_id, user_id)
         );
 
-        CREATE TABLE akane_player_stats (
+        CREATE TABLE kitsune_player_stats (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             duel_wins INTEGER NOT NULL DEFAULT 0,
@@ -63,7 +63,7 @@ async function setup() {
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             PRIMARY KEY (guild_id, user_id),
             FOREIGN KEY (guild_id, user_id)
-                REFERENCES akane_users (guild_id, user_id)
+                REFERENCES kitsune_users (guild_id, user_id)
         );
     `);
 
@@ -91,7 +91,7 @@ async function setup() {
     for (const userId of USERS) {
         await db.query(
             `
-                INSERT INTO akane_users (guild_id, user_id)
+                INSERT INTO kitsune_users (guild_id, user_id)
                 VALUES ($1, $2)
             `,
             [GUILD, userId]
@@ -99,7 +99,7 @@ async function setup() {
 
         await db.query(
             `
-                INSERT INTO akane_player_stats (
+                INSERT INTO kitsune_player_stats (
                     guild_id, user_id
                 )
                 VALUES ($1, $2)
@@ -127,7 +127,7 @@ async function getStats(userId) {
     const { rows } = await db.query(
         `
             SELECT duel_wins, duel_losses
-            FROM akane_player_stats
+            FROM kitsune_player_stats
             WHERE guild_id = $1 AND user_id = $2
         `,
         [GUILD, userId]

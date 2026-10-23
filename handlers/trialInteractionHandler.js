@@ -31,7 +31,7 @@ async function handleTrialButton(
 ) {
     if (
         !interaction.customId.startsWith(
-            'akane:trial:'
+            'kitsune:trial:'
         )
     ) {
         return false;
@@ -136,7 +136,7 @@ async function handleTrialButton(
                     `You have withdrawn from **${definition.name}**.`
                 )
                     .setFooter({
-                        text: 'AKANE • BLOOD MOON'
+                        text: 'KITSUNE • BLOOD MOON'
                     })
             ]
         });
@@ -224,7 +224,7 @@ async function handleTrialButton(
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });

@@ -24,7 +24,7 @@ function buildPathComponents() {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(
-                        'akane:path:slayer'
+                        'kitsune:path:slayer'
                     )
                     .setLabel(
                         'Become a Slayer'
@@ -36,7 +36,7 @@ function buildPathComponents() {
 
                 new ButtonBuilder()
                     .setCustomId(
-                        'akane:path:demon'
+                        'kitsune:path:demon'
                     )
                     .setLabel(
                         'Become a Demon'

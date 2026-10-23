@@ -12,19 +12,19 @@ const {
 const TICKET_COMPONENT_IDS =
     Object.freeze({
         open:
-            'akane:ticket:open',
+            'kitsune:ticket:open',
 
         category:
-            'akane:ticket:category',
+            'kitsune:ticket:category',
 
         close:
-            'akane:ticket:close',
+            'kitsune:ticket:close',
 
         reopen:
-            'akane:ticket:reopen',
+            'kitsune:ticket:reopen',
 
         delete:
-            'akane:ticket:delete'
+            'kitsune:ticket:delete'
     });
 
 function buildTicketPanelComponents() {

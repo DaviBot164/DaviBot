@@ -97,7 +97,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Lock Failed',
-                        'Akane needs Manage Channels permission for that channel.'
+                        'Kitsune needs Manage Channels permission for that channel.'
                     )
                 ]
             });
@@ -122,7 +122,7 @@ module.exports = {
                     embeds: [
                         errorEmbed(
                             'Already Locked',
-                            `${channel} is already locked by Akane.`
+                            `${channel} is already locked by Kitsune.`
                         )
                     ]
                 });
@@ -228,7 +228,7 @@ module.exports = {
                     },
                     {
                         reason:
-                            'Akane lock rollback'
+                            'Kitsune lock rollback'
                     }
                 );
 
@@ -257,7 +257,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Lock Failed',
-                        'Akane could not lock this channel.'
+                        'Kitsune could not lock this channel.'
                     )
                 ]
             });

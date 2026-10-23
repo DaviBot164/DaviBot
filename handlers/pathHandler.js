@@ -23,13 +23,13 @@ const {
 } = require('../utils/embeds');
 
 const PATHS = Object.freeze({
-    'akane:path:slayer': {
+    'kitsune:path:slayer': {
         faction: FACTIONS.SLAYER,
         name: 'Slayer',
         emoji: '⚔️'
     },
 
-    'akane:path:demon': {
+    'kitsune:path:demon': {
         faction: FACTIONS.DEMON,
         name: 'Demon',
         emoji: '🩸'

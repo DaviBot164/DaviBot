@@ -41,7 +41,7 @@ async function lockMatch(client, guildId, matchId) {
     const { rows } = await client.query(
         `
             SELECT *
-            FROM akane_matches
+            FROM kitsune_matches
             WHERE guild_id = $1
               AND id = $2
             FOR UPDATE
@@ -60,7 +60,7 @@ async function getPlayers(client, match) {
     const { rows } = await client.query(
         `
             SELECT user_id, team, is_captain
-            FROM akane_match_players
+            FROM kitsune_match_players
             WHERE match_id = $1
               AND guild_id = $2
             ORDER BY user_id
@@ -111,7 +111,7 @@ async function recordStatistics(client, match, players, winnerTeam) {
         const { rowCount } = await client.query(
             `
                 SELECT user_id
-                FROM akane_users
+                FROM kitsune_users
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -127,7 +127,7 @@ async function recordStatistics(client, match, players, winnerTeam) {
 
         await client.query(
             `
-                INSERT INTO akane_player_stats (
+                INSERT INTO kitsune_player_stats (
                     guild_id,
                     user_id
                 )
@@ -146,7 +146,7 @@ async function recordStatistics(client, match, players, winnerTeam) {
 
         await client.query(
             `
-                UPDATE akane_player_stats
+                UPDATE kitsune_player_stats
                 SET
                     ${column} = ${column} + 1,
                     updated_at = NOW()
@@ -173,7 +173,7 @@ async function completeMatch(
 
     const { rows } = await client.query(
         `
-            UPDATE akane_matches
+            UPDATE kitsune_matches
             SET
                 status = 'completed',
                 winner_team = $3,
@@ -188,7 +188,7 @@ async function completeMatch(
 
     await client.query(
         `
-            DELETE FROM akane_match_active_players
+            DELETE FROM kitsune_match_active_players
             WHERE match_id = $1
         `,
         [match.id]
@@ -237,7 +237,7 @@ async function reportMatchResult(
 
         const { rows } = await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     status = 'reported',
                     reported_winner = $3,
@@ -304,7 +304,7 @@ async function confirmMatchResult(
 
         await client.query(
             `
-                INSERT INTO akane_match_confirmations (
+                INSERT INTO kitsune_match_confirmations (
                     match_id,
                     guild_id,
                     captain_id,
@@ -367,7 +367,7 @@ async function disputeMatchResult(
 
         const { rows } = await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     status = 'disputed',
                     updated_at = NOW()

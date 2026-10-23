@@ -17,7 +17,7 @@ function dailyEmbed(result) {
         `Next bonus in **${info.nextIn} claim${info.nextIn===1?'':'s'}**: **+${info.nextBonus} XP**`,
         '',`Next drop: <t:${Math.floor(next/1000)}:R>`,
         'Claim again 24–48 hours after this drop to continue the streak.',
-        '', '*Akane: Another day, another little victory. Keep that rhythm.*'
+        '', '*Kitsune: Another day, another little victory. Keep that rhythm.*'
     ] : [
         'Your daily drop has already been collected.',
         `**Streak:** ${streak} day${streak===1?'':'s'}`,

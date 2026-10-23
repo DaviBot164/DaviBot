@@ -26,7 +26,7 @@ async function lockMatch(client, guildId, matchId) {
     const { rows } = await client.query(
         `
             SELECT *
-            FROM akane_matches
+            FROM kitsune_matches
             WHERE guild_id = $1
               AND id = $2
             FOR UPDATE
@@ -45,7 +45,7 @@ async function getStartState(client, match) {
     const { rows: players } = await client.query(
         `
             SELECT user_id, team, is_captain
-            FROM akane_match_players
+            FROM kitsune_match_players
             WHERE match_id = $1
               AND guild_id = $2
         `,
@@ -79,7 +79,7 @@ async function getStartState(client, match) {
     const { rows: confirmations } = await client.query(
         `
             SELECT captain_id
-            FROM akane_match_confirmations
+            FROM kitsune_match_confirmations
             WHERE match_id = $1
               AND guild_id = $2
               AND confirmation_type = 'start'
@@ -159,7 +159,7 @@ async function confirmMatchStart(
 
         await client.query(
             `
-                INSERT INTO akane_match_confirmations (
+                INSERT INTO kitsune_match_confirmations (
                     match_id,
                     guild_id,
                     captain_id,
@@ -185,7 +185,7 @@ async function confirmMatchStart(
 
         await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     status = 'active',
                     started_at = NOW(),
@@ -239,7 +239,7 @@ async function withdrawStartConfirmation(
 
         await client.query(
             `
-                DELETE FROM akane_match_confirmations
+                DELETE FROM kitsune_match_confirmations
                 WHERE match_id = $1
                   AND guild_id = $2
                   AND captain_id = $3

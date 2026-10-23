@@ -156,7 +156,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Warning Removal Failed',
-                        'Akane could not remove the warning.'
+                        'Kitsune could not remove the warning.'
                     )
                 ]
             });

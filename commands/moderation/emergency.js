@@ -127,7 +127,7 @@ async function runLockdown(
             title:
                 'Emergency Failed',
             description:
-                'Akane needs Manage Channels permission.'
+                'Kitsune needs Manage Channels permission.'
         };
     }
 
@@ -800,7 +800,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Emergency Control Failed',
-                        'Akane could not safely complete the emergency operation.'
+                        'Kitsune could not safely complete the emergency operation.'
                     )
                 ]
             });

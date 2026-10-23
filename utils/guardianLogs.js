@@ -40,7 +40,7 @@ function timeoutStatus(result) {
     }
 
     if (result.timeoutStatus === 'unavailable') {
-        return 'Unavailable • Member cannot be timed out by Akane';
+        return 'Unavailable • Member cannot be timed out by Kitsune';
     }
 
     return 'Not applied';

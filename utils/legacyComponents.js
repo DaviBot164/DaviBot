@@ -8,13 +8,13 @@ const {
 const LEGACY_IDS =
     Object.freeze({
         section:
-            'akane:legacy:section',
+            'kitsune:legacy:section',
 
         previous:
-            'akane:legacy:previous',
+            'kitsune:legacy:previous',
 
         next:
-            'akane:legacy:next'
+            'kitsune:legacy:next'
     });
 
 const LEGACY_SECTIONS =

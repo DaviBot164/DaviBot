@@ -24,7 +24,7 @@ async function getChannelLock(
     const result = await query(
         `
             SELECT *
-            FROM akane_channel_locks
+            FROM kitsune_channel_locks
             WHERE
                 guild_id = $1
                 AND channel_id = $2
@@ -50,7 +50,7 @@ async function saveChannelLock({
 }) {
     const result = await query(
         `
-            INSERT INTO akane_channel_locks (
+            INSERT INTO kitsune_channel_locks (
                 guild_id,
                 channel_id,
                 moderator_id,
@@ -93,7 +93,7 @@ async function deleteChannelLock(
 ) {
     const result = await query(
         `
-            DELETE FROM akane_channel_locks
+            DELETE FROM kitsune_channel_locks
             WHERE
                 guild_id = $1
                 AND channel_id = $2

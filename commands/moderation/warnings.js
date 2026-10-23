@@ -36,7 +36,7 @@ function formatWarning(
         }`,
         moderationCase.moderatorId
             ? `Moderator: <@${moderationCase.moderatorId}>`
-            : 'Moderator: Akane',
+            : 'Moderator: Kitsune',
         `Date: <t:${timestamp}:R>`
     ].join('\n');
 }
@@ -140,7 +140,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Warning History Failed',
-                        'Akane could not load the warning history.'
+                        'Kitsune could not load the warning history.'
                     )
                 ]
             });

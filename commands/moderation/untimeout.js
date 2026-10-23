@@ -119,7 +119,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Timeout Removal Failed',
-                        'Akane cannot modify this member.'
+                        'Kitsune cannot modify this member.'
                     )
                 ]
             });
@@ -219,7 +219,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Timeout Removal Failed',
-                        'Akane could not remove this timeout.'
+                        'Kitsune could not remove this timeout.'
                     )
                 ]
             });

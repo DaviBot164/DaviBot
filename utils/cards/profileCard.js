@@ -399,7 +399,7 @@ async function createProfileCard(
 
     text(
         ctx,
-        brand.footer ?? 'Akane • Blood Moon',
+        brand.footer ?? 'Kitsune • Blood Moon',
         1059, 674, 430, 13,
         COLORS.muted, 500, 'right'
     );

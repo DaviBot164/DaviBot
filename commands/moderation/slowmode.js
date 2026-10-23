@@ -133,7 +133,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Slowmode Failed',
-                        'Akane needs Manage Channels permission for that channel.'
+                        'Kitsune needs Manage Channels permission for that channel.'
                     )
                 ]
             });
@@ -195,7 +195,7 @@ module.exports = {
                 try {
                     await channel.setRateLimitPerUser(
                         previousSlowmode,
-                        'Akane slowmode rollback'
+                        'Kitsune slowmode rollback'
                     );
                 } catch (rollbackError) {
                     console.error(
@@ -233,7 +233,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Slowmode Failed',
-                        'Akane could not change the channel slowmode.'
+                        'Kitsune could not change the channel slowmode.'
                     )
                 ]
             });

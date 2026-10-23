@@ -300,7 +300,7 @@ module.exports = {
                     }
                 )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 });
 
         await interaction.editReply({

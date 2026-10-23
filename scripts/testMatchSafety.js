@@ -27,7 +27,7 @@ const CHANNEL = 'pvp-test';
 
 async function setup() {
     await db.exec(`
-        CREATE TABLE akane_users (
+        CREATE TABLE kitsune_users (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             PRIMARY KEY (guild_id, user_id)
@@ -51,7 +51,7 @@ async function setup() {
 
     for (let i = 1; i <= 8; i++) {
         await db.query(
-            `INSERT INTO akane_users (guild_id, user_id)
+            `INSERT INTO kitsune_users (guild_id, user_id)
              VALUES ($1, $2)`,
             [GUILD, `player-${i}`]
         );

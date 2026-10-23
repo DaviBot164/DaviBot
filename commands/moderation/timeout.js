@@ -151,7 +151,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Timeout Failed',
-                        'Akane cannot timeout this member.'
+                        'Kitsune cannot timeout this member.'
                     )
                 ]
             });
@@ -252,7 +252,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Timeout Failed',
-                        'Akane could not timeout this member.'
+                        'Kitsune could not timeout this member.'
                     )
                 ]
             });

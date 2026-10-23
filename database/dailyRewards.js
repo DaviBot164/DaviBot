@@ -18,7 +18,7 @@ async function claimDaily(guildId, userId) {
         const { rows: userRows } = await client.query(
             `
                 SELECT level, xp
-                FROM akane_users
+                FROM kitsune_users
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -32,7 +32,7 @@ async function claimDaily(guildId, userId) {
 
         await client.query(
             `
-                INSERT INTO akane_player_stats (
+                INSERT INTO kitsune_player_stats (
                     guild_id,
                     user_id
                 )
@@ -46,7 +46,7 @@ async function claimDaily(guildId, userId) {
         const { rows: statsRows } = await client.query(
             `
                 SELECT daily_streak, last_daily_claim_at
-                FROM akane_player_stats
+                FROM kitsune_player_stats
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -95,7 +95,7 @@ async function claimDaily(guildId, userId) {
 
         await client.query(
             `
-                UPDATE akane_users
+                UPDATE kitsune_users
                 SET
                     level = $3,
                     xp = $4,
@@ -113,7 +113,7 @@ async function claimDaily(guildId, userId) {
 
         await client.query(
             `
-                UPDATE akane_player_stats
+                UPDATE kitsune_player_stats
                 SET
                     daily_streak = $3,
                     last_daily_claim_at = $4,
@@ -126,7 +126,7 @@ async function claimDaily(guildId, userId) {
 
         await client.query(
             `
-                INSERT INTO akane_daily_quests (
+                INSERT INTO kitsune_daily_quests (
                     guild_id,
                     user_id
                 )
@@ -140,7 +140,7 @@ async function claimDaily(guildId, userId) {
         const { rows: questRows } = await client.query(
             `
                 SELECT cycle_started_at
-                FROM akane_daily_quests
+                FROM kitsune_daily_quests
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -155,7 +155,7 @@ async function claimDaily(guildId, userId) {
         if (cycleExpired) {
             await client.query(
                 `
-                    UPDATE akane_daily_quests
+                    UPDATE kitsune_daily_quests
                     SET
                         cycle_id = gen_random_uuid(),
                         cycle_started_at = NOW(),
@@ -171,7 +171,7 @@ async function claimDaily(guildId, userId) {
         } else {
             await client.query(
                 `
-                    UPDATE akane_daily_quests
+                    UPDATE kitsune_daily_quests
                     SET
                         daily_claimed = TRUE,
                         updated_at = NOW()

@@ -236,7 +236,7 @@ async function handleSpam(message) {
             try {
                 await message.member.timeout(
                     guardian.spam.timeoutMs,
-                    'Akane Guardian: repeated spam'
+                    'Kitsune Guardian: repeated spam'
                 );
 
                 result.action = 'timeout';

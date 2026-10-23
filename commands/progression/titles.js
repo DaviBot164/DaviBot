@@ -73,7 +73,7 @@ function buildTitleMenu(
         .addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId(
-                    'akane:title:select'
+                    'kitsune:title:select'
                 )
                 .setPlaceholder(
                     'Choose a title'

@@ -2,7 +2,7 @@ const { query } = require('./connection');
 
 async function initializeSchema() {
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_users (
+        CREATE TABLE IF NOT EXISTS kitsune_users (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
 
@@ -36,27 +36,27 @@ async function initializeSchema() {
             )
         );
 
-        UPDATE akane_users
+        UPDATE kitsune_users
         SET
             level = 1,
             updated_at = NOW()
         WHERE level < 1;
 
-        ALTER TABLE akane_users
+        ALTER TABLE kitsune_users
             ALTER COLUMN level
             SET DEFAULT 1;
 
-        ALTER TABLE akane_users
+        ALTER TABLE kitsune_users
             DROP CONSTRAINT IF EXISTS
-            akane_users_level_check;
+            kitsune_users_level_check;
 
-        ALTER TABLE akane_users
+        ALTER TABLE kitsune_users
             ADD CONSTRAINT
-            akane_users_level_check
+            kitsune_users_level_check
             CHECK (level >= 1);
 
 
-        CREATE TABLE IF NOT EXISTS akane_achievements (
+        CREATE TABLE IF NOT EXISTS kitsune_achievements (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             achievement_id TEXT NOT NULL,
@@ -72,7 +72,7 @@ async function initializeSchema() {
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_titles (
+        CREATE TABLE IF NOT EXISTS kitsune_titles (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             title_id TEXT NOT NULL,
@@ -91,15 +91,15 @@ async function initializeSchema() {
         );
 
         CREATE UNIQUE INDEX IF NOT EXISTS
-            akane_one_equipped_title
-        ON akane_titles (
+            kitsune_one_equipped_title
+        ON kitsune_titles (
             guild_id,
             user_id
         )
         WHERE equipped = TRUE;
 
 
-        CREATE TABLE IF NOT EXISTS akane_rank_history (
+        CREATE TABLE IF NOT EXISTS kitsune_rank_history (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
@@ -124,15 +124,15 @@ async function initializeSchema() {
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_rank_history_user
-        ON akane_rank_history (
+            kitsune_rank_history_user
+        ON kitsune_rank_history (
             guild_id,
             user_id,
             created_at DESC
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_trials (
+        CREATE TABLE IF NOT EXISTS kitsune_trials (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
@@ -171,26 +171,26 @@ async function initializeSchema() {
                 DEFAULT NOW()
         );
 
-        ALTER TABLE akane_trials
+        ALTER TABLE kitsune_trials
             ADD COLUMN IF NOT EXISTS
             channel_id TEXT;
 
-        ALTER TABLE akane_trials
+        ALTER TABLE kitsune_trials
             ADD COLUMN IF NOT EXISTS
             message_id TEXT;
 
         CREATE INDEX IF NOT EXISTS
-            akane_trials_guild_status
-        ON akane_trials (
+            kitsune_trials_guild_status
+        ON kitsune_trials (
             guild_id,
             status,
             created_at DESC
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_trial_participants (
+        CREATE TABLE IF NOT EXISTS kitsune_trial_participants (
             trial_id BIGINT NOT NULL
-                REFERENCES akane_trials(id)
+                REFERENCES kitsune_trials(id)
                 ON DELETE CASCADE,
 
             guild_id TEXT NOT NULL,
@@ -222,15 +222,15 @@ async function initializeSchema() {
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_trial_participants_user
-        ON akane_trial_participants (
+            kitsune_trial_participants_user
+        ON kitsune_trial_participants (
             guild_id,
             user_id,
             registered_at DESC
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_tickets (
+        CREATE TABLE IF NOT EXISTS kitsune_tickets (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
@@ -273,34 +273,34 @@ async function initializeSchema() {
         );
 
         CREATE UNIQUE INDEX IF NOT EXISTS
-            akane_one_open_ticket
-        ON akane_tickets (
+            kitsune_one_open_ticket
+        ON kitsune_tickets (
             guild_id,
             user_id
         )
         WHERE status = 'open';
 
         CREATE INDEX IF NOT EXISTS
-            akane_tickets_channel
-        ON akane_tickets (
+            kitsune_tickets_channel
+        ON kitsune_tickets (
             guild_id,
             channel_id
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_tickets_history
-        ON akane_tickets (
+            kitsune_tickets_history
+        ON kitsune_tickets (
             guild_id,
             user_id,
             created_at DESC
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_ticket_actions (
+        CREATE TABLE IF NOT EXISTS kitsune_ticket_actions (
             id BIGSERIAL PRIMARY KEY,
 
             ticket_id BIGINT NOT NULL
-                REFERENCES akane_tickets(id)
+                REFERENCES kitsune_tickets(id)
                 ON DELETE CASCADE,
 
             guild_id TEXT NOT NULL,
@@ -323,14 +323,14 @@ async function initializeSchema() {
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_ticket_actions_ticket
-        ON akane_ticket_actions (
+            kitsune_ticket_actions_ticket
+        ON kitsune_ticket_actions (
             ticket_id,
             created_at ASC
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_moderation_cases (
+        CREATE TABLE IF NOT EXISTS kitsune_moderation_cases (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
@@ -384,29 +384,29 @@ async function initializeSchema() {
             resolution_reason TEXT
         );
 
-        ALTER TABLE akane_moderation_cases
+        ALTER TABLE kitsune_moderation_cases
             ALTER COLUMN user_id
             DROP NOT NULL;
 
         CREATE INDEX IF NOT EXISTS
-            akane_moderation_cases_user
-        ON akane_moderation_cases (
+            kitsune_moderation_cases_user
+        ON kitsune_moderation_cases (
             guild_id,
             user_id,
             created_at DESC
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_moderation_cases_action
-        ON akane_moderation_cases (
+            kitsune_moderation_cases_action
+        ON kitsune_moderation_cases (
             guild_id,
             action,
             created_at DESC
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_moderation_cases_active
-        ON akane_moderation_cases (
+            kitsune_moderation_cases_active
+        ON kitsune_moderation_cases (
             guild_id,
             user_id,
             active
@@ -414,7 +414,7 @@ async function initializeSchema() {
         WHERE active = TRUE;
 
 
-        CREATE TABLE IF NOT EXISTS akane_channel_locks (
+        CREATE TABLE IF NOT EXISTS kitsune_channel_locks (
             guild_id TEXT NOT NULL,
             channel_id TEXT NOT NULL,
 
@@ -423,7 +423,7 @@ async function initializeSchema() {
             previous_send_messages BOOLEAN,
 
             case_id BIGINT
-                REFERENCES akane_moderation_cases(id)
+                REFERENCES kitsune_moderation_cases(id)
                 ON DELETE SET NULL,
 
             created_at TIMESTAMPTZ NOT NULL
@@ -436,14 +436,14 @@ async function initializeSchema() {
         );
 
 
-        CREATE TABLE IF NOT EXISTS akane_emergency_states (
+        CREATE TABLE IF NOT EXISTS kitsune_emergency_states (
             id BIGSERIAL PRIMARY KEY,
 
             guild_id TEXT NOT NULL,
             moderator_id TEXT NOT NULL,
 
             case_id BIGINT
-                REFERENCES akane_moderation_cases(id)
+                REFERENCES kitsune_moderation_cases(id)
                 ON DELETE SET NULL,
 
             mode TEXT NOT NULL
@@ -465,16 +465,16 @@ async function initializeSchema() {
         );
 
         CREATE UNIQUE INDEX IF NOT EXISTS
-            akane_one_active_emergency
-        ON akane_emergency_states (
+            kitsune_one_active_emergency
+        ON kitsune_emergency_states (
             guild_id
         )
         WHERE active = TRUE;
 
 
-        CREATE TABLE IF NOT EXISTS akane_emergency_snapshots (
+        CREATE TABLE IF NOT EXISTS kitsune_emergency_snapshots (
             emergency_id BIGINT NOT NULL
-                REFERENCES akane_emergency_states(id)
+                REFERENCES kitsune_emergency_states(id)
                 ON DELETE CASCADE,
 
             guild_id TEXT NOT NULL,
@@ -496,8 +496,8 @@ async function initializeSchema() {
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_emergency_snapshots_guild
-        ON akane_emergency_snapshots (
+            kitsune_emergency_snapshots_guild
+        ON kitsune_emergency_snapshots (
             guild_id,
             emergency_id
         );

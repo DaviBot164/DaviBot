@@ -32,7 +32,7 @@ function guide(kind) {
             field('04 · Make your progress visible','**/profile** — Level, faction and statistics\n**/achievements** — Milestones and Achievement Points\n**/titles** — Equip an unlocked title\n**/leaderboard** — Community rankings'),
             field('05 · Rise through your path',`Regular faction ranks follow your server level. **Hashira / Upper Moon** require Level **50+** and a Trial or staff promotion. Level 50 alone does not award them.\nGuides: ${channel('factionProgression','the faction progression channel')} · **/corps** · **/trial**`),
             field('06 · Pick your team','Use **/match** for **1v1–5v5** in any game. Join **🔴 Vortex** or **🔵 Nova**. Both captains confirm the start; the opposing captain confirms or disputes the reported result. Confirmed results update profile wins and losses.'),
-            field('07 · Meet Akane',`Try **\`akane help\`** for conversation examples, or **/help** for bot commands. Need a hand? ${support}.\n*Server XP and ranks are separate from your in-game progress.*`)
+            field('07 · Meet Kitsune',`Try **\`kitsune help\`** for conversation examples, or **/help** for bot commands. Need a hand? ${support}.\n*Server XP and ranks are separate from your in-game progress.*`)
         ]},
         verification_guide:{title:'⛩️ Blood Moon Verification',intro:'**One account linked. Your next chapter unlocked.**\nBlood Moon uses Bloxlink for Roblox account verification.',quote:'Make an entrance. Preferably with the right account.',fields:[
             field('01 · Start here','Use the Bloxlink verification option provided in this channel. Follow the instructions shown by Bloxlink.'),
@@ -56,7 +56,7 @@ function guide(kind) {
             field('Looking for server progression?',`Blood Moon XP is separate from Slayers 2. See ${channel('factionProgression','the faction guides')} or use **/profile**.`)
         ]},
         support_guide:{title:'📜 Support Guide',intro:`**A clear question. The right ticket. A calmer conversation.**\nOpen a ticket in ${tickets} and choose the category that fits.`,quote:'Bring the details. Leave the dramatic ping marathon outside.',fields:[
-            field('🛟 Support','Verification, missing roles, server questions or Akane issues. Tell staff what you expected, what happened, and what you already tried.'),
+            field('🛟 Support','Verification, missing roles, server questions or Kitsune issues. Tell staff what you expected, what happened, and what you already tried.'),
             field('🚨 Report','Rule violations, harassment or suspicious activity. Include relevant message links, screenshots and a short explanation. Keep private details out of public chat.'),
             field('⚖️ Appeal','Ask staff to review a moderation action. Include its date or case ID when available and explain what needs reconsideration. A review does not guarantee a reversal.'),
             field('📜 Other','Not sure where it fits? State what you need in the first message so staff can direct you.'),

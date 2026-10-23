@@ -126,7 +126,7 @@ module.exports = {
         if (!channel.permissionsFor(botMember)?.has(requiredPermissions)) {
             await fail(
                 'Missing Permissions',
-                'Akane needs View Channel, Send Messages, and Embed Links in that channel.'
+                'Kitsune needs View Channel, Send Messages, and Embed Links in that channel.'
             );
 
             return;
@@ -145,7 +145,7 @@ module.exports = {
         ) {
             await fail(
                 'Missing Mention Permission',
-                'Both you and Akane need Mention Everyone permission in that channel.'
+                'Both you and Kitsune need Mention Everyone permission in that channel.'
             );
 
             return;
@@ -161,7 +161,7 @@ module.exports = {
             .setTitle(title)
             .setDescription(text)
             .setFooter({
-                text: `AKANE • ${interaction.guild.name}`
+                text: `KITSUNE • ${interaction.guild.name}`
             })
             .setTimestamp();
 
@@ -171,8 +171,8 @@ module.exports = {
             );
         }
 
-        const publishId = `akane:announce:publish:${interaction.id}`;
-        const cancelId = `akane:announce:cancel:${interaction.id}`;
+        const publishId = `kitsune:announce:publish:${interaction.id}`;
+        const cancelId = `kitsune:announce:cancel:${interaction.id}`;
 
         const controls = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -262,7 +262,7 @@ module.exports = {
             ) {
                 await fail(
                     'Missing Mention Permission',
-                    'Both you and Akane need Mention Everyone permission in that channel.'
+                    'Both you and Kitsune need Mention Everyone permission in that channel.'
                 );
 
                 return;
@@ -294,7 +294,7 @@ module.exports = {
 
             await fail(
                 'Publish Failed',
-                'Akane could not publish the announcement. Check her channel permissions.'
+                'Kitsune could not publish the announcement. Check her channel permissions.'
             );
         }
     }

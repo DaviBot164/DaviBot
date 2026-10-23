@@ -12,7 +12,7 @@ const {
     createEmbed
 } = require('../embeds');
 
-const BUTTON_PREFIX = 'akane:quest:claim:';
+const BUTTON_PREFIX = 'kitsune:quest:claim:';
 
 const ICONS = Object.freeze({
     active_soul: '💬',
@@ -121,7 +121,7 @@ module.exports = {
     BUTTON_PREFIX,
     buildQuestPanel
 };
-// Akane mission presentation v1: preserve original button and cycle IDs.
+// Kitsune mission presentation v1: preserve original button and cycle IDs.
 const originalMissionPanel = module.exports.buildQuestPanel;
 const { decorateQuestPanel } = require('./missionView');
 module.exports.buildQuestPanel = function(data) {

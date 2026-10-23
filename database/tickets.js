@@ -46,7 +46,7 @@ async function createTicket({
 }) {
     const { rows } = await query(
         `
-            INSERT INTO akane_tickets (
+            INSERT INTO kitsune_tickets (
                 guild_id,
                 user_id,
                 category,
@@ -70,7 +70,7 @@ async function getTicket(ticketId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_tickets
+            FROM kitsune_tickets
             WHERE id = $1
         `,
         [ticketId]
@@ -86,7 +86,7 @@ async function getTicketByChannel(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_tickets
+            FROM kitsune_tickets
             WHERE guild_id = $1
               AND channel_id = $2
             LIMIT 1
@@ -107,7 +107,7 @@ async function getOpenTicket(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_tickets
+            FROM kitsune_tickets
             WHERE guild_id = $1
               AND user_id = $2
               AND status = 'open'
@@ -129,7 +129,7 @@ async function setTicketChannel(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_tickets
+            UPDATE kitsune_tickets
             SET
                 channel_id = $2,
                 updated_at = NOW()
@@ -151,7 +151,7 @@ async function closeTicket(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_tickets
+            UPDATE kitsune_tickets
             SET
                 status = 'closed',
                 closed_at = NOW(),
@@ -176,7 +176,7 @@ async function reopenTicket(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_tickets
+            UPDATE kitsune_tickets
             SET
                 status = 'open',
                 closed_at = NULL,
@@ -202,7 +202,7 @@ async function detachTicketChannel(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_tickets
+            UPDATE kitsune_tickets
             SET
                 channel_id = NULL,
                 updated_at = NOW()
@@ -224,7 +224,7 @@ async function addTicketAction({
 }) {
     const { rows } = await query(
         `
-            INSERT INTO akane_ticket_actions (
+            INSERT INTO kitsune_ticket_actions (
                 ticket_id,
                 guild_id,
                 action,
@@ -252,7 +252,7 @@ async function getTicketActions(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_ticket_actions
+            FROM kitsune_ticket_actions
             WHERE ticket_id = $1
             ORDER BY created_at ASC
         `,
@@ -278,7 +278,7 @@ async function getTicketHistory(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_tickets
+            FROM kitsune_tickets
             WHERE guild_id = $1
               AND user_id = $2
             ORDER BY created_at DESC

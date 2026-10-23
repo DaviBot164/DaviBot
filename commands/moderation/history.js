@@ -134,7 +134,7 @@ module.exports = {
                 Math.ceil(records.length / PAGE_SIZE)
             );
 
-            const prefix = `akane:history:${interaction.id}`;
+            const prefix = `kitsune:history:${interaction.id}`;
 
             function payload(disabled = false) {
                 const embed = createEmbed(
@@ -267,7 +267,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'History Failed',
-                        'Akane could not load this member’s moderation history.'
+                        'Kitsune could not load this member’s moderation history.'
                     )
                 ],
                 components: [],

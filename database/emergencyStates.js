@@ -51,7 +51,7 @@ async function createEmergency({
 }) {
     const result = await query(
         `
-            INSERT INTO akane_emergency_states (
+            INSERT INTO kitsune_emergency_states (
                 guild_id,
                 moderator_id,
                 case_id,
@@ -79,7 +79,7 @@ async function getActiveEmergency(
     const result = await query(
         `
             SELECT *
-            FROM akane_emergency_states
+            FROM kitsune_emergency_states
             WHERE
                 guild_id = $1
                 AND active = TRUE
@@ -106,7 +106,7 @@ async function saveSnapshot({
 }) {
     const result = await query(
         `
-            INSERT INTO akane_emergency_snapshots (
+            INSERT INTO kitsune_emergency_snapshots (
                 emergency_id,
                 guild_id,
                 channel_id,
@@ -158,7 +158,7 @@ async function getSnapshots(
     const result = await query(
         `
             SELECT *
-            FROM akane_emergency_snapshots
+            FROM kitsune_emergency_snapshots
             WHERE emergency_id = $1
             ORDER BY channel_id ASC
         `,
@@ -178,7 +178,7 @@ async function releaseEmergency(
 ) {
     const result = await query(
         `
-            UPDATE akane_emergency_states
+            UPDATE kitsune_emergency_states
             SET
                 active = FALSE,
                 released_at = NOW(),
@@ -204,7 +204,7 @@ async function deleteEmergency(
 ) {
     const result = await query(
         `
-            DELETE FROM akane_emergency_states
+            DELETE FROM kitsune_emergency_states
             WHERE id = $1
             RETURNING *
         `,

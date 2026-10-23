@@ -23,7 +23,7 @@ async function main() {
         }
 
         await db.exec(`
-            CREATE TABLE akane_users (
+            CREATE TABLE kitsune_users (
                 guild_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 PRIMARY KEY (guild_id, user_id)
@@ -38,15 +38,15 @@ async function main() {
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
-              AND table_name LIKE 'akane_match%'
+              AND table_name LIKE 'kitsune_match%'
             ORDER BY table_name
         `);
 
         const expected = [
-            'akane_match_active_players',
-            'akane_match_confirmations',
-            'akane_match_players',
-            'akane_matches'
+            'kitsune_match_active_players',
+            'kitsune_match_confirmations',
+            'kitsune_match_players',
+            'kitsune_matches'
         ];
 
         const actual = rows.map(row => row.table_name);

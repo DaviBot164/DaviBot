@@ -2,7 +2,7 @@ const { query } = require('./connection');
 
 async function initializePlayerSchema() {
     await query(`
-        CREATE TABLE IF NOT EXISTS akane_player_stats (
+        CREATE TABLE IF NOT EXISTS kitsune_player_stats (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
 
@@ -26,7 +26,7 @@ async function initializePlayerSchema() {
             PRIMARY KEY (guild_id, user_id),
 
             FOREIGN KEY (guild_id, user_id)
-                REFERENCES akane_users (
+                REFERENCES kitsune_users (
                     guild_id,
                     user_id
                 )
@@ -34,15 +34,15 @@ async function initializePlayerSchema() {
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_player_stats_duels
-        ON akane_player_stats (
+            kitsune_player_stats_duels
+        ON kitsune_player_stats (
             guild_id,
             duel_wins DESC
         );
 
         CREATE INDEX IF NOT EXISTS
-            akane_player_stats_events
-        ON akane_player_stats (
+            kitsune_player_stats_events
+        ON kitsune_player_stats (
             guild_id,
             event_points DESC
         );

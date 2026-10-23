@@ -7,7 +7,7 @@ function decorateQuestPanel(panel,data) {
     const claimed=quests.filter(q=>q.claimed).length;
     const ready=quests.filter(q=>q.completed&&!q.claimed).length;
     const embed=createEmbed(`🦊 Mission Board • ${theme.name}`,[
-        `*Akane: ${theme.quote}*`,
+        `*Kitsune: ${theme.quote}*`,
         '',`**Rewards collected:** ${claimed}/${quests.length} • **Ready to claim:** ${ready}`,
         `**Clear bonus:** +${data.boardBonus??BOARD_BONUS} XP${data.boardBonusClaimed?' • Collected':' • Collect all three mission rewards'}`,
         '',`Refresh: <t:${Math.floor(new Date(data.nextResetAt).getTime()/1000)}:R>`,

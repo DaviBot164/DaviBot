@@ -3,18 +3,18 @@ const {
 } = require('../database/connection');
 
 const REQUIRED_TABLES = {
-    akane_users: [
+    kitsune_users: [
         'guild_id',
         'user_id'
     ],
-    akane_player_stats: [
+    kitsune_player_stats: [
         'guild_id',
         'user_id',
         'duel_wins',
         'duel_losses',
         'updated_at'
     ],
-    akane_matches: [
+    kitsune_matches: [
         'id',
         'guild_id',
         'channel_id',
@@ -32,7 +32,7 @@ const REQUIRED_TABLES = {
         'completed_at',
         'updated_at'
     ],
-    akane_match_players: [
+    kitsune_match_players: [
         'match_id',
         'guild_id',
         'user_id',
@@ -41,14 +41,14 @@ const REQUIRED_TABLES = {
         'is_ready',
         'joined_at'
     ],
-    akane_match_confirmations: [
+    kitsune_match_confirmations: [
         'match_id',
         'guild_id',
         'captain_id',
         'confirmation_type',
         'confirmed_at'
     ],
-    akane_match_active_players: [
+    kitsune_match_active_players: [
         'guild_id',
         'user_id',
         'match_id'

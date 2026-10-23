@@ -33,7 +33,7 @@ const CHANNEL = 'expiry-test-channel';
 
 async function setup() {
     await db.exec(`
-        CREATE TABLE akane_users (
+        CREATE TABLE kitsune_users (
             guild_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             PRIMARY KEY (guild_id, user_id)
@@ -69,7 +69,7 @@ async function setup() {
     for (let i = 1; i <= 6; i++) {
         await db.query(
             `
-                INSERT INTO akane_users (
+                INSERT INTO kitsune_users (
                     guild_id,
                     user_id
                 )
@@ -85,7 +85,7 @@ async function setup() {
 async function makeOld(matchId) {
     await db.query(
         `
-            UPDATE akane_matches
+            UPDATE kitsune_matches
             SET created_at = NOW() - INTERVAL '25 hours'
             WHERE id = $1
         `,
@@ -98,7 +98,7 @@ async function isReserved(userId) {
         `
             SELECT EXISTS (
                 SELECT 1
-                FROM akane_match_active_players
+                FROM kitsune_match_active_players
                 WHERE guild_id = $1
                   AND user_id = $2
             ) AS reserved

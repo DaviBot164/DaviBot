@@ -23,16 +23,19 @@ const {
     initializeMatchSchema
 } = require('./matchSchema');
 
-const { initializeAkaneLearningSchema } = require('./akaneLearningSchema');
+const { migrateKitsuneStorage } = require('./migrateKitsuneStorage');
+
+const { initializeKitsuneLearningSchema } = require('./kitsuneLearningSchema');
 
 async function initializeDatabase() {
     await testConnection();
+    await migrateKitsuneStorage();
     await initializeSchema();
     await initializePlayerSchema();
     await initializeTrainingPanels();
     await initializeQuestSchema();
     await initializeMatchSchema();
-    await initializeAkaneLearningSchema();
+    await initializeKitsuneLearningSchema();
 }
 
 module.exports = {

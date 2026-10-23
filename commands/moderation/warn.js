@@ -167,7 +167,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Warning Failed',
-                        'Akane could not create the moderation case.'
+                        'Kitsune could not create the moderation case.'
                     )
                 ]
             });

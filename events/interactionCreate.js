@@ -1,4 +1,3 @@
-
 const {
     Events,
     MessageFlags
@@ -129,7 +128,7 @@ module.exports = {
             }
 
             const payload = {
-                content: 'Akane could not complete that action.'
+                content: 'Kitsune could not complete that action.'
             };
 
             if (interaction.deferred) {

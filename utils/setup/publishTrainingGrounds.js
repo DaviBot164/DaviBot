@@ -11,15 +11,15 @@ const brand = require('../../config/brand');
 const { createEmbed } = require('../embeds');
 
 const TRAINING_IDS = Object.freeze({
-    daily: 'akane:training:daily',
-    profile: 'akane:training:profile',
-    achievements: 'akane:training:achievements',
-    quests: 'akane:training:quests'
+    daily: 'kitsune:training:daily',
+    profile: 'kitsune:training:profile',
+    achievements: 'kitsune:training:achievements',
+    quests: 'kitsune:training:quests'
 });
 
 function buildTrainingPanel(guild = null) {
     const embed = buildGuide(guild ?? {iconURL:()=>null},{
-        title:'🦊 AKANE • MISSION CONTROL',
+        title:'🦊 KITSUNE • MISSION CONTROL',
         intro:'**Your next little victory starts here.**\nCollect a drop, clear a mission, and make your progress visible.',
         fields:[
             {name:'🌙 Daily Drop',value:'Claim XP every 24 hours. Keep a 24–48 hour rhythm to continue your streak. Bonus drops at 3 / 7 / 14 / 30 days; the track repeats every 30 claims.',inline:false},
@@ -89,7 +89,7 @@ async function publishTrainingGrounds(guild) {
         await client.query(
             `
                 SELECT pg_advisory_xact_lock(
-                    hashtext('akane_training_panel'),
+                    hashtext('kitsune_training_panel'),
                     hashtext($1::text)
                 )
             `,
@@ -99,7 +99,7 @@ async function publishTrainingGrounds(guild) {
         const { rows } = await client.query(
             `
                 SELECT channel_id, message_id
-                FROM akane_training_panels
+                FROM kitsune_training_panels
                 WHERE guild_id = $1
                 FOR UPDATE
             `,
@@ -145,7 +145,7 @@ async function publishTrainingGrounds(guild) {
 
         await client.query(
             `
-                INSERT INTO akane_training_panels (
+                INSERT INTO kitsune_training_panels (
                     guild_id,
                     channel_id,
                     message_id

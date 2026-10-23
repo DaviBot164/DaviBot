@@ -52,7 +52,7 @@ async function syncProgressionRole(member, faction, rankId) {
     if (added) {
         await current.roles.add(
             targetRoleId,
-            'Akane progression sync'
+            'Kitsune progression sync'
         );
     }
 
@@ -60,14 +60,14 @@ async function syncProgressionRole(member, faction, rankId) {
         if (obsolete.length) {
             await current.roles.remove(
                 obsolete,
-                'Akane progression sync'
+                'Kitsune progression sync'
             );
         }
     } catch (error) {
         if (added) {
             await current.roles.remove(
                 targetRoleId,
-                'Akane progression sync rollback'
+                'Kitsune progression sync rollback'
             ).catch(rollbackError => {
                 console.error(
                     'Progression role rollback failed:',
@@ -95,7 +95,7 @@ async function clearProgressionRoles(member) {
     if (toRemove.length) {
         await current.roles.remove(
             toRemove,
-            'Akane progression reset'
+            'Kitsune progression reset'
         );
     }
 }

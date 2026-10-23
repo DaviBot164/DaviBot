@@ -12,7 +12,7 @@ function buildTrialComponents(
         .addComponents(
             new ButtonBuilder()
                 .setCustomId(
-                    `akane:trial:register:${trialId}`
+                    `kitsune:trial:register:${trialId}`
                 )
                 .setLabel('Register')
                 .setEmoji('⚔️')
@@ -23,7 +23,7 @@ function buildTrialComponents(
 
             new ButtonBuilder()
                 .setCustomId(
-                    `akane:trial:withdraw:${trialId}`
+                    `kitsune:trial:withdraw:${trialId}`
                 )
                 .setLabel('Withdraw')
                 .setEmoji('🚪')

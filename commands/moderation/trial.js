@@ -363,7 +363,7 @@ async function create(interaction) {
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });
@@ -432,7 +432,7 @@ async function close(interaction) {
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });
@@ -511,7 +511,7 @@ async function participants(interaction) {
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });
@@ -627,7 +627,7 @@ async function review(interaction) {
                     .join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });
@@ -680,7 +680,7 @@ async function cancel(interaction) {
                 ].join('\n')
             )
                 .setFooter({
-                    text: 'AKANE • BLOOD MOON'
+                    text: 'KITSUNE • BLOOD MOON'
                 })
         ]
     });

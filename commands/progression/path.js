@@ -54,7 +54,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Publish Failed',
-                        'Akane could not publish the path selection panel.'
+                        'Kitsune could not publish the path selection panel.'
                     )
                 ]
             });

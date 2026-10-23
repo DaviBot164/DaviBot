@@ -8,7 +8,7 @@ const {
     createEmbed
 } = require('../embeds');
 
-const BUTTON_PREFIX = 'akane:match:';
+const BUTTON_PREFIX = 'kitsune:match:';
 
 const TEAM_INFO = Object.freeze({
     crimson: {

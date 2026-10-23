@@ -17,7 +17,7 @@ async function forceCancelMatch(guildId, matchId) {
         const { rows } = await client.query(
             `
                 SELECT *
-                FROM akane_matches
+                FROM kitsune_matches
                 WHERE guild_id = $1
                   AND id = $2
                 FOR UPDATE
@@ -39,7 +39,7 @@ async function forceCancelMatch(guildId, matchId) {
 
         const { rows: updated } = await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     status = 'cancelled',
                     updated_at = NOW()
@@ -52,7 +52,7 @@ async function forceCancelMatch(guildId, matchId) {
 
         await client.query(
             `
-                DELETE FROM akane_match_active_players
+                DELETE FROM kitsune_match_active_players
                 WHERE match_id = $1
             `,
             [matchId]
@@ -60,7 +60,7 @@ async function forceCancelMatch(guildId, matchId) {
 
         await client.query(
             `
-                DELETE FROM akane_match_confirmations
+                DELETE FROM kitsune_match_confirmations
                 WHERE match_id = $1
             `,
             [matchId]

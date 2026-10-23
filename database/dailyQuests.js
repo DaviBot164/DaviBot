@@ -6,7 +6,7 @@ const { DAY: CYCLE_MS, QUESTS, themeFor, BOARD_BONUS } = require('../config/miss
 async function getQuestState(client, guildId, userId) {
     await client.query(
         `
-            INSERT INTO akane_daily_quests (
+            INSERT INTO kitsune_daily_quests (
                 guild_id,
                 user_id
             )
@@ -20,7 +20,7 @@ async function getQuestState(client, guildId, userId) {
     const { rows } = await client.query(
         `
             SELECT *
-            FROM akane_daily_quests
+            FROM kitsune_daily_quests
             WHERE guild_id = $1
               AND user_id = $2
             FOR UPDATE
@@ -42,7 +42,7 @@ async function getQuestState(client, guildId, userId) {
     ) {
         const { rows: resetRows } = await client.query(
             `
-                UPDATE akane_daily_quests
+                UPDATE kitsune_daily_quests
                 SET
                     cycle_id = gen_random_uuid(),
                     cycle_started_at = NOW(),
@@ -76,7 +76,7 @@ async function runQuestOperation(
         const { rows } = await client.query(
             `
                 SELECT level, xp
-                FROM akane_users
+                FROM kitsune_users
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -158,7 +158,7 @@ async function recordQuestMessage(guildId, userId) {
         async client => {
             await client.query(
                 `
-                    UPDATE akane_daily_quests
+                    UPDATE kitsune_daily_quests
                     SET
                         eligible_messages = eligible_messages + 1,
                         updated_at = NOW()
@@ -180,7 +180,7 @@ async function recordDailyClaim(guildId, userId) {
         async client => {
             await client.query(
                 `
-                    UPDATE akane_daily_quests
+                    UPDATE kitsune_daily_quests
                     SET
                         daily_claimed = TRUE,
                         updated_at = NOW()
@@ -254,7 +254,7 @@ async function claimQuestReward(
 
             await client.query(
                 `
-                    UPDATE akane_users
+                    UPDATE kitsune_users
                     SET
                         level = $3,
                         xp = $4,
@@ -272,7 +272,7 @@ async function claimQuestReward(
 
             await client.query(
                 `
-                    UPDATE akane_daily_quests
+                    UPDATE kitsune_daily_quests
                     SET
                         claimed_rewards = array_append(
                             claimed_rewards,
@@ -287,7 +287,7 @@ async function claimQuestReward(
 
             if (boardBonus) {
                 await client.query(
-                    `UPDATE akane_daily_quests
+                    `UPDATE kitsune_daily_quests
                      SET claimed_rewards = array_append(claimed_rewards, 'board_bonus'), updated_at = NOW()
                      WHERE guild_id = $1 AND user_id = $2`, [guildId, userId]
                 );

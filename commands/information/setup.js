@@ -92,7 +92,7 @@ module.exports = {
         if(icon)embed.setThumbnail(icon);
 
         const menu = new StringSelectMenuBuilder()
-            .setCustomId('akane:setup')
+            .setCustomId('kitsune:setup')
             .setPlaceholder('Choose a setup option')
             .addOptions(SETUP_ITEMS);
 

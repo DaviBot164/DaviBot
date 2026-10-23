@@ -21,7 +21,7 @@ async function getPlayerStats(guildId, userId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_player_stats
+            FROM kitsune_player_stats
             WHERE guild_id = $1
               AND user_id = $2
         `,
@@ -34,14 +34,14 @@ async function getPlayerStats(guildId, userId) {
 async function ensurePlayerStats(guildId, userId) {
     const { rows } = await query(
         `
-            INSERT INTO akane_player_stats (
+            INSERT INTO kitsune_player_stats (
                 guild_id,
                 user_id
             )
             VALUES ($1, $2)
             ON CONFLICT (guild_id, user_id)
             DO UPDATE SET
-                updated_at = akane_player_stats.updated_at
+                updated_at = kitsune_player_stats.updated_at
             RETURNING *
         `,
         [guildId, userId]
@@ -69,7 +69,7 @@ async function addDuelResult(
 
         const winner = await client.query(
             `
-                UPDATE akane_player_stats
+                UPDATE kitsune_player_stats
                 SET
                     duel_wins = duel_wins + 1,
                     updated_at = NOW()
@@ -82,7 +82,7 @@ async function addDuelResult(
 
         const loser = await client.query(
             `
-                UPDATE akane_player_stats
+                UPDATE kitsune_player_stats
                 SET
                     duel_losses = duel_losses + 1,
                     updated_at = NOW()
@@ -132,7 +132,7 @@ async function addEventPoints(
 
     const { rows } = await query(
         `
-            UPDATE akane_player_stats
+            UPDATE kitsune_player_stats
             SET
                 event_points = event_points + $3,
                 updated_at = NOW()

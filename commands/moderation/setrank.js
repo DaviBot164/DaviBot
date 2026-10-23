@@ -224,7 +224,7 @@ module.exports = {
                     ].join('\n')
                 )
                     .setFooter({
-                        text: 'AKANE • BLOOD MOON'
+                        text: 'KITSUNE • BLOOD MOON'
                     })
             ]
         });

@@ -60,7 +60,7 @@ function buildTrialAnnouncement(
         details.join('\n')
     )
         .setFooter({
-            text: `AKANE • BLOOD MOON • TRIAL #${trial.id}`
+            text: `KITSUNE • BLOOD MOON • TRIAL #${trial.id}`
         });
 
     return {

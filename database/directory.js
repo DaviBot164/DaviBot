@@ -36,9 +36,9 @@ async function getCorpsMembers(
 
                 titles.title_id
 
-            FROM akane_users AS users
+            FROM kitsune_users AS users
 
-            LEFT JOIN akane_titles AS titles
+            LEFT JOIN kitsune_titles AS titles
                 ON titles.guild_id =
                     users.guild_id
                 AND titles.user_id =
@@ -84,9 +84,9 @@ async function getFactionMembers(
 
                 titles.title_id
 
-            FROM akane_users AS users
+            FROM kitsune_users AS users
 
-            LEFT JOIN akane_titles AS titles
+            LEFT JOIN kitsune_titles AS titles
                 ON titles.guild_id =
                     users.guild_id
                 AND titles.user_id =
@@ -133,9 +133,9 @@ async function getRankMembers(
 
                 titles.title_id
 
-            FROM akane_users AS users
+            FROM kitsune_users AS users
 
-            LEFT JOIN akane_titles AS titles
+            LEFT JOIN kitsune_titles AS titles
                 ON titles.guild_id =
                     users.guild_id
                 AND titles.user_id =
@@ -176,7 +176,7 @@ async function getCorpsCounts(
                 COUNT(*)::INTEGER
                     AS members
 
-            FROM akane_users
+            FROM kitsune_users
 
             WHERE
                 guild_id = $1

@@ -92,7 +92,7 @@ async function openRecordBrowser(interaction, {
 
     try {
         const data = await load();
-        const prefix = `akane:view:${interaction.id}`;
+        const prefix = `kitsune:view:${interaction.id}`;
         const state = {
             section: initialSection,
             item: null,
@@ -174,7 +174,7 @@ async function openRecordBrowser(interaction, {
                     console.error('Record navigation failed:', error);
 
                     await component.followUp({
-                        content: 'Akane could not update this view. Please try again.',
+                        content: 'Kitsune could not update this view. Please try again.',
                         flags: MessageFlags.Ephemeral
                     }).catch(() => null);
                 }
@@ -207,7 +207,7 @@ async function openRecordBrowser(interaction, {
             embeds: [
                 errorEmbed(
                     'Records Unavailable',
-                    'Akane could not load these records. Please try again.'
+                    'Kitsune could not load these records. Please try again.'
                 )
             ],
             components: []

@@ -91,7 +91,7 @@ async function testMissingPermissions() {
     assert.equal(deferred, true);
     assert.ok(
         response.content.includes(
-            'Akane needs View Channel'
+            'Kitsune needs View Channel'
         )
     );
 

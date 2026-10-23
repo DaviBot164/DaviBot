@@ -27,7 +27,7 @@ module.exports = {
         new SlashCommandBuilder()
             .setName('unlock')
             .setDescription(
-                'Restore a channel locked by Akane.'
+                'Restore a channel locked by Kitsune.'
             )
             .setDefaultMemberPermissions(
                 PermissionFlagsBits.ManageChannels
@@ -101,7 +101,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Unlock Failed',
-                        'Akane needs Manage Channels permission for that channel.'
+                        'Kitsune needs Manage Channels permission for that channel.'
                     )
                 ]
             });
@@ -126,7 +126,7 @@ module.exports = {
                     embeds: [
                         errorEmbed(
                             'Not Locked',
-                            `${channel} has no active Akane lock record.`
+                            `${channel} has no active Kitsune lock record.`
                         )
                     ]
                 });
@@ -221,7 +221,7 @@ module.exports = {
                  * but database finalization failed.
                  *
                  * Re-lock the channel so Discord and
-                 * Akane's stored state stay consistent.
+                 * Kitsune's stored state stay consistent.
                  */
                 try {
                     await channel.permissionOverwrites.edit(
@@ -232,7 +232,7 @@ module.exports = {
                         },
                         {
                             reason:
-                                'Akane unlock rollback'
+                                'Kitsune unlock rollback'
                         }
                     );
                 } catch (rollbackError) {
@@ -254,7 +254,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Unlock Failed',
-                        'Akane could not unlock this channel.'
+                        'Kitsune could not unlock this channel.'
                     )
                 ]
             });

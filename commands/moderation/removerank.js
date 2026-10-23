@@ -111,7 +111,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'No Automatic Rank',
-                        'Akane could not determine the correct progression rank.'
+                        'Kitsune could not determine the correct progression rank.'
                     )
                 ]
             });
@@ -174,7 +174,7 @@ module.exports = {
                     ].join('\n')
                 )
                     .setFooter({
-                        text: 'AKANE • BLOOD MOON'
+                        text: 'KITSUNE • BLOOD MOON'
                     })
             ]
         });

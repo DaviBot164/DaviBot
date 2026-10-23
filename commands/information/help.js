@@ -1,4 +1,3 @@
-
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
@@ -10,7 +9,7 @@ const {
 
 const { createEmbed } = require('../../utils/embeds');
 
-const HELP_MENU_ID = 'akane:help:section';
+const HELP_MENU_ID = 'kitsune:help:section';
 
 const SECTIONS = [
     {
@@ -188,7 +187,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
     const other = getOtherCommands(interaction);
 
     const embed = createEmbed(
-        '🌙 AKANE • COMMAND CENTER',
+        '🌙 KITSUNE • COMMAND CENTER',
         selected === 'overview'
             ? [
                 '**Welcome to the Blood Moon command center.**',
@@ -249,7 +248,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
     }
 
     embed.setFooter({
-        text: `AKANE • BLOOD MOON • ${count} Commands`
+        text: `KITSUNE • BLOOD MOON • ${count} Commands`
     });
 
     const icon = interaction.guild?.iconURL({ size: 256 });
@@ -294,7 +293,7 @@ function buildHelpMenu(interaction, selected = 'overview') {
 
     const menu = new StringSelectMenuBuilder()
         .setCustomId(HELP_MENU_ID)
-        .setPlaceholder('Explore Akane commands')
+        .setPlaceholder('Explore Kitsune commands')
         .addOptions(
             options.map(option => ({
                 ...option,

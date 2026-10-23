@@ -12,8 +12,8 @@ const {
 } = require('../handlers/progressionUnlocks');
 
 const {
-    handleAkaneReply
-} = require('../handlers/akaneReplyHandler');
+    handleKitsuneReply
+} = require('../handlers/kitsuneReplyHandler');
 
 const { sendLevelUp } = require('../utils/levelNotifications');
 
@@ -33,7 +33,7 @@ module.exports = {
 
         if (guardianResult.blocked) return;
 
-        await handleAkaneReply(message);
+        await handleKitsuneReply(message);
 
         const guildId = message.guild.id;
         const userId = message.author.id;

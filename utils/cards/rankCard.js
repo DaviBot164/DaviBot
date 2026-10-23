@@ -138,7 +138,7 @@ async function createRankCard(
     ctx.font = '600 22px sans-serif';
 
     ctx.fillText(
-        'BLOOD MOON • AKANE',
+        'BLOOD MOON • KITSUNE',
         305,
         82
     );

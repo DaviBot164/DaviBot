@@ -160,7 +160,7 @@ module.exports = {
                 ])
             ) {
                 throw new Error(
-                    'Akane needs View Channel, Send Messages and Embed Links permissions.'
+                    'Kitsune needs View Channel, Send Messages and Embed Links permissions.'
                 );
             }
 
@@ -214,7 +214,7 @@ module.exports = {
             return interaction.editReply({
                 content: isExpectedError(error)
                     ? `Warning: ${error.message}`
-                    : 'Akane could not create your match.'
+                    : 'Kitsune could not create your match.'
             }).catch(() => null);
         }
 

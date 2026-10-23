@@ -30,7 +30,7 @@ async function awardXP(
         const { rows } = await client.query(
             `
                 SELECT *
-                FROM akane_users
+                FROM kitsune_users
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -70,7 +70,7 @@ async function awardXP(
 
         const { rows: updatedRows } = await client.query(
             `
-                UPDATE akane_users
+                UPDATE kitsune_users
                 SET
                     level = $3,
                     xp = $4,
@@ -92,7 +92,7 @@ async function awardXP(
         if (questProgress) {
             await client.query(
                 `
-                    INSERT INTO akane_daily_quests (
+                    INSERT INTO kitsune_daily_quests (
                         guild_id,
                         user_id
                     )
@@ -106,7 +106,7 @@ async function awardXP(
             const { rows: questRows } = await client.query(
                 `
                     SELECT cycle_started_at
-                    FROM akane_daily_quests
+                    FROM kitsune_daily_quests
                     WHERE guild_id = $1
                       AND user_id = $2
                     FOR UPDATE
@@ -127,7 +127,7 @@ async function awardXP(
             if (expired) {
                 await client.query(
                     `
-                        UPDATE akane_daily_quests
+                        UPDATE kitsune_daily_quests
                         SET
                             cycle_id = gen_random_uuid(),
                             cycle_started_at = NOW(),
@@ -143,7 +143,7 @@ async function awardXP(
             } else {
                 await client.query(
                     `
-                        UPDATE akane_daily_quests
+                        UPDATE kitsune_daily_quests
                         SET
                             eligible_messages =
                                 eligible_messages + 1,

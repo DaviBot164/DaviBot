@@ -142,7 +142,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Ban Failed',
-                        'Akane cannot ban this member.'
+                        'Kitsune cannot ban this member.'
                     )
                 ]
             });
@@ -234,7 +234,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Ban Failed',
-                        'Akane could not ban this member.'
+                        'Kitsune could not ban this member.'
                     )
                 ]
             });

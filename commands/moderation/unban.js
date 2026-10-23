@@ -168,7 +168,7 @@ module.exports = {
                 embeds: [
                     errorEmbed(
                         'Unban Failed',
-                        'Akane could not remove this ban.'
+                        'Kitsune could not remove this ban.'
                     )
                 ]
             });

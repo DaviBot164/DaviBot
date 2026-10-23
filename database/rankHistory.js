@@ -29,7 +29,7 @@ async function addRankHistory({
 }) {
     const { rows } = await query(
         `
-            INSERT INTO akane_rank_history (
+            INSERT INTO kitsune_rank_history (
                 guild_id,
                 user_id,
                 faction,
@@ -68,7 +68,7 @@ async function getRankHistory(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_rank_history
+            FROM kitsune_rank_history
             WHERE guild_id = $1
               AND user_id = $2
             ORDER BY created_at DESC

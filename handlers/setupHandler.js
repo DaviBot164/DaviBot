@@ -56,7 +56,7 @@ const SETUP_OPTIONS = Object.freeze({
 async function handleSetupSelect(interaction) {
     if (
         !interaction.isStringSelectMenu() ||
-        interaction.customId !== 'akane:setup'
+        interaction.customId !== 'kitsune:setup'
     ) {
         return false;
     }
@@ -215,7 +215,7 @@ async function handleSetupSelect(interaction) {
                         successEmbed(
                             'Blood Moon Setup Complete',
                             [
-                                'Akane configured the core server content.',
+                                'Kitsune configured the core server content.',
                                 '',
                                 '📜 Sacred Laws',
                                 '📖 Moon Guide',
@@ -240,7 +240,7 @@ async function handleSetupSelect(interaction) {
                     embeds: [
                         errorEmbed(
                             'Unknown Setup Option',
-                            'Akane could not recognize that setup option.'
+                            'Kitsune could not recognize that setup option.'
                         )
                     ]
                 });
@@ -252,7 +252,7 @@ async function handleSetupSelect(interaction) {
             embeds: [
                 errorEmbed(
                     'Publish Failed',
-                    'Akane could not publish that setup content.'
+                    'Kitsune could not publish that setup content.'
                 )
             ]
         });

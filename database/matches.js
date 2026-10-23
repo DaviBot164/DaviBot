@@ -62,7 +62,7 @@ async function lockMatch(client, guildId, matchId) {
     const { rows } = await client.query(
         `
             SELECT *
-            FROM akane_matches
+            FROM kitsune_matches
             WHERE guild_id = $1
               AND id = $2
             FOR UPDATE
@@ -81,7 +81,7 @@ async function getPlayers(client, matchId) {
     const { rows } = await client.query(
         `
             SELECT *
-            FROM akane_match_players
+            FROM kitsune_match_players
             WHERE match_id = $1
             ORDER BY joined_at, user_id
         `,
@@ -116,8 +116,8 @@ function handleDatabaseError(error) {
     if (
         error.code === '23505' &&
         [
-            'akane_match_active_players_pkey',
-            'akane_match_active_players_match_id_user_id_key'
+            'kitsune_match_active_players_pkey',
+            'kitsune_match_active_players_match_id_user_id_key'
         ].includes(error.constraint)
     ) {
         throw new Error(
@@ -148,7 +148,7 @@ async function reservePlayer(
 ) {
     await client.query(
         `
-            INSERT INTO akane_match_active_players (
+            INSERT INTO kitsune_match_active_players (
                 guild_id,
                 user_id,
                 match_id
@@ -167,7 +167,7 @@ async function releasePlayer(
 ) {
     await client.query(
         `
-            DELETE FROM akane_match_active_players
+            DELETE FROM kitsune_match_active_players
             WHERE guild_id = $1
               AND user_id = $2
               AND match_id = $3
@@ -179,7 +179,7 @@ async function releasePlayer(
 async function resetStartConfirmations(client, matchId) {
     await client.query(
         `
-            DELETE FROM akane_match_confirmations
+            DELETE FROM kitsune_match_confirmations
             WHERE match_id = $1
               AND confirmation_type = 'start'
         `,
@@ -188,7 +188,7 @@ async function resetStartConfirmations(client, matchId) {
 
     await client.query(
         `
-            UPDATE akane_match_players
+            UPDATE kitsune_match_players
             SET is_ready = FALSE
             WHERE match_id = $1
         `,
@@ -225,7 +225,7 @@ async function createMatch(
         return await transaction(async client => {
             const { rows } = await client.query(
                 `
-                    INSERT INTO akane_matches (
+                    INSERT INTO kitsune_matches (
                         guild_id,
                         channel_id,
                         creator_id,
@@ -255,7 +255,7 @@ async function createMatch(
 
             await client.query(
                 `
-                    INSERT INTO akane_match_players (
+                    INSERT INTO kitsune_match_players (
                         match_id,
                         guild_id,
                         user_id,
@@ -286,7 +286,7 @@ async function getMatch(guildId, matchId) {
         const { rows } = await client.query(
             `
                 SELECT *
-                FROM akane_matches
+                FROM kitsune_matches
                 WHERE guild_id = $1
                   AND id = $2
             `,
@@ -317,7 +317,7 @@ async function setMatchMessage(
 
         const { rows } = await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     message_id = $3,
                     updated_at = NOW()
@@ -380,7 +380,7 @@ async function joinTeam(
 
             await client.query(
                 `
-                    INSERT INTO akane_match_players (
+                    INSERT INTO kitsune_match_players (
                         match_id,
                         guild_id,
                         user_id,
@@ -441,7 +441,7 @@ async function leaveMatch(
 
         await client.query(
             `
-                DELETE FROM akane_match_players
+                DELETE FROM kitsune_match_players
                 WHERE match_id = $1
                   AND user_id = $2
             `,
@@ -467,7 +467,7 @@ async function leaveMatch(
         if (!remaining.length) {
             const { rows } = await client.query(
                 `
-                    UPDATE akane_matches
+                    UPDATE kitsune_matches
                     SET
                         status = 'cancelled',
                         updated_at = NOW()
@@ -488,7 +488,7 @@ async function leaveMatch(
             if (replacement) {
                 await client.query(
                     `
-                        UPDATE akane_match_players
+                        UPDATE kitsune_match_players
                         SET is_captain = TRUE
                         WHERE match_id = $1
                           AND user_id = $2
@@ -524,7 +524,7 @@ async function cancelMatch(
 
         const { rows } = await client.query(
             `
-                UPDATE akane_matches
+                UPDATE kitsune_matches
                 SET
                     status = 'cancelled',
                     updated_at = NOW()
@@ -536,7 +536,7 @@ async function cancelMatch(
 
         await client.query(
             `
-                DELETE FROM akane_match_active_players
+                DELETE FROM kitsune_match_active_players
                 WHERE match_id = $1
             `,
             [match.id]

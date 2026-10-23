@@ -38,7 +38,7 @@ async function sendTicketLog(
             name: 'Action By',
             value: actor
                 ? `<@${actor.id}>`
-                : 'Akane',
+                : 'Kitsune',
             inline: true
         }
     ];

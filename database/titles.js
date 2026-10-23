@@ -15,7 +15,7 @@ function mapTitle(row) {
 async function unlockTitle(guildId, userId, titleId) {
     const { rows } = await query(
         `
-            INSERT INTO akane_titles (
+            INSERT INTO kitsune_titles (
                 guild_id,
                 user_id,
                 title_id
@@ -35,7 +35,7 @@ async function getTitles(guildId, userId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_titles
+            FROM kitsune_titles
             WHERE guild_id = $1
               AND user_id = $2
             ORDER BY unlocked_at ASC, title_id ASC
@@ -50,7 +50,7 @@ async function getEquippedTitle(guildId, userId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_titles
+            FROM kitsune_titles
             WHERE guild_id = $1
               AND user_id = $2
               AND equipped = TRUE
@@ -71,7 +71,7 @@ async function withPlayerLock(guildId, userId, action) {
         const { rows } = await client.query(
             `
                 SELECT user_id
-                FROM akane_users
+                FROM kitsune_users
                 WHERE guild_id = $1
                   AND user_id = $2
                 FOR UPDATE
@@ -101,7 +101,7 @@ async function equipTitle(guildId, userId, titleId) {
         const { rows: ownedRows } = await client.query(
             `
                 SELECT *
-                FROM akane_titles
+                FROM kitsune_titles
                 WHERE guild_id = $1
                   AND user_id = $2
                   AND title_id = $3
@@ -121,7 +121,7 @@ async function equipTitle(guildId, userId, titleId) {
 
         await client.query(
             `
-                UPDATE akane_titles
+                UPDATE kitsune_titles
                 SET equipped = FALSE
                 WHERE guild_id = $1
                   AND user_id = $2
@@ -132,7 +132,7 @@ async function equipTitle(guildId, userId, titleId) {
 
         const { rows } = await client.query(
             `
-                UPDATE akane_titles
+                UPDATE kitsune_titles
                 SET equipped = TRUE
                 WHERE guild_id = $1
                   AND user_id = $2
@@ -154,7 +154,7 @@ async function clearEquippedTitle(guildId, userId) {
     await withPlayerLock(guildId, userId, async client => {
         await client.query(
             `
-                UPDATE akane_titles
+                UPDATE kitsune_titles
                 SET equipped = FALSE
                 WHERE guild_id = $1
                   AND user_id = $2

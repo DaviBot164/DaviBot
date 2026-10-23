@@ -46,7 +46,7 @@ async function createTrial({
 }) {
     const { rows } = await query(
         `
-            INSERT INTO akane_trials (
+            INSERT INTO kitsune_trials (
                 guild_id,
                 trial_type,
                 created_by,
@@ -72,7 +72,7 @@ async function getTrial(trialId) {
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_trials
+            FROM kitsune_trials
             WHERE id = $1
         `,
         [trialId]
@@ -88,7 +88,7 @@ async function getActiveTrial(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_trials
+            FROM kitsune_trials
             WHERE guild_id = $1
               AND trial_type = $2
               AND status = 'open'
@@ -110,7 +110,7 @@ async function setTrialStatus(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_trials
+            UPDATE kitsune_trials
             SET
                 status = $2,
                 updated_at = NOW()
@@ -133,7 +133,7 @@ async function setTrialMessage(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_trials
+            UPDATE kitsune_trials
             SET
                 channel_id = $2,
                 message_id = $3,
@@ -158,7 +158,7 @@ async function registerParticipant(
 ) {
     const { rows } = await query(
         `
-            INSERT INTO akane_trial_participants (
+            INSERT INTO kitsune_trial_participants (
                 trial_id,
                 guild_id,
                 user_id
@@ -192,7 +192,7 @@ async function getParticipant(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_trial_participants
+            FROM kitsune_trial_participants
             WHERE trial_id = $1
               AND user_id = $2
         `,
@@ -211,7 +211,7 @@ async function withdrawParticipant(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_trial_participants
+            UPDATE kitsune_trial_participants
             SET
                 status = 'withdrawn',
                 reviewed_by = NULL,
@@ -238,7 +238,7 @@ async function getParticipants(
     const { rows } = await query(
         `
             SELECT *
-            FROM akane_trial_participants
+            FROM kitsune_trial_participants
             WHERE trial_id = $1
               AND (
                     $2::TEXT IS NULL
@@ -266,7 +266,7 @@ async function reviewParticipant(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_trial_participants
+            UPDATE kitsune_trial_participants
             SET
                 status = $3,
                 reviewed_by = $4,
@@ -295,7 +295,7 @@ async function resetParticipantReview(
 ) {
     const { rows } = await query(
         `
-            UPDATE akane_trial_participants
+            UPDATE kitsune_trial_participants
             SET
                 status = 'registered',
                 reviewed_by = NULL,
@@ -324,7 +324,7 @@ async function countPendingParticipants(
     const { rows } = await query(
         `
             SELECT COUNT(*)::INTEGER AS count
-            FROM akane_trial_participants
+            FROM kitsune_trial_participants
             WHERE trial_id = $1
               AND status = 'registered'
         `,
