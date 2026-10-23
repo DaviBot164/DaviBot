@@ -13,7 +13,7 @@ const { recognizeSocial } = require('./socialIntent');
 function parseRequestInternal(message, now, learnedAliases = null) {
     const content = String(message.content ?? '').trim();
     const namedTrigger = content.match(
-        /^kitsune(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
+        /^(?:(?:yo|hey|hi|hello)[\s,:;.!?…]+)?kitsune(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
     );
     const botMention = content.match(/^<@!?(\d+)>[\s,:;.!?…]*(.*)$/su);
     const trigger = namedTrigger ?? (botMention && botMention[1] === message.client?.user?.id

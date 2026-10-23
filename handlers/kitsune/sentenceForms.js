@@ -1,5 +1,13 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ // Whole self-reports only: keep negation, subjects and the rest of the sentence.
+ const wellbeing = text.match(/^(?:(?:i am|i feel|i am feeling) )?(well|good|great|fine|okay|ok|all right|alright|not bad|not well|not good|bad|terrible|awful) (?:thanks|thank you)(?: for asking)?$/u);
+ if (wellbeing) {
+  if (['not well','not good','bad','terrible','awful'].includes(wellbeing[1])) return 'feeling_bad';
+  if (['fine','okay','ok','all right','alright','not bad'].includes(wellbeing[1])) return 'feeling_neutral';
+  return 'feeling_good';
+ }
+ if (/^(?:thanks|thank you) for asking$/u.test(text)) return 'thanks';
  if(/^(?:let us|lets|let's|can we|could we) (?:just )?(?:stop|end (?:this|the) (?:chat|conversation))(?: (?:now|here|for now))?$/u.test(text))return 'stop';
  if(/^(?:let us|lets|let's|can we|could we) (?:just )?(?:leave|drop|pause) (?:that|it|this|the topic)(?: for (?:now|a bit))?$/u.test(text))return 'topic_change';
  // A bounded exclusion of both familiar stress topics; never infer a boundary

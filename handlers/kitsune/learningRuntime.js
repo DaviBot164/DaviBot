@@ -6,7 +6,7 @@ const enabled=()=>config.enabled && Boolean(process.env.NF_DAVIBOT_DATABASE_POST
 const repository=()=>require('../../database/kitsuneLearning');
 function inputForLearning(message,session,now) {
     const content=String(message.content??'').trim();
-    const named=content.match(/^kitsune(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu);
+    const named=content.match(/^(?:(?:yo|hey|hi|hello)[\s,:;.!?…]+)?kitsune(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu);
     const mention=content.match(/^<@!?(\d+)>[\s,:;.!?…]*(.*)$/su);
     const addressed=named || (mention && mention[1]===message.client?.user?.id?[mention[0],mention[2]]:null);
     const reply=Boolean(session && message.reference?.messageId===session.messageId);
