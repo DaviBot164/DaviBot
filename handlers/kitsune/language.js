@@ -1,3 +1,4 @@
+const {recognizeBrief}=require('./briefConversation');
 const {understandingResult} = require('./understandingResult');
 const {meaningVariants,compoundMeaning} = require('./meaningVariants');
 const {recognizeMemberBoundary} = require('./memberBoundaries');
@@ -130,7 +131,7 @@ function recognitionRules(frame) {
   ['day_statement',()=>recognizeDayConversation(text)],
   ['music_statement',()=>recognizeMusicConversation(text)],
   ['game_statement',()=>recognizeGameConversation(text)],
-  ['sentence_form',()=>requestForm(text)],
+  ['sentence_form',()=>requestForm(text)??recognizeBrief(plain)],
   ['pragmatics',()=>analyzePragmatics(text,raw,OWNER_ID)?.category],
   ['chat_abuse',()=>analyzeChatAbuse(text,raw)?.category],
   ['acknowledgement',()=>acknowledge(plain,null)],

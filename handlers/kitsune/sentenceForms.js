@@ -1,5 +1,7 @@
+const {recognizeBrief}=require('./briefConversation');
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ const brief=recognizeBrief(text);if(brief)return brief;
  // Whole self-reports only: keep negation, subjects and the rest of the sentence.
  const wellbeing = text.match(/^(?:(?:i am|i feel|i am feeling) )?(well|good|great|fine|okay|ok|all right|alright|not bad|not well|not good|bad|terrible|awful) (?:thanks|thank you)(?: for asking)?$/u);
  if (wellbeing) {

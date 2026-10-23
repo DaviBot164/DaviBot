@@ -1,3 +1,4 @@
+const {recognizeBrief}=require('./briefConversation');
 const {nextTopic} = require('./understandingResult');
 const {recognizeDayConversation} = require('./dayConversation');
 const {recognizeMusicConversation} = require('./musicConversation');
@@ -20,6 +21,7 @@ function contextualCategory(raw, session, suppliedFrame=null) {
     const frame=suppliedFrame?.raw===String(raw??'')?suppliedFrame:prepareInput(raw);
     if(!frame.valid)return String(raw??'').length<=2000 ? controls.get(normalize(raw))??null : null;
     const text=frame.sentence;
+    const brief=recognizeBrief(frame.plainSentence,session)??recognizeBrief(text,session);if(brief)return brief;
     if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
     const topicSession=session?.topicCategory?{...session,category:session.topicCategory}:session;
     const day=recognizeDayConversation(text,session)??(topicSession!==session?recognizeDayConversation(text,topicSession):null);if(day)return day;
@@ -60,6 +62,7 @@ function memoryAfter(previous, request, response) {
     const restarted=request.category==='restart_chat';
     return {
         topicCategory: nextTopic(old,request,response),
+        shortChat: response.shortChat ?? (request.category==='bored' ? old.shortChat ?? null : null),
         mood: restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,

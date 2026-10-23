@@ -1,3 +1,4 @@
+const {briefResponse}=require('./briefConversation');
 const {repairExplanation} = require('./explanationRepair');
 const { applyEmojiStyle } = require('./emojiStyle');
 const { applySpeechStyle } = require('./speechStyle');
@@ -250,6 +251,7 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    const brief=briefResponse(request);if(brief)return brief;
     if(request.category==='light_topic') {
         return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'music_chat',session:true,question:false,pending:null};
     }

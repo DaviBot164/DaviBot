@@ -17,6 +17,7 @@ function nextTopic(previous, request, response){
 function understandingResult(category, options={}){
  const mood=moods[category]??null;
  let target=null,polarity='unspecified',reported=false,intent=category??'unknown',topic=null;
+ if(category?.startsWith('brief_')){intent='casual_conversation';topic='conversation';}
  if(mood){target='self';polarity='affirmed';intent='share_state';topic='wellbeing';}
  if(/^day_/u.test(category??'') || /^effort_/u.test(category??'')){target='self';intent='share_experience';topic=['day_work','day_work_stress','day_tasks'].includes(category)?'work':category==='day_study'?'study':category==='day_people'?'people':'day';}
  if(musicTopics.has(category)){intent=['music_preferences','music_curiosity'].includes(category)?'discuss_preference':'share_interest';topic='music';target=['music_preferences','music_curiosity'].includes(category)?'kitsune':'self';}
