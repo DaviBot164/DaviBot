@@ -1,3 +1,4 @@
+const {namedAddress} = require('./addressing');
 const {understandingResult} = require('./understandingResult');
 const learningConfig = require('../../config/kitsuneLearning');
 const {learningPhrase} = require('./learningPhrases');
@@ -12,9 +13,7 @@ const { recognizeSocial } = require('./socialIntent');
 
 function parseRequestInternal(message, now, learnedAliases = null) {
     const content = String(message.content ?? '').trim();
-    const namedTrigger = content.match(
-        /^(?:(?:yo|hey|hi|hello)[\s,:;.!?…]+)?kitsune(?=$|[\s\p{P}\p{S}])[\s,:;.!?…]*(.*)$/isu
-    );
+    const namedTrigger = namedAddress(content);
     const botMention = content.match(/^<@!?(\d+)>[\s,:;.!?…]*(.*)$/su);
     const trigger = namedTrigger ?? (botMention && botMention[1] === message.client?.user?.id
         ? [botMention[0], botMention[2]] : null);
