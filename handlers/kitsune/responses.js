@@ -232,6 +232,13 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    if(request.category==='light_topic') {
+        return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'general',session:true,question:false,pending:null};
+    }
+    if(request.category==='day_limits') {
+        const adviceAllowed=!(request.conversation?.noAdviceRemaining>0) && request.conversation?.history?.some(turn=>['advice_resume','tip'].includes(turn.request));
+        if(adviceAllowed)return {payload:{content:'It does not have to be no to everyone. You could offer a smaller commitment or a later time. Is there one request you could adjust?'},category:'day_limits',session:true,question:false};
+    }
     if(request.category==='advice_resume') {
         const work=['day_work','day_work_stress','day_people','day_privacy'].includes(request.context);
         const pressure=['day_pressure','day_fairness'].includes(request.context);
@@ -290,7 +297,7 @@ function buildUnstyledResponse(message, request) {
             study_breakdown:'Make the task smaller: one sentence or one exercise.',
             study_alternative:'Try explaining one idea aloud instead of reading it again.',
             pick:'I chose randomly from your options.',
-            answer_confusing:'Which part was unclear?',
+            answer_confusing:'I meant: show me one unclear sentence so I know what to clarify.',
             answer_feedback:'I meant: tell me which part was wrong, and I will try again.',
             target_correction:'You meant something else, rather than me.',
             topic_boundary:'You do not have to discuss that subject.'

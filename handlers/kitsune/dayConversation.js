@@ -1,6 +1,9 @@
 // Reasons need a compatible active topic; do not attach "because of work" to a random choice.
-const dayTopics = new Set(['day_pressure','day_overload','day_fairness','day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
+const dayTopics = new Set(['day_limits','day_pressure','day_overload','day_fairness','day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
 function recognizeDayConversation(text, session = null) {
+ // A limitation is a continuation of the speaker's pressure topic, not a refusal
+ // to talk, a global "no", or a reason to reuse an unrelated study/choice topic.
+ if(session && ['day_pressure','day_fairness','day_limits'].includes(session.category) && /^i (?:cannot|can not) (?:(?:just|simply) )?(?:say no to|turn down|refuse) (?:everyone|everybody|every request)$/u.test(text))return 'day_limits';
  if(/^(?:there is |there has been |it is |it has been )?(?:just )?(?:a lot|too much|so much) (?:going on|happening)(?: (?:lately|recently|right now))?$/u.test(text))return 'day_overload';
  if(/^(?:it is |it has been )?(?:mostly |mainly |just )?(?:people|everyone|my (?:boss|friends|family|coworkers|classmates)) (?:keep )?(?:expecting|asking|demanding) too much (?:from|of) me$/u.test(text) || /^(?:people|everyone|my (?:boss|friends|family|coworkers|classmates)) (?:expect|ask|demand) too much (?:from|of) me$/u.test(text))return 'day_pressure';
  if(/^(?:i am )?not saying (?:they are|those are) bad people (?:but |and )?i am (?:just |only )?(?:overwhelmed|stressed|drained)$/u.test(text))return 'day_fairness';

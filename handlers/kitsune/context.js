@@ -56,7 +56,7 @@ function memoryAfter(previous, request, response) {
     const restarted=request.category==='restart_chat';
     return {
         topicCategory: nextTopic(old,request,response),
-        mood: restarted||request.category==='topic_change'?null:request.understanding?.mood??old.mood??null,
+        mood: restarted||['topic_change','light_topic'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,

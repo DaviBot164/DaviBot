@@ -1,5 +1,8 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ // A bounded exclusion of both familiar stress topics; never infer a boundary
+ // from an isolated "not" or from someone else's preference.
+ if(/^(?:(?:can|could|shall) we (?:please )?|let us |lets |let's )(?:talk|chat) about (?:something|anything) (?:that is not|other than|besides|except) (?:work|school) (?:or|and) (?:work|school)$/u.test(text) && /\bwork\b/u.test(text) && /\bschool\b/u.test(text))return 'light_topic';
  if(/^what would you do (?:in my (?:place|shoes|position)|if you were me)$/u.test(text))return 'advice_resume';
  if(/^(?:(?:yes|yeah|okay|right) )?(?:that|it|your explanation) (?:makes|is making) (?:(?:much|a lot) )?(?:more )?sense(?: to me)?(?: now)?$/u.test(text))return 'feedback_understood';
  if(/^(?:(?:now|actually) )?(?:(?:a little|some|a bit of|your) )?advice (?:would|could|might) help(?: me)?(?: now|after all)?$/u.test(text) || /^i (?:would like|want|could use|need) (?:(?:a little|some|a bit of|your) )?advice (?:now|after all)$/u.test(text))return 'advice_resume';

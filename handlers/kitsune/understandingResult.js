@@ -1,11 +1,11 @@
 // Stable, text-free contract shared by recognition, parsing and session memory.
 const moods=Object.freeze({feeling_bad:'low',feeling_good:'positive',feeling_neutral:'neutral',tired:'tired',mental_tired:'mentally_tired',lonely:'lonely',bored:'bored',hungry:'hungry',mood_recovered:'improved',mood_lowered:'low'});
-const dayTopics=new Set(['day_pressure','day_overload','day_fairness','day_okay','day_ordinary','day_tiring','day_work','day_work_stress','day_study','day_people','day_privacy','day_tasks','day_no_break','day_explanation','day_relief','day_easing','effort_stuck','effort_continue','feeling_bad','tired','mental_tired','bad_day_context']);
+const dayTopics=new Set(['day_limits','day_pressure','day_overload','day_fairness','day_okay','day_ordinary','day_tiring','day_work','day_work_stress','day_study','day_people','day_privacy','day_tasks','day_no_break','day_explanation','day_relief','day_easing','effort_stuck','effort_continue','feeling_bad','tired','mental_tired','bad_day_context']);
 const studyTopics=new Set(['study_start','study_step','study_breakdown','study_alternative','study_understanding']);
-const continuations=new Set(['yes','no','agree','thanks','reaction_thanks','feedback_understood','feedback_better','context_echo','context_changed','context_hesitant','uncertain','decline_advice','rude','tone_gentle','tone_serious','tone_reset','repair','repair_answer','why','really','explain','simplify','explain_fresh','explain_serious','repetition_feedback','intent_clear','disavow_insult','question_clarification']);
+const continuations=new Set(['advice_resume','yes','no','agree','thanks','reaction_thanks','feedback_understood','feedback_better','context_echo','context_changed','context_hesitant','uncertain','decline_advice','rude','tone_gentle','tone_serious','tone_reset','repair','repair_answer','why','really','explain','simplify','explain_fresh','explain_serious','repetition_feedback','intent_clear','disavow_insult','question_clarification']);
 function topicAnchor(category){return dayTopics.has(category)||studyTopics.has(category)?category:null;}
 function nextTopic(previous, request, response){
- if(['topic_change','restart_chat','stop'].includes(request.category))return null;
+ if(['topic_change','light_topic','restart_chat','stop'].includes(request.category))return null;
  const direct=topicAnchor(request.category);
  if(direct)return direct;
  if(continuations.has(request.category))return previous?.topicCategory??topicAnchor(previous?.category)??null;
@@ -31,7 +31,7 @@ function understandingResult(category, options={}){
  if(category==='decline_advice'){intent='request_listening';target='self';topic='conversation';}
  if(category==='advice_resume'||category==='tip'){intent='request_advice';target='self';}
  if(category?.startsWith('tone_')){intent='change_tone';topic='conversation';}
- if(category==='topic_change'||category==='restart_chat'){intent='reset_topic';topic='conversation';}
+ if(['topic_change','light_topic','restart_chat'].includes(category)){intent='reset_topic';topic='conversation';}
  const unknown=!category||['fallback','reaction_question','clarify'].includes(category);
  return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:category==='decline_advice'||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
 }
