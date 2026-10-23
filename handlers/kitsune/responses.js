@@ -71,6 +71,10 @@ for(const [tone,categories]of Object.entries(pragmatics.pools)){
 const chatAbuse = require('../../config/kitsuneChatAbuse');
 replies.conversation_public_reaction_insult = [...new Set([...(replies.conversation_public_reaction_insult??[]),...chatAbuse.publicReplies])];
 const dayConversation = require('../../config/kitsuneDayConversation');
+const musicConversation = require('../../config/kitsuneMusic');
+for(const [tone,categories]of Object.entries(musicConversation.pools)){
+    for(const [category,pool]of Object.entries(categories))replies[`conversation_${tone}_${category}`]=pool;
+}
 for(const [tone,categories] of Object.entries(dayConversation.pools)) {
     for(const [category,pool] of Object.entries(categories)) replies[`conversation_${tone}_${category}`]=pool;
 }
@@ -233,11 +237,20 @@ function buildBaseResponse(message, request) {
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
     if(request.category==='light_topic') {
-        return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'general',session:true,question:false,pending:null};
+        return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'music_chat',session:true,question:false,pending:null};
     }
     if(request.category==='day_limits') {
         const adviceAllowed=!(request.conversation?.noAdviceRemaining>0) && request.conversation?.history?.some(turn=>['advice_resume','tip'].includes(turn.request));
         if(adviceAllowed)return {payload:{content:'It does not have to be no to everyone. You could offer a smaller commitment or a later time. Is there one request you could adjust?'},category:'day_limits',session:true,question:false};
+    }
+    if(['day_more_time','day_reaction_worry'].includes(request.category)) {
+        const adviceAllowed=!(request.conversation?.noAdviceRemaining>0) && request.conversation?.history?.some(turn=>['advice_resume','tip'].includes(turn.request));
+        if(adviceAllowed){
+            const content=request.category==='day_more_time'
+                ?'Asking for more time is one option. You could name a realistic date rather than promise everything at once.'
+                :'They might be disappointed, but we cannot know in advance. You can acknowledge that and still be clear about what you can realistically do.';
+            return {payload:{content},category:request.category,session:true,question:false};
+        }
     }
     if(request.category==='advice_resume') {
         const work=['day_work','day_work_stress','day_people','day_privacy'].includes(request.context);
@@ -313,8 +326,8 @@ function buildUnstyledResponse(message, request) {
     if (request.category === 'reaction_question') request = {...request,category:'clarify'};
     const controls = ['tone_gentle', 'tone_serious', 'tone_reset', 'repair', 'repair_detail', 'topic_change', 'rude'];
     let base;
-    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context] || practical.explanations[request.context] || voice.explanations[request.context] || pragmatics.explanations[request.context] || dayConversation.explanations[request.context] || boundaries.explanations[request.context] || memberBoundaries.explanations[request.context])) {
-        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,...practical.explanations,...voice.explanations,...pragmatics.explanations,...dayConversation.explanations,...boundaries.explanations,...memberBoundaries.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
+    if (['why', 'really', 'explain'].includes(request.category) && request.context && (english.pools.public[request.context] || everyday.explanations[request.context] || repairs.explanations[request.context] || social.explanations[request.context] || practical.explanations[request.context] || voice.explanations[request.context] || pragmatics.explanations[request.context] || musicConversation.explanations[request.context] || dayConversation.explanations[request.context] || boundaries.explanations[request.context] || memberBoundaries.explanations[request.context])) {
+        const meanings = {...everyday.explanations,...repairs.explanations,...social.explanations,...practical.explanations,...voice.explanations,...pragmatics.explanations,...musicConversation.explanations,...dayConversation.explanations,...boundaries.explanations,...memberBoundaries.explanations,hungry:'You said you were hungry, so I suggested a food break.',gaming:'I took that as a gaming update, not a request to control your game.',music:'I understood that as a music-related comment. I cannot play audio.',lonely:'You asked for a little company, so I offered a light conversation.',feeling_neutral:'You described an ordinary or mixed mood, so I kept the reply low key.',conversation_marker:'That sounded like the start of a thought. I asked you to finish it.'};
         const tone=toneFor(message.author.id);
         const content=(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+(meanings[request.context] ?? 'I did not understand the exact request. Please give me the main point in a short sentence.');
         return {payload:{content},category:request.context,question:false,session:true,pending:request.conversation?.pending??null};

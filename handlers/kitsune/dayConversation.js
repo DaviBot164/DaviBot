@@ -1,6 +1,10 @@
 // Reasons need a compatible active topic; do not attach "because of work" to a random choice.
-const dayTopics = new Set(['day_limits','day_pressure','day_overload','day_fairness','day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
+const dayTopics = new Set(['day_more_time','day_reaction_worry','day_limits','day_pressure','day_overload','day_fairness','day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
 function recognizeDayConversation(text, session = null) {
+ if(session && ['day_pressure','day_fairness','day_limits','day_more_time','day_reaction_worry'].includes(session.category)){
+  if(/^(?:maybe )?i (?:could|can|might) (?:ask for|request) (?:a little |some )?more time(?: instead)?$/u.test(text))return 'day_more_time';
+  if(/^(?:but )?what if (?:they|people|everyone) (?:get|gets|become|becomes|are|is) (?:(?:really|very|so) )?(?:upset|angry|annoyed|disappointed)(?: (?:with|at) me)?$/u.test(text))return 'day_reaction_worry';
+ }
  // A limitation is a continuation of the speaker's pressure topic, not a refusal
  // to talk, a global "no", or a reason to reuse an unrelated study/choice topic.
  if(session && ['day_pressure','day_fairness','day_limits'].includes(session.category) && /^i (?:cannot|can not) (?:(?:just|simply) )?(?:say no to|turn down|refuse) (?:everyone|everybody|every request)$/u.test(text))return 'day_limits';

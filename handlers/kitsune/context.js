@@ -1,5 +1,6 @@
 const {nextTopic} = require('./understandingResult');
 const {recognizeDayConversation} = require('./dayConversation');
+const {recognizeMusicConversation} = require('./musicConversation');
 const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
 // Bounded, temporary topics and choice labels; no full-message transcript is retained.
@@ -21,6 +22,7 @@ function contextualCategory(raw, session, suppliedFrame=null) {
     if (session?.pickOptions?.length >= 2 && /^(?:actually )?i (?:meant|wanted) something (?:cold|hot|warm|different|else)$/u.test(text)) return 'choice_preference';
     const topicSession=session?.topicCategory?{...session,category:session.topicCategory}:session;
     const day=recognizeDayConversation(text,session)??(topicSession!==session?recognizeDayConversation(text,topicSession):null);if(day)return day;
+    const music=recognizeMusicConversation(text,topicSession);if(music)return music;
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);
@@ -69,7 +71,7 @@ function memoryAfter(previous, request, response) {
         mode: restarted?null:mode,
         pickSelected: !restarted && response.category==='pick' ? (response.pickSelected ?? old.pickSelected ?? null) : null,
         pickOptions: !restarted && response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
-        noAdviceRemaining: restarted ? 0 : (request.category === 'decline_advice' || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
+        noAdviceRemaining: restarted ? 0 : (['decline_advice','music_curiosity'].includes(request.category) || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
         pending: restarted ? null : response.pending ?? null,
         history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };

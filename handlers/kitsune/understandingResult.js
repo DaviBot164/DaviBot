@@ -1,11 +1,13 @@
 // Stable, text-free contract shared by recognition, parsing and session memory.
+const {musicTopics}=require('./musicConversation');
 const moods=Object.freeze({feeling_bad:'low',feeling_good:'positive',feeling_neutral:'neutral',tired:'tired',mental_tired:'mentally_tired',lonely:'lonely',bored:'bored',hungry:'hungry',mood_recovered:'improved',mood_lowered:'low'});
-const dayTopics=new Set(['day_limits','day_pressure','day_overload','day_fairness','day_okay','day_ordinary','day_tiring','day_work','day_work_stress','day_study','day_people','day_privacy','day_tasks','day_no_break','day_explanation','day_relief','day_easing','effort_stuck','effort_continue','feeling_bad','tired','mental_tired','bad_day_context']);
+const dayTopics=new Set(['day_more_time','day_reaction_worry','day_limits','day_pressure','day_overload','day_fairness','day_okay','day_ordinary','day_tiring','day_work','day_work_stress','day_study','day_people','day_privacy','day_tasks','day_no_break','day_explanation','day_relief','day_easing','effort_stuck','effort_continue','feeling_bad','tired','mental_tired','bad_day_context']);
 const studyTopics=new Set(['study_start','study_step','study_breakdown','study_alternative','study_understanding']);
 const continuations=new Set(['advice_resume','yes','no','agree','thanks','reaction_thanks','feedback_understood','feedback_better','context_echo','context_changed','context_hesitant','uncertain','decline_advice','rude','tone_gentle','tone_serious','tone_reset','repair','repair_answer','why','really','explain','simplify','explain_fresh','explain_serious','repetition_feedback','intent_clear','disavow_insult','question_clarification']);
-function topicAnchor(category){return dayTopics.has(category)||studyTopics.has(category)?category:null;}
+function topicAnchor(category){return dayTopics.has(category)||studyTopics.has(category)||musicTopics.has(category)?category:null;}
 function nextTopic(previous, request, response){
- if(['topic_change','light_topic','restart_chat','stop'].includes(request.category))return null;
+ if(request.category==='light_topic')return topicAnchor(response.category);
+ if(['topic_change','restart_chat','stop'].includes(request.category))return null;
  const direct=topicAnchor(request.category);
  if(direct)return direct;
  if(continuations.has(request.category))return previous?.topicCategory??topicAnchor(previous?.category)??null;
@@ -16,6 +18,7 @@ function understandingResult(category, options={}){
  let target=null,polarity='unspecified',reported=false,intent=category??'unknown',topic=null;
  if(mood){target='self';polarity='affirmed';intent='share_state';topic='wellbeing';}
  if(/^day_/u.test(category??'') || /^effort_/u.test(category??'')){target='self';intent='share_experience';topic=['day_work','day_work_stress','day_tasks'].includes(category)?'work':category==='day_study'?'study':category==='day_people'?'people':'day';}
+ if(musicTopics.has(category)){intent=['music_preferences','music_curiosity'].includes(category)?'discuss_preference':'share_interest';topic='music';target=['music_preferences','music_curiosity'].includes(category)?'kitsune':'self';}
  if(studyTopics.has(category)){intent='study_help';topic='study';target='task';}
  if(['answer_feedback','answer_confusing','critique_clear','repair_answer','simplify','explain_fresh','explain_serious','repetition_feedback'].includes(category)){intent='clarify_answer';target='answer';topic='explanation';}
  if(['reaction_insult','reaction_dismissive','racial_boundary','personal_taunt','verbal_challenge','joke_challenge'].includes(category)){intent='directed_challenge';target='kitsune';polarity='affirmed';}
@@ -33,6 +36,6 @@ function understandingResult(category, options={}){
  if(category?.startsWith('tone_')){intent='change_tone';topic='conversation';}
  if(['topic_change','light_topic','restart_chat'].includes(category)){intent='reset_topic';topic='conversation';}
  const unknown=!category||['fallback','reaction_question','clarify'].includes(category);
- return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:category==='decline_advice'||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
+ return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:['decline_advice','music_curiosity'].includes(category)||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
 }
 module.exports={understandingResult,topicAnchor,nextTopic};

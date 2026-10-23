@@ -1,5 +1,6 @@
 // Shared bounded request shapes. No keyword-only guessing or word reordering.
 function requestForm(text) {
+ if(/^(?:let us|lets|let's|can we|could we) (?:just )?(?:leave|drop|pause) (?:that|it|this|the topic)(?: for (?:now|a bit))?$/u.test(text))return 'topic_change';
  // A bounded exclusion of both familiar stress topics; never infer a boundary
  // from an isolated "not" or from someone else's preference.
  if(/^(?:(?:can|could|shall) we (?:please )?|let us |lets |let's )(?:talk|chat) about (?:something|anything) (?:that is not|other than|besides|except) (?:work|school) (?:or|and) (?:work|school)$/u.test(text) && /\bwork\b/u.test(text) && /\bschool\b/u.test(text))return 'light_topic';

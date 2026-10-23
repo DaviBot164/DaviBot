@@ -1,4 +1,6 @@
 const publicPools={
+ day_more_time:['You are considering asking for more time instead of refusing outright.','More time rather than a flat no. I follow what you are considering.','You have a possible alternative in mind: asking for more time.'],
+ day_reaction_worry:['You are worried about their reaction, not saying they are already upset.','The uncertainty about how they might react is weighing on you.','That is a possibility you are worried about. We do not know how they will respond.'],
  day_limits:['You cannot turn everyone down. That makes the pressure harder to navigate.','Saying no to everybody is not what you have room for. I hear that limitation.','It is more complicated than simply refusing everyone. I am listening.'],
  day_overload:['A lot has been piling up lately. You do not have to explain it all at once.','Sounds like there has been little room to breathe. I am listening.','Too much at once, then. We can take the conversation slowly.'],
  day_pressure:['People are asking more of you than you have room for. That sounds draining.','It is the expectations weighing on you, then. I am listening.','A lot being expected of you can feel heavy. You can tell me what that has been like.'],
@@ -28,6 +30,8 @@ const ownerPools={
  day_easing:['A little better... I am glad. We can keep this quiet.','That is good to hear. You do not have to rush into being cheerful.','A lighter moment, then. I am glad you told me.']
 };
 module.exports={pools:{public:publicPools,owner:{...publicPools,...ownerPools},mae:{...publicPools}},explanations:{
+ day_more_time:'You proposed asking for more time as an alternative. I acknowledged it without assuming they had agreed.',
+ day_reaction_worry:'You asked what might happen if they were upset. I kept that as a worry, not a fact about their feelings.',
  day_limits:'You explained that you could not simply refuse everyone. I followed that limitation in the pressure conversation.',
  day_overload:'You described a lot happening at once. I acknowledged that without assuming the cause.',
  day_pressure:'You said people were expecting too much from you. I followed the pressure you described.',

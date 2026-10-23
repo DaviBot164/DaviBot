@@ -56,7 +56,8 @@ for(const id of [settings.OWNER_ID,settings.dialogue.maeId,'member']){
   if(turn.req.conversation.history.some(row=>row.request==='advice_resume'))ok(/smaller commitment|later time/i.test(turn.out.payload.content));
  }
  turn=send('can we talk about something that isnt work or school?','light_topic',id);
- eq(turn.session.topicCategory,null);eq(turn.session.pending,null);eq(turn.session.mood,null);
+ // The old pressure topic closes, and the newly offered music topic is retained.
+ eq(turn.session.topicCategory,'music_chat');eq(turn.session.pending,null);eq(turn.session.mood,null);
  ok(/music|song/i.test(turn.out.payload.content));ok(!/work|school|expectations/i.test(turn.out.payload.content));
  eq(parse(message('i cant just say no to everyone',id),now),null,'pressure continuation closed');
  eq(parse(message('mostly because of work',id),now),null,'no stale work context');
