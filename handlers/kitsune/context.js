@@ -1,6 +1,7 @@
 const {nextTopic} = require('./understandingResult');
 const {recognizeDayConversation} = require('./dayConversation');
 const {recognizeMusicConversation} = require('./musicConversation');
+const {recognizeGameConversation} = require('./gameConversation');
 const { followupCategory } = require('./followups');
 const { acknowledge } = require('./socialIntent');
 // Bounded, temporary topics and choice labels; no full-message transcript is retained.
@@ -23,6 +24,7 @@ function contextualCategory(raw, session, suppliedFrame=null) {
     const topicSession=session?.topicCategory?{...session,category:session.topicCategory}:session;
     const day=recognizeDayConversation(text,session)??(topicSession!==session?recognizeDayConversation(text,topicSession):null);if(day)return day;
     const music=recognizeMusicConversation(text,topicSession);if(music)return music;
+    const game=recognizeGameConversation(text,topicSession);if(game)return game;
     if (controls.has(text)) return controls.get(text);
     const plain = canonical(raw).replace(/(?:[,\s]+(?:please|right now|at the moment))+$/u, '').trim();
     if (controls.has(plain)) return controls.get(plain);
@@ -58,7 +60,7 @@ function memoryAfter(previous, request, response) {
     const restarted=request.category==='restart_chat';
     return {
         topicCategory: nextTopic(old,request,response),
-        mood: restarted||['topic_change','light_topic'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
+        mood: restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,

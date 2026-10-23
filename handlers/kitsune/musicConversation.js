@@ -1,6 +1,10 @@
 // Full self-reports can start a topic; fragments require this speaker's music topic.
 const musicTopics=new Set(['music','music_chat','music_time','music_mood','music_mix','music_preferences','music_curiosity']);
 function recognizeMusicConversation(text, session=null) {
+ // A correction can contain a complete new question. Keep its actual subject
+ // and predicate; do not strip negative words from arbitrary messages.
+ const question=text.replace(/^(?:(?:no|nah|nope) )?i (?:meant|mean) /u,'');
+ if(/^what (?:kind of )?music (?:fits|suits|matches) your (?:personality|character|style)$/u.test(question))return 'music_preferences';
  if(/^i (?:(?:mostly|usually|often|sometimes) )?listen to music (?:(?:mostly|usually) )?(?:at night|in the evening|before bed|during the day)$/u.test(text))return 'music_time';
  if(/^(?:can we|could we|let us|lets|let's) (?:just )?(?:talk|chat) about music$/u.test(text))return 'music_chat';
  if(/^what (?:kind of )?music do you (?:like|enjoy)$/u.test(text))return 'music_preferences';

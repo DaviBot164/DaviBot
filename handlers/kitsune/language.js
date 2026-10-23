@@ -5,6 +5,7 @@ const {recognizeProvocation} = require('./provocation');
 const {recognizeExplanationRepair} = require('./explanationRepair');
 const {recognizeDayConversation} = require('./dayConversation');
 const {recognizeMusicConversation} = require('./musicConversation');
+const {recognizeGameConversation} = require('./gameConversation');
 const {requestForm,moodBoundary} = require('./sentenceForms');
 const { analyzeChatAbuse, expandAbuse } = require('./chatAbuse');
 const { analyzePragmatics } = require('./pragmatics');
@@ -128,6 +129,7 @@ function recognitionRules(frame) {
   ['explanation_repair',()=>recognizeExplanationRepair(text)],
   ['day_statement',()=>recognizeDayConversation(text)],
   ['music_statement',()=>recognizeMusicConversation(text)],
+  ['game_statement',()=>recognizeGameConversation(text)],
   ['sentence_form',()=>requestForm(text)],
   ['pragmatics',()=>analyzePragmatics(text,raw,OWNER_ID)?.category],
   ['chat_abuse',()=>analyzeChatAbuse(text,raw)?.category],
