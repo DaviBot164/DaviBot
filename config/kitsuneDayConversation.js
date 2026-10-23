@@ -1,4 +1,7 @@
 const publicPools={
+ day_overload:['A lot has been piling up lately. You do not have to explain it all at once.','Sounds like there has been little room to breathe. I am listening.','Too much at once, then. We can take the conversation slowly.'],
+ day_pressure:['People are asking more of you than you have room for. That sounds draining.','It is the expectations weighing on you, then. I am listening.','A lot being expected of you can feel heavy. You can tell me what that has been like.'],
+ day_fairness:['You are not calling them bad people. You are saying the pressure is too much. I hear the difference.','You can care about them and still feel overwhelmed by what they expect.','You are describing how it feels, rather than judging who they are. I am following.'],
  day_work_stress:["Work has been getting under your skin lately. What has been the hardest part?", "That sounds frustrating. You can tell me what has been happening at work.", "Work has been wearing on you, then. I am listening."],
  day_privacy:["You do not have to name anyone. We can talk about what happened without names.", "No names needed. Share only the part you want to discuss.", "That is fine. You can keep their identity private."],
  effort_stuck:["You have been trying and not seeing the result you hoped for. That sounds frustrating.", "It is discouraging when the effort keeps going in and the result does not change. I am listening.", "You are still trying, even though it has not been working out. You can tell me more."],
@@ -24,6 +27,9 @@ const ownerPools={
  day_easing:['A little better... I am glad. We can keep this quiet.','That is good to hear. You do not have to rush into being cheerful.','A lighter moment, then. I am glad you told me.']
 };
 module.exports={pools:{public:publicPools,owner:{...publicPools,...ownerPools},mae:{...publicPools}},explanations:{
+ day_overload:'You described a lot happening at once. I acknowledged that without assuming the cause.',
+ day_pressure:'You said people were expecting too much from you. I followed the pressure you described.',
+ day_fairness:'You distinguished feeling overwhelmed from calling other people bad. I kept both parts.',
  day_work_stress:'You said work had been frustrating lately. I followed that topic.',
  day_privacy:'You did not want to name anyone. I accepted that boundary.',
  effort_stuck:'You said you kept trying without seeing results. I reflected that without giving advice.',

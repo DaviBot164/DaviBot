@@ -1,6 +1,9 @@
 // Reasons need a compatible active topic; do not attach "because of work" to a random choice.
-const dayTopics = new Set(['day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
+const dayTopics = new Set(['day_pressure','day_overload','day_fairness','day_work_stress','day_privacy','effort_stuck','effort_continue','day_okay','day_tiring','day_work','day_study','day_people','feeling_bad','tired','mental_tired','bad_day_context','day_tasks','day_no_break','day_explanation']);
 function recognizeDayConversation(text, session = null) {
+ if(/^(?:there is |there has been |it is |it has been )?(?:just )?(?:a lot|too much|so much) (?:going on|happening)(?: (?:lately|recently|right now))?$/u.test(text))return 'day_overload';
+ if(/^(?:it is |it has been )?(?:mostly |mainly |just )?(?:people|everyone|my (?:boss|friends|family|coworkers|classmates)) (?:keep )?(?:expecting|asking|demanding) too much (?:from|of) me$/u.test(text) || /^(?:people|everyone|my (?:boss|friends|family|coworkers|classmates)) (?:expect|ask|demand) too much (?:from|of) me$/u.test(text))return 'day_pressure';
+ if(/^(?:i am )?not saying (?:they are|those are) bad people (?:but |and )?i am (?:just |only )?(?:overwhelmed|stressed|drained)$/u.test(text))return 'day_fairness';
  if (/^(?:let us|lets|let's|can we) (?:just )?(?:talk|chat) (?:normally|normal|like normal)(?: now|again)?$/u.test(text)) return 'normal_chat';
  if (/^(?:today|my day) (?:was|is|has been) (?:(?:pretty|quite|mostly|actually) )?(?:okay|ok|fine|alright)(?: overall)?$/u.test(text)) return 'day_okay';
  if(/^(?:(?:nothing|not anything) (?:funny|playful)(?: right now)? (?:just )?(?:a )?(?:normal|ordinary|quiet) conversation|(?:i (?:just )?want|let us have|can we have) (?:a )?(?:normal|ordinary|quiet) conversation(?: instead)?|no jokes (?:just )?(?:talk|a normal conversation))$/u.test(text))return 'normal_chat';

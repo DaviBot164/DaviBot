@@ -30,7 +30,14 @@ function meaningVariants(text, raw=text) {
 const moodCategories = new Set(['tired','mental_tired','feeling_bad','feeling_good','feeling_neutral','lonely','bored']);
 function compoundMeaning(text, raw, lookup) {
     if (text.length>1000 || /["“”]/u.test(raw) || /\b(?:said|says|told|called|quoted|quote)\b/u.test(text)) return null;
-    const clauses=text.split(/\s+(?:but|and)\s+/u);
+    let clauses=text.split(/\s+(?:but|and)\s+/u);
+    // Chat punctuation is normalized earlier. A complete refusal can still mark
+    // the second clause; both halves must independently resolve to known intents.
+    if(clauses.length===1){
+        const refusal='(?:(?:i )?do not (?:(?:really|actually) )?(?:need|want) (?:(?:a|any|your|another) )?(?:fix|solution|advice|tips|suggestions)|no (?:advice|tips|suggestions))';
+        const pair=text.match(new RegExp('^(.+?) ('+refusal+')$','u'))??text.match(new RegExp('^('+refusal+') (.+)$','u'));
+        if(pair)clauses=pair.slice(1);
+    }
     if(clauses.length!==2)return null;
     const meanings=clauses.map(clause=>{
         const direct=lookup(clause);

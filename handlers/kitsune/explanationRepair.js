@@ -1,5 +1,12 @@
 // Targeted response repairs; never pretend to explain an arbitrary unseen passage.
 function recognizeExplanationRepair(text) {
+ // These are about comprehension, not an accusation that the answer is wrong.
+ if(/^(?:(?:that|the|your|this) (?:explanation|answer|reply|response)|it|that) (?:went|goes) (?:straight |right )?over my head$/u.test(text))return 'answer_confusing';
+ if(/^(?:i am )?not saying (?:(?:it|that|your (?:answer|reply|explanation)) (?:is|was)|its) wrong (?:but |and )?i (?:just )?(?:did not|do not|could not) (?:get|understand|follow) (?:it|that|the explanation)$/u.test(text))return 'answer_confusing';
+ if(/^(?:(?:can|could|would) you (?:please )?)?(?:put|say|explain) (?:it|that|your answer|your explanation) in (?:simpler|simple|plain|easier) (?:words|english|terms)(?: please)?$/u.test(text))return 'simplify';
+ // Confidence alone is not proof of sarcasm. Ask until the speaker clarifies it.
+ if(/^(?:wow |oh )?(?:yes |yeah )?(?:i )?(?:totally|definitely|completely) (?:understood|get|got) (?:it|everything|all of that)$/u.test(text))return 'ambiguous_praise';
+ if(/^(?:that was sarcasm|i (?:was|am) being sarcastic)(?: by the way)? (?:but |and )?i (?:am (?:still )?confused|still do not (?:get|understand) it)$/u.test(text))return 'sarcasm_clear';
  if (/^(?:that|your|the) (?:answer|reply|response) (?:was|is) (?:(?:really|very|so) )?(?:bad|wrong|unhelpful|confusing) (?:but |and )?not you$/u.test(text)) return 'answer_feedback';
  if (/^(?:(?:can|could|would) you (?:please )?)?(?:try (?:explaining|saying) (?:it|that|your answer) (?:(?:a bit|a little|slightly) )?(?:differently|another way)|(?:explain|say) (?:it|that|your answer) (?:(?:a bit|a little|slightly) )?(?:differently|in another way))(?: please)?$/u.test(text)) return 'explain_fresh';
  if (/^(?:that|the|your) (?:answer|reply|response) (?:was|is) not (?:very |really )?(?:helpful|useful|clear) (?:but |and )?i am not (?:blaming|insulting|attacking) you$/u.test(text)) return 'answer_feedback';

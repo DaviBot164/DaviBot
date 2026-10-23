@@ -234,8 +234,10 @@ const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
     if(request.category==='advice_resume') {
         const work=['day_work','day_work_stress','day_people','day_privacy'].includes(request.context);
+        const pressure=['day_pressure','day_fairness'].includes(request.context);
         const study=/^study_/u.test(request.context??'');
-        const content=work?'Advice is welcome now, understood. Start with one specific interaction you want to handle differently. What happened?'
+        const content=pressure?'If I were handling those expectations, I would separate what I can realistically do from what others want, then say that clearly. What are they expecting from you?'
+            :work?'Advice is welcome now, understood. Start with one specific interaction you want to handle differently. What happened?'
             :study?'Advice is welcome now. Choose one part of the material you are stuck on. What is the topic?'
             :'Advice is welcome now, understood. What are you trying to do, and which part is not working?';
         return {payload:{content},category:'help_offer',session:true,question:false,pending:{kind:'help_topic'}};

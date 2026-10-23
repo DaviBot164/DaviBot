@@ -1,5 +1,6 @@
 // Directed chat acts, not a list of forbidden identities or isolated keywords.
 function recognizeProvocation(text,raw=text) {
+ if(/^(?:my bad|sorry|i am sorry) (?:but |and )?(?:let us|lets|let's|can we) (?:start fresh|start over|start again)$/u.test(text))return 'restart_chat';
  text=text.replace(/\bru (?=(?:gay|straight|bisexual|dumb|stupid|sure|serious|scared|afraid|cute|pretty|beautiful)\b)/gu,'are you ');
  if (/["“”]/u.test(raw)) return null;
  // Local chat shorthand: do not change stored learning keys globally.
