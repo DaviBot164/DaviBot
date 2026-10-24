@@ -70,7 +70,7 @@ for(const persona of ['member','owner','mae','ash']){
 turns=chain(['kitsune pick tea / coffee','okay lets go with coffee','actually ive changed my mind','lets go with tea instead','what did we decide?','was that random or my choice?']);ok(/tea/.test(turns[4].reply));ok(/was yours/.test(turns[5].reply));
 turns=chain(['kitsune lets talk about music','mostly rock','jazz as well','what did i say i listen to?']);ok(/rock/.test(turns[3].reply));ok(/jazz/.test(turns[3].reply));ok(!/Mostly jazz/.test(turns[2].reply));
 turns=chain(['kitsune my friend ignored me','what should i say to him?','keep it casual and short','actually a bit more detail','make it more formal','keep the no-pressure part']);ok(turns[3].reply.length>turns[2].reply.length);ok(/Hello|Please/.test(turns[4].reply));ok(/no urgency/.test(turns[5].reply));
-turns=chain(['kitsune lets talk about games','mostly pve','actually pvp, not pve','what did i say i prefer?','make it shorter']);ok(/PvP|PVP/.test(turns[3].reply));ok(!/PvE|PVE/.test(turns[3].reply));ok(/other players/.test(turns[4].reply));
+turns=chain(['kitsune lets talk about games','mostly pve','actually pvp, not pve','what did i say i prefer?','make it shorter']);ok(/PvP|PVP/.test(turns[3].reply));ok(!/PvE|PVE/.test(turns[3].reply));ok(/You prefer PvP/.test(turns[4].reply));
 turns=chain(['kitsune lets talk about music','mostly jazz','enough about music, lets talk about games','mostly pvp','what about you?']);ok(!/melodies|soundtrack|music/.test(turns[4].reply));eq(turns[2].after,'game_chat');
 
 for(const name of ['davi','daviti']){

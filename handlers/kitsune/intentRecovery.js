@@ -16,16 +16,29 @@ function recoverIntent(frame,session,lookup){
  const out=(kind,data={},force=false,category='core_'+kind)=>({category,kind,data,force});
  // Person aliases stay local to semantic recognition, never to account authorization or learning keys.
  const personText=t.replace(/\bdaviti\b/gu,'davi');
- const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous|davi_))/u.test(session?.category??'');
+ const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous$|davi_))/u.test(session?.category??'');
+ // Slang stays in anchored semantic forms; never erase negation, subjects or quoted speech.
+ if(/^(?:you jealous(?: or (?:no|not))?|are you jealous or (?:no|not))$/u.test(t))return out('jealous_question',{why:false});
+ if(/^(?:chill|relax) (?:me (?:n|and) davi|davi and i) are just friends$/u.test(personText))return out('social_friends',{davi:true});
+ if(/^he helped me (?:that is|thats) it$/u.test(t))return daviContext?out('davi_helped'):out('who');
+ if(/^(?:(?:i )?was not|not) (?:tryna|trying to) make you (?:mad|angry)$/u.test(t))return out('intent_reassure');
+ if(/^you are not (?:useless|stupid|dumb) (?:but )?(?:that|your) (?:reply|answer) just confused me$/u.test(t))return out('answer_scope',{boundary:false});
+ if(new RegExp('^(?:someone|my friend) said you are (?:an? )?'+negative+' (?:it )?was not me$','u').test(t))return out('reported_bot');
+ if(/^i am defending you not mocking you$/u.test(t))return out('defend_bot');
+ if(/^davi did not do anything wrong$/u.test(personText))return out('defend_davi');
+ if(/^(?:lets|let us) chill (?:n|and) talk normally$/u.test(t))return out('social_normal',{},false,'normal_chat');
+ if(/^wow big attitude for a bot that cannot answer$/u.test(t))return out('verbal_feedback');
+ if(/^not asking for drama (?:but )?just explain$/u.test(t))return out('answer_repair',{boundary:session?.core?.answerKind==='boundary',answerKind:session?.core?.answerKind??'unknown'});
+ if(/^(?:all right )?my bad (?:lets|let us) reset$/u.test(t))return out('social_reset',{},true,'restart_chat');
  if(/^(?:are you|why are you) jealous$/u.test(t))return out('jealous_question',{why:t.startsWith('why')});
  if(/^i was talking to a friend$/u.test(t))return out('social_friend');
  if(/^do not be upset i am here now$/u.test(t))return out('social_reassure');
  if(/^(?:relax )?(?:we are|we're) just friends$/u.test(t))return out('social_friends');
  if(/^not flirting just (?:being nice|saying|grateful)$/u.test(t))return out('social_grateful',{davi:daviContext});
  if(/^just stay and talk to me$/u.test(t))return out('social_company');
- if(/^i am criticizing your answer not you$/u.test(t))return out('answer_scope',{boundary:/insult|protect/u.test(session?.category??'')||session?.core?.answerKind==='boundary'});
- if(/^it made no sense explain it properly$/u.test(t))return out('answer_repair',{boundary:session?.core?.answerKind==='boundary'});
- if(/^do not get defensive (?:but )?just keep it short$/u.test(t))return out('answer_short',{boundary:session?.core?.answerKind==='boundary'});
+ if(/^i am criticizing your answer not you$/u.test(t))return out('answer_scope',{boundary:/insult|protect/u.test(session?.category??'')||session?.core?.answerKind==='boundary',answerKind:session?.core?.answerKind});
+ if(/^it made no sense explain it properly$/u.test(t))return out('answer_repair',{boundary:session?.core?.answerKind==='boundary',answerKind:session?.core?.answerKind});
+ if(/^do not get defensive (?:but )?just keep it short$/u.test(t))return out('answer_short',{boundary:session?.core?.answerKind==='boundary',answerKind:session?.core?.answerKind});
  if(/^(?:my bad i was rude|sorry for what i said earlier)$/u.test(t))return out('apology');
  if(/^i am quoting someone else i do not agree$/u.test(t))return out('quote_correction',{davi:daviContext});
  if(/^i am defending davi not insulting him$/u.test(personText))return out('defend_davi');

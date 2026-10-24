@@ -65,8 +65,8 @@ function memoryAfter(previous, request, response) {
     return {
         ...followThroughMemory(old,request,response),
         topicCategory: nextTopic(old,request,response),
-        core: response.core ?? (['pause','flow_hold','flow_resume','thanks','reaction_thanks','why','explain','core_listen','core_listen_quiet','core_gratitude','core_apology','core_reassurance','tone_gentle','tone_serious','tone_reset','core_opinion'].includes(request.category)?old.core??null:null),
-        templateRef: response.templateRef ?? (['pause','flow_hold','flow_resume','why','explain','simplify','core_explain','thanks','reaction_thanks'].includes(request.category)?old.templateRef??null:null),
+        core: response.core ?? (['answer_feedback','answer_confusing','critique_clear','repair_answer','pause','flow_hold','flow_resume','thanks','reaction_thanks','why','explain','core_listen','core_listen_quiet','core_gratitude','core_apology','core_reassurance','tone_gentle','tone_serious','tone_reset','core_opinion'].includes(request.category)?old.core??null:null),
+        templateRef: response.templateRef ?? (['answer_feedback','answer_confusing','critique_clear','repair_answer','pause','flow_hold','flow_resume','why','explain','simplify','core_explain','thanks','reaction_thanks'].includes(request.category)?old.templateRef??null:null),
         preferredName: response.preferredName ?? old.preferredName ?? null,
         moodTurns: ((old.moodTurns??0)+(request.category==='mood'?1:0))%3,
         shortChat: response.shortChat ?? ((['pause','flow_hold','flow_resume','bored','thanks','reaction_thanks'].includes(request.category) || (old.topicCategory?.startsWith('music') && ['music_time','music_relax','music_mood','music_mix','music_preferences','music_curiosity'].includes(request.category))) ? old.shortChat ?? null : null),
