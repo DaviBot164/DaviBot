@@ -7,7 +7,7 @@ const { attachExpectation } = require('./followups');
 const { escapeMarkdown } = require('discord.js');
 const { randomInt } = require('node:crypto');
 const { OWNER_ID, replies, dialogue } = require('./settings');
-const { drawReply, getReplyState } = require('./state');
+const { drawReply, getReplyState, randomFor } = require('./state');
 const { buildHelp } = require('./help');
 const friends = require('../../config/kitsuneFriends');
 const conversation = require('../../config/kitsuneConversation');
@@ -182,6 +182,7 @@ function contextualReply(request, tone) {
 function buildBaseResponse(message, request) {
     const tone = toneFor(message.author.id);
     const state = getReplyState(message);
+    const roll=randomFor?.(message)??randomInt;
     let category = request.category;
 
     function response(content, context = category, question = false, session = true) {
@@ -222,7 +223,7 @@ function buildBaseResponse(message, request) {
         if (options.length < 2 || options.length > 10 || options.some(x => x.length > 100)) {
             return response('Give me 2–10 choices separated by `/`.\n`kitsune pick pvp / training`', 'fallback');
         }
-        const selected = options[randomInt(options.length)];
+        const selected = options[roll(options.length)];
         const choice = escapeMarkdown(selected);
         const suffix = tone === 'owner' ? ', handsome. A random pick for you.'
             : tone === 'mae' ? '. A random pick, Mae.' : '. Randomly chosen. The imaginary committee has spoken.';
@@ -237,7 +238,7 @@ function buildBaseResponse(message, request) {
     const poolName=choosePool(tone,category);
     let content=drawReply(state,poolName);
     const templateRef=['secret','tip','joke'].includes(category)?{pool:poolName,index:replies[poolName].indexOf(content),topic:category}:null;
-    if (category === 'rate') content = content.replace(/\{score\}/gu, String(randomInt(1, 11)));
+    if (category === 'rate') content = content.replace(/\{score\}/gu, String(roll(1, 11)));
     if (category === 'tip' && tone !== 'public') {
         content = `${tone === 'owner' ? 'A little thought for you, handsome' : 'A little thought for you, Mae'}:\n\n${content}`;
     }
@@ -380,7 +381,7 @@ function buildUnstyledResponse(message, request) {
             : 'That sounds frustrating. We can pause or choose a calmer subject.';
         base={...base,payload:{content:(tone==='owner'?'Of course, handsome. ':tone==='mae'?'Mae, ':'')+line}};
     }
-    const final = decorate(base, toneFor(message.author.id), request);
+    const final = decorate(base, toneFor(message.author.id), request, randomFor?.(message)??randomInt);
     if (request.category === 'day_chat' && final.payload.content?.includes('?')) final.pending = {kind:'mood'};
     if (['hi','returning','morning'].includes(final.category) && /how (?:are you(?: doing)?|is your day(?: starting| going)?)\?/iu.test(final.payload.content ?? '')) final.pending = {kind:'mood'};
     if ((request.category === 'decline_advice' || request.declineAdvice || request.conversation?.noAdviceRemaining > 0) && request.category !== 'tip' && /\badvice\b/iu.test(final.payload.content ?? '') && request.category !== 'decline_advice') {

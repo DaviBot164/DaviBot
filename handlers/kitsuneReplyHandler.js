@@ -20,6 +20,8 @@ const { parseRequest } = require('./kitsune/parser');
 const { buildResponse } = require('./kitsune/responses');
 const { plainHelp } = require('./kitsune/help');
 const { memoryAfter } = require('./kitsune/context');
+const {createCooldownStatus}=require('./kitsune/cooldownStatus');
+const cooldownStatus=createCooldownStatus({users,channels});
 
 async function handleKitsuneReply(message) {
     if (
@@ -90,6 +92,7 @@ async function handleKitsuneReply(message) {
             now < state.until ||
             now < (users.get(userKey) ?? 0)
         ) {
+            if(request.category!=='stop'){try{cooldownStatus.warn({guildId:message.guildId,channelId:message.channelId,userId:message.author.id});}catch{ /* Status is best-effort. */ }}
             return false;
         }
 
@@ -99,6 +102,7 @@ async function handleKitsuneReply(message) {
         const expiry = now + USER_COOLDOWN;
         users.set(userKey, expiry);
 
+        let delivery=null;
         try {
             const response = buildResponse(message, request, state);
 
@@ -117,6 +121,7 @@ async function handleKitsuneReply(message) {
                 }
             });
 
+            if(response.session)delivery={sent,payload:response.payload};
             sessions.delete(key);
 
             if (response.session) {
@@ -145,6 +150,7 @@ async function handleKitsuneReply(message) {
             state.busy = false;
             state.lastUsed = Date.now();
             state.until = state.lastUsed + CHANNEL_COOLDOWN;
+            if(delivery){try{cooldownStatus.start(delivery.sent,delivery.payload,{guildId:message.guildId,channelId:message.channelId,userId:message.author.id});}catch{ /* A status failure must not fail the delivered reply. */ }}
         }
     } catch (error) {
         console.error('Kitsune reply failed:', error);

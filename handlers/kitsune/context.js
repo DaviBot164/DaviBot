@@ -85,7 +85,7 @@ function memoryAfter(previous, request, response) {
         history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };
 }
-function decorate(base, tone, request) {
+function decorate(base, tone, request, roll=randomInt) {
     const previous = request.conversation ?? {};
     const control = request.category;
     if (['help','stop'].includes(control)) return base;
@@ -107,7 +107,7 @@ function decorate(base, tone, request) {
             ? ['Of course... we can leave that behind. What is on your mind?', 'A fresh subject, then. What would you like to talk about?']
             : tone === 'mae' ? ['Sure, Mae. We can leave that topic behind. What is on your mind?', 'A new subject is fine, Mae. Go ahead.']
             : ['Sure. We can leave that behind. What is on your mind?', 'New subject, then. What would you like to talk about?'];
-        const content = options[randomInt(options.length)];
+        const content = options[roll(options.length)];
         return {payload:{content},category:'general',session:true,question:false,pending:null};
     }
     if (control === 'repair') {

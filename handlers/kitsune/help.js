@@ -14,6 +14,7 @@ function plainHelp(){return [
  '', '**Approved phrase learning**','Unfamiliar phrases addressed to Kitsune may be grouped for Davi to review. Only Davi can teach new meanings with `/kitsune teach`.',
  '', '`kitsune stop` / `bye` — End the conversation.',
  'Wait **3 seconds** between your requests; **2 seconds** between channel responses.',
+ 'A short countdown appears on editable chat replies. If a message arrived too early, send it again after Ready. New channel activity can restart the wait.',
  'Preset character dialogue: I recognize many English patterns, but cannot understand every sentence or answer arbitrary questions.'
 ].join('\n');}
 function buildHelp(message){return createEmbed('🦊 Kitsune • Talk to Me',plainHelp()).setThumbnail(message.client.user.displayAvatarURL({size:256}));}

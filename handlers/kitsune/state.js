@@ -5,6 +5,9 @@ const users = new Map();
 const channels = new Map();
 const sessions = new Map();
 const listeners = new Map();
+const TEST_SCOPE=Symbol('kitsune-test-scope');
+function createTestScope(random){return {sessions:new Map(),listeners:new Map(),randomInt:random??randomInt};}
+function randomFor(message){return message[TEST_SCOPE]?.randomInt??randomInt;}
 
 function sessionKey(message) {
     return `${message.guildId}:${message.channelId}:${message.author.id}`;
@@ -27,10 +30,12 @@ function cleanExpired(now) {
 
 function getReplyState(message) {
     const key = `${message.guildId}:${message.author.id}`;
-    let state = listeners.get(key);
+    const scope=message[TEST_SCOPE];
+    const store=scope?.listeners??listeners;
+    let state = store.get(key);
     if (!state) {
-        state = { bags: new Map(), lastUsed: Date.now() };
-        listeners.set(key, state);
+        state = { bags: new Map(), lastUsed: Date.now(), ...(scope?{randomInt:scope.randomInt}:{}) };
+        store.set(key, state);
     }
     state.lastUsed = Date.now();
     return state;
@@ -46,7 +51,7 @@ function drawReply(state, category) {
     if (!bag?.remaining.length) {
         const remaining = [...unique];
         for (let i = remaining.length - 1; i > 0; i--) {
-            const j = randomInt(i + 1);
+            const j = (state.randomInt??randomInt)(i + 1);
             [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
         }
         if (remaining.length > 1 && remaining.at(-1) === bag?.last) {
@@ -62,11 +67,11 @@ function drawReply(state, category) {
 }
 
 function getSession(message, now) {
-    const session = sessions.get(sessionKey(message));
+    const session = (message[TEST_SCOPE]?.sessions??sessions).get(sessionKey(message));
     return session?.expiresAt > now ? session : null;
 }
 
 module.exports = {
     users, channels, sessions, sessionKey, cleanExpired,
-    drawReply, getSession, getReplyState
+    drawReply, getSession, getReplyState, TEST_SCOPE, createTestScope, randomFor
 };

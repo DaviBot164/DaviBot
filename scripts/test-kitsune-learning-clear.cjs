@@ -46,7 +46,7 @@ async function main(){
   return original.apply(this,arguments);
  };
  let command;try{command=require(cmdPath);}finally{Module._load=original;}
- const schema=command.data.toJSON();eq(schema.options.length,6);eq(schema.dm_permission,false);
+ const schema=command.data.toJSON();eq(schema.options.length,8);eq(schema.dm_permission,false);
  const option=schema.options.find(x=>x.name==='clearunknown');assert.ok(option);count++;eq(option.options,[]);
  const interaction=(id='owner',guildId='g')=>{
   const replies=[];return{user:{id},guildId,replies,

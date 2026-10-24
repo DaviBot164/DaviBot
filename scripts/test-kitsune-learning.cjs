@@ -140,7 +140,7 @@ async function main() {
   return baseLoad.apply(this,arguments);
  };
  let command;try{command=require(commandPath);}finally{Module._load=baseLoad;}
- const json=command.data.toJSON();eq(json.name,'kitsune');eq(json.options.length,6);assert.ok(json.options.find(x=>x.name==='teach').options[1].choices.length<=25);count++;
+ const json=command.data.toJSON();eq(json.name,'kitsune');eq(json.options.length,8);assert.ok(json.options.find(x=>x.name==='teach').options[1].choices.length<=25);count++;
  const interaction=(id,sub,phrase='moonfox greeting',meaning='hello')=>{
   const replies=[];return{user:{id},guildId:'g',options:{getSubcommand:()=>sub,getInteger:()=>1,getString:name=>name==='meaning'?meaning:phrase},
    reply:async p=>{replies.push(p);},deferReply:async()=>{},editReply:async p=>{replies.push(p);},replies};

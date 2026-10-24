@@ -8,8 +8,14 @@ const runtime=require('../../handlers/kitsune/learningRuntime');
 const repo=require('../../database/kitsuneLearning');
 const phraseOption=option=>option.setName('phrase').setDescription('Short English phrase, without the Kitsune prefix.').setRequired(true).setMinLength(2).setMaxLength(config.maxPhraseLength);
 const pageOption=option=>option.setName('page').setDescription('Page number, 10 phrases per page.').setMinValue(1).setMaxValue(50);
-const data=new SlashCommandBuilder().setName('kitsune').setDescription('Teach and review Kitsune conversation phrases. Owner only.')
+const data=new SlashCommandBuilder().setName('kitsune').setDescription('Test dialogue and manage Kitsune phrase learning. Owner only.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator).setDMPermission(false)
+    .addSubcommand(sub=>sub.setName('test').setDescription('Private isolated dialogue test. Use || between turns.')
+        .addStringOption(option=>option.setName('text').setDescription('Exact chat text. Start with kitsune hi; continue with || follow-ups.').setRequired(true).setMaxLength(1500))
+        .addStringOption(option=>option.setName('persona').setDescription('Simulated speaker; live accounts are unaffected.').addChoices(...['member','owner','mae','ash'].map(value=>({name:value,value}))))
+        .addIntegerOption(option=>option.setName('seed').setDescription('Restart this scenario with a repeatable seed.').setMinValue(0).setMaxValue(2147483647))
+        .addStringOption(option=>option.setName('expected').setDescription('Optional expected category for a single turn.').setMaxLength(80)))
+    .addSubcommand(sub=>sub.setName('testreset').setDescription('Clear your private test scenarios in this channel.'))
     .addSubcommand(sub=>sub.setName('unknown').setDescription('Review unfamiliar phrases, grouped by normalized wording.').addIntegerOption(pageOption))
     .addSubcommand(sub=>sub.setName('clearunknown').setDescription('Clear all unknown phrases in this server. Learned phrases stay saved.'))
     .addSubcommand(sub=>sub.setName('learned').setDescription('Review the phrases you have taught.').addIntegerOption(pageOption))
@@ -24,9 +30,19 @@ async function execute(interaction) {
     }
     await interaction.deferReply({flags:MessageFlags.Ephemeral});
     const reply=content=>interaction.editReply({content,allowedMentions:{parse:[]}});
+    const sub=interaction.options.getSubcommand();
+    if(sub==='test'||sub==='testreset'){
+        try{
+            const lab=require('../../handlers/kitsune/testLab');
+            const input={userId:interaction.user.id,guildId:interaction.guildId,channelId:interaction.channelId,botId:interaction.client?.user?.id,botAvatar:interaction.client?.user?.displayAvatarURL?.({size:256})};
+            if(sub==='testreset')return reply('🦊 Cleared '+lab.resetLab(input)+' private test scenarios. Live conversation memory was not changed.');
+            const result=lab.runLab({...input,text:interaction.options.getString('text',true),persona:interaction.options.getString('persona')??'member',seed:interaction.options.getInteger('seed')??undefined,expected:interaction.options.getString('expected')??undefined});
+            const report=lab.formatReport(result);
+            return interaction.editReply({content:report.length<=1850?report:'🦊 Private test completed: '+result.turns.length+' turns. Full results are in the attached report.\n'+result.limitations,files:[{attachment:Buffer.from(report,'utf8'),name:'kitsune-test-report.txt'}],allowedMentions:{parse:[]}});
+        }catch(error){return reply('Test could not complete: '+error.message+' No live conversation or learning data was changed.');}
+    }
     if(!runtime.enabled())return reply('Learning needs the existing PostgreSQL connection to be enabled.');
     try {
-        const sub=interaction.options.getSubcommand();
         if(sub==='clearunknown') {
             const removed=await repo.clearUnknownPhrases(interaction.guildId);
             return reply(removed
