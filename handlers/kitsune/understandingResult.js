@@ -4,7 +4,7 @@ const {gameTopics}=require('./gameConversation');
 const moods=Object.freeze({feeling_bad:'low',feeling_good:'positive',feeling_neutral:'neutral',tired:'tired',mental_tired:'mentally_tired',lonely:'lonely',bored:'bored',hungry:'hungry',mood_recovered:'improved',mood_lowered:'low'});
 const dayTopics=new Set(['day_more_time','day_reaction_worry','day_limits','day_pressure','day_overload','day_fairness','day_okay','day_ordinary','day_tiring','day_work','day_work_stress','day_study','day_people','day_privacy','day_tasks','day_no_break','day_explanation','day_relief','day_easing','effort_stuck','effort_continue','feeling_bad','tired','mental_tired','bad_day_context']);
 const studyTopics=new Set(['study_start','study_step','study_breakdown','study_alternative','study_understanding']);
-const continuations=new Set(['brief_both','brief_depends','brief_mood','brief_pick','brief_first','advice_resume','yes','no','agree','thanks','reaction_thanks','feedback_understood','feedback_better','context_echo','context_changed','context_hesitant','uncertain','decline_advice','rude','tone_gentle','tone_serious','tone_reset','repair','repair_answer','why','really','explain','simplify','explain_fresh','explain_serious','repetition_feedback','intent_clear','disavow_insult','question_clarification']);
+const continuations=new Set(['pause','flow_hold','flow_resume','brief_both','brief_depends','brief_mood','brief_pick','brief_first','advice_resume','yes','no','agree','thanks','reaction_thanks','feedback_understood','feedback_better','context_echo','context_changed','context_hesitant','uncertain','decline_advice','rude','tone_gentle','tone_serious','tone_reset','repair','repair_answer','why','really','explain','simplify','explain_fresh','explain_serious','repetition_feedback','intent_clear','disavow_insult','question_clarification']);
 function topicAnchor(category){return dayTopics.has(category)||studyTopics.has(category)||musicTopics.has(category)||gameTopics.has(category)?category:null;}
 function nextTopic(previous, request, response){
  if(request.category==='light_topic')return topicAnchor(response.category);
@@ -17,6 +17,7 @@ function nextTopic(previous, request, response){
 function understandingResult(category, options={}){
  let mood=moods[category]??null;
  let target=null,polarity='unspecified',reported=false,intent=category??'unknown',topic=null;
+ if(category?.startsWith('flow_')){intent='contextual_continuation';topic='conversation';}
  if(category?.startsWith('brief_')){intent='casual_conversation';topic='conversation';}
  if(mood){target='self';polarity='affirmed';intent='share_state';topic='wellbeing';}
  if(/^day_/u.test(category??'') || /^effort_/u.test(category??'')){target='self';intent='share_experience';topic=['day_work','day_work_stress','day_tasks'].includes(category)?'work':category==='day_study'?'study':category==='day_people'?'people':'day';}

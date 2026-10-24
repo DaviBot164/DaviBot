@@ -1,3 +1,4 @@
+const {followThroughMemory}=require('./followThrough');
 const {recognizeBrief}=require('./briefConversation');
 const {nextTopic} = require('./understandingResult');
 const {recognizeDayConversation} = require('./dayConversation');
@@ -60,13 +61,15 @@ function memoryAfter(previous, request, response) {
         ? { name: response.modeChange, remaining: 4 }
         : old.mode?.remaining > 1 ? { ...old.mode, remaining: old.mode.remaining - 1 } : null;
     const restarted=request.category==='restart_chat';
+    const paused=['pause','flow_hold'].includes(request.category);
     return {
+        ...followThroughMemory(old,request,response),
         topicCategory: nextTopic(old,request,response),
-        core: response.core ?? (['thanks','reaction_thanks','why','explain','core_listen','core_listen_quiet','core_gratitude','core_apology','core_reassurance','tone_gentle','tone_serious','tone_reset','core_opinion'].includes(request.category)?old.core??null:null),
-        templateRef: response.templateRef ?? (['why','explain','simplify','core_explain','thanks','reaction_thanks'].includes(request.category)?old.templateRef??null:null),
+        core: response.core ?? (['pause','flow_hold','flow_resume','thanks','reaction_thanks','why','explain','core_listen','core_listen_quiet','core_gratitude','core_apology','core_reassurance','tone_gentle','tone_serious','tone_reset','core_opinion'].includes(request.category)?old.core??null:null),
+        templateRef: response.templateRef ?? (['pause','flow_hold','flow_resume','why','explain','simplify','core_explain','thanks','reaction_thanks'].includes(request.category)?old.templateRef??null:null),
         preferredName: response.preferredName ?? old.preferredName ?? null,
         moodTurns: ((old.moodTurns??0)+(request.category==='mood'?1:0))%3,
-        shortChat: response.shortChat ?? ((['bored','thanks','reaction_thanks'].includes(request.category) || (old.topicCategory?.startsWith('music') && ['music_time','music_relax','music_mood','music_mix','music_preferences','music_curiosity'].includes(request.category))) ? old.shortChat ?? null : null),
+        shortChat: response.shortChat ?? ((['pause','flow_hold','flow_resume','bored','thanks','reaction_thanks'].includes(request.category) || (old.topicCategory?.startsWith('music') && ['music_time','music_relax','music_mood','music_mix','music_preferences','music_curiosity'].includes(request.category))) ? old.shortChat ?? null : null),
         mood: request.recovery?.kind==='state' && request.recovery.data.target==='self' ? request.understanding.mood : restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
@@ -78,10 +81,10 @@ function memoryAfter(previous, request, response) {
         ownerTurns: (old.ownerTurns??0)+(response.ownerStyle?1:0),
         ownerAddressUsed: Boolean(response.ownerAddressUsed),
         mode: restarted?null:mode,
-        pickSelected: !restarted && (response.category==='pick' || ['thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickSelected ?? old.pickSelected ?? null) : null,
-        pickOptions: !restarted && (response.category==='pick' || ['thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickOptions ?? old.pickOptions ?? null) : null,
+        pickSelected: !restarted && (response.category==='pick' || ['pause','flow_hold','flow_resume','thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickSelected ?? old.pickSelected ?? null) : null,
+        pickOptions: !restarted && (response.category==='pick' || ['pause','flow_hold','flow_resume','thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickOptions ?? old.pickOptions ?? null) : null,
         noAdviceRemaining: restarted ? 0 : (['decline_advice','music_curiosity','core_listen','core_listen_quiet','core_peace'].includes(request.category) || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
-        pending: restarted ? null : response.pending ?? null,
+        pending: restarted ? null : paused ? old.pending??null : response.pending ?? null,
         history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };
 }

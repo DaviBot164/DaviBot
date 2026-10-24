@@ -1,3 +1,4 @@
+const {followThroughResponse}=require('./followThrough');
 const {recoveryResponse}=require('./recoveryResponses');
 const {briefResponse}=require('./briefConversation');
 const {repairExplanation} = require('./explanationRepair');
@@ -255,6 +256,7 @@ function buildBaseResponse(message, request) {
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    const continued=followThroughResponse(request,randomFor?.(message)??randomInt);if(continued)return continued;
     const recovered=recoveryResponse(message,request,replies);if(recovered)return recovered;
     const brief=briefResponse(request);if(brief)return brief;
     if(request.category==='light_topic') {

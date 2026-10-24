@@ -1,3 +1,4 @@
+const {analyzeFollowThrough}=require('./followThrough');
 const {recoverIntent}=require('./intentRecovery');
 const {namedAddress} = require('./addressing');
 const {understandingResult} = require('./understandingResult');
@@ -31,23 +32,25 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const frame=englishOnly?prepareInput(raw):null;
     const details=englishOnly?recognizeDetails(raw,frame):{};
     const contextual=englishOnly?contextualCategory(raw,session,frame):null;
-    let category = contextual??details.category??null;
-    let recovery=englishOnly?recoverIntent(frame,session,value=>recognizeDetails(value).category):null;
+    const flow=englishOnly?analyzeFollowThrough(frame,session):null;
+    let category = flow?.category??contextual??details.category??null;
+    let recovery=englishOnly&&!flow?recoverIntent(frame,session,value=>recognizeDetails(value).category):null;
     if(recovery && (!category || ['fallback','reaction_question','clarify','question_clarification'].includes(category) || recovery.force)){
         if(!(category && recovery.force && ['jealous','remember','name_question','defend_davi'].includes(recovery.kind)))category=recovery.category;
     }
     else recovery=null;
-    if(session?.templateRef && ['why','explain','simplify'].includes(category)){
+    if(!flow && session?.templateRef && ['why','explain','simplify'].includes(category)){
         recovery={category,kind:'explain',data:{form:category==='simplify'?'shorter':category},force:true};
     }
     let recognition = contextual?{source:'context',rule:'contextual_followup'}:details.understanding;
+    if(flow)recognition={source:'context',rule:'follow_through.'+flow.kind};
     if(recovery && (!recognition || recognition.status==='unmatched'))recognition={source:'recovery',rule:'recovery.'+recovery.kind};
     if(!category && englishOnly && learnedAliases) {
         const learned=learnedAliases.get(learningPhrase(raw));
         if(Object.values(learningConfig.intents).includes(learned)){category=learned;recognition={source:'learned',rule:'approved_alias'};}
     }
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
-    const choice = englishOnly && recovery?.kind!=='choice_other' ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw,frame) : null) ?? extractChoice(raw,frame)) : null;
+    const choice = englishOnly && !flow && recovery?.kind!=='choice_other' ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw,frame) : null) ?? extractChoice(raw,frame)) : null;
 
     if (!trigger && !replying) {
         if (
@@ -63,6 +66,7 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const followup = {
         recognition,
         ...(recovery?{recovery}:{}),
+        ...(flow?{flow}:{}),
         context,
         declineAdvice: Boolean(details.declineAdvice),
         mixedSocial,
