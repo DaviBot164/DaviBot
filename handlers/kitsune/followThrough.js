@@ -11,21 +11,27 @@ function analyzeFollowThrough(frame,session){
  const friend=thread?.kind==='friend'||session?.core?.topic==='argument';
  const boundary=thread?.kind==='boundary';
  const music=thread?.kind==='music'||/^music/u.test(session?.topicCategory??session?.category??'');
+ const games=/^game_/u.test(session?.topicCategory??session?.category??'');
  const joke=thread?.kind==='joke'||/joke/u.test(session?.category??'')||session?.templateRef?.topic==='joke';
  // A new explicit topic replaces stale drafts, choices and paused work.
  if(/^(?:forget that|never mind|leave that)(?: and)? (?:lets|let us) talk about music(?: instead)?$/u.test(text))return out('music_start');
- const shorter=/^(?:make it shorter|shorter|shorter please|keep it short|one sentence please)$/u.test(text);
+ if(/^(?:lets|let us) leave that and (?:talk|chat) about (games|music)$/u.test(text))return out(text.endsWith('games')?'game_start':'music_start');
+ const shorter=/^(?:make it shorter|shorter|shorter please|keep it short|one sentence please|make it shorter but keep the meaning)$/u.test(text);
+ if(games&&shorter)return out('game_short',{preference:session.topicCategory==='game_relaxed'||session.category==='game_relaxed'?'pve':session.topicCategory==='game_competitive'||session.category==='game_competitive'?'pvp':null});
  if((friend||boundary)&&thread?.draft){
-  if(shorter||/^(?:keep it casual and short|less formal|keep it casual|do not make it sound like i am blaming (?:him|her|them))$/u.test(text))return out('draft_edit',{short:shorter||/short/u.test(text),casual:/casual|formal/u.test(text),noBlame:/blaming/u.test(text)});
+  if(shorter||/^(?:keep it casual and short|less formal|keep it casual|mention my earlier message|do not ask (?:him|her|them) to reply immediately|do not make it sound like i am blaming (?:him|her|them))$/u.test(text))return out('draft_edit',{short:shorter||/short/u.test(text),casual:/casual|formal/u.test(text),noBlame:/blaming/u.test(text),preserveMeaning:/keep the meaning/u.test(text),mentionEarlier:/earlier message/u.test(text),noRush:/reply immediately/u.test(text)});
  }
  if(music){
+  const removal=text.match(/^(?:i (?:do not|no longer) (?:like|listen to) |not )(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)(?: anymore| any more)?$/u);
+  if(removal)return out('music_remove',{genre:removal[1]});
   const correction=text.match(/^(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi) not (rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)$/u);
   if(correction)return out('music_correct',{genre:correction[1]});
   if(/^only when i am working$/u.test(text))return out('music_place',{place:'work',only:true});
   if(/^(?:what did i say i listen to|what music did i say i like)$/u.test(text))return out('music_recall');
   if(shorter&&thread?.kind==='music')return out('music_short');
  }
- if(session?.pickOptions?.length>=2){
+ if(session?.pickOptions?.length>=2||thread?.kind==='choice'&&thread.cancelled){
+  if(/^(?:i have changed my mind|i changed my mind|neither lets leave it|neither let us leave it|neither leave it)$/u.test(text))return out('choice_cancel',{close:/neither/u.test(text)});
   if(/^(?:what did we decide|what did we choose|what is our choice)$/u.test(text))return out('choice_recall');
   if(/^(?:was that random or my choice|did i choose that or was it random)$/u.test(text))return out('choice_source');
  }
@@ -39,9 +45,12 @@ function analyzeFollowThrough(frame,session){
   if(/^(?:not yet|still not ready|wait a little longer)$/u.test(text))return out('hold');
   if(/^(?:continue|go on|carry on|we can continue|i am ready now|ready now)$/u.test(text))return out('resume');
  }
- if(/^(?:(?:my|a) friend (?:ignored me|did not reply|left me on read)|i feel ignored)$/u.test(text))return out('friend_event',{event:'unanswered',target:text==='i feel ignored'?'unknown':'friend'});
+ if(/^(?:(?:my|a) friend (?:ignored me|did not reply|left me on read|(?:hasnt|has not) replied(?: yet)?|(?:hasnt|has not) answered(?: yet)?)|i feel ignored)$/u.test(text))return out('friend_event',{event:/left me on read/u.test(text)?'seen_unanswered':'unanswered',target:text==='i feel ignored'?'unknown':'friend'});
  if(friend&&/^(?:he|she|they) (?:ignored what i said|did not answer|did not reply)$/u.test(text))return out('friend_event',{event:'unanswered'});
  if(friend&&/^maybe (?:he|she|they) (?:(?:was|were) (?:just )?busy|had a busy day)$/u.test(text))return out('friend_possible',{cause:'busy'});
+ if(friend&&/^maybe (?:he needs|she needs|they need) (?:some )?space$/u.test(text))return out('friend_possible',{cause:'space'});
+ if(friend&&/^i do not want to pressure (?:him|her|them)$/u.test(text))return out('friend_no_pressure');
+ if(friend&&/^help me write a (?:gentle|polite) follow(?:-| )up$/u.test(action))return out('draft',{target:'friend',noRush:true,noBlame:true});
  if(friend&&/^i do not want to (?:assume the worst|jump to conclusions)$/u.test(text))return out('friend_caution');
  if(/^(?:i )?do not want to (?:play|play games) today$/u.test(text))return out('boundary_start');
  if(boundary&&/^(?:my friends|they) keep asking(?: me(?: to play)?)?$/u.test(text))return out('boundary_pressure');
@@ -71,7 +80,7 @@ function analyzeFollowThrough(frame,session){
   if(/^(?:thats|that is|that's) more like it$/u.test(text))return out('joke_feedback');
  }
  if(music){
-  match=text.match(/^(?:(?:i )?(?:mostly|usually|sometimes) )?(?:listen to )?(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)(?: music)?$/u);
+  match=text.match(/^(?:(?:i )?(?:mostly|usually|sometimes) )?(?:listen to )?(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)(?: music)?(?: too| as well)?$/u);
   if(match)return out('music_genre',{genre:match[1],occasional:/^sometimes /u.test(text)});
   if(/^i (?:(?:mostly|usually) )?listen(?: to music)? at work$/u.test(text)||/^(?:especially )?when i am working$/u.test(text))return out('music_place',{place:'work'});
   if(/^not always$/u.test(text))return out('music_exception');
@@ -86,8 +95,9 @@ function followThroughResponse(request,roll){
  let content,category=flow.category,thread=null,extra={};
  const kind=flow.kind,data=flow.data;
  const friendThread=()=>({...((prior.kind==='friend')?prior:{}),kind:'friend',...(data.event?{event:data.event}:{})});
- if(kind==='friend_event'){thread=friendThread();content='You felt ignored. Was there no reply, or did '+(data.target==='unknown'?'the person':'your friend')+' respond without addressing what you said?';}
- if(kind==='friend_possible'){thread={...friendThread(),possibleCause:'busy'};content='Being busy is one possibility. We do not know their reason yet; you can check in without treating a guess as a fact.';}
+ if(kind==='friend_event'){thread=friendThread();content=data.event==='seen_unanswered'?'They saw your message but have not replied. We do not know why yet.':'You felt ignored. Was there no reply, or did '+(data.target==='unknown'?'the person':'your friend')+' respond without addressing what you said?';}
+ if(kind==='friend_possible'){thread={...friendThread(),possibleCause:data.cause};content=data.cause==='space'?'They may need some space, but that is a possibility rather than something we know. You can leave them room to reply.':'Being busy is one possibility. We do not know their reason yet; you can check in without treating a guess as a fact.';}
+ if(kind==='friend_no_pressure'){thread={...friendThread(),noPressure:true};content='You want to check in without pushing them. We can leave the timing up to them.';}
  if(kind==='friend_caution'){thread=friendThread();content='You can leave room for another explanation. A calm check-in is more useful than assuming the worst.';}
  if(kind.startsWith('boundary_')){
   thread={...((prior.kind==='boundary')?prior:{}),kind:'boundary',activity:'play',time:'today'};
@@ -97,40 +107,51 @@ function followThroughResponse(request,roll){
  }
  if(kind==='draft'||kind==='draft_edit'){
   const target=kind==='draft_edit'?(prior.kind==='boundary'?'boundary':'friend'):data.target;
-  const style={...prior.style,...Object.fromEntries(Object.entries(data).filter(([key,value])=>['short','casual','noBlame'].includes(key)&&value))};
-  thread=target==='boundary'?{...prior,kind:'boundary',draft:'decline'}:target==='friend'?{...friendThread(),draft:prior.event==='unanswered'?'checkin':'generic'}:{kind:'writing',draft:'unknown'};
+  const style={...prior.style,...Object.fromEntries(Object.entries(data).filter(([key,value])=>['short','casual','noBlame','preserveMeaning','mentionEarlier','noRush'].includes(key)&&value))};
+  thread=target==='boundary'?{...prior,kind:'boundary',draft:'decline'}:target==='friend'?{...friendThread(),draft:['unanswered','seen_unanswered'].includes(prior.event)?'checkin':'generic'}:{kind:'writing',draft:'unknown'};
   thread.style=style;
   const draft=target==='boundary'?(style.short?bank.drafts.declineShort:bank.drafts.decline):target==='friend'?(thread.draft==='checkin'?(style.short?bank.drafts.checkinShort:bank.drafts.checkin):bank.drafts.generic):null;
-  const edited=target==='friend'&&thread.draft==='checkin'&&style.casual?(style.short?'Hey, got a sec to chat? No rush.':'Hey, got a chance to check my message? No rush, just checking in.'):target==='friend'&&thread.draft==='checkin'&&style.noBlame?'Hey, just checking in. Can we chat when you have time?':draft;
+  // Edits preserve the check-in intent, including the earlier message and unhurried timing.
+  const edited=target==='friend'&&thread.draft==='checkin'
+   ?style.short?'Hey, about my message. No rush to reply.'
+    :style.casual?'Hey, just checking in about my earlier message. Reply whenever you have time.'
+    :style.noBlame||style.noRush||prior.noPressure||prior.event==='seen_unanswered'?'Hey, just checking in about my earlier message. No rush—reply when you have time.'
+    :draft
+   :draft;
   content=edited?'You could say: “'+edited+'”':'Who is the message for, and what do you want to say?';
  }
  if(kind.startsWith('choice_')){
   const options=old.pickOptions,selected=old.pickSelected;
   thread={...((prior.kind==='choice')?prior:{}),kind:'choice',origin:prior.kind==='choice'?(prior.origin??selected):selected};
   category='pick';extra.pickOptions=options;extra.pickSelected=selected;
+  if(kind==='choice_cancel'){thread.cancelled=true;delete thread.preferred;delete thread.source;extra.pickSelected=null;if(data.close)extra.pickOptions=null;content='That decision is cancelled. We have no active final choice.';}
   if(kind==='choice_why'){
-   if(!data.option)content='That is not one of the current options. They are '+options.map(escape).join(' / ')+'.';
+   if(thread.cancelled)content='The earlier decision is cancelled. We have no active choice to explain.';
+   else if(!data.option)content='That is not one of the current options. They are '+options.map(escape).join(' / ')+'.';
    else if(norm(data.option)!==norm(selected))content='The current choice is **'+escape(selected)+'**. **'+escape(data.option)+'** was the other option; the original draw was random.';
    else content=thread.source==='user'?'We settled on **'+escape(selected)+'** after your preference. That is your choice.':'**'+escape(selected)+'** was randomly drawn from the options. I did not rank the options or know your preference.';
   }
-  if(kind==='choice_recall')content='We settled on **'+escape(selected)+'**'+(thread.source==='user'?' — your final choice.':', from the random draw.') ;
-  if(kind==='choice_source')content=thread.source==='user'?'The final choice, **'+escape(selected)+'**, was yours. The original random draw was **'+escape(thread.origin)+'**.':'**'+escape(selected)+'** came from a random draw. You have not made a final choice after it.';
+  if(kind==='choice_recall')content=thread.cancelled?'We cancelled that decision. There is no active final choice.':'We settled on **'+escape(selected)+'**'+(thread.source==='user'?' — your final choice.':', from the random draw.') ;
+  if(kind==='choice_source')content=thread.cancelled?'The decision was cancelled; neither the old random draw nor your earlier choice is a current decision.':thread.source==='user'?'The final choice, **'+escape(selected)+'**, was yours. The original random draw was **'+escape(thread.origin)+'**.':'**'+escape(selected)+'** came from a random draw. You have not made a final choice after it.';
   if(kind==='choice_prefer'){thread.preferred=data.option;content='You prefer **'+escape(data.option)+'**, understood. We can go with your preference instead of the random draw.';}
-  if(kind==='choice_decide'){thread.preferred=data.option;thread.source='user';extra.pickSelected=data.option;content='**'+escape(data.option)+'** it is. We are going with your choice.';}
+  if(kind==='choice_decide'){delete thread.cancelled;thread.preferred=data.option;thread.source='user';extra.pickSelected=data.option;content='**'+escape(data.option)+'** it is. We are going with your choice.';}
  }
  if(kind.startsWith('music_')){
   category=kind==='music_reciprocal'?'music_preferences':'music_chat';
   thread={...((prior.kind==='music')?prior:{}),kind:'music'};
   if(kind==='music_start'){thread={kind:'music'};extra.suspended=null;content='Music, then. What kind do you enjoy?';}
   if(kind==='music_correct'){thread.genre=data.genre;delete thread.alternate;content=data.genre+' instead, understood. I have corrected the genre.';}
-  if(kind==='music_recall')content=thread.genre?'You said '+thread.genre+(thread.alternate?', sometimes '+thread.alternate:'')+(thread.place?(thread.only?' only while working':' while working'):'')+'.':'You have not named a genre in this music conversation yet.';
-  if(kind==='music_short')content=thread.genre?thread.genre+(thread.place?' while working':'')+' — got it.':'What music do you like?';
+  if(kind==='music_remove'){if(thread.genre===data.genre)delete thread.genre;if(thread.alternate===data.genre)delete thread.alternate;content='I will no longer list '+data.genre+' as one of your current preferences.';}
+  if(kind==='music_recall')content=thread.genre||thread.alternate?'You said '+(thread.genre??thread.alternate)+(thread.genre&&thread.alternate?', sometimes '+thread.alternate:'')+(thread.place?(thread.only?' only while working':' while working'):'')+'.':'There is no current genre preference saved in this conversation.';
+  if(kind==='music_short')content=thread.genre||thread.alternate?(thread.genre??thread.alternate)+(thread.place?(thread.only?' only while working':' while working'):'')+' — got it.':'What music do you like?';
   if(kind==='music_genre'){if(data.occasional)thread.alternate=data.genre;else thread.genre=data.genre;content=data.occasional?'Sometimes '+data.genre+', then. A different sound can suit a different moment.':'Mostly '+data.genre+', got it. What do you enjoy about that sound?';}
   if(kind==='music_place'){thread.place='work';thread.only=Boolean(data.only);content=data.only?'Only while working, understood. I will keep that limit with your music preference.':'You listen while working, then. Does it help you focus, or make the time more pleasant?';}
   if(kind==='music_exception'){thread.varies=true;content='Not always, understood. That is a preference, not a rule for every moment.';}
   if(kind==='music_reason'){thread.varies=true;thread.reason='day';content='How the day went changes what you want to hear. A quiet reset sometimes, a different sound at other times.';}
   if(kind==='music_reciprocal')content='Atmospheric melodies with a little tension suit my style. A little mystery belongs in the soundtrack.';
  }
+ if(kind==='game_start'){category='game_chat';thread=null;extra.suspended=null;content='Games, then. Do you prefer PvP or PvE?';}
+ if(kind==='game_short'){category=old.topicCategory??old.category;thread=null;content=data.preference==='pve'?'PvE means playing against the game’s enemies.':data.preference==='pvp'?'PvP means playing against other players.':'Do you prefer PvP or PvE?';}
  if(kind.startsWith('joke')){
   category='joke';thread={...((prior.kind==='joke')?prior:{}),kind:'joke',...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))};
   if(kind==='joke_style')content='Understood. I will keep the next joke gentle and free of sarcasm.';
@@ -151,6 +172,7 @@ function followThroughResponse(request,roll){
   const saved=old.suspended?.category??old.topicCategory;
   thread=old.thread??null;extra.suspended=null;
   if(/^study_/u.test(saved??'')){category=saved;content='We can continue with one small exercise or paragraph. Which part are you working on?';extra.pending={kind:'study_step'};}
+  else if(thread?.kind==='choice'&&thread.cancelled){category='pick';content='That decision is cancelled. We have no active final choice.';extra.pickOptions=old.pickOptions??null;extra.pickSelected=null;}
   else if(old.pickOptions?.length){category='pick';content='The options are '+old.pickOptions.map(escape).join(' / ')+'. The last choice was **'+escape(old.pickSelected)+'**.';extra.pickOptions=old.pickOptions;extra.pickSelected=old.pickSelected;}
   else if(/^music/u.test(saved??'')||thread?.kind==='music'){category='music_chat';content='Back to music. What would you like to add?';}
   else if(thread?.kind==='joke'){category='joke';content='We can continue with another joke. Would you like the same theme?';}
