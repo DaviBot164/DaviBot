@@ -12,18 +12,42 @@ function analyzeFollowThrough(frame,session){
  const boundary=thread?.kind==='boundary';
  const music=thread?.kind==='music'||/^music/u.test(session?.topicCategory??session?.category??'');
  const joke=thread?.kind==='joke'||/joke/u.test(session?.category??'')||session?.templateRef?.topic==='joke';
+ // A new explicit topic replaces stale drafts, choices and paused work.
+ if(/^(?:forget that|never mind|leave that)(?: and)? (?:lets|let us) talk about music(?: instead)?$/u.test(text))return out('music_start');
+ const shorter=/^(?:make it shorter|shorter|shorter please|keep it short|one sentence please)$/u.test(text);
+ if((friend||boundary)&&thread?.draft){
+  if(shorter||/^(?:keep it casual and short|less formal|keep it casual|do not make it sound like i am blaming (?:him|her|them))$/u.test(text))return out('draft_edit',{short:shorter||/short/u.test(text),casual:/casual|formal/u.test(text),noBlame:/blaming/u.test(text)});
+ }
+ if(music){
+  const correction=text.match(/^(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi) not (rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)$/u);
+  if(correction)return out('music_correct',{genre:correction[1]});
+  if(/^only when i am working$/u.test(text))return out('music_place',{place:'work',only:true});
+  if(/^(?:what did i say i listen to|what music did i say i like)$/u.test(text))return out('music_recall');
+  if(shorter&&thread?.kind==='music')return out('music_short');
+ }
+ if(session?.pickOptions?.length>=2){
+  if(/^(?:what did we decide|what did we choose|what is our choice)$/u.test(text))return out('choice_recall');
+  if(/^(?:was that random or my choice|did i choose that or was it random)$/u.test(text))return out('choice_source');
+ }
+ if(joke){
+  if(/^(?:not games something about animals|something about animals|another one about animals)$/u.test(text))return out('joke',{theme:'animals'});
+  if(/^(?:keep it wholesome|keep it clean)$/u.test(text))return out('joke',{wholesome:true});
+  if(shorter&&thread?.kind==='joke')return out('joke_short');
+ }
+ if((music||friend||boundary||thread?.kind==='joke')&&/^(?:continue|go on|carry on|we can continue)$/u.test(text))return out('resume');
  if(session?.suspended){
   if(/^(?:not yet|still not ready|wait a little longer)$/u.test(text))return out('hold');
   if(/^(?:continue|go on|carry on|we can continue|i am ready now|ready now)$/u.test(text))return out('resume');
  }
- if(/^(?:my friend (?:ignored me|did not reply)|i feel ignored)$/u.test(text))return out('friend_event',{event:'unanswered',target:text==='i feel ignored'?'unknown':'friend'});
+ if(/^(?:(?:my|a) friend (?:ignored me|did not reply|left me on read)|i feel ignored)$/u.test(text))return out('friend_event',{event:'unanswered',target:text==='i feel ignored'?'unknown':'friend'});
  if(friend&&/^(?:he|she|they) (?:ignored what i said|did not answer|did not reply)$/u.test(text))return out('friend_event',{event:'unanswered'});
- if(friend&&/^maybe (?:he|she|they) (?:was|were) (?:just )?busy$/u.test(text))return out('friend_possible',{cause:'busy'});
+ if(friend&&/^maybe (?:he|she|they) (?:(?:was|were) (?:just )?busy|had a busy day)$/u.test(text))return out('friend_possible',{cause:'busy'});
  if(friend&&/^i do not want to (?:assume the worst|jump to conclusions)$/u.test(text))return out('friend_caution');
  if(/^(?:i )?do not want to (?:play|play games) today$/u.test(text))return out('boundary_start');
  if(boundary&&/^(?:my friends|they) keep asking(?: me(?: to play)?)?$/u.test(text))return out('boundary_pressure');
  if(boundary&&/^i (?:already )?said no$/u.test(text))return out('boundary_no');
  if(/^(?:what should i say to my friend|help me write a polite message)$/u.test(action))return out('draft',{target:boundary?'boundary':friend||/my friend/u.test(action)?'friend':'unknown'});
+ if(friend&&/^how (?:can|do) i check in politely$/u.test(text))return out('draft',{target:'friend'});
  if(friend&&/^what should i say to (?:him|her|them)$/u.test(text))return out('draft',{target:'friend'});
  if((friend||boundary)&&/^(?:how do i say it nicely|without sounding rude|something short and polite)$/u.test(text))return out('draft',{target:boundary?'boundary':'friend',short:/short/u.test(text)});
  const options=session?.pickOptions;
@@ -71,11 +95,14 @@ function followThroughResponse(request,roll){
    :kind==='boundary_pressure'?'They keep asking after your refusal, then. You can repeat your answer without making up an excuse.'
    :'You already said no. That answer can stand; being polite does not require changing it.';
  }
- if(kind==='draft'){
-  const target=data.target;
+ if(kind==='draft'||kind==='draft_edit'){
+  const target=kind==='draft_edit'?(prior.kind==='boundary'?'boundary':'friend'):data.target;
+  const style={...prior.style,...Object.fromEntries(Object.entries(data).filter(([key,value])=>['short','casual','noBlame'].includes(key)&&value))};
   thread=target==='boundary'?{...prior,kind:'boundary',draft:'decline'}:target==='friend'?{...friendThread(),draft:prior.event==='unanswered'?'checkin':'generic'}:{kind:'writing',draft:'unknown'};
-  const draft=target==='boundary'?(data.short?bank.drafts.declineShort:bank.drafts.decline):target==='friend'?(thread.draft==='checkin'?(data.short?bank.drafts.checkinShort:bank.drafts.checkin):bank.drafts.generic):null;
-  content=draft?'You could say: “'+draft+'”':'Who is the message for, and what do you want to say?';
+  thread.style=style;
+  const draft=target==='boundary'?(style.short?bank.drafts.declineShort:bank.drafts.decline):target==='friend'?(thread.draft==='checkin'?(style.short?bank.drafts.checkinShort:bank.drafts.checkin):bank.drafts.generic):null;
+  const edited=target==='friend'&&thread.draft==='checkin'&&style.casual?(style.short?'Hey, got a sec to chat? No rush.':'Hey, got a chance to check my message? No rush, just checking in.'):target==='friend'&&thread.draft==='checkin'&&style.noBlame?'Hey, just checking in. Can we chat when you have time?':draft;
+  content=edited?'You could say: “'+edited+'”':'Who is the message for, and what do you want to say?';
  }
  if(kind.startsWith('choice_')){
   const options=old.pickOptions,selected=old.pickSelected;
@@ -86,25 +113,35 @@ function followThroughResponse(request,roll){
    else if(norm(data.option)!==norm(selected))content='The current choice is **'+escape(selected)+'**. **'+escape(data.option)+'** was the other option; the original draw was random.';
    else content=thread.source==='user'?'We settled on **'+escape(selected)+'** after your preference. That is your choice.':'**'+escape(selected)+'** was randomly drawn from the options. I did not rank the options or know your preference.';
   }
+  if(kind==='choice_recall')content='We settled on **'+escape(selected)+'**'+(thread.source==='user'?' — your final choice.':', from the random draw.') ;
+  if(kind==='choice_source')content=thread.source==='user'?'The final choice, **'+escape(selected)+'**, was yours. The original random draw was **'+escape(thread.origin)+'**.':'**'+escape(selected)+'** came from a random draw. You have not made a final choice after it.';
   if(kind==='choice_prefer'){thread.preferred=data.option;content='You prefer **'+escape(data.option)+'**, understood. We can go with your preference instead of the random draw.';}
   if(kind==='choice_decide'){thread.preferred=data.option;thread.source='user';extra.pickSelected=data.option;content='**'+escape(data.option)+'** it is. We are going with your choice.';}
  }
  if(kind.startsWith('music_')){
   category=kind==='music_reciprocal'?'music_preferences':'music_chat';
   thread={...((prior.kind==='music')?prior:{}),kind:'music'};
+  if(kind==='music_start'){thread={kind:'music'};extra.suspended=null;content='Music, then. What kind do you enjoy?';}
+  if(kind==='music_correct'){thread.genre=data.genre;delete thread.alternate;content=data.genre+' instead, understood. I have corrected the genre.';}
+  if(kind==='music_recall')content=thread.genre?'You said '+thread.genre+(thread.alternate?', sometimes '+thread.alternate:'')+(thread.place?(thread.only?' only while working':' while working'):'')+'.':'You have not named a genre in this music conversation yet.';
+  if(kind==='music_short')content=thread.genre?thread.genre+(thread.place?' while working':'')+' — got it.':'What music do you like?';
   if(kind==='music_genre'){if(data.occasional)thread.alternate=data.genre;else thread.genre=data.genre;content=data.occasional?'Sometimes '+data.genre+', then. A different sound can suit a different moment.':'Mostly '+data.genre+', got it. What do you enjoy about that sound?';}
-  if(kind==='music_place'){thread.place='work';content='You listen while working, then. Does it help you focus, or make the time more pleasant?';}
+  if(kind==='music_place'){thread.place='work';thread.only=Boolean(data.only);content=data.only?'Only while working, understood. I will keep that limit with your music preference.':'You listen while working, then. Does it help you focus, or make the time more pleasant?';}
   if(kind==='music_exception'){thread.varies=true;content='Not always, understood. That is a preference, not a rule for every moment.';}
   if(kind==='music_reason'){thread.varies=true;thread.reason='day';content='How the day went changes what you want to hear. A quiet reset sometimes, a different sound at other times.';}
-  if(kind==='music_reciprocal')content='For my fox character, atmospheric melodies with a little tension fit. That is a character preference; I do not listen while working myself.';
+  if(kind==='music_reciprocal')content='Atmospheric melodies with a little tension suit my style. A little mystery belongs in the soundtrack.';
  }
  if(kind.startsWith('joke')){
   category='joke';thread={...((prior.kind==='joke')?prior:{}),kind:'joke',...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))};
   if(kind==='joke_style')content='Understood. I will keep the next joke gentle and free of sarcasm.';
   else if(kind==='joke_feedback')content='Glad that style works better. I will keep it gentle.';
   else if(old.mode?.name==='serious'&&old.mode.remaining>0)content='I will skip jokes while the straightforward tone is active. Say normal mode to restore the playful tone.';
+  else if(kind==='joke_short'&&thread.lastJoke){
+   const [pool,index]=thread.lastJoke.split(':');
+   content=bank.jokeSummaries[pool]?.[Number(index)]??'Which joke would you like shortened?';
+  }
   else{
-   const pool=thread.wholesome||thread.noSarcasm?(thread.theme==='games'?'gamesWholesome':'wholesome'):thread.theme==='games'?'games':'general';
+   const pool=thread.theme==='animals'?'animals':thread.wholesome||thread.noSarcasm?(thread.theme==='games'?'gamesWholesome':'wholesome'):thread.theme==='games'?'games':'general';
    const options=bank.jokes[pool].map((line,index)=>({line,key:pool+':'+index})).filter(row=>row.key!==thread.lastJoke);
    const selected=options[roll(options.length)];content=selected.line;thread.lastJoke=selected.key;
   }
@@ -116,6 +153,8 @@ function followThroughResponse(request,roll){
   if(/^study_/u.test(saved??'')){category=saved;content='We can continue with one small exercise or paragraph. Which part are you working on?';extra.pending={kind:'study_step'};}
   else if(old.pickOptions?.length){category='pick';content='The options are '+old.pickOptions.map(escape).join(' / ')+'. The last choice was **'+escape(old.pickSelected)+'**.';extra.pickOptions=old.pickOptions;extra.pickSelected=old.pickSelected;}
   else if(/^music/u.test(saved??'')||thread?.kind==='music'){category='music_chat';content='Back to music. What would you like to add?';}
+  else if(thread?.kind==='joke'){category='joke';content='We can continue with another joke. Would you like the same theme?';}
+  else if(thread?.kind==='boundary'){content='We were working on a polite refusal. What would you like to change?';}
   else if(thread?.kind==='friend'||old.core?.topic==='argument'){content='We can continue talking about your friend. What would you like to add?';}
   else content='What would you like to continue? Give me the topic so I do not guess.';
  }

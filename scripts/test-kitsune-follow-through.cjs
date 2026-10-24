@@ -60,7 +60,7 @@ ok(/\*\*music\*\*/.test(choice[0].reply));ok(/current choice is \*\*music\*\*/.t
 const jokes=chain(['kitsune tell me a short joke','another one, but about games','no sarcasm this time','actually, something wholesome','thats more like it']);
 ok(jokes[0].reply.length<250);ok(/game|loading|treasure|health|checkpoint|party|healer/i.test(jokes[1].reply));ok(/gentle|sarcasm/.test(jokes[2].reply));ok(/better|gentle/.test(jokes[4].reply));
 const music=chain(['kitsune lets talk about music','i mostly listen at work','mostly rock','not always though','sometimes quiet piano','depends how my day went','what about you?']);
-ok(/working/.test(music[1].reply));ok(/rock/.test(music[2].reply));ok(/piano/.test(music[4].reply));ok(/character/.test(music[6].reply));
+ok(/working/.test(music[1].reply));ok(/rock/.test(music[2].reply));ok(/piano/.test(music[4].reply));ok(/style|character/.test(music[6].reply));
 chain(['kitsune ask me something easy','music','mostly rock','especially when im working','what about you?']);
 const pause=chain(['kitsune can you help me study?','sure','wait a second','not yet','okay, continue','actually, lets stop']);
 ok(/paused/.test(pause[3].reply));eq(pause[4].after,'study_step');ok(/exercise|paragraph/.test(pause[4].reply));
