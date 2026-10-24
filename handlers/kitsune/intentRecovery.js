@@ -17,6 +17,18 @@ function recoverIntent(frame,session,lookup){
  // Person aliases stay local to semantic recognition, never to account authorization or learning keys.
  const personText=t.replace(/\bdaviti\b/gu,'davi');
  const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous$|davi_))/u.test(session?.category??'');
+ // Additional whole-clause meanings keep the answer target, speaker and pronoun scope explicit.
+ if(/^your (?:answer|reply) (?:kind of )?missed the point$/u.test(t))return out('answer_missed');
+ if(/^(?:i )?did not mean that as an insult$/u.test(t))return out('intent_clarify');
+ if(/^try again without (?:the|your) attitude$/u.test(action))return out('retry_calm');
+ if(/^never mind (?:lets|let us) start (?:over|fresh)$/u.test(t))return out('social_reset',{},true,'restart_chat');
+ if(/^ask me (?:something chill|a light question) nothing personal$/u.test(action))return out('nonpersonal_question');
+ if(session?.core?.nonPersonal&&/^(?:another (?:one|question)|one more|ask me another question)$/u.test(t))return out('nonpersonal_question',{},true);
+ if(/^davi helped me why (?:are you|you(?: are)?) acting jealous$/u.test(personText))return out('help_jealous');
+ if(/^i am not hitting on him$/u.test(t))return out('social_grateful',{davi:daviContext,form:'not_flirting'});
+ if(/^someone called him (?:dumb|stupid|an idiot) i told them to stop$/u.test(t))return daviContext?out('report_davi'):out('report_person');
+ if(/^do not confuse me with the person who said it$/u.test(t))return out('quote_correction',{davi:daviContext,hasReport:Boolean(session?.core?.reported||/^(?:core_reported_bot|core_report_davi|reported_)/u.test(session?.category??''))});
+ if(/^(?:anyway |so )?(?:can we|could we) (?:talk|chat) about (?:music|games)(?: instead)?$/u.test(t))return out(t.includes('music')?'music_topic':'game_topic');
  // Slang stays in anchored semantic forms; never erase negation, subjects or quoted speech.
  if(/^(?:you jealous(?: or (?:no|not))?|are you jealous or (?:no|not))$/u.test(t))return out('jealous_question',{why:false});
  if(/^(?:chill|relax) (?:me (?:n|and) davi|davi and i) are just friends$/u.test(personText))return out('social_friends',{davi:true});

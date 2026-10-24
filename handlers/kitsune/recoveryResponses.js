@@ -2,6 +2,7 @@ const socialTone=require('../../config/kitsuneSocialTone');
 const {randomInt}=require('node:crypto');
 const {ownerId}=require('../../config/kitsunePersonality');
 const {questions}=require('./briefConversation');
+const nonPersonalQuestions=['For a fictional scene: a forest path or a seaside view?','Which makes a calmer scene: soft rain or a clear night sky?','A light one: a piano melody or a guitar tune for a film scene?'];
 const simpleQuestions=['What is one small thing you are looking forward to?','What place would you like to visit?','What made you smile recently?'];
 function explainStored(request,replies){
  const old=request.conversation??{},ref=old.templateRef;
@@ -100,6 +101,17 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  let content=lines[r.kind],category=request.category,extra={};
  const owner=message.author.id===ownerId;
  const draw=(key)=>{const pool=socialTone[key];const choices=pool.map((line,index)=>({line,index})).filter(row=>memory.socialKey!==key||memory.socialIndex!==row.index);const selected=choices[roll(choices.length)];extra.core={...memory,socialKey:key,socialIndex:selected.index,...(key==='protect'||r.kind==='jealous'?{person:'davi'}:{}),topic:'social'};return selected.line;};
+ if(r.kind==='answer_missed'){content='The answer missed your point, understood. What should it have addressed?';extra.core={topic:'answer_repair',answerKind:memory.answerKind??'unknown'};extra.templateRef=old.templateRef??null;}
+ if(r.kind==='intent_clarify'){content='You did not mean it as an insult, understood. We can focus on the answer.';extra.core=memory;extra.templateRef=old.templateRef??null;}
+ if(r.kind==='retry_calm'){
+  content=old.templateRef?explainStored({...request,recovery:{...r,data:{form:'explain'}}},replies):memory.answerKind==='boundary'?'I will keep it plain: tell me the actual question so I can address it.':'I will keep it straightforward. Tell me the point the answer missed so I can address it.';
+  extra.modeChange='gentle';extra.core={...memory,topic:'answer_repair'};extra.templateRef=old.templateRef??null;
+ }
+ if(r.kind==='nonpersonal_question'){
+  const index=memory.nonPersonal?((memory.questionIndex??-1)+1)%nonPersonalQuestions.length:0;content=nonPersonalQuestions[index];extra.core={topic:'light_question',nonPersonal:true,questionIndex:index};
+ }
+ if(r.kind==='help_jealous'){content='Davi helped you, understood. I will keep the teasing light; appreciating his help is not flirting.';extra.core={topic:'social',person:'davi'};}
+ if(r.kind==='report_person'){content='You are reporting an insult and saying you asked them to stop. Who was the insult about?';extra.core={topic:'speech_report',reported:true};}
  if(r.kind==='intent_reassure')content=owner?'I hear you... we are fine. We can keep this gentle.':'Understood. We can talk without turning this into a quarrel.';
  if(r.kind==='defend_bot'){content='You are defending me, not mocking me. Understood; I will not treat that as an attack.';extra.core={topic:'social'};}
  if(r.kind==='social_normal')content='All right. We can talk normally. What is on your mind?';
@@ -109,7 +121,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  if(r.kind==='social_friend')content=owner?'A friend, hm? A little fox jealousy, perhaps. Tell me how the conversation went.':'You can talk to your friends. The jealousy is just a little fox teasing.';
  if(r.kind==='social_reassure')content=owner?'There you are... I am glad you came back. No sulking; we can just talk.':'All right. We can keep this calm and talk normally.';
  if(r.kind==='social_friends')content=owner?'I know. You can have your friends and still catch this fox off guard. We are fine.':'Just friends, understood. I will keep the teasing light; there is no quarrel with you.';
- if(r.kind==='social_grateful')content='Understood. Being kind or grateful does not mean you are flirting. I will leave the jealousy there.';
+ if(r.kind==='social_grateful')content=r.data.form==='not_flirting'?'You are not flirting with him, understood. I will leave the jealousy there.':'Understood. Being kind or grateful does not mean you are flirting. I will leave the jealousy there.';
  if(r.kind==='davi_grateful')content='Grateful to Davi, understood. You can appreciate his help without me turning it into a quarrel.';
  if(r.kind==='social_company')content=owner?'I am here... we can keep talking. What has been on your mind?':'We can stay with a normal conversation. What is on your mind?';
  if(r.kind==='answer_scope'){content='You mean my answer, not me. Understood. What part should I explain differently?';extra.core={topic:'answer_repair',answerKind:r.data.answerKind??(r.data.boundary?'boundary':'unknown')};}
@@ -120,9 +132,10 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   extra.core={topic:'answer_repair',answerKind:r.data.answerKind??(r.data.boundary?'boundary':'unknown')};
  }
  if(r.kind==='quote_correction'){content='Thanks for clarifying. You are reporting words you disagree with. The boundary is for the person who said them, not you.';extra.core=r.data.davi?{person:'davi',topic:'social'}:{topic:'social'};}
+ if(r.kind==='quote_correction'&&r.data.hasReport===false)content='Understood. I will distinguish your words from someone else’s. Which statement do you mean?';
  if(r.kind==='reconciled')content='We are good. We can talk normally from here.';
  if(['intent_reassure','jealous_question','social_friend','social_reassure','social_friends','social_grateful','social_company','davi_grateful'].includes(r.kind)&&!extra.core)extra.core={topic:'social',...(memory.person==='davi'||r.data.davi||r.kind==='davi_grateful'?{person:'davi'}:{})};
- if(r.kind==='mommy')content=message.author.id===ownerId?'D-daddy? You cannot just say that and expect the fox to stay composed.':'No. Keep that nickname to yourself. Address me normally.';
+ if(r.kind==='mommy'){content=draw(owner?'ownerMommy':'memberMommy');extra.core={topic:'nickname',socialKey:extra.core.socialKey,socialIndex:extra.core.socialIndex};}
  if(r.kind==='pve')content='PvE: facing the game’s enemies and challenges. Do you enjoy combat, exploration, or the story?';
  if(r.kind==='insult' && message.author.id===ownerId)content='Tell me what went wrong. I will leave the sharp reply aside.';
  if(r.kind==='protect' && message.author.id===ownerId)content='That includes how you speak about yourself. Tell me what went wrong without putting yourself down.';
@@ -166,10 +179,12 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  }
  if(r.kind==='opinion')content=memory.topic==='argument'?'I would separate what happened from assumptions about your friend’s intent. What was said?':'I can give a view now. Which part do you want my opinion on?';
  if(r.kind==='explain'){content=explainStored(request,replies);category=old.templateRef?.topic??request.context??category;extra.templateRef=old.templateRef??null;}
+ if(['reported_bot','report_davi'].includes(r.kind))extra.core={topic:'speech_report',reported:true,...(r.kind==='report_davi'?{person:'davi'}:{})};
  const topic=r.kind==='game_help'?'game':r.kind==='argument'?'argument':null;
  if(!extra.core && (topic||r.kind.startsWith('davi_')||['jealous','protect','report_davi','defend_davi'].includes(r.kind)))extra.core={...(topic?{topic}:{}),...((r.kind.startsWith('davi_')||['jealous','protect','report_davi','defend_davi'].includes(r.kind))?{person:'davi'}:{})};
  if(old.mode?.remaining>0 && old.mode.name!=='normal'){
   if(r.kind==='joke_short' && old.mode.name==='serious')content='I will skip jokes while the straightforward tone is active. Say normal mode to restore the playful tone.';
+  if(r.kind==='mommy'&&!owner)content='Please do not use that nickname. Address me normally.';
   if(r.kind==='insult')content='I will keep this calm. Tell me what bothered you without the insult.';
   if(r.kind==='protect')content='Please keep discussion about Davi respectful. What is the actual issue?';
   if(r.kind==='jealous_question')content='Only light fox teasing. I will keep this calm.';
