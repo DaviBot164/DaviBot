@@ -32,7 +32,7 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const details=englishOnly?recognizeDetails(raw,frame):{};
     const contextual=englishOnly?contextualCategory(raw,session,frame):null;
     let category = contextual??details.category??null;
-    let recovery=englishOnly?recoverIntent(frame,session,category,value=>recognizeDetails(value).category):null;
+    let recovery=englishOnly?recoverIntent(frame,session,value=>recognizeDetails(value).category):null;
     if(recovery && (!category || ['fallback','reaction_question','clarify','question_clarification'].includes(category) || recovery.force)){
         if(!(category && recovery.force && ['jealous','remember','name_question','defend_davi'].includes(recovery.kind)))category=recovery.category;
     }

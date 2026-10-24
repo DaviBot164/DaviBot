@@ -9,7 +9,7 @@ function recoveryText(frame){
  return text.replace(/^(?:(?:yeah|yh|okay|ok|actually|honestly|to be honest|not going to lie) )+/u,'')
   .replace(/^(?:please )/u,'').replace(/ (?:please|though|right now|by the way|to be honest|not going to lie|lol|lmao)$/u,'').trim();
 }
-function recoverIntent(frame,session,legacy,lookup){
+function recoverIntent(frame,session,lookup){
  if(!frame?.valid)return null;
  const t=recoveryText(frame);
  const action=t.replace(/^(?:can|could|would) you (?:please )?/u,'');

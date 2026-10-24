@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node scripts/run-kitsune-dialogue-tests.cjs",
+    "audit": "node scripts/audit-kitsune-source.cjs"
   },
   "repository": {
     "type": "git",
