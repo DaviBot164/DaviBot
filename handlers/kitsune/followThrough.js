@@ -16,16 +16,26 @@ function analyzeFollowThrough(frame,session){
  // A new explicit topic replaces stale drafts, choices and paused work.
  if(/^(?:forget that|never mind|leave that)(?: and)? (?:lets|let us) talk about music(?: instead)?$/u.test(text))return out('music_start');
  if(/^(?:lets|let us) leave that and (?:talk|chat) about (games|music)$/u.test(text))return out(text.endsWith('games')?'game_start':'music_start');
+ const switchTopic=text.match(/^enough about (?:music|games) (?:lets|let us) (?:talk|chat) about (music|games)$/u);
+ if(switchTopic)return out(switchTopic[1]==='games'?'game_start':'music_start');
  const shorter=/^(?:make it shorter|shorter|shorter please|keep it short|one sentence please|make it shorter but keep the meaning)$/u.test(text);
+ if(games){
+  const corrected=text.match(/^(pvp|pve) not (?:pvp|pve)$/u);
+  if(corrected)return out('game_correct',{preference:corrected[1]});
+  if(/^what did i say i prefer$/u.test(text))return out('game_recall',{preference:thread?.kind==='game'?thread.preference:session.topicCategory==='game_relaxed'||session.category==='game_relaxed'?'pve':session.topicCategory==='game_competitive'||session.category==='game_competitive'?'pvp':null});
+ }
  if(games&&shorter)return out('game_short',{preference:session.topicCategory==='game_relaxed'||session.category==='game_relaxed'?'pve':session.topicCategory==='game_competitive'||session.category==='game_competitive'?'pvp':null});
  if((friend||boundary)&&thread?.draft){
+  if(/^(?:a bit more detail|more detail|make it more detailed)$/u.test(text))return out('draft_edit',{moreDetail:true});
+  if(/^(?:make it more formal|more formal)$/u.test(text))return out('draft_edit',{formal:true});
+  if(/^keep the no-pressure part$/u.test(text))return out('draft_edit',{noRush:true});
   if(shorter||/^(?:keep it casual and short|less formal|keep it casual|mention my earlier message|do not ask (?:him|her|them) to reply immediately|do not make it sound like i am blaming (?:him|her|them))$/u.test(text))return out('draft_edit',{short:shorter||/short/u.test(text),casual:/casual|formal/u.test(text),noBlame:/blaming/u.test(text),preserveMeaning:/keep the meaning/u.test(text),mentionEarlier:/earlier message/u.test(text),noRush:/reply immediately/u.test(text)});
  }
  if(music){
   const removal=text.match(/^(?:i (?:do not|no longer) (?:like|listen to) |not )(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)(?: anymore| any more)?$/u);
   if(removal)return out('music_remove',{genre:removal[1]});
   const correction=text.match(/^(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi) not (rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)$/u);
-  if(correction)return out('music_correct',{genre:correction[1]});
+  if(correction)return out('music_correct',{genre:correction[1],previous:correction[2]});
   if(/^only when i am working$/u.test(text))return out('music_place',{place:'work',only:true});
   if(/^(?:what did i say i listen to|what music did i say i like)$/u.test(text))return out('music_recall');
   if(shorter&&thread?.kind==='music')return out('music_short');
@@ -66,7 +76,7 @@ function analyzeFollowThrough(frame,session){
   match=text.match(/^i (?:actually )?(?:prefer|would prefer) (.+)$/u);
   if(match){const option=options.find(x=>norm(x)===match[1]);if(option)return out('choice_prefer',{option});}
   match=text.match(/^(?:let us|lets) (?:go with|choose) (.+)$/u);
-  if(match){const option=options.find(x=>norm(x)===match[1]);if(option)return out('choice_decide',{option});}
+  if(match){const option=options.find(x=>norm(x)===match[1]);if(option)return out('choice_decide',{option});const instead=options.find(x=>norm(x)===match[1].replace(/ instead$/u,''));if(/ instead$/u.test(match[1])&&instead)return out('choice_decide',{option:instead});}
  }
  // Modifier position is compositional, but the action stays an explicit joke request.
  let match=action.match(/^(?:tell|give) me (?:a |another )?(short|wholesome|clean|gaming) joke(?: about (?:games|gaming))?$/u);
@@ -81,7 +91,7 @@ function analyzeFollowThrough(frame,session){
  }
  if(music){
   match=text.match(/^(?:(?:i )?(?:mostly|usually|sometimes) )?(?:listen to )?(rock|pop|jazz|classical|metal|piano|quiet piano|lofi|lo fi)(?: music)?(?: too| as well)?$/u);
-  if(match)return out('music_genre',{genre:match[1],occasional:/^sometimes /u.test(text)});
+  if(match)return out('music_genre',{genre:match[1],occasional:/^sometimes /u.test(text),additive:/(?: too| as well)$/u.test(text)});
   if(/^i (?:(?:mostly|usually) )?listen(?: to music)? at work$/u.test(text)||/^(?:especially )?when i am working$/u.test(text))return out('music_place',{place:'work'});
   if(/^not always$/u.test(text))return out('music_exception');
   if(/^depends (?:on )?how my day went$/u.test(text))return out('music_reason',{reason:'day'});
@@ -109,11 +119,17 @@ function followThroughResponse(request,roll){
   const target=kind==='draft_edit'?(prior.kind==='boundary'?'boundary':'friend'):data.target;
   const style={...prior.style,...Object.fromEntries(Object.entries(data).filter(([key,value])=>['short','casual','noBlame','preserveMeaning','mentionEarlier','noRush'].includes(key)&&value))};
   thread=target==='boundary'?{...prior,kind:'boundary',draft:'decline'}:target==='friend'?{...friendThread(),draft:['unanswered','seen_unanswered'].includes(prior.event)?'checkin':'generic'}:{kind:'writing',draft:'unknown'};
+  if(data.short)style.detail=false;
+  if(data.moreDetail){style.short=false;style.detail=true;}
+  if(data.formal){style.casual=false;style.formal=true;}
+  if(data.casual)style.formal=false;
   thread.style=style;
   const draft=target==='boundary'?(style.short?bank.drafts.declineShort:bank.drafts.decline):target==='friend'?(thread.draft==='checkin'?(style.short?bank.drafts.checkinShort:bank.drafts.checkin):bank.drafts.generic):null;
   // Edits preserve the check-in intent, including the earlier message and unhurried timing.
   const edited=target==='friend'&&thread.draft==='checkin'
-   ?style.short?'Hey, about my message. No rush to reply.'
+   ?style.formal?(style.short?'Hello, following up on my message. Please reply when convenient.':style.detail?'Hello, I wanted to follow up on my earlier message and ask whether you have had a chance to consider it. Please reply when convenient; there is no urgency.':'Hello, I wanted to follow up on my earlier message. Please reply when convenient; there is no urgency.')
+    :style.detail?'Hey, I wanted to check in about my earlier message and see whether you had a chance to think about it. No rush—reply when you have time.'
+    :style.short?'Hey, about my message. No rush to reply.'
     :style.casual?'Hey, just checking in about my earlier message. Reply whenever you have time.'
     :style.noBlame||style.noRush||prior.noPressure||prior.event==='seen_unanswered'?'Hey, just checking in about my earlier message. No rush—reply when you have time.'
     :draft
@@ -140,17 +156,26 @@ function followThroughResponse(request,roll){
   category=kind==='music_reciprocal'?'music_preferences':'music_chat';
   thread={...((prior.kind==='music')?prior:{}),kind:'music'};
   if(kind==='music_start'){thread={kind:'music'};extra.suspended=null;content='Music, then. What kind do you enjoy?';}
-  if(kind==='music_correct'){thread.genre=data.genre;delete thread.alternate;content=data.genre+' instead, understood. I have corrected the genre.';}
-  if(kind==='music_remove'){if(thread.genre===data.genre)delete thread.genre;if(thread.alternate===data.genre)delete thread.alternate;content='I will no longer list '+data.genre+' as one of your current preferences.';}
-  if(kind==='music_recall')content=thread.genre||thread.alternate?'You said '+(thread.genre??thread.alternate)+(thread.genre&&thread.alternate?', sometimes '+thread.alternate:'')+(thread.place?(thread.only?' only while working':' while working'):'')+'.':'There is no current genre preference saved in this conversation.';
-  if(kind==='music_short')content=thread.genre||thread.alternate?(thread.genre??thread.alternate)+(thread.place?(thread.only?' only while working':' while working'):'')+' — got it.':'What music do you like?';
-  if(kind==='music_genre'){if(data.occasional)thread.alternate=data.genre;else thread.genre=data.genre;content=data.occasional?'Sometimes '+data.genre+', then. A different sound can suit a different moment.':'Mostly '+data.genre+', got it. What do you enjoy about that sound?';}
+  if(kind==='music_correct'){thread.genre=data.genre;if([data.previous,data.genre].includes(thread.alternate)){delete thread.alternate;delete thread.alternateFrequency;}thread.additional=(thread.additional??[]).filter(value=>value!==data.genre&&value!==data.previous);content=data.genre+' instead, understood. I have corrected the genre.';}
+  if(kind==='music_remove'){if(thread.genre===data.genre)delete thread.genre;if(thread.alternate===data.genre){delete thread.alternate;delete thread.alternateFrequency;}thread.additional=(thread.additional??[]).filter(value=>value!==data.genre);content='I will no longer list '+data.genre+' as one of your current preferences.';}
+  if(kind==='music_recall'){
+   const genres=[thread.genre,thread.alternate?(thread.alternateFrequency==='sometimes'?'sometimes ':'')+thread.alternate:null,...(thread.additional??[])].filter(Boolean);
+   content=genres.length?'You said '+genres.join(', and ')+(thread.place?(thread.only?' only while working':' while working'):'')+'.':'There is no current genre preference saved in this conversation.';
+  }
+  if(kind==='music_short')content=thread.genre||thread.alternate?(thread.genre??(thread.alternateFrequency==='sometimes'?'sometimes ':'')+thread.alternate)+(thread.place?(thread.only?' only while working':' while working'):'')+' — got it.':'What music do you like?';
+  if(kind==='music_genre'){
+   if(data.occasional){thread.alternate=data.genre;thread.alternateFrequency='sometimes';}
+   else if(data.additive){if(data.genre!==thread.genre&&data.genre!==thread.alternate)thread.additional=[...new Set([...(thread.additional??[]),data.genre])].slice(-6);}
+   else{thread.genre=data.genre;thread.additional=(thread.additional??[]).filter(value=>value!==data.genre);if(thread.alternate===data.genre){delete thread.alternate;delete thread.alternateFrequency;}}
+   content=data.occasional?'Sometimes '+data.genre+', then. A different sound can suit a different moment.':data.additive?data.genre+' as well, understood. I will add it without replacing your earlier preference.':'Mostly '+data.genre+', got it. What do you enjoy about that sound?';
+  }
   if(kind==='music_place'){thread.place='work';thread.only=Boolean(data.only);content=data.only?'Only while working, understood. I will keep that limit with your music preference.':'You listen while working, then. Does it help you focus, or make the time more pleasant?';}
   if(kind==='music_exception'){thread.varies=true;content='Not always, understood. That is a preference, not a rule for every moment.';}
   if(kind==='music_reason'){thread.varies=true;thread.reason='day';content='How the day went changes what you want to hear. A quiet reset sometimes, a different sound at other times.';}
   if(kind==='music_reciprocal')content='Atmospheric melodies with a little tension suit my style. A little mystery belongs in the soundtrack.';
  }
  if(kind==='game_start'){category='game_chat';thread=null;extra.suspended=null;content='Games, then. Do you prefer PvP or PvE?';}
+ if(kind==='game_correct'||kind==='game_recall'){category=data.preference==='pve'?'game_relaxed':data.preference==='pvp'?'game_competitive':'game_chat';thread={kind:'game',preference:data.preference};content=data.preference?(kind==='game_correct'?data.preference.toUpperCase()+' instead, understood. I have corrected your preference.':'You said you prefer '+data.preference.toUpperCase()+'.'):'You have not specified a PvP or PvE preference in this game conversation.';}
  if(kind==='game_short'){category=old.topicCategory??old.category;thread=null;content=data.preference==='pve'?'PvE means playing against the game’s enemies.':data.preference==='pvp'?'PvP means playing against other players.':'Do you prefer PvP or PvE?';}
  if(kind.startsWith('joke')){
   category='joke';thread={...((prior.kind==='joke')?prior:{}),kind:'joke',...Object.fromEntries(Object.entries(data).filter(([,v])=>v!==undefined))};

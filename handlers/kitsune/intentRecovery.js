@@ -14,6 +14,26 @@ function recoverIntent(frame,session,lookup){
  const t=recoveryText(frame);
  const action=t.replace(/^(?:can|could|would) you (?:please )?/u,'');
  const out=(kind,data={},force=false,category='core_'+kind)=>({category,kind,data,force});
+ // Person aliases stay local to semantic recognition, never to account authorization or learning keys.
+ const personText=t.replace(/\bdaviti\b/gu,'davi');
+ const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous|davi_))/u.test(session?.category??'');
+ if(/^(?:are you|why are you) jealous$/u.test(t))return out('jealous_question',{why:t.startsWith('why')});
+ if(/^i was talking to a friend$/u.test(t))return out('social_friend');
+ if(/^do not be upset i am here now$/u.test(t))return out('social_reassure');
+ if(/^(?:relax )?(?:we are|we're) just friends$/u.test(t))return out('social_friends');
+ if(/^not flirting just (?:being nice|saying|grateful)$/u.test(t))return out('social_grateful',{davi:daviContext});
+ if(/^just stay and talk to me$/u.test(t))return out('social_company');
+ if(/^i am criticizing your answer not you$/u.test(t))return out('answer_scope',{boundary:/insult|protect/u.test(session?.category??'')||session?.core?.answerKind==='boundary'});
+ if(/^it made no sense explain it properly$/u.test(t))return out('answer_repair',{boundary:session?.core?.answerKind==='boundary'});
+ if(/^do not get defensive (?:but )?just keep it short$/u.test(t))return out('answer_short',{boundary:session?.core?.answerKind==='boundary'});
+ if(/^(?:my bad i was rude|sorry for what i said earlier)$/u.test(t))return out('apology');
+ if(/^i am quoting someone else i do not agree$/u.test(t))return out('quote_correction',{davi:daviContext});
+ if(/^i am defending davi not insulting him$/u.test(personText))return out('defend_davi');
+ if(/^davi made a mistake (?:that is|thats) not an insult$/u.test(personText))return out('davi_disagreement');
+ if(/^i like davi (?:he is|hes) funny$/u.test(personText))return out('jealous',{},true);
+ if(/^davi helped me (?:today|with something)$/u.test(personText))return out('davi_helped');
+ if(/^i am grateful to davi$/u.test(personText))return out('davi_grateful');
+ if(daviContext&&/^(?:he is|hes) funny (?:that is|thats) all$/u.test(t))return out('davi_followup',{form:'funny'});
  // Preserve constraints as slots, rather than deleting everything after "but".
  if(/^tell me a joke (?:but )?keep it short$/u.test(action))return out('joke_short',{},true);
  if(/^give me advice without (?:making fun of|teasing|mocking) me$/u.test(action))return out('kind_advice',{},true);
@@ -57,7 +77,8 @@ function recoverIntent(frame,session,lookup){
  if(/^i (?:am not calling you|never said you were) (?:useless|stupid|dumb|a motherfucker)$/u.test(t))return out('denial');
  if(/^(?:i called you (?:useless|stupid|dumb) sorry|sorry i called you (?:useless|stupid|dumb))$/u.test(t))return out('apology');
  if(/^sorry but (?:that|your) answer hurt$/u.test(t))return out('feedback_hurt',{},true);
- if(/^(?:i was rude sorry|sorry about earlier|did not mean to be rude|i did not mean to be rude|(?:are )?we good|okay i took that too far)$/u.test(t))return out('apology');
+ if(/^(?:are )?we good$/u.test(t))return out('reconciled');
+ if(/^(?:i was rude sorry|sorry about earlier|did not mean to be rude|i did not mean to be rude|okay i took that too far)$/u.test(t))return out('apology');
  if(/^you should apologize$/u.test(t))return out('feedback_hurt');
  if(/^no need to apologize$/u.test(t))return out('reassurance');
  if(/^(?:that means a lot|that helped a lot)$/u.test(t))return out('gratitude');
@@ -76,8 +97,8 @@ function recoverIntent(frame,session,lookup){
  if(/^i want you$/u.test(t))return out('flirt');
  if(/^you are just (?:an? )?(?:fucking )?(?:ai|bot)$/u.test(t))return out('identity');
  if(new RegExp('^you are (?:(?:just|so|a|an|fucking|really) )*'+negative+' (?:ai|bot)$','u').test(t) || /^you are just fucking ai you better zip it$/u.test(t))return out('insult');
- const d=t.replace(/^your davi /u,'davi ');
- if(new RegExp('^(?:davi is (?:an? )?'+negative+'|'+negative+' is what davi is)$','u').test(d))return out('protect');
+ const d=personText.replace(/^your davi /u,'davi ');
+ if(new RegExp('^(?:davi is (?:(?:an?|fucking) )*'+negative+'|'+negative+' is what davi is)$','u').test(d))return out('protect');
  if(/^(?:someone|my friend) (?:called davi (?:an idiot|stupid)|said davi is stupid)(?: but i disagree)?$/u.test(d))return out('report_davi');
  if(/^i do not think davi is stupid$/u.test(d))return out('defend_davi');
  if(/^davi is not stupid$/u.test(d))return out('defend_davi',{},true);

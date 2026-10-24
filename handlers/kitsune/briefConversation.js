@@ -6,7 +6,7 @@ function recognizeBrief(text, session = null) {
  if (/^(?:i )?(?:do not want to|would rather not) get into it$/u.test(text)) return 'brief_privacy';
  if (/^(?:(?:can|could) you )?(?:just )?(?:distract me|help me take my mind off (?:it|things))$/u.test(text)) return 'brief_distraction';
  if (/^that was not what i meant$/u.test(text)) return 'brief_repair';
- if (/^(?:not a joke (?:but |maybe )?(?:a )?question|ask me (?:something easy|an easy question|a simple question))$/u.test(text)) return 'brief_question';
+ if (/^(?:not a joke (?:but |maybe )?(?:a )?question|(?:(?:can|could|would) you )?(?:please )?ask me (?:something easy|an easy question|a simple question))$/u.test(text)) return 'brief_question';
  if (/^(?:any (?:ideas|suggestions)|got any ideas|what could we do)$/u.test(text)) return 'brief_ideas';
  if (/^(?:nothing involving games|no games please|anything except games|something without games)$/u.test(text)) return 'brief_no_games';
  if (/^(?:no|nope) (?:something else|a different idea)(?: please)?$/u.test(text)) return 'brief_other';

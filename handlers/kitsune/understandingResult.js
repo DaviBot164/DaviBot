@@ -43,6 +43,10 @@ function understandingResult(category, options={}){
  if(recovered?.kind==='state'){target=recovered.data.target;intent='share_state';topic='wellbeing';polarity=['negated','recovered'].includes(recovered.data.time)?'negated':'affirmed';
   if(target==='self')mood=recovered.data.time==='past'||recovered.data.time==='negated'?null:recovered.data.time==='recovered'?'improved':recovered.data.state==='tired'?'tired':recovered.data.state==='upset'?'low':recovered.data.state;
  }
+ if(['answer_scope','answer_repair','answer_short'].includes(recovered?.kind)){intent='clarify_answer';target='answer';topic='explanation';}
+ if(recovered?.kind==='reconciled'){intent='reconcile';topic='conversation';}
+ if(recovered?.kind==='jealous_question'){intent='ask_personality';target='kitsune';topic='social';}
+ if(recovered?.kind==='quote_correction'){intent='report_speech';reported=true;target=recovered.data.davi?'davi':'kitsune';}
  const unknown=!category||['fallback','reaction_question','clarify'].includes(category);
  return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:['decline_advice','music_curiosity'].includes(category)||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
 }

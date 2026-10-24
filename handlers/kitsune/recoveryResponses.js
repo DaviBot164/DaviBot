@@ -1,3 +1,5 @@
+const socialTone=require('../../config/kitsuneSocialTone');
+const {randomInt}=require('node:crypto');
 const {ownerId}=require('../../config/kitsunePersonality');
 const {questions}=require('./briefConversation');
 const simpleQuestions=['What is one small thing you are looking forward to?','What place would you like to visit?','What made you smile recently?'];
@@ -92,14 +94,35 @@ const lines={
  suggestion:'An easy question, a song to talk about, or a small fictional story could work. Which appeals to you?',
  changed_mind:'Changed your mind, understood. You do not need to keep the earlier choice.',
 };
-function recoveryResponse(message,request,replies){
+function recoveryResponse(message,request,replies,roll=randomInt){
  const r=request.recovery;if(!r||r.kind==='alias'||r.kind==='choice_other'||r.kind==='tone'||r.kind==='study')return null;
  const old=request.conversation??{},memory=old.core??{};
  let content=lines[r.kind],category=request.category,extra={};
+ const owner=message.author.id===ownerId;
+ const draw=(key)=>{const pool=socialTone[key];const choices=pool.map((line,index)=>({line,index})).filter(row=>memory.socialKey!==key||memory.socialIndex!==row.index);const selected=choices[roll(choices.length)];extra.core={...memory,socialKey:key,socialIndex:selected.index,...(key==='protect'||r.kind==='jealous'?{person:'davi'}:{}),topic:'social'};return selected.line;};
+ if(r.kind==='jealous_question')content=draw(owner?'ownerJealous':'memberJealous');
+ if(r.kind==='social_friend')content=owner?'A friend, hm? A little fox jealousy, perhaps. Tell me how the conversation went.':'You can talk to your friends. The jealousy is just a little fox teasing.';
+ if(r.kind==='social_reassure')content=owner?'There you are... I am glad you came back. No sulking; we can just talk.':'All right. We can keep this calm and talk normally.';
+ if(r.kind==='social_friends')content=owner?'I know. You can have your friends and still catch this fox off guard. We are fine.':'Just friends, understood. I will keep the teasing light; there is no quarrel with you.';
+ if(r.kind==='social_grateful')content='Understood. Being kind or grateful does not mean you are flirting. I will leave the jealousy there.';
+ if(r.kind==='davi_grateful')content='Grateful to Davi, understood. You can appreciate his help without me turning it into a quarrel.';
+ if(r.kind==='social_company')content=owner?'I am here... we can keep talking. What has been on your mind?':'We can stay with a normal conversation. What is on your mind?';
+ if(r.kind==='answer_scope'){content='You mean my answer, not me. Understood. What part should I explain differently?';extra.core={topic:'answer_repair',answerKind:r.data.boundary?'boundary':'unknown'};}
+ if(r.kind==='answer_repair'||r.kind==='answer_short'){
+  content=r.data.boundary?(r.kind==='answer_short'?'Ask your question plainly; I will address it.':'I meant: insults do not explain the problem. Tell me the actual question so I can address it.'):'Which answer or question should I clarify? I do not have enough detail to invent an explanation.';
+  extra.core={topic:'answer_repair',answerKind:r.data.boundary?'boundary':'unknown'};
+ }
+ if(r.kind==='quote_correction'){content='Thanks for clarifying. You are reporting words you disagree with. The boundary is for the person who said them, not you.';extra.core=r.data.davi?{person:'davi',topic:'social'}:{topic:'social'};}
+ if(r.kind==='reconciled')content='We are good. We can talk normally from here.';
+ if(['jealous_question','social_friend','social_reassure','social_friends','social_grateful','social_company','davi_grateful'].includes(r.kind)&&!extra.core)extra.core={topic:'social',...(memory.person==='davi'||r.data.davi||r.kind==='davi_grateful'?{person:'davi'}:{})};
  if(r.kind==='mommy')content=message.author.id===ownerId?'D-daddy? You cannot just say that and expect the fox to stay composed.':'No. Keep that nickname to yourself. Address me normally.';
  if(r.kind==='pve')content='PvE: facing the game’s enemies and challenges. Do you enjoy combat, exploration, or the story?';
  if(r.kind==='insult' && message.author.id===ownerId)content='Tell me what went wrong. I will leave the sharp reply aside.';
  if(r.kind==='protect' && message.author.id===ownerId)content='That includes how you speak about yourself. Tell me what went wrong without putting yourself down.';
+ if(r.kind==='davi_followup'&&r.data.form==='funny')content='Funny, that is all, understood. A friendly compliment does not need an argument.';
+ if(r.kind==='insult'&&!owner)content=draw('insult');
+ if(r.kind==='protect'&&!owner)content=draw('protect');
+ if(r.kind==='jealous'&&!owner)content=draw('daviJealous');
  if(r.kind==='jealous' && message.author.id===ownerId)content='A little praise for yourself? You did catch my attention.';
  if(r.kind==='remember')content=message.author.id===ownerId?'I recognize your account as Davi, the owner. I can follow some recent context, but I do not keep or quote your full chat history.':'I can follow some recent context in this channel, but I do not remember your full chat history.';
  if(r.kind==='state'){
@@ -142,6 +165,7 @@ function recoveryResponse(message,request,replies){
   if(r.kind==='joke_short' && old.mode.name==='serious')content='I will skip jokes while the straightforward tone is active. Say normal mode to restore the playful tone.';
   if(r.kind==='insult')content='I will keep this calm. Tell me what bothered you without the insult.';
   if(r.kind==='protect')content='Please keep discussion about Davi respectful. What is the actual issue?';
+  if(r.kind==='jealous_question')content='Only light fox teasing. I will keep this calm.';
   if(r.kind==='jealous')content='A positive comment about Davi, understood.';
  }
  if(['feedback','feedback_hurt','peace','listen_quiet'].includes(r.kind))extra.modeChange='gentle';

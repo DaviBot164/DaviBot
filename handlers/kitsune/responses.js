@@ -257,7 +257,7 @@ function buildBaseResponse(message, request) {
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
     const continued=followThroughResponse(request,randomFor?.(message)??randomInt);if(continued)return continued;
-    const recovered=recoveryResponse(message,request,replies);if(recovered)return recovered;
+    const recovered=recoveryResponse(message,request,replies,randomFor?.(message)??randomInt);if(recovered)return recovered;
     const brief=briefResponse(request);if(brief)return brief;
     if(request.category==='light_topic') {
         return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'music_chat',session:true,question:false,pending:null};
