@@ -15,7 +15,7 @@ function nextTopic(previous, request, response){
  return topicAnchor(response.category);
 }
 function understandingResult(category, options={}){
- const mood=moods[category]??null;
+ let mood=moods[category]??null;
  let target=null,polarity='unspecified',reported=false,intent=category??'unknown',topic=null;
  if(category?.startsWith('brief_')){intent='casual_conversation';topic='conversation';}
  if(mood){target='self';polarity='affirmed';intent='share_state';topic='wellbeing';}
@@ -38,6 +38,10 @@ function understandingResult(category, options={}){
  if(category==='advice_resume'||category==='tip'){intent='request_advice';target='self';}
  if(category?.startsWith('tone_')){intent='change_tone';topic='conversation';}
  if(['topic_change','light_topic','restart_chat'].includes(category)){intent='reset_topic';topic='conversation';}
+ const recovered=options.recovery;
+ if(recovered?.kind==='state'){target=recovered.data.target;intent='share_state';topic='wellbeing';polarity=['negated','recovered'].includes(recovered.data.time)?'negated':'affirmed';
+  if(target==='self')mood=recovered.data.time==='past'||recovered.data.time==='negated'?null:recovered.data.time==='recovered'?'improved':recovered.data.state==='tired'?'tired':recovered.data.state==='upset'?'low':recovered.data.state;
+ }
  const unknown=!category||['fallback','reaction_question','clarify'].includes(category);
  return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:['decline_advice','music_curiosity'].includes(category)||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
 }

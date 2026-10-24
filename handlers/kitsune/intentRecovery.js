@@ -1,0 +1,141 @@
+// Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
+const negative='(?:stupid|dumb|useless|idiot|annoying|rude|dumbass|motherfucker|mf|worthless|trash)';
+function recoveryText(frame){
+ let text=frame.plainSentence;
+ if(/^not (?:right )?now[.!?]*$/iu.test(frame.raw.trim()))text='not now';
+ text=text.replace(/\bhavent\b/gu,'have not').replace(/\bi'll\b/gu,'i will').replace(/\bjs\b/gu,'just');
+ text=text.replace(/^your (?=(?:just |fucking |a )*(?:an? )?(?:ai|bot|useless))/u,'you are ');
+ text=text.replace(/\b(?:tii+red|tirde)\b/gu,'tired').replace(/\bsttfu\b/gu,'stfu');
+ return text.replace(/^(?:(?:yeah|yh|okay|ok|actually|honestly|to be honest|not going to lie) )+/u,'')
+  .replace(/^(?:please )/u,'').replace(/ (?:please|though|right now|by the way|to be honest|not going to lie|lol|lmao)$/u,'').trim();
+}
+function recoverIntent(frame,session,legacy,lookup){
+ if(!frame?.valid)return null;
+ const t=recoveryText(frame);
+ const action=t.replace(/^(?:can|could|would) you (?:please )?/u,'');
+ const out=(kind,data={},force=false,category='core_'+kind)=>({category,kind,data,force});
+ // Preserve constraints as slots, rather than deleting everything after "but".
+ if(/^tell me a joke (?:but )?keep it short$/u.test(action))return out('joke_short',{},true);
+ if(/^give me advice without (?:making fun of|teasing|mocking) me$/u.test(action))return out('kind_advice',{},true);
+ if(/^say hi and ask how i am doing$/u.test(action))return out('hello_question',{},true);
+ if(/^(?:ask me a question (?:but )?not about school|do not give (?:me )?advice (?:but )?just ask (?:me )?a question)$/u.test(t))return out('open_question',{noSchool:true,noAdvice:true},true);
+ if(/^(?:not another choice (?:but )?just a normal question|ask me (?:a normal|an open|a) question)$/u.test(action))return out('open_question',{},true);
+ if(/^(?:maybe (?:later|tomorrow)|not (?:right )?now|yes but later|not studying(?: (?:right )?now)?)$/u.test(t) || /^(?:that is|thats|okay) enough(?: for now)?$/u.test(t))return out('defer');
+ if(/^(?:i (?:will be back later|need to go)|talk to you later|see you later)$/u.test(t))return out('goodbye',{},false,'stop');
+ if(/^(?:back now|i am back now)$/u.test(t))return out('return');
+ if(/^(?:can i explain|just listen first|do not need a fix just let me finish)$/u.test(t))return out('listen');
+ if(/^do not (?:give|offer) (?:me )?(?:any )?advice$/u.test(t))return out('listen',{},false,'decline_advice');
+ if(/^(?:do not interrupt|please do not interrupt)$/u.test(t))return out('listen_quiet');
+ if(/^(?:now )?what do you think$/u.test(t) && session)return out('opinion');
+ if(/^(?:i (?:have not eaten|did not eat)(?: yet)?|have not eaten yet)$/u.test(t))return out('not_eaten');
+ if(/^(?:but )?i (?:cannot|can not) sleep$/u.test(t))return out('cannot_sleep');
+ if(/^(?:i am |i feel )?(cold|nervous)(?: about tomorrow)?$/u.test(t))return out('state',{state:t.includes('cold')?'cold':'nervous',time:'present',target:'self'});
+ const negated=t.match(/^i (?:am|feel) not (cold|nervous|tired|sad|upset)$/u);
+ if(negated)return out('state',{state:negated[1],time:'negated',target:'self'});
+ const past=t.match(/^i was (tired|nervous|sad|upset|happy|cold) (?:yesterday|earlier|before)$/u);
+ if(past)return out('state',{state:past[1],time:'past',target:'self'});
+ const recovered=t.match(/^i (?:am|feel) (?:no longer (tired|nervous|sad|upset)|not (tired|nervous|sad|upset) anymore)$/u);
+ if(recovered)return out('state',{state:recovered[1]??recovered[2],time:'recovered',target:'self'});
+ const other=t.match(/^my friend is (tired|nervous|sad|upset|cold)$/u);
+ if(other)return out('state',{state:other[1],time:'present',target:'friend'});
+ if(/^i am not tired my friend is$/u.test(t))return out('state',{state:'tired',time:'present',target:'friend',selfDenied:true});
+ if(/^are you (tired|nervous|sad|happy)$/u.test(t))return out('bot_state');
+ if(/^(?:not (?:okay|ok)|things are not going well)$/u.test(t))return out('state',{state:'upset',target:'self',time:'present'});
+ if(/^i am (?:okay|ok) (?:now )?(?:thank you|thanks)$/u.test(t))return out('better');
+ if(/^i am (?:okay|ok) (?:but )?just tired$/u.test(t))return out('mixed_state',{left:'okay',right:'tired'});
+ if(/^i am excited but nervous$/u.test(t))return out('mixed_state',{left:'excited',right:'nervous'});
+ if(/^i am sleepy but not tired$/u.test(t))return out('sleepy_contrast',{},true);
+ if(/^i was tired but i am (?:fine|okay|ok) now$/u.test(t))return out('better',{},true);
+ if(/^i (?:argued with my friend|had an argument with a friend)$/u.test(t))return out('argument');
+ if(/^i am (?:upset|annoyed) (?:with|at) (?:my friend|my game)(?: not you)?$/u.test(t))return out('argument',{target:t.includes('game')?'game':'friend'});
+ if(/^i am upset but not with you$/u.test(t))return out('argument',{target:'other'});
+ if(/^not mad just disappointed$/u.test(t))return out('disappointed');
+ // Reports, denials and apology scope precede directed hostility.
+ if(/^someone called me (?:useless|stupid|dumb|an idiot)$/u.test(t))return out('hurt_report');
+ if(new RegExp('^(?:someone|my friend) (?:called you|said you are) (?:an? )?'+negative+'$','u').test(t))return out('reported_bot');
+ if(/^you called me (?:useless|stupid|dumb)$/u.test(t))return out('feedback_hurt');
+ if(/^i (?:am not calling you|never said you were) (?:useless|stupid|dumb|a motherfucker)$/u.test(t))return out('denial');
+ if(/^(?:i called you (?:useless|stupid|dumb) sorry|sorry i called you (?:useless|stupid|dumb))$/u.test(t))return out('apology');
+ if(/^sorry but (?:that|your) answer hurt$/u.test(t))return out('feedback_hurt',{},true);
+ if(/^(?:i was rude sorry|sorry about earlier|did not mean to be rude|i did not mean to be rude|(?:are )?we good|okay i took that too far)$/u.test(t))return out('apology');
+ if(/^you should apologize$/u.test(t))return out('feedback_hurt');
+ if(/^no need to apologize$/u.test(t))return out('reassurance');
+ if(/^(?:that means a lot|that helped a lot)$/u.test(t))return out('gratitude');
+ if(/^i like your style$/u.test(t))return out('style');
+ if(/^i (?:do not like that answer|like you but not that answer)$/u.test(t))return out('feedback');
+ if(/^(?:that (?:joke|answer) (?:annoyed|bothered) me|that (?:actually )?bothered me|that was not funny|not insulting you (?:but )?just did not like the joke)$/u.test(t))return out('feedback');
+ if(/^joking do not take it personally$/u.test(t))return out('joking');
+ if(/^(?:be less sarcastic|something less sarcastic|take me seriously|i am being serious|no jokes this time)$/u.test(t))return out('tone',{mode:t.includes('sarcastic')?'gentle':'serious'},false,t.includes('sarcastic')?'tone_gentle':'tone_serious');
+ if(/^(?:you can joke again|we can joke again now)$/u.test(t))return out('tone',{mode:'normal'},false,'tone_reset');
+ if(/^(?:i do not want to argue|let us be nice to each other|lets be nice to each other)$/u.test(t))return out('peace');
+ if(/^you are annoying i am serious$/u.test(t))return out('feedback');
+ const name=t.match(/^(?:just )?call me ([a-z][a-z -]{1,23})$/u);
+ if(name && !/\b(?:everyone|admin|owner|moderator|daddy|mommy)\b/u.test(name[1]))return out('name',{name:name[1]});
+ if(/^(?:do not call me dear|i do not like that nickname|use my name instead)$/u.test(t))return out('no_nickname');
+ if(/^mommy$/u.test(t))return out('mommy');
+ if(/^i want you$/u.test(t))return out('flirt');
+ if(/^you are just (?:an? )?(?:fucking )?(?:ai|bot)$/u.test(t))return out('identity');
+ if(new RegExp('^you are (?:(?:just|so|a|an|fucking|really) )*'+negative+' (?:ai|bot)$','u').test(t) || /^you are just fucking ai you better zip it$/u.test(t))return out('insult');
+ const d=t.replace(/^your davi /u,'davi ');
+ if(new RegExp('^(?:davi is (?:an? )?'+negative+'|'+negative+' is what davi is)$','u').test(d))return out('protect');
+ if(/^(?:someone|my friend) (?:called davi (?:an idiot|stupid)|said davi is stupid)(?: but i disagree)?$/u.test(d))return out('report_davi');
+ if(/^i do not think davi is stupid$/u.test(d))return out('defend_davi');
+ if(/^davi is not stupid$/u.test(d))return out('defend_davi',{},true);
+ if(/^sorry i should not have insulted davi$/u.test(d))return out('apology_davi');
+ if(/^davi (?:made a mistake|disagrees with me)$/u.test(d))return out('davi_disagreement');
+ if(/^davi helped me$/u.test(d))return out('davi_helped');
+ if(/^is davi here$/u.test(d))return out('davi_presence');
+ if(/^(?:davi needs help|i am worried about davi)$/u.test(d))return out('davi_concern');
+ if(/^davi is nice$|^i like davi$/u.test(d))return out('jealous',{},true);
+ if(session?.core?.person==='davi' && /^(?:he explained the rules|he is funny too|that is why i like him|not flirting just grateful|i mean davi)$/u.test(t))return out('davi_followup');
+ if(/^i mean davi$/u.test(t))return out('davi_followup');
+ if(/^what do you think about him$/u.test(t))return out('who');
+ // Capabilities are not all the same generic identity answer.
+ if(/^what is your name$/u.test(t))return out('name_question',{},true);
+ if(/^who made you$/u.test(t))return out('creator');
+ if(/^what can you do$/u.test(t))return out('capabilities');
+ if(/^do you remember me$/u.test(t))return out('remember',{},true);
+ if(/^do you like talking to people$/u.test(t))return out('chat_identity');
+ if(/^are you a fox$/u.test(t))return out('fox');
+ if(/^why is your name kitsune$/u.test(t))return out('origin');
+ if(/^do you understand me$/u.test(t))return out('understanding');
+ if(/^what language do you speak$/u.test(t))return out('language');
+ if(/^can you tell jokes$/u.test(t))return out('can_joke');
+ if(/^can you help me or should i ask someone else$/u.test(t))return out('help_scope');
+ if(/^help me (?:study|with studying)$/u.test(action))return out('study',{},false,'study_start');
+ if(/^can you help my friend study$/u.test(t))return out('friend_study');
+ if(/^i do not need help studying$/u.test(t))return out('defer');
+ if(/^i need help but not with studying$/u.test(t))return out('help_scope');
+ if(/^i meant help with a game$/u.test(t))return out('game_help');
+ if(/^can you help with that$/u.test(t) && session?.core?.topic==='game')return out('game_help');
+ if(/^i mean talk about games not (?:actually )?play$/u.test(t))return out('game_topic');
+ if(/^can you help me find someone to play with$/u.test(t))return out('find_players');
+ if(/^(?:i (?:prefer|like|enjoy) )?(?:mostly )?pve$/u.test(t))return out('pve',{},true,'game_relaxed');
+ if(/^i lost again$/u.test(t))return out('lost');
+ if(/^say (?:hi|hello)$/u.test(action))return out('hello');
+ if(/^(?:tell me|say) something interesting$/u.test(action))return out('interesting');
+ if(/^(?:let us|lets) talk about music instead$/u.test(t))return out('music_topic');
+ if(/^anyway (?:let us|lets) talk about you$/u.test(t))return out('chat_identity');
+ if(/^quiet music$/u.test(t) && /music/u.test(session?.topicCategory??session?.category??''))return out('music_quiet');
+ if(/^sometimes louder$/u.test(t) && /music/u.test(session?.topicCategory??session?.category??''))return out('music_mix');
+ if(/^both depends on my mood$/u.test(t) && /music/u.test(session?.topicCategory??session?.category??''))return out('music_mood');
+ if(/^what do you mean by atmospheric$/u.test(t))return out('atmospheric');
+ if(/game_/u.test(session?.topicCategory??session?.category??'')){
+  if(/^both$/u.test(t))return out('game_both');
+  if(/^depends who i am playing with$/u.test(t))return out('game_company');
+  if(/^usually with friends$/u.test(t))return out('game_friends');
+ }
+ if(/^(?:not another choice (?:but )?just a normal question|how about a question instead)$/u.test(t))return out('open_question');
+ if(/^(?:either is fine|what did you pick|what are the options now)$/u.test(t))return out('choice_info',{form:t},false);
+ if(/^(?:pick|choose) the other one$/u.test(t) && session?.pickOptions)return out('choice_other',{},true,'pick_other');
+ if(/^(?:what was the question again|repeat the question)$/u.test(t))return out('question_repeat');
+ if(/^changed my mind$/u.test(t))return out('changed_mind');
+ if(/^(?:shorter|one sentence|say it in one sentence|a bit more detail|explain more simply|give me an example|can you give an example|i still do not get it|can you explain why)$/u.test(t))return out('explain',{form:t});
+ if(/^(?:never mind (?:let us|lets) move on|actually forget it)$/u.test(t))return out('close',{},false,'topic_change');
+ if(/^(?:like what|which one would you suggest|anything else)$/u.test(t) && session)return out('suggestion');
+ // Known intent under an optional polite prefix or a conservative typo rewrite.
+ const changed=t!==frame.sentence;
+ if(changed && lookup){const category=lookup(t);if(category && !['fallback','clarify','reaction_question'].includes(category))return {category,kind:'alias',data:{},force:false};}
+ return null;
+}
+module.exports={recoveryText,recoverIntent};

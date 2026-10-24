@@ -62,21 +62,25 @@ function memoryAfter(previous, request, response) {
     const restarted=request.category==='restart_chat';
     return {
         topicCategory: nextTopic(old,request,response),
+        core: response.core ?? (['thanks','reaction_thanks','why','explain','core_listen','core_listen_quiet','core_gratitude','core_apology','core_reassurance','tone_gentle','tone_serious','tone_reset','core_opinion'].includes(request.category)?old.core??null:null),
+        templateRef: response.templateRef ?? (['why','explain','simplify','core_explain','thanks','reaction_thanks'].includes(request.category)?old.templateRef??null:null),
+        preferredName: response.preferredName ?? old.preferredName ?? null,
+        moodTurns: ((old.moodTurns??0)+(request.category==='mood'?1:0))%3,
         shortChat: response.shortChat ?? ((['bored','thanks','reaction_thanks'].includes(request.category) || (old.topicCategory?.startsWith('music') && ['music_time','music_relax','music_mood','music_mix','music_preferences','music_curiosity'].includes(request.category))) ? old.shortChat ?? null : null),
-        mood: restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
+        mood: request.recovery?.kind==='state' && request.recovery.data.target==='self' ? request.understanding.mood : restarted||['topic_change','light_topic','game_chat'].includes(request.category)?null:request.understanding?.mood??old.mood??null,
         explanationStep: response.explanationStep ?? 0,
         emojiTurns: response.emojiTurns ?? old.emojiTurns ?? 0,
         emojiLast: response.emojiLast ?? old.emojiLast ?? null,
         emojiRecent: response.emojiLast && response.emojiTurns===0
             ? [...(old.emojiRecent??[]),response.emojiLast].slice(-2) : old.emojiRecent??[],
         emojiCount: (old.emojiCount ?? 0) + (response.emojiAdded ? 1 : 0),
-        noPetNames: request.category==='nickname_boundary' || Boolean(old.noPetNames),
+        noPetNames: ['nickname_boundary','core_no_nickname','core_name'].includes(request.category) || Boolean(old.noPetNames),
         ownerTurns: (old.ownerTurns??0)+(response.ownerStyle?1:0),
         ownerAddressUsed: Boolean(response.ownerAddressUsed),
         mode: restarted?null:mode,
-        pickSelected: !restarted && response.category==='pick' ? (response.pickSelected ?? old.pickSelected ?? null) : null,
-        pickOptions: !restarted && response.category === 'pick' ? (response.pickOptions ?? old.pickOptions ?? null) : null,
-        noAdviceRemaining: restarted ? 0 : (['decline_advice','music_curiosity'].includes(request.category) || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
+        pickSelected: !restarted && (response.category==='pick' || ['thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickSelected ?? old.pickSelected ?? null) : null,
+        pickOptions: !restarted && (response.category==='pick' || ['thanks','reaction_thanks','why','really','explain','core_choice_info','fallback','clarify','tone_gentle','tone_serious','tone_reset','core_gratitude','core_listen','core_listen_quiet'].includes(request.category) || response.category==='fallback') ? (response.pickOptions ?? old.pickOptions ?? null) : null,
+        noAdviceRemaining: restarted ? 0 : (['decline_advice','music_curiosity','core_listen','core_listen_quiet','core_peace'].includes(request.category) || request.declineAdvice) ? 4 : ['tip','advice_resume'].includes(request.category) ? 0 : Math.max(0, (old.noAdviceRemaining ?? 0) - 1),
         pending: restarted ? null : response.pending ?? null,
         history: [...(restarted ? [] : old.history ?? []), { request: request.category, topic: response.category }].slice(-4)
     };
@@ -123,9 +127,12 @@ function decorate(base, tone, request) {
         return {...base, pending:base.category === 'fallback' ? {kind:'choices'} : null};
     }
     if (control === 'mood') {
-        const content = previous.mode?.remaining > 0 ? address('I will keep this calm. How are you doing?') : tone === 'owner' ? 'A little softer now that you are here, handsome. How are you doing?'
-            : tone === 'mae' ? 'A pleasantly quiet fictional mood, Mae. How are you doing?'
-            : 'Suspiciously composed. We will see how long that lasts. How are you doing?';
+        const choices=tone==='owner'
+            ? ['A little softer now that you are here. How are you doing?','A quiet chat with you sounds nice. How are things?','You caught me trying to look composed. How are you doing?']
+            : tone==='mae'||tone==='ash'
+            ? ['A quiet moment for a friendly chat. How are you doing?','Here and happy to chat. How are things with you?','A little fox mischief, kept friendly. How are you doing?']
+            : ['Suspiciously composed. We will see how long that lasts. How are you doing?','Here, keeping the fox drama manageable. How are you doing?','Ready for a conversation. How are things with you?'];
+        const content=previous.mode?.remaining>0?address('I will keep this calm. How are you doing?'):choices[previous.moodTurns??0];
         return {...base,payload:{content},question:false,pending:{kind:'mood'}};
     }
     if (control === 'uncertain') {
@@ -138,6 +145,8 @@ function decorate(base, tone, request) {
     if (mode !== 'normal') {
         // Replace only attitude-bearing categories; factual helpers and explanations stay intact.
         const softened = {
+            thanks: 'You are welcome. I am glad it helped.',
+            reaction_thanks: 'You are welcome. I am glad it helped.',
             yes: 'Understood. What would you like next?',
             no: 'That is fine. We can change the subject.',
             agree: 'Agreed.',

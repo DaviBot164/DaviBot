@@ -1,7 +1,7 @@
 const { createEmbed } = require('../../utils/embeds');
 function plainHelp(){return [
  '**Talk to Kitsune 🦊**','Start with `kitsune hi`, or mention the bot at the start of your message. English input and replies.',
- 'Short names: `kitsu`, `kits`, `kit`. Also try `hey kitsu hru` or `kitsune-chan hi`.',
+ 'Names can go at the start, middle or end: `lady kitsune hru`, `can you, kitsu, help me study?`, `how are you, kitsune?`. Short `kit` works at the start or with an explicit salutation.',
  '', '**Talk naturally**','`kitsune where r u?` / `kitsune wyd?` / `kitsune wanna play?`','`kitsune could you give me a compliment pls?`','`kitsune ngl im really tired rn`','`kitsune can u pick between tea / coffee?`',
  '', '**Keep going**','Use Reply to my latest answer to you, or send a recognized phrase in the same channel within 2 minutes.',
  '`idk` · `wdym` · `hbu` · `ikr` · `tbh im bored` · `brb` · `gn`',

@@ -13,6 +13,7 @@ function recognizeBrief(text, session = null) {
  if (/^(?:i do not know )?(?:you go first|your turn first)$/u.test(text)) return 'brief_first';
  const question=questions[session?.shortChat?.questionIndex];
  if(question){
+  if(/^(?:(?:actually|no|nah) )?(?:(?:pick|choose) )?(?:the )?other (?:one|option)$/u.test(text))return 'brief_other_option';
   if(question.options.includes(text))return 'brief_answer';
   if(/^(?:both|both of them|a bit of both)$/u.test(text))return 'brief_both';
   if(/^(?:it )?depends$/u.test(text))return 'brief_depends';
@@ -55,6 +56,12 @@ function briefResponse(request) {
    content=selected==='music'?'Music, then. When do you usually listen?':'What do you like about that choice?';
    if(selected==='music')responseCategory='music_chat';
    break;
+  case 'brief_other_option':
+   questionIndex=old.questionIndex;
+   {const opts=questions[questionIndex].options.slice(0,2);
+   if(opts.includes(selected)){selected=opts.find(value=>value!==selected);content='The other option is '+selected+'.';}
+   else content='Do you mean '+opts.join(' or ')+'? Tell me which one you chose first.';}
+   break;
   case 'brief_both':
    questionIndex=old.questionIndex;selected='both';content='Both work for you, then. Does it depend on your mood or the occasion?';break;
   case 'brief_depends':
@@ -66,4 +73,4 @@ function briefResponse(request) {
  }
  return {payload:{content},category:responseCategory,session:true,question:false,pending:null,shortChat:{step:(step+1)%6,noGames,...(selected?{selected}:{}),...(questionIndex===null?{}:{questionIndex})}};
 }
-module.exports={recognizeBrief,briefResponse};
+module.exports={recognizeBrief,briefResponse,questions};

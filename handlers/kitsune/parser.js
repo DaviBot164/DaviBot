@@ -1,3 +1,4 @@
+const {recoverIntent}=require('./intentRecovery');
 const {namedAddress} = require('./addressing');
 const {understandingResult} = require('./understandingResult');
 const learningConfig = require('../../config/kitsuneLearning');
@@ -31,13 +32,22 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const details=englishOnly?recognizeDetails(raw,frame):{};
     const contextual=englishOnly?contextualCategory(raw,session,frame):null;
     let category = contextual??details.category??null;
+    let recovery=englishOnly?recoverIntent(frame,session,category,value=>recognizeDetails(value).category):null;
+    if(recovery && (!category || ['fallback','reaction_question','clarify','question_clarification'].includes(category) || recovery.force)){
+        if(!(category && recovery.force && ['jealous','remember','name_question','defend_davi'].includes(recovery.kind)))category=recovery.category;
+    }
+    else recovery=null;
+    if(session?.templateRef && ['why','explain','simplify'].includes(category)){
+        recovery={category,kind:'explain',data:{form:category==='simplify'?'shorter':category},force:true};
+    }
     let recognition = contextual?{source:'context',rule:'contextual_followup'}:details.understanding;
+    if(recovery && (!recognition || recognition.status==='unmatched'))recognition={source:'recovery',rule:'recovery.'+recovery.kind};
     if(!category && englishOnly && learnedAliases) {
         const learned=learnedAliases.get(learningPhrase(raw));
         if(Object.values(learningConfig.intents).includes(learned)){category=learned;recognition={source:'learned',rule:'approved_alias'};}
     }
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
-    const choice = englishOnly ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw,frame) : null) ?? extractChoice(raw,frame)) : null;
+    const choice = englishOnly && recovery?.kind!=='choice_other' ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw,frame) : null) ?? extractChoice(raw,frame)) : null;
 
     if (!trigger && !replying) {
         if (
@@ -49,9 +59,10 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const parts = reactionClauses(frame?.plainSentence??'');
     const meanings = parts.length > 1 && parts.length <= 3 ? parts.map(part => recognizeSocial(part,raw)) : [];
     const mixedSocial = meanings.includes('reaction_affection') && meanings.includes('reaction_insult');
-    const context = session?.category ?? null;
+    const context = ['why','explain'].includes(category)&&session?.pickOptions?.length? 'pick':session?.category ?? null;
     const followup = {
         recognition,
+        ...(recovery?{recovery}:{}),
         context,
         declineAdvice: Boolean(details.declineAdvice),
         mixedSocial,
@@ -102,6 +113,6 @@ function parseRequest(message,now,learnedAliases=null){
  if(!request)return null;
  const {recognition,...rest}=request;
  const source=request.category==='pick'?{source:'choice',rule:'choice_request'}:request.targetId?{source:'mention',rule:'mentioned_member'}:recognition??{source:'parser',rule:'parser_fallback'};
- return {...rest,understanding:understandingResult(request.category,{...source,declineAdvice:request.declineAdvice})};
+ return {...rest,understanding:understandingResult(request.category,{...source,declineAdvice:request.declineAdvice,recovery:request.recovery})};
 }
 module.exports = { parseRequest };

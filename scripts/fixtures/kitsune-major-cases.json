@@ -1,0 +1,727 @@
+[
+  {
+    "group": "polite_requests",
+    "text": "please tell me a joke",
+    "expected": "joke"
+  },
+  {
+    "group": "polite_requests",
+    "text": "help me study",
+    "expected": "study"
+  },
+  {
+    "group": "polite_requests",
+    "text": "say hi",
+    "expected": "hello"
+  },
+  {
+    "group": "polite_requests",
+    "text": "say hi and ask how im doing",
+    "expected": "hello_question"
+  },
+  {
+    "group": "polite_requests",
+    "text": "can you tell jokes",
+    "expected": "can_joke"
+  },
+  {
+    "group": "polite_requests",
+    "text": "ask me a question",
+    "expected": "open_question"
+  },
+  {
+    "group": "polite_requests",
+    "text": "tell me something interesting",
+    "expected": "interesting"
+  },
+  {
+    "group": "polite_requests",
+    "text": "tell me a joke but keep it short",
+    "expected": "joke_short"
+  },
+  {
+    "group": "polite_requests",
+    "text": "give me advice without making fun of me",
+    "expected": "kind_advice"
+  },
+  {
+    "group": "polite_requests",
+    "text": "ask me a question but not about school",
+    "expected": "open_question"
+  },
+  {
+    "group": "polite_requests",
+    "text": "dont give advice just ask a question",
+    "expected": "open_question"
+  },
+  {
+    "group": "polite_requests",
+    "text": "can you help me or should i ask someone else",
+    "expected": "help_scope"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "maybe later",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "not right now",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "maybe tomorrow",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "yes but later",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "thats enough for now",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "not studying right now",
+    "expected": "defer"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "can i explain",
+    "expected": "listen"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "just listen first",
+    "expected": "listen"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "dont give me advice",
+    "expected": "listen"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "please dont interrupt",
+    "expected": "listen_quiet"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "i need help but not with studying",
+    "expected": "help_scope"
+  },
+  {
+    "group": "deferral_listening",
+    "text": "i dont need help studying",
+    "expected": "defer"
+  },
+  {
+    "group": "daily_states",
+    "text": "i havent eaten yet",
+    "expected": "not_eaten"
+  },
+  {
+    "group": "daily_states",
+    "text": "i cant sleep",
+    "expected": "cannot_sleep"
+  },
+  {
+    "group": "daily_states",
+    "text": "ill be back later",
+    "expected": "goodbye"
+  },
+  {
+    "group": "daily_states",
+    "text": "i need to go",
+    "expected": "goodbye"
+  },
+  {
+    "group": "daily_states",
+    "text": "back now",
+    "expected": "return"
+  },
+  {
+    "group": "daily_states",
+    "text": "im cold",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im nervous",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im nervous about tomorrow",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "i was nervous yesterday",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im not nervous anymore",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im excited but nervous",
+    "expected": "mixed_state"
+  },
+  {
+    "group": "daily_states",
+    "text": "my friend is nervous",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "are you nervous",
+    "expected": "bot_state"
+  },
+  {
+    "group": "daily_states",
+    "text": "i was tired yesterday",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im not tired anymore",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "my friend is tired",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "are you tired",
+    "expected": "bot_state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im no longer tired",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "i was tired but im fine now",
+    "expected": "better"
+  },
+  {
+    "group": "daily_states",
+    "text": "im sleepy but not tired",
+    "expected": "sleepy_contrast"
+  },
+  {
+    "group": "daily_states",
+    "text": "im not tired my friend is",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "things arent going well",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im okay just tired",
+    "expected": "mixed_state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im okay now thanks",
+    "expected": "better"
+  },
+  {
+    "group": "daily_states",
+    "text": "not okay",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "not ok rn",
+    "expected": "state"
+  },
+  {
+    "group": "daily_states",
+    "text": "im tiiired",
+    "expected": "tired"
+  },
+  {
+    "group": "daily_states",
+    "text": "im tirde",
+    "expected": "tired"
+  },
+  {
+    "group": "social_scope",
+    "text": "ur just an ai",
+    "expected": "identity"
+  },
+  {
+    "group": "social_scope",
+    "text": "ur just a useless ai",
+    "expected": "insult"
+  },
+  {
+    "group": "social_scope",
+    "text": "ur js fucking ai u better zip it",
+    "expected": "insult"
+  },
+  {
+    "group": "social_scope",
+    "text": "yh ur fucking useless ai",
+    "expected": "insult"
+  },
+  {
+    "group": "social_scope",
+    "text": "i want u",
+    "expected": "flirt"
+  },
+  {
+    "group": "social_scope",
+    "text": "i want u ❤️",
+    "expected": "flirt"
+  },
+  {
+    "group": "social_scope",
+    "text": "you are a useless bot",
+    "expected": "insult"
+  },
+  {
+    "group": "social_scope",
+    "text": "someone called you useless",
+    "expected": "reported_bot"
+  },
+  {
+    "group": "social_scope",
+    "text": "my friend called you useless",
+    "expected": "reported_bot"
+  },
+  {
+    "group": "social_scope",
+    "text": "someone said you are useless",
+    "expected": "reported_bot"
+  },
+  {
+    "group": "social_scope",
+    "text": "someone called me useless",
+    "expected": "hurt_report"
+  },
+  {
+    "group": "social_scope",
+    "text": "i called you useless sorry",
+    "expected": "apology"
+  },
+  {
+    "group": "social_scope",
+    "text": "you called me useless",
+    "expected": "feedback_hurt"
+  },
+  {
+    "group": "social_scope",
+    "text": "im not calling u useless",
+    "expected": "denial"
+  },
+  {
+    "group": "social_scope",
+    "text": "i like your style",
+    "expected": "style"
+  },
+  {
+    "group": "social_scope",
+    "text": "that helped a lot",
+    "expected": "gratitude"
+  },
+  {
+    "group": "social_scope",
+    "text": "i dont like that answer",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "i like you but not that answer",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "that means a lot",
+    "expected": "gratitude"
+  },
+  {
+    "group": "social_scope",
+    "text": "sorry about earlier",
+    "expected": "apology"
+  },
+  {
+    "group": "social_scope",
+    "text": "didnt mean to be rude",
+    "expected": "apology"
+  },
+  {
+    "group": "social_scope",
+    "text": "we good",
+    "expected": "apology"
+  },
+  {
+    "group": "social_scope",
+    "text": "i was rude sorry",
+    "expected": "apology"
+  },
+  {
+    "group": "social_scope",
+    "text": "sorry but that answer hurt",
+    "expected": "feedback_hurt"
+  },
+  {
+    "group": "social_scope",
+    "text": "you should apologize",
+    "expected": "feedback_hurt"
+  },
+  {
+    "group": "social_scope",
+    "text": "no need to apologize",
+    "expected": "reassurance"
+  },
+  {
+    "group": "social_scope",
+    "text": "youre annoying im serious",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "joking dont take it personally",
+    "expected": "joking"
+  },
+  {
+    "group": "social_scope",
+    "text": "that joke annoyed me",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "im annoyed with my game not you",
+    "expected": "argument"
+  },
+  {
+    "group": "social_scope",
+    "text": "okay lets be nice to each other",
+    "expected": "peace"
+  },
+  {
+    "group": "social_scope",
+    "text": "that actually bothered me",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "i dont want to argue",
+    "expected": "peace"
+  },
+  {
+    "group": "social_scope",
+    "text": "that wasnt funny",
+    "expected": "feedback"
+  },
+  {
+    "group": "social_scope",
+    "text": "not insulting you just didnt like the joke",
+    "expected": "feedback"
+  },
+  {
+    "group": "tone_names",
+    "text": "please be less sarcastic",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "im being serious",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "no jokes this time",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "you can joke again",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "something less sarcastic please",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "please take me seriously",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "we can joke again now",
+    "expected": "tone"
+  },
+  {
+    "group": "tone_names",
+    "text": "dont call me dear",
+    "expected": "no_nickname"
+  },
+  {
+    "group": "tone_names",
+    "text": "just call me Tanya",
+    "expected": "name"
+  },
+  {
+    "group": "tone_names",
+    "text": "i dont like that nickname",
+    "expected": "no_nickname"
+  },
+  {
+    "group": "tone_names",
+    "text": "use my name instead",
+    "expected": "no_nickname"
+  },
+  {
+    "group": "tone_names",
+    "text": "mommy",
+    "expected": "mommy"
+  },
+  {
+    "group": "identity",
+    "text": "what is your name",
+    "expected": "name_question"
+  },
+  {
+    "group": "identity",
+    "text": "who made you",
+    "expected": "creator"
+  },
+  {
+    "group": "identity",
+    "text": "what can you do",
+    "expected": "capabilities"
+  },
+  {
+    "group": "identity",
+    "text": "do you remember me",
+    "expected": "remember"
+  },
+  {
+    "group": "identity",
+    "text": "do you like talking to people",
+    "expected": "chat_identity"
+  },
+  {
+    "group": "identity",
+    "text": "are you a fox",
+    "expected": "fox"
+  },
+  {
+    "group": "identity",
+    "text": "why is your name kitsune",
+    "expected": "origin"
+  },
+  {
+    "group": "identity",
+    "text": "do you understand me",
+    "expected": "understanding"
+  },
+  {
+    "group": "identity",
+    "text": "what language do you speak",
+    "expected": "language"
+  },
+  {
+    "group": "person_scope",
+    "text": "ur davi is stupid",
+    "expected": "protect"
+  },
+  {
+    "group": "person_scope",
+    "text": "stupid is what davi is",
+    "expected": "protect"
+  },
+  {
+    "group": "person_scope",
+    "text": "someone called davi an idiot",
+    "expected": "report_davi"
+  },
+  {
+    "group": "person_scope",
+    "text": "i dont think davi is stupid",
+    "expected": "defend_davi"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi isnt stupid",
+    "expected": "defend_davi"
+  },
+  {
+    "group": "person_scope",
+    "text": "sorry i shouldnt have insulted davi",
+    "expected": "apology_davi"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi made a mistake",
+    "expected": "davi_disagreement"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi disagrees with me",
+    "expected": "davi_disagreement"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi helped me",
+    "expected": "davi_helped"
+  },
+  {
+    "group": "person_scope",
+    "text": "is davi here",
+    "expected": "davi_presence"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi needs help",
+    "expected": "davi_concern"
+  },
+  {
+    "group": "person_scope",
+    "text": "im worried about davi",
+    "expected": "davi_concern"
+  },
+  {
+    "group": "person_scope",
+    "text": "davi is nice",
+    "expected": "jealous"
+  },
+  {
+    "group": "person_scope",
+    "text": "i like davi",
+    "expected": "jealous"
+  },
+  {
+    "group": "narrative_games",
+    "text": "i argued with my friend",
+    "expected": "argument"
+  },
+  {
+    "group": "narrative_games",
+    "text": "i had an argument with a friend",
+    "expected": "argument"
+  },
+  {
+    "group": "narrative_games",
+    "text": "im upset with my friend",
+    "expected": "argument"
+  },
+  {
+    "group": "narrative_games",
+    "text": "im upset but not with you",
+    "expected": "argument"
+  },
+  {
+    "group": "narrative_games",
+    "text": "i mean talk about games not actually play",
+    "expected": "game_topic"
+  },
+  {
+    "group": "narrative_games",
+    "text": "can you help me find someone to play with",
+    "expected": "find_players"
+  },
+  {
+    "group": "narrative_games",
+    "text": "i lost again",
+    "expected": "lost"
+  },
+  {
+    "group": "narrative_games",
+    "text": "not mad just disappointed",
+    "expected": "disappointed"
+  },
+  {
+    "group": "narrative_games",
+    "text": "i meant help with a game",
+    "expected": "game_help"
+  },
+  {
+    "group": "narrative_games",
+    "text": "can you help my friend study",
+    "expected": "friend_study"
+  },
+  {
+    "group": "narrative_games",
+    "text": "lets talk about music instead",
+    "expected": "music_topic"
+  },
+  {
+    "group": "narrative_games",
+    "text": "anyway lets talk about you",
+    "expected": "chat_identity"
+  },
+  {
+    "group": "narrative_games",
+    "text": "what do you mean by atmospheric",
+    "expected": "atmospheric"
+  },
+  {
+    "group": "explanations",
+    "text": "shorter",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "one sentence please",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "a bit more detail",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "explain more simply",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "can you give an example",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "i still dont get it",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "say it in one sentence",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "give me an example",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "can you explain why",
+    "expected": "explain"
+  },
+  {
+    "group": "explanations",
+    "text": "never mind lets move on",
+    "expected": "close"
+  }
+]

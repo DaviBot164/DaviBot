@@ -1,3 +1,4 @@
+const {recoveryResponse}=require('./recoveryResponses');
 const {briefResponse}=require('./briefConversation');
 const {repairExplanation} = require('./explanationRepair');
 const { applyEmojiStyle } = require('./emojiStyle');
@@ -233,7 +234,9 @@ function buildBaseResponse(message, request) {
         return response('A friendly hello seems a good place to start, Mae.', 'member');
     }
 
-    let content = drawReply(state, choosePool(tone, category));
+    const poolName=choosePool(tone,category);
+    let content=drawReply(state,poolName);
+    const templateRef=['secret','tip','joke'].includes(category)?{pool:poolName,index:replies[poolName].indexOf(content),topic:category}:null;
     if (category === 'rate') content = content.replace(/\{score\}/gu, String(randomInt(1, 11)));
     if (category === 'tip' && tone !== 'public') {
         content = `${tone === 'owner' ? 'A little thought for you, handsome' : 'A little thought for you, Mae'}:\n\n${content}`;
@@ -246,11 +249,12 @@ function buildBaseResponse(message, request) {
     const question = content.includes('Reply yes or no.');
     // Keep the instructions short and consistent with the parser.
     content = content.replace('Reply yes or no.', 'Reply yes/no, or use `kitsune yes` / `kitsune no`.');
-    return response(content, category, question);
+    return {...response(content,category,question),...(templateRef?{templateRef}:{})};
 }
 
 const { decorate } = require('./context');
 function buildUnstyledResponse(message, request) {
+    const recovered=recoveryResponse(message,request,replies);if(recovered)return recovered;
     const brief=briefResponse(request);if(brief)return brief;
     if(request.category==='light_topic') {
         return {payload:{content:'Music, then. What is a song you keep coming back to?'},category:'music_chat',session:true,question:false,pending:null};

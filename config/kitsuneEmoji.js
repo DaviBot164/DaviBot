@@ -8,7 +8,7 @@ module.exports = Object.freeze({
         owner: freeze(['🤭','🫣','🦊','🙈','☺️','😳','😌','🌸','✨','🤫','🌙']),
         mae: freeze(['😌','✨','🦊','😊','🌸','🌙','🤫','😄']),
         public: freeze(['😏','🙄','🥱','😒','😑','🤨']),
-        publicWarm: freeze(['🦊','😏','🙂','✨','😌','🤫','🌙','😆','🤭'])
+        publicWarm: freeze(['🦊','🙂','✨','😌','🤫','🌙','😆','🤭'])
     }),
     expressions: Object.freeze({
         shy: Object.freeze({owner:freeze(['🤭','🫣','🙈','☺️','😳','🦊'])}),

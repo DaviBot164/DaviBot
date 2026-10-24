@@ -15,6 +15,7 @@ function applySpeechStyle(response,tone,request) {
   content=content.replace(/^Davi[,.!…]+\s*/u,'').replace(/,\s*Davi(?=[,.!?])/gu,'');
   content=content.replace(/^Of course[.!…]+\s*/u,'');
  }
+ if(request.conversation?.preferredName && ['hi','returning','thanks'].includes(request.category))content=request.conversation.preferredName+', '+content;
  content=content ? content[0].toUpperCase()+content.slice(1) : 'I am listening.';
  let ownerAddressUsed=false;
  if(owner && !suppressed && (request.conversation?.ownerTurns??0)%5===4 && !response.payload.embeds){
