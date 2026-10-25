@@ -190,6 +190,13 @@ function buildBaseResponse(message, request) {
         return { payload: { content }, category: context, question, session };
     }
 
+    if(category?.startsWith('known_person_')){
+        const person=category.slice('known_person_'.length);
+        const entry=Object.entries(friends).find(([,friend])=>friend.tone===person);
+        const id=person==='davi'?OWNER_ID:entry?.[0];
+        const label=person==='mae'?'Mae (Davi)':person==='ash'?'Ash':'Davi';
+        return response(id?`${label} — <@${id}>.`:`${label}.`,category,false,false);
+    }
     if(category==='learned_knowledge')return response(require('./knowledge').render(request.knowledge),'learned_knowledge',false,false);
     if (category === 'learned_continue') {
         const prior=request.conversation;
@@ -417,7 +424,7 @@ function buildResponse(message,request) {
     const tone=toneFor(message.author.id);
     const response=applyEmojiStyle(applySpeechStyle(buildUnstyledResponse(message,request),tone,request),tone,request);
     // A recipient nickname changes wording, never the account's tone or permissions.
-    if(tone==='mae'&&friends[message.author.id]?.name&&response.payload?.content)response.payload={...response.payload,content:response.payload.content.replace(/\bMae\b/gu,friends[message.author.id].name)};
+    if(tone==='mae'&&!request.category?.startsWith('known_person_')&&friends[message.author.id]?.name&&response.payload?.content)response.payload={...response.payload,content:response.payload.content.replace(/\bMae\b/gu,friends[message.author.id].name)};
     return response;
 }
 module.exports = { buildResponse, toneFor };
