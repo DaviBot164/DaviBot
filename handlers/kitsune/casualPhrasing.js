@@ -18,6 +18,8 @@ function casualPhrasing(text,memory){
   if(/^(?:and )?who shared the link$/u.test(text))return 'who sent the link';
  }
  if(memory?.nonPersonal){
+  if(text==='no people around')return 'no people at all';
+  if(text==='what did i add')return 'what details do we have';
   m=text.match(/^(?:lets|let us) switch to (?:the |a )?(forest|seaside)$/u);if(m)return 'a '+m[1]+' instead';
   m=text.match(/^keep only (?:the )?(.+)$/u);if(m)return 'remove everything except '+m[1];
   m=text.match(/^add (?:some |a |the )?(moonlight|silence|waves|stars|cool breeze)$/u);if(m)return m[1]==='cool breeze'?'a cool breeze':m[1];

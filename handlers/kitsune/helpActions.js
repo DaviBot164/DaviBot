@@ -75,6 +75,8 @@ function revisionResponse(data,memory){
  const label=data.role==='explainedRules'?'explained the rules':'sent you the link';
  if(['helper_correct','person_scope','report_confirm'].includes(data.mode))return helpClarificationResponse(data,memory);
  if(data.mode.startsWith('answer_'))return actionAnswerResponse(data,memory);
+ if(data.mode==='report_cancel'){core.pendingReport=null;return {core,content:memory.pendingReport?'That report is withdrawn. The confirmed helper and action facts remain unchanged.':'There is no pending report. The confirmed helper and action facts remain unchanged.'};}
+ if(data.mode==='report_unbound')return {core,content:'Which report did you check? The earlier report is no longer pending, so I will not replace a confirmed fact from that alone.'};
  if(data.mode==='uncertain'){if(data.report)core.pendingReport=data.report;return {core,content:'That is an unconfirmed report. I will keep it separate from what you have already told me.'};}
  if(data.mode==='conditional')return {core,content:'That is a possible future action, not something that has happened. I will keep the existing facts.'};
  if(data.mode==='clarify_actor'){core.pendingAction={role:data.role};return {core,content:'Who do you mean? Please name the person for that action.'};}
@@ -131,6 +133,7 @@ function actionAnswerResponse(data,memory){
 }
 
 function recognizeHelpClarification(text,memory){
+ if(/^(?:that person was wrong|forget that report)$/u.test(text))return {mode:'report_cancel'};
  let m=text.match(new RegExp('^i mean ('+names+') helped me not ('+names+')$','u'));
  if(m)return {mode:'helper_correct',actor:people[m[1]]};
  m=text.match(new RegExp('^i mean ('+names+') (sent (?:me )?the link|explained (?:them|the rules)) not ('+names+')$','u'));
@@ -142,7 +145,7 @@ function recognizeHelpClarification(text,memory){
  m=text.match(new RegExp('^someone said ('+names+') explained (?:them|the rules) but i am not sure$','u'));
  if(m)return {mode:'uncertain',report:{role:'explainedRules',actor:people[m[1]]}};
  m=text.match(new RegExp('^i checked it was ('+names+')$','u'));
- if(m&&memory.pendingReport)return {mode:'report_confirm',role:memory.pendingReport.role,actor:people[m[1]]};
+ if(m)return memory.pendingReport?{mode:'report_confirm',role:memory.pendingReport.role,actor:people[m[1]]}:{mode:'report_unbound'};
  return null;
 }
 function helpClarificationResponse(data,memory){

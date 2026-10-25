@@ -1,4 +1,4 @@
-const {continuationResponse,soundResponse}=require('./conversationContinuations');
+const {continuationResponse,soundResponse,titleResponse}=require('./conversationContinuations');
 const {sceneEditResponse}=require('./sceneEditing');
 const {helpActionsResponse}=require('./helpActions');
 const sceneSuggestions=require('../../config/kitsuneSceneSuggestions');
@@ -110,6 +110,13 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   const replies={playing:'Glad you are doing well. What are you playing?',lost:'Another loss, then. How did that match go?',not_angry:'Not angry, understood. A loss does not have to mean you are upset.',disappointed:'A bit disappointed, then. That is different from being angry.',company:'No tips. I can keep you company while we talk about the game.',reciprocal:'For my fox style, clever timing and a little tension fit. I can talk about games, though I cannot play myself.'};
   content=replies[r.data.form];category=r.data.form==='reciprocal'?'game_preferences':'game_chat';extra.core={...memory,topic:'game',...(r.data.noAdvice?{noAdvice:true}:{}),...(r.data.form==='disappointed'?{feeling:'disappointed'}:{})};
  }
+ if(r.kind==='social_boundary'){
+  extra.core={...memory};
+  if(r.data.form==='jealous'){extra.core.jealousTeasing=false;content='Understood. I will leave the jealous teasing aside and keep this calm.';}
+  if(r.data.form==='grateful'){content='You are grateful for the help, understood. I will not read that as flirting.';}
+  if(r.data.form==='report'){content=r.data.hasReport?'Those were someone else’s words, understood. I will not direct the boundary at you.':'You say those are not your words. Which statement are you referring to?';}
+  if(r.data.form==='defend'){content=r.data.person==='davi'?'You are defending Davi, not insulting him. Understood.':'You are defending him, not insulting him. Who do you mean?';}
+ }
  if(r.kind==='help_understanding'){extra.core={...memory,understood:true,helpTopic:'server_rules'};content=(r.data.pronoun==='he'?'He':r.data.pronoun==='she'?'She':'They')+' helped you understand the server rules, then. What made them clearer?';}
  if(r.kind==='light_exclusions'){extra.core={...memory,excludedTopics:['work','school']};content='Understood. We will keep the question away from work and school.';}
  if(r.kind==='tired_correction')content='Just tired, understood. We can keep this quiet.';
@@ -135,6 +142,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  }
  if(r.kind.startsWith('light_')){
   const question=lightQuestions[memory.questionIndex];extra.core={...memory};
+  if(r.kind==='light_title'){const result=titleResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_sound'){const result=soundResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_change'){const result=sceneEditResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_answer'){extra.core.selected=r.data.selected;content=question.answers.find(row=>row.key===r.data.selected).reply;}
@@ -255,6 +263,8 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  if(['reported_bot','report_davi'].includes(r.kind))extra.core={topic:'speech_report',reported:true,...(r.kind==='report_davi'?{person:'davi'}:{})};
  const topic=r.kind==='game_help'?'game':r.kind==='argument'?'argument':null;
  if(!extra.core && (topic||r.kind.startsWith('davi_')||['jealous','protect','report_davi','defend_davi'].includes(r.kind)))extra.core={...(topic?{topic}:{}),...((r.kind.startsWith('davi_')||['jealous','protect','report_davi','defend_davi'].includes(r.kind))?{person:'davi'}:{})};
+ if(memory.jealousTeasing===false&&r.kind==='jealous')content='You appreciate Davi, understood. I will keep the focus on that.';
+ if(memory.jealousTeasing===false&&r.kind==='jealous_question')content='I am keeping the jealous teasing aside, as you asked.';
  if(old.mode?.remaining>0 && old.mode.name!=='normal'){
   if(r.kind==='joke_short' && old.mode.name==='serious')content='I will skip jokes while the straightforward tone is active. Say normal mode to restore the playful tone.';
   if(r.kind==='mommy'&&!owner)content='Please do not use that nickname. Address me normally.';

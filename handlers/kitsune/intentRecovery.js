@@ -39,6 +39,10 @@ function recoverIntent(frame,session,lookup){
  if(memory.topic==='game'&&/^(?:what about you|how about you|and you)$/u.test(t))return out('game_update',{form:'reciprocal'},true);
  if(helpContext&&/^(?:he|she|they) helped me understand the rules$/u.test(t)){const person=memory.lastActor?.person??memory.person;const pronoun=t.split(' ')[0];if(!(pronoun==='she'&&['ash','davi'].includes(person))&&!(pronoun==='he'&&person==='mae'))return out('help_understanding',{pronoun},true);}
  if(memory.nonPersonal&&/^nothing about work or school$/u.test(t))return out('light_exclusions',{},true);
+ if(/^do not get jealous$/u.test(t))return out('social_boundary',{form:'jealous',person:memory.person??null},true);
+ if(/^i am just grateful$/u.test(t)&&(helpContext||memory.person))return out('social_boundary',{form:'grateful',person:memory.person},true);
+ if(/^not my words$/u.test(t))return out('social_boundary',{form:'report',hasReport:Boolean(memory.reported||/^(?:core_report|reported_)/u.test(session?.category??''))},true);
+ if(/^i am defending him not insulting him$/u.test(t))return out('social_boundary',{form:'defend',person:memory.person??null},true);
  const actions=recognizeHelpActions(personText,memory);
  if(actions)return out('help_actions',actions,true);
  if(/^davi helped me out$/u.test(personText))return out('davi_helped');
