@@ -1,13 +1,7 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-    connectionString:
-        process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI,
-
-    ssl: process.env.NODE_ENV === 'production'
-        ? { rejectUnauthorized: false }
-        : false
-});
+const {connectionOptions}=require('./connectionOptions');
+const pool = new Pool(connectionOptions());
 
 function query(text, params) {
     return pool.query(text, params);
