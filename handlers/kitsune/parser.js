@@ -32,7 +32,7 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     const frame=englishOnly?prepareInput(raw):null;
     const details=englishOnly?recognizeDetails(raw,frame):{};
     const contextual=englishOnly?contextualCategory(raw,session,frame):null;
-    const flow=englishOnly?analyzeFollowThrough(frame,session):null;
+    let flow=englishOnly?analyzeFollowThrough(frame,session):null;
     let category = flow?.category??contextual??details.category??null;
     let recovery=englishOnly&&!flow?recoverIntent(frame,session,value=>recognizeDetails(value).category):null;
     if(recovery && (!category || ['fallback','reaction_question','clarify','question_clarification'].includes(category) || recovery.force)){
@@ -47,7 +47,13 @@ function parseRequestInternal(message, now, learnedAliases = null) {
     if(recovery && (!recognition || recognition.status==='unmatched'))recognition={source:'recovery',rule:'recovery.'+recovery.kind};
     if(!category && englishOnly && learnedAliases) {
         const learned=learnedAliases.get(learningPhrase(raw));
-        if(Object.values(learningConfig.intents).includes(learned)){category=learned;recognition={source:'learned',rule:'approved_alias'};}
+        if(Object.values(learningConfig.intents).includes(learned)){
+            category=learned;recognition={source:'learned',rule:'approved_alias'};
+            if(learned==='learned_continue'){
+                flow=analyzeFollowThrough(prepareInput('continue'),session);
+                if(flow)category=flow.category;
+            }
+        }
     }
     if (!category && englishOnly && session?.pending?.kind==='offered_tip' && /^[a-z][a-z0-9 '\-]{2,250}$/iu.test(raw.trim())) category='tip_received';
     const choice = englishOnly && !flow && recovery?.kind!=='choice_other' ? ((session?.pickOptions?.length >= 2 ? correctedChoice(raw,frame) : null) ?? extractChoice(raw,frame)) : null;

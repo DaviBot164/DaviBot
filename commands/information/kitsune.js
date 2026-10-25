@@ -6,7 +6,7 @@ const {recognize,extractChoice}=require('../../handlers/kitsune/language');
 const {contextualCategory}=require('../../handlers/kitsune/context');
 const runtime=require('../../handlers/kitsune/learningRuntime');
 const repo=require('../../database/kitsuneLearning');
-const phraseOption=option=>option.setName('phrase').setDescription('Short English phrase, without the Kitsune prefix.').setRequired(true).setMinLength(2).setMaxLength(config.maxPhraseLength);
+const phraseOption=option=>option.setName('phrase').setDescription('Short English phrase, without the Kitsune prefix.').setRequired(true).setMinLength(2).setMaxLength(config.maxPhraseLength).setAutocomplete(true);
 const pageOption=option=>option.setName('page').setDescription('Page number, 10 phrases per page.').setMinValue(1).setMaxValue(50);
 const data=new SlashCommandBuilder().setName('kitsune').setDescription('Test dialogue and manage Kitsune phrase learning. Owner only.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator).setDMPermission(false)
@@ -22,7 +22,7 @@ const data=new SlashCommandBuilder().setName('kitsune').setDescription('Test dia
     .addSubcommand(sub=>sub.setName('learned').setDescription('Review the phrases you have taught.').addIntegerOption(pageOption))
     .addSubcommand(sub=>sub.setName('teach').setDescription('Connect an unfamiliar phrase to an existing meaning.').addStringOption(phraseOption)
         .addStringOption(option=>option.setName('meaning').setDescription('The meaning this phrase expresses.').setRequired(true)
-            .addChoices(...Object.keys(config.intents).map(name=>({name:name.replace(/_/g,' '),value:name})))))
+            .addChoices(...Object.keys(config.intents).map(name=>({name:({continue:'continue — carry on the current topic',stop:'stop — end the conversation',restart:'restart — start a fresh conversation',change_topic:'change topic — leave the current subject'})[name]??name.replace(/_/g,' '),value:name})))))
     .addSubcommand(sub=>sub.setName('forget').setDescription('Remove a learned connection. Built-in rules stay intact.').addStringOption(phraseOption))
     .addSubcommand(sub=>sub.setName('dismiss').setDescription('Remove an unknown phrase from the review list.').addStringOption(phraseOption));
 async function execute(interaction) {
@@ -69,7 +69,7 @@ async function execute(interaction) {
             if(recognize(raw)||contextualCategory(raw,null)||extractChoice(raw))return reply('That phrase already has a built-in meaning. Teaching cannot replace built-in rules.');
             await repo.teachPhrase(interaction.guildId,phrase,intent,interaction.user.id);
             runtime.invalidateAliases(interaction.guildId);
-            return reply(`🦊 Learned: ${escapeMarkdown(phrase)} → ${intent.replace(/_/g,' ')}.\nThis server only. Existing personality, cooldowns and permissions still apply.`);
+            return reply(`🦊 Learned: ${escapeMarkdown(phrase)} → ${intent.replace(/_/g,' ')}.\nThis server only. Use /kitsune teach again to change this meaning. Built-in rules keep priority. Personality, cooldowns and permissions still apply.`);
         }
         if(sub==='forget') {
             const removed=await repo.forgetPhrase(interaction.guildId,phrase);runtime.invalidateAliases(interaction.guildId);
@@ -83,4 +83,20 @@ async function execute(interaction) {
         return reply('Learning is temporarily unavailable. Your normal Kitsune conversation can continue.');
     }
 }
-module.exports={data,execute};
+async function autocomplete(interaction){
+    if(interaction.user.id!==OWNER_ID||!interaction.guildId||!runtime.enabled())return interaction.respond([]);
+    const focused=interaction.options.getFocused(true);
+    if(focused.name!=='phrase')return interaction.respond([]);
+    const value=String(focused.value??'').trim();
+    const prefix=value?learningPhrase(value):'';
+    if(value&&!prefix)return interaction.respond([]);
+    let timer;
+    try{
+        const sub=interaction.options.getSubcommand();
+        const source=sub==='forget'?'learned':sub==='dismiss'?'unknown':'both';
+        const rows=await Promise.race([repo.suggestPhrases(interaction.guildId,prefix,source),new Promise(resolve=>{timer=setTimeout(()=>resolve([]),1800);timer.unref?.();})]);
+        return interaction.respond(rows.filter(row=>row.phrase.length<=100).slice(0,25).map(row=>({name:row.phrase,value:row.phrase})));
+    }catch{return interaction.respond([]);}
+    finally{clearTimeout(timer);}
+}
+module.exports={data,execute,autocomplete};

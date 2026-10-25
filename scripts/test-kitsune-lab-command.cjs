@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),path=require('node:path'),Module=require('node:module');
 const root=process.argv[2]||path.resolve(__dirname,'..'),original=Module._load;
 let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
-class Builder{constructor(){this.json={options:[]};}setName(v){this.json.name=v;return this;}setDescription(){return this;}setDefaultMemberPermissions(){return this;}setDMPermission(){return this;}setRequired(){return this;}setMinLength(){return this;}setMaxLength(){return this;}setMinValue(){return this;}setMaxValue(){return this;}addChoices(){return this;}addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}}
+class Builder{constructor(){this.json={options:[]};}setName(v){this.json.name=v;return this;}setDescription(){return this;}setDefaultMemberPermissions(){return this;}setDMPermission(){return this;}setRequired(){return this;}setMinLength(){return this;}setMaxLength(){return this;}setAutocomplete(){return this;}setMinValue(){return this;}setMaxValue(){return this;}addChoices(){return this;}addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}}
 const cmdPath=path.join(root,'commands/information/kitsune.js');let database=0,runs=0,resets=0,long=false;
 Module._load=function(request,parent){if(parent?.filename===cmdPath){
  if(request==='../../handlers/kitsune/aiTestLab')return{resetAiLab:()=>0};

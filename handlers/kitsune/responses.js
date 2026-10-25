@@ -190,6 +190,15 @@ function buildBaseResponse(message, request) {
         return { payload: { content }, category: context, question, session };
     }
 
+    if (category === 'learned_continue') {
+        const prior=request.conversation;
+        if(!prior)return response('What would you like to continue? Tell me the topic.', 'general');
+        const topic=prior.topicCategory??prior.category;
+        const content=/^game/u.test(topic)?'We can keep talking about the game. What would you like to add?'
+            : /^music/u.test(topic)?'We can keep talking about music. What would you like to add?'
+            : 'We can continue. What would you like to add?';
+        return {...response(content,topic??'general'),pending:prior.pending??null};
+    }
     if (category === 'help') {
         return { payload: { embeds: [buildHelp(message)] }, session: false };
     }

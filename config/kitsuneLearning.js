@@ -4,7 +4,8 @@ const intents = Object.freeze({
     help:'help_offer', study:'study_start', joke:'joke', compliment:'reaction_affection',
     praise_me:'nice', tease_me:'roast', secret:'secret', advice:'tip',
     explain:'explain', shorten:'simplify', apology:'reaction_apology',
-    insult:'reaction_insult', dismiss:'reaction_dismissive'
+    insult:'reaction_insult', dismiss:'reaction_dismissive',
+    continue:'learned_continue', stop:'stop', restart:'restart_chat', change_topic:'topic_change'
 });
 module.exports = Object.freeze({
     enabled:true, intents, maxPhraseLength:160, maxAliasesPerGuild:300,

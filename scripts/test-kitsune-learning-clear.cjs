@@ -31,7 +31,7 @@ async function main(){
   constructor(){this.json={options:[]};}
   setName(v){this.json.name=v;return this;}setDescription(v){this.json.description=v;return this;}
   setDefaultMemberPermissions(v){this.json.default_member_permissions=String(v);return this;}setDMPermission(v){this.json.dm_permission=v;return this;}
-  setRequired(v){this.json.required=v;return this;}setMinLength(){return this;}setMaxLength(){return this;}setMinValue(){return this;}setMaxValue(){return this;}
+  setRequired(v){this.json.required=v;return this;}setMinLength(){return this;}setMaxLength(){return this;}setAutocomplete(){return this;}setMinValue(){return this;}setMaxValue(){return this;}
   addChoices(...v){this.json.choices=v;return this;}addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}
   addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}
  }

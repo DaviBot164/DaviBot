@@ -87,4 +87,16 @@ async function clearUnknownPhrases(guildId) {
     });
 }
 
-module.exports={clearUnknownPhrases,getLearnedPhrases,teachPhrase,forgetPhrase,recordUnknownPhrase,listUnknownPhrases,listLearnedPhrases,dismissUnknownPhrase};
+async function suggestPhrases(guildId,prefix='',source='both') {
+    if(!['both','learned','unknown'].includes(source))throw Error('Unsupported phrase source.');
+    return withClient(async client=>(await run(client,`
+        SELECT phrase FROM (
+            SELECT phrase FROM kitsune_learned_phrases WHERE guild_id=$1 AND $3<>'unknown'
+            UNION
+            SELECT phrase FROM kitsune_unknown_phrases WHERE guild_id=$1 AND expires_at>NOW() AND $3<>'learned'
+        ) AS candidates
+        WHERE length(phrase)<=100 AND left(phrase,length($2))=$2
+        ORDER BY phrase LIMIT 25`,[guildId,prefix,source])).rows);
+}
+
+module.exports={suggestPhrases,clearUnknownPhrases,getLearnedPhrases,teachPhrase,forgetPhrase,recordUnknownPhrase,listUnknownPhrases,listLearnedPhrases,dismissUnknownPhrase};
