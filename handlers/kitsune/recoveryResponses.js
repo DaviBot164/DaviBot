@@ -1,3 +1,4 @@
+const {sceneEditResponse}=require('./sceneEditing');
 const {helpActionsResponse}=require('./helpActions');
 const sceneSuggestions=require('../../config/kitsuneSceneSuggestions');
 const lightQuestions=require('../../config/kitsuneLightQuestions');
@@ -126,6 +127,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  }
  if(r.kind.startsWith('light_')){
   const question=lightQuestions[memory.questionIndex];extra.core={...memory};
+  if(r.kind==='light_change'){const result=sceneEditResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_answer'){extra.core.selected=r.data.selected;content=question.answers.find(row=>row.key===r.data.selected).reply;}
   if(r.kind==='light_reason')content='You asked for a light, nonpersonal question, so I chose a fictional scene rather than personal details.';
   if(r.kind==='light_reciprocal')content=question.own;
@@ -137,7 +139,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
    const pool=sceneSuggestions[selected]??sceneSuggestions.scene;
    const suggestion=pool.find(row=>row.key===memory.suggestion);
    if(suggestion&&!(memory.rejectedSuggestions??[]).includes(suggestion.key)){
-    extra.core.acceptedSuggestions=[...new Set([...(memory.acceptedSuggestions??[]),suggestion.key])];
+    extra.core.lastSceneDetail=suggestion.key;extra.core.acceptedSuggestions=[...new Set([...(memory.acceptedSuggestions??[]),suggestion.key])];
     content='Added '+suggestion.label+' to the scene.';
    }else content='There is no pending suggestion to add. Which detail do you mean?';
   }

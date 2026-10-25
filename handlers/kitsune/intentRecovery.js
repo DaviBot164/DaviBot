@@ -1,3 +1,4 @@
+const {recognizeSceneEdit}=require('./sceneEditing');
 // Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
 const {recognizeHelpActions}=require('./helpActions');
 const lightQuestions=require('../../config/kitsuneLightQuestions');
@@ -23,7 +24,7 @@ function recoverIntent(frame,session,lookup){
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
  const helpContext=memory.topic==='help'&&Boolean(memory.person);
  const actions=recognizeHelpActions(personText,memory);
- if(actions)return out('help_actions',actions);
+ if(actions)return out('help_actions',actions,true);
  if(/^davi helped me out$/u.test(personText))return out('davi_helped');
  const helperNames={davi:'Davi',ash:'Ash',mae:'Mae',friend:'your friend'};
  const helperStart=personText.match(/^(ash|mae|(?:a|my) friend|someone) helped me(?: out)?$/u);
@@ -44,6 +45,8 @@ function recoverIntent(frame,session,lookup){
  if(/^byee$/u.test(t))return out('alias',{},false,'stop');
  if(/^(?:no choices this time (?:but )?just an easy question|ask something without giving me options|ask (?:me )?(?:something|a question) without (?:giving me )?options)$/u.test(action))return out('nonpersonal_question',{open:true},true);
  if(light){
+  const sceneEdit=recognizeSceneEdit(t,memory);
+  if(sceneEdit)return out('light_change',sceneEdit,true);
   const answer=light.answers.find(row=>row.forms.includes(t));
   if(answer)return out('light_answer',{selected:answer.key},true);
   if(/^(?:why that question|why did you ask that)$/u.test(t))return out('light_reason',{},true);

@@ -3,6 +3,8 @@ const people=Object.freeze({davi:{person:'davi',name:'Davi'},ash:{person:'ash',n
 const names='(?:davi|ash|mae|my friend|a friend)';
 function recognizeHelpActions(text,memory){
  if(memory?.topic!=='help')return null;
+ const answer=recognizeActionAnswer(text,memory);
+ if(answer)return answer;
  const plain=new RegExp('^('+names+') (?:explained (?:them|the rules)|(?:just )?sent (?:me )?the link)$','u').test(text);
  const revision=plain?null:recognizeRevision(text,memory);
  if(revision)return revision;
@@ -20,10 +22,12 @@ function helpActionsResponse(data,memory){
  if(data.mode!=='record'&&data.mode!=='recall')return revisionResponse(data,memory);
  const core={...memory,actions:{...(memory.actions??{}),...(data.facts??{})}};
  if(data.mode==='recall'){
+  core.recalledRole=data.role;
   const group=core.actionGroups?.[data.role];
   const actor=group?.length?{name:group.map(row=>row.name).join(' and ')}:core.actions[data.role];
   return {core,content:actor?actor.name+(data.role==='explainedRules'?' explained the rules.':' sent you the link.'):'You have not said who '+(data.role==='explainedRules'?'explained the rules.':'sent the link.')};
  }
+ core.pendingQuestion=null;core.answeredQuestion=null;
  core.actionGroups={...(memory.actionGroups??{})};
  for(const [role,actor]of Object.entries(data.facts)){core.actionGroups[role]=[actor];core.lastAction={role,actor};}
  const lines=[];
@@ -66,17 +70,58 @@ function recognizeRevision(text,memory){
 function revisionResponse(data,memory){
  const core={...memory,actions:{...(memory.actions??{})},actionGroups:{...(memory.actionGroups??{})}};
  const label=data.role==='explainedRules'?'explained the rules':'sent you the link';
+ if(data.mode.startsWith('answer_'))return actionAnswerResponse(data,memory);
  if(data.mode==='uncertain')return {core,content:'That is an unconfirmed report. I will keep it separate from what you have already told me.'};
  if(data.mode==='conditional')return {core,content:'That is a possible future action, not something that has happened. I will keep the existing facts.'};
  if(data.mode==='clarify_actor'){core.pendingAction={role:data.role};return {core,content:'Who do you mean? Please name the person for that action.'};}
  const existing=group(memory,data.role);
- if(data.mode==='query')return {core,content:existing.some(row=>row.person===data.actor.person)?data.actor.name+' '+label+'.':'You have not said whether '+data.actor.name+' '+label+'.'};
+ if(data.mode==='query'){core.pendingQuestion={role:data.role,actor:data.actor,additive:true};core.answeredQuestion=null;return {core,content:existing.some(row=>row.person===data.actor.person)?data.actor.name+' '+label+'.':'You have not said whether '+data.actor.name+' '+label+'.'};}
  const actors=data.mode==='remove'?existing.filter(row=>row.person!==data.actor.person):data.mode==='add'?[...existing.filter(row=>row.person!==data.actor.person),data.actor]:[data.actor];
  core.actionGroups[data.role]=actors;
  core.actions[data.role]=actors[0]??null;
- core.lastAction={role:data.role,actor:data.actor};core.pendingAction=null;
+ core.lastAction={role:data.role,actor:data.actor};core.pendingAction=null;core.pendingQuestion=null;core.answeredQuestion=null;
  if(data.mode!=='remove')core.lastActor=data.actor;
  if(data.role==='explainedRules'&&actors.length){core.helpStage='explained';core.helpTopic='server_rules';}
  return {core,content:data.mode==='remove'?data.actor.name+' is no longer recorded as the person who '+label+'.':actors.map(row=>row.name).join(' and ')+' '+label+'.'};
+}
+
+function recognizeActionAnswer(text,memory){
+ const pending=memory.pendingQuestion;
+ if(pending){
+  if(/^(?:not sure|i do not know(?: yet)?)$/u.test(text))return {mode:'answer_unsure'};
+  if(/^yes but i mean the rules not the link$/u.test(text))return {mode:'answer_scope'};
+  let m=text.match(/^(yes|no)(?: (he|she|they) (?:did|did not))?$/u);
+  if(m){const yes=m[1]==='yes';
+   if(m[2]&&(m[2]==='she'&&pending.actor.person!=='mae'||m[2]==='he'&&!['ash','davi'].includes(pending.actor.person)))return {mode:'answer_mismatch',yes};
+   if(yes&&/did not$/u.test(text)||!yes&&/ did$/u.test(text))return {mode:'answer_mismatch',yes};
+   return {mode:'answer_commit',yes};
+  }
+  if(/^not yet (?:he|she|they) will later$/u.test(text))return {mode:'answer_commit',yes:false,future:true};
+  m=text.match(new RegExp('^i mean ('+names+')$','u'));
+  if(m)return {mode:'answer_actor',actor:people[m[1]]};
+ }
+ if(/^no i was mistaken$/u.test(text)&&memory.answeredQuestion)return {mode:'answer_retract'};
+ const only=text.match(new RegExp('^no only ('+names+')$','u'));
+ if(only&&memory.recalledRole)return {mode:'replace',role:memory.recalledRole,actor:people[only[1]]};
+ return null;
+}
+function actionAnswerResponse(data,memory){
+ const core={...memory};
+ const pending=memory.pendingQuestion;
+ if(data.mode==='answer_unsure')return {core,content:'That is still uncertain. I will keep the current facts and leave that question open.'};
+ if(data.mode==='answer_scope')return {core,content:'Do you mean Mae explained the rules, rather than sent the link? I will not change either fact until that is clear.'};
+ if(data.mode==='answer_mismatch'){core.pendingQuestion={...pending,clarifyYes:data.yes};return {core,content:'Do you mean '+pending.actor.name+', or someone else? Please name the person.'};}
+ if(data.mode==='answer_actor'){
+  core.pendingQuestion={...pending,actor:data.actor};
+  if(typeof pending.clarifyYes==='boolean')return actionAnswerResponse({mode:'answer_commit',yes:pending.clarifyYes},core);
+  return {core,content:'You mean '+data.actor.name+'. Are you confirming that action? I have not changed the existing facts.'};
+ }
+ const question=data.mode==='answer_retract'?memory.answeredQuestion:pending;
+ if(!question)return {core,content:'Which action are you confirming?'};
+ const yes=data.mode==='answer_retract'?false:data.yes;
+ const result=revisionResponse({mode:yes?'add':'remove',role:question.role,actor:question.actor},memory);
+ result.core.pendingQuestion=null;result.core.answeredQuestion={role:question.role,actor:question.actor,yes};
+ if(data.future)result.content+=' A future plan is not a completed action.';
+ return result;
 }
 module.exports={recognizeHelpActions,helpActionsResponse};
