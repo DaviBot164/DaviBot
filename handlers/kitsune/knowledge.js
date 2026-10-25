@@ -18,9 +18,11 @@ function lookupKey(text){
 const escape=text=>String(text).replace(/[\\`*_~|<>]/gu,'\\$&');
 function render(row){
  const label=escape(row.name),detail=escape(row.explanation);
- const target=/^\d{16,22}$/u.test(row.target_id??'')?row.kind==='member'?` (<@${row.target_id}>)`:row.kind==='role'?` (<@&${row.target_id}>)`:row.kind==='channel'?` (<#${row.target_id}>)`:'':'';
+ const id=/^\d{16,22}$/u.test(row.target_id??'')?row.target_id:null;
+ const target=id?(row.kind==='member'?`<@${id}>`:row.kind==='role'?`<@&${id}>`:row.kind==='channel'?`<#${id}>`:''):'';
  if(row.kind==='reply')return detail;
- const type=row.kind==='member'?'a server member':row.kind==='role'?'a server role':row.kind==='channel'?'a server channel':row.kind==='fact'?'a saved server fact':row.kind==='command'?'a command':'a saved '+row.kind;
- return `${label} is saved as ${type}${target}.${detail?' '+detail:''}`;
+ if(target)return `${label} — ${target}.${detail?' '+detail:''}`;
+ return detail?`${label}: ${detail}`:`${label}.`;
 }
+
 module.exports={kinds,nameKey,validate,lookupKey,render};

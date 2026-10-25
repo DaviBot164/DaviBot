@@ -7,7 +7,10 @@ eq(model.lookupKey('who is Tomy?'),'tomy');eq(model.lookupKey('what does moonbou
 for(const name of ['davi','daviti','mae','ash','kitsune','https://example.com','<@123456789012345678>']){assert.throws(()=>model.validate({name,kind:'member'}));checks++;}
 for(const explanation of ['TOKEN=secret','gsk_abcdefghijklmnop','<@123456789012345678>','`execute`','https://private.example/key','x'.repeat(501)]){assert.throws(()=>model.validate({name:'moon term',kind:'term',explanation}));checks++;}
 for(const kind of Object.keys(model.kinds)){const v=model.validate({name:'moon term',kind,explanation:'A human explanation.'});eq(v.kind,kind);assert.ok(model.render({name:'moon term',kind,explanation:v.explanation}).length);checks++;}
-assert.match(model.render({name:'tomy',kind:'member',explanation:'A friend.',target_id:'123456789012345678'}),/<@123456789012345678>/);checks++;
+eq(model.render({name:'tomy',kind:'member',explanation:'',target_id:'123456789012345678'}),'tomy — <@123456789012345678>.');
+eq(model.render({name:'tomy',kind:'member',explanation:'A friend.',target_id:'123456789012345678'}),'tomy — <@123456789012345678>. A friend.');
+eq(model.render({name:'moon term',kind:'term',explanation:'A term.'}),'moon term: A term.');
+eq(model.render({name:'training',kind:'channel',target_id:'123456789012345678',explanation:''}),'training — <#123456789012345678>.');
 // Real repository functions, an isolated transactional protocol stub; no pg or credentials.
 const repoPath=path.join(root,'database/kitsuneKnowledge.js'),oldLoad=Module._load;
 const records=new Map(),unknown=new Set(['g|tomy']),queries=[];let snapshot,releases=0,fail=false;
@@ -53,7 +56,7 @@ async function main(){
   for(const kind of ['role','channel']){await command.execute(interaction('remember',kind,'moon '+kind),respond);eq(savedInput,null);assert.match(reply,/from this server/);checks++;}
   await command.execute(interaction('remember','term','moon term'),respond);eq(savedInput.kind,'term');
   await command.execute(interaction('knowledge'),respond);eq(listedGuild,'g');assert.ok(reply.length<1900);checks++;
-  await command.execute(interaction('unremember'),respond);assert.match(reply,/removed/);checks++;
+  await command.execute(interaction('unremember'),respond);assert.match(reply,/removed/i);checks++;
  }finally{Module._load=oldLoad;}
  console.log(checks+' server knowledge validation, rendering, transaction rollback/capacity, scope, update/delete and cache checks passed. No database, Discord or AI calls.');
 }

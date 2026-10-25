@@ -32,7 +32,7 @@ async function main(){
  }return original.apply(this,arguments);};
  let handler;try{handler=require(mainPath).handleKitsuneReply;}finally{Module._load=original;}
  const sent=[],incoming=(text,id,g='g')=>({guildId:g,guild:{id:g,members:{me:{id:'bot'}}},channelId:id,author:{id:'sender-'+id,bot:false},content:text,client:{user:{id:'bot'}},inGuild:()=>true,channel:{isThread:()=>false,permissionsFor:()=>({has:()=>true})},reply:async p=>{sent.push(p);return{id:'response-'+id};}});
- session=null;eq(await handler(incoming('kitsune who is tomy?','one')),true);assert.match(sent.at(-1).content,/tomy.*server member/i);count++;assert.match(sent.at(-1).content,/<@123456789012345678>/);count++;eq(sent.at(-1).allowedMentions,{parse:[],repliedUser:false});eq(collected,0);
+ session=null;eq(await handler(incoming('kitsune who is tomy?','one')),true);assert.match(sent.at(-1).content,/tomy — <@123456789012345678>/i);count++;assert.match(sent.at(-1).content,/<@123456789012345678>/);count++;eq(sent.at(-1).allowedMentions,{parse:[],repliedUser:false});eq(collected,0);
  eq(await handler(incoming('tomy','ambient')),false);eq(reads,1,'no ambient knowledge activation');
  eq(await handler(incoming('kitsune who is tomy?','other','other')),true);assert.ok(!sent.at(-1).content.includes('A friend in this server'));count++;
  const before=reads;eq(await handler(incoming('kitsune hello','builtin')),true);eq(reads,before,'built-in meanings keep priority');

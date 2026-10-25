@@ -28,7 +28,7 @@ async function execute(interaction,reply){
  if(!key)return reply('Use a 2–80 character name or term, without mentions, links or code.');
  if(sub==='unremember'){
   const removed=await repo().removeKnowledge(interaction.guildId,key);runtime.invalidate(interaction.guildId);
-  return reply(removed?'Saved knowledge removed. Learned phrase meanings are unchanged.':'No knowledge entry was found with that name.');
+  return reply(removed?'Removed from server knowledge.':'No saved entry with that name.');
  }
  const input={name:raw,kind:interaction.options.getString('kind',true),explanation:interaction.options.getString('explanation')??''};
  try{validate(input);}catch(e){return reply(e.message);}
@@ -44,6 +44,6 @@ async function execute(interaction,reply){
   const channel=interaction.options.getChannel('channel');if(!channel||channel.guildId!==interaction.guildId)return reply('Select a channel from this server.');input.targetId=channel.id;
  }
  const row=await repo().saveKnowledge(interaction.guildId,input,interaction.user.id);runtime.invalidate(interaction.guildId);
- return reply(`🦊 Saved: ${clean(row.key)} [${row.kind}].\n${clean(row.explanation)||'Server object linked.'}\nUse /kitsune remember with the same name to update it. Ask Kitsune “who is ${clean(row.key)}?” or “what is ${clean(row.key)}?”.`);
+ return reply(`🦊 Saved: ${clean(row.key)}.${row.explanation?'\n'+clean(row.explanation):''}`);
 }
 module.exports={addCommands,execute};
