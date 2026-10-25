@@ -62,7 +62,7 @@ const {applySpeechStyle}=require(path.join(root,'handlers/kitsune/speechStyle'))
 for(const [tone,categories]of Object.entries(boundaries.pools)) {
  const m={guildId:'variants',channelId:'variants',author:{id:tone==='owner'?settings.OWNER_ID:tone==='mae'?settings.dialogue.maeId:'member'}};
  for(const [category,pool]of Object.entries(categories)) {
-  const req={category,conversation:{}};const expected=new Set(pool.map(content=>applySpeechStyle({payload:{content}},tone,req).payload.content));
+  const req={category,conversation:{}};const expected=new Set(pool.map(content=>applySpeechStyle({payload:{content}},tone,req).payload.content.replace(/\bMae\b/gu,tone==='mae'?'Davi':'Mae')));
   const seen=new Set();
   for(let i=0;i<pool.length*2;i++){const out=respond(m,req);assert.ok(expected.has(out.payload.content));count++;seen.add(out.payload.content);}
   eq(seen.size,expected.size);

@@ -101,6 +101,13 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  let content=lines[r.kind],category=request.category,extra={};
  const owner=message.author.id===ownerId;
  const draw=(key)=>{const pool=socialTone[key];const choices=pool.map((line,index)=>({line,index})).filter(row=>memory.socialKey!==key||memory.socialIndex!==row.index);const selected=choices[roll(choices.length)];extra.core={...memory,socialKey:key,socialIndex:selected.index,...(key==='protect'||r.kind==='jealous'?{person:'davi'}:{}),topic:'social'};return selected.line;};
+ if(r.kind==='tired_correction')content='Just tired, understood. We can keep this quiet.';
+ if(r.kind==='progress_feedback')content=owner?'You noticed... I am glad the replies are making more sense.':'Glad it feels like progress. We can keep trying things together.';
+ if(r.kind==='help_started'||r.kind==='help_corrected'){
+  content=r.kind==='help_started'?r.data.helperName+' helped you, then. What did they help with?':'It was '+r.data.helperName+', understood. I have corrected who helped you.';
+  extra.core={...(r.kind==='help_corrected'?memory:{}),person:r.data.helperKey,helperName:r.data.helperName,topic:'help',helpStage:r.kind==='help_started'?'asked':memory.helpStage??'asked'};
+ }
+ if(r.kind==='help_recall'){content=(memory.helperName??(memory.person==='davi'?'Davi':memory.person==='ash'?'Ash':memory.person==='friend'?'your friend':'the person'))+' helped you'+(memory.helpTopic==='server_rules'?' with the server rules':'')+'.';extra.core={...memory};}
  if(r.kind==='answer_missed'){content='The answer missed your point, understood. What should it have addressed?';extra.core={topic:'answer_repair',answerKind:memory.answerKind??'unknown'};extra.templateRef=old.templateRef??null;}
  if(r.kind==='intent_clarify'){content='You did not mean it as an insult, understood. We can focus on the answer.';extra.core=memory;extra.templateRef=old.templateRef??null;}
  if(r.kind==='retry_calm'){
@@ -118,17 +125,26 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   if(r.kind==='light_answer'){extra.core.selected=r.data.selected;content=question.answers.find(row=>row.key===r.data.selected).reply;}
   if(r.kind==='light_reason')content='You asked for a light, nonpersonal question, so I chose a fictional scene rather than personal details.';
   if(r.kind==='light_reciprocal')content=question.own;
+  const selected=memory.selected??(memory.questionIndex===1?'night':'scene');
+  const labels={moonlight:'moonlight',silence:'silence',waves:'waves',breeze:'a cool breeze',stars:'a few stars'};
+  if(r.kind==='light_details'){extra.core.sceneDetails=[...new Set([...(memory.sceneDetails??[]),...r.data.details])].slice(-6);content=r.data.details.map(value=>labels[value]).join(' and ')+' added to the '+selected+' scene.';}
+  if(r.kind==='light_limit'){extra.core.noCrowds=true;content='Not too crowded, understood. I will keep the scene quiet, with few people.';}
+  if(r.kind==='light_suggest'){
+   const suggestion=memory.suggestion??(selected==='seaside'?'lighthouse':selected==='forest'?'path':'window');extra.core.suggestion=suggestion;
+   const detail={lighthouse:'a distant lighthouse',path:'a narrow, softly lit path',window:'one softly lit window'}[suggestion];
+   content=r.data.short?detail+'.':'I would add '+detail+', keeping the scene calm'+(memory.noCrowds?' and uncrowded':'')+'.';
+  }
   if(r.kind==='light_waves'){extra.core.selected='seaside';extra.core.reason='waves';content='The sound of waves is what you enjoy about the seaside scene. A gentle rhythm can give it a calm atmosphere.';}
  }
  if(['help_detail','help_past_confusion','help_explained','help_understood','help_grateful'].includes(r.kind)){
   const helpTopic=r.data.helpTopic??memory.helpTopic??null;
-  extra.core={...memory,person:'davi',topic:'help',helpTopic};
+  extra.core={...memory,person:memory.person??'davi',topic:'help',helpTopic};
   const subject=helpTopic==='server_rules'?'the server rules':'that part';
   if(r.kind==='help_detail'){extra.core.helpStage='explained';content='The server rules, then. Having them explained helped you follow them.';}
   if(r.kind==='help_past_confusion'){extra.core.helpStage='initial_confusion';content='They were unclear at first, understood. A simpler explanation can make them easier to follow.';}
-  if(r.kind==='help_explained'){extra.core.helpStage='explained';content='He explained '+subject+' simply. That can make a confusing part easier to understand.';}
+  if(r.kind==='help_explained'){extra.core.helpStage='explained';content=(r.data.pronoun==='they'?'They':r.data.pronoun==='she'?'She':'He')+' explained '+subject+' simply. That can make a confusing part easier to understand.';}
   if(r.kind==='help_understood'){extra.core.helpStage='understood';content='You understand '+subject+' now, then. Glad the explanation helped.';}
-  if(r.kind==='help_grateful'){extra.core.helpStage='grateful';content='You appreciate Davi making '+subject+' clearer. That makes sense.';}
+  if(r.kind==='help_grateful'){extra.core.helpStage='grateful';content='You appreciate '+(memory.helperName??(memory.person==='davi'?'Davi':memory.person==='friend'?'your friend':'the person'))+' making '+subject+' clearer. That makes sense.';}
  }
  if(r.kind==='help_jealous'){content='Davi helped you, understood. I will keep the teasing light; appreciating his help is not flirting.';extra.core={topic:'social',person:'davi'};}
  if(r.kind==='report_person'){content='You are reporting an insult and saying you asked them to stop. Who was the insult about?';extra.core={topic:'speech_report',reported:true};}
@@ -159,8 +175,8 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  if(r.kind==='pve')content='PvE: facing the game’s enemies and challenges. Do you enjoy combat, exploration, or the story?';
  if(r.kind==='insult' && message.author.id===ownerId)content='Tell me what went wrong. I will leave the sharp reply aside.';
  if(r.kind==='protect' && message.author.id===ownerId)content='That includes how you speak about yourself. Tell me what went wrong without putting yourself down.';
- if(r.kind==='davi_helped'){extra.core={person:'davi',topic:'help',helpStage:'asked',helpTopic:memory.topic==='help'?memory.helpTopic??null:null};}
- if(r.kind==='social_grateful'&&memory.person==='davi'&&memory.topic==='help'){content=r.data.form==='not_flirting'?'You are not flirting, understood. You appreciated his help.':'You are grateful for his help, understood. I will keep the focus on that.';extra.core={...memory};}
+ if(r.kind==='davi_helped'){extra.core={person:'davi',helperName:'Davi',topic:'help',helpStage:'asked',helpTopic:memory.topic==='help'?memory.helpTopic??null:null};}
+ if(r.kind==='social_grateful'&&memory.person&&memory.topic==='help'){content=r.data.form==='not_flirting'?'You are not flirting, understood. You appreciated their help.':'You are grateful for their help, understood. I will keep the focus on that.';extra.core={...memory};}
  if(r.kind==='davi_followup'&&r.data.form==='funny')content='Funny, that is all, understood. A friendly compliment does not need an argument.';
  if(r.kind==='insult'&&!owner)content=draw('insult');
  if(r.kind==='protect'&&!owner)content=draw('protect');

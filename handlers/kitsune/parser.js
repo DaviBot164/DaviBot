@@ -117,6 +117,6 @@ function parseRequest(message,now,learnedAliases=null){
  if(!request)return null;
  const {recognition,...rest}=request;
  const source=request.category==='pick'?{source:'choice',rule:'choice_request'}:request.targetId?{source:'mention',rule:'mentioned_member'}:recognition??{source:'parser',rule:'parser_fallback'};
- return {...rest,understanding:understandingResult(request.category,{...source,declineAdvice:request.declineAdvice,recovery:request.recovery})};
+ return {...rest,understanding:understandingResult(request.category,{...source,declineAdvice:request.declineAdvice,recovery:request.recovery,person:request.conversation?.core?.person})};
 }
 module.exports = { parseRequest };

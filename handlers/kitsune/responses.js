@@ -404,6 +404,10 @@ function buildUnstyledResponse(message, request) {
     return attachExpectation(final,request);
 }
 function buildResponse(message,request) {
-    return applyEmojiStyle(applySpeechStyle(buildUnstyledResponse(message,request),toneFor(message.author.id),request),toneFor(message.author.id),request);
+    const tone=toneFor(message.author.id);
+    const response=applyEmojiStyle(applySpeechStyle(buildUnstyledResponse(message,request),tone,request),tone,request);
+    // A recipient nickname changes wording, never the account's tone or permissions.
+    if(tone==='mae'&&friends[message.author.id]?.name&&response.payload?.content)response.payload={...response.payload,content:response.payload.content.replace(/\bMae\b/gu,friends[message.author.id].name)};
+    return response;
 }
 module.exports = { buildResponse, toneFor };

@@ -24,7 +24,8 @@ function namedAddress(value) {
         // use; middle/end use needs a salutation or explicit textual @address.
         const title=before.match(salutation);
         const at=before.endsWith('@') && (start===1 || /\s/u.test(raw[start-2]));
-        if(match[2].toLowerCase()==='kit' && before.trim() && !title && !at)continue;
+        const nicknameCall=/^(?:nice|good) mommy\s*[,;:]\s*$/iu.test(before)&&/^[.!?…]*$/u.test(raw.slice(end));
+        if(match[2].toLowerCase()==='kit' && before.trim() && !title && !at && !nicknameCall)continue;
         if(title){
             greeting ||= /\b(?:hey|hi|hello|yo)\b/iu.test(title[1]);
             start-=title[1].length;

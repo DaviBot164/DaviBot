@@ -66,7 +66,7 @@ const {applySpeechStyle}=require(path.join(root,'handlers/kitsune/speechStyle'))
 for(const [tone,categories]of Object.entries(pragmaticPools)) {
  const m={guildId:'pool-variants',channelId:'pool-variants',author:{id:tone==='owner'?settings.OWNER_ID:tone==='mae'?settings.dialogue.maeId:'member'}};
  const req={category:'reported_distance',conversation:{}};
- const expected=new Set(categories.reported_distance.map(content=>applySpeechStyle({payload:{content}},tone,req).payload.content));
+ const expected=new Set(categories.reported_distance.map(content=>applySpeechStyle({payload:{content}},tone,req).payload.content.replace(/\bMae\b/gu,tone==='mae'?'Davi':'Mae')));
  const seen=new Set();
  for(let i=0;i<expected.size*2;i++){const out=respond(m,req);assert.ok(expected.has(out.payload.content));count++;seen.add(out.payload.content);}
  eq(seen.size,expected.size);

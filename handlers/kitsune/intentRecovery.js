@@ -20,18 +20,41 @@ function recoverIntent(frame,session,lookup){
  const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous$|davi_))/u.test(session?.category??'');
  const memory=session?.core??{};
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
- const helpContext=memory.person==='davi'&&memory.topic==='help';
+ const helpContext=memory.topic==='help'&&Boolean(memory.person);
+ const helperNames={davi:'Davi',ash:'Ash',mae:'Mae',friend:'your friend'};
+ const helperStart=personText.match(/^(ash|mae|(?:a|my) friend|someone) helped me$/u);
+ if(helperStart){const helperKey=/friend/u.test(helperStart[1])?'friend':helperStart[1]==='someone'?'helper':helperStart[1];return out('help_started',{helperKey,helperName:helperNames[helperKey]??'the person'});}
+ const namedStart=frame.raw.trim().match(/^([A-Z][a-z]{1,23}) helped me[.!?]*$/u);
+ if(namedStart&&!/^(?:He|She|They|You|Nobody|Someone|Work|School|It)$/u.test(namedStart[1])&&!/^(?:Davi|Daviti|Ash|Mae)$/u.test(namedStart[1]))return out('help_started',{helperKey:'helper',helperName:namedStart[1]});
+ if(helpContext){
+  const correction=personText.match(/^it was (ash|davi|mae|(?:a|my) friend) not (?:ash|davi|mae|(?:a|my) friend)$/u);
+  if(correction){const helperKey=/friend/u.test(correction[1])?'friend':correction[1];return out('help_corrected',{helperKey,helperName:helperNames[helperKey]});}
+  if(/^who helped me$/u.test(t))return out('help_recall',{helperKey:memory.person});
+ }
+ if(/^how (?:have )?you been$/u.test(t))return out('alias',{},false,'mood');
+ if(/^i am well$/u.test(t))return out('alias',{},false,'feeling_good');
+ if(/^no i am just tired$/u.test(t))return out('tired_correction',{},true,'tired');
+ if(/^(?:you have progress|you have improved)$/u.test(t))return out('progress_feedback');
+ if(/^(?:nice|good) mommy$/u.test(t))return out('mommy');
+ if(/^goodnigh$/u.test(t))return out('alias',{},false,'goodnight');
+ if(/^byee$/u.test(t))return out('alias',{},false,'stop');
  if(/^(?:no choices this time (?:but )?just an easy question|ask something without giving me options|ask (?:me )?(?:something|a question) without (?:giving me )?options)$/u.test(action))return out('nonpersonal_question',{open:true},true);
  if(light){
   const answer=light.answers.find(row=>row.forms.includes(t));
   if(answer)return out('light_answer',{selected:answer.key},true);
   if(/^(?:why that question|why did you ask that)$/u.test(t))return out('light_reason',{},true);
   if(/^(?:what about you|how about you|and you)$/u.test(t))return out('light_reciprocal',{},true);
+  const sceneWords={moonlight:'moonlight',silence:'silence',waves:'waves','a cool breeze':'breeze','cool breeze':'breeze','a few stars':'stars',stars:'stars'};
+  const details=t.replace(/^maybe /u,'').replace(/ too$/u,'').split(/ and /u);
+  if(details.length<=3&&details.every(value=>Object.hasOwn(sceneWords,value)))return out('light_details',{details:details.map(value=>sceneWords[value])},true);
+  if(/^(?:not too crowded|no crowds)$/u.test(t))return out('light_limit',{},true);
+  if(/^what would you add$/u.test(t))return out('light_suggest',{},true);
+  if(/^(?:just one detail|keep it simple)$/u.test(t))return out('light_suggest',{short:true},true);
   if(/^i like the sound of waves$/u.test(t)&&(memory.selected==='seaside'||memory.questionIndex===0))return out('light_waves',{},true);
  }
  if(helpContext&&/^with (?:the )?(?:server )?rules$/u.test(t))return out('help_detail',{helpTopic:'server_rules'});
  if(helpContext&&/^i did not understand (?:them|the rules) at first$/u.test(t))return out('help_past_confusion');
- if(daviContext&&/^he explained (?:the rules|(?:it|them) simply)$/u.test(t))return out('help_explained',{helpTopic:/rules/u.test(t)?'server_rules':memory.helpTopic??null});
+ if((helpContext||daviContext)&&/^(?:he|she|they) explained (?:the rules|(?:it|them) simply)$/u.test(t)&&!(t.startsWith('she ')&&['davi','ash'].includes(memory.person??'davi'))&&!(t.startsWith('he ')&&memory.person==='mae'))return out('help_explained',{helpTopic:/rules/u.test(t)?'server_rules':memory.helpTopic??null,pronoun:t.split(' ')[0]});
  if(helpContext&&/^(?:i (?:get|understand) (?:them|the rules) now|now (?:they|the rules) make sense)$/u.test(t))return out('help_understood');
  if(helpContext&&/^(?:thats|that is|that's) why i am grateful$/u.test(t))return out('help_grateful');
  // Additional whole-clause meanings keep the answer target, speaker and pronoun scope explicit.
