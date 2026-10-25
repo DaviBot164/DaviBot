@@ -133,13 +133,26 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   const labels={moonlight:'moonlight',silence:'silence',waves:'waves',breeze:'a cool breeze',stars:'a few stars'};
   if(r.kind==='light_details'){extra.core.sceneDetails=[...new Set([...(memory.sceneDetails??[]),...r.data.details])].slice(-6);extra.core.excludedDetails=(memory.excludedDetails??[]).filter(value=>!r.data.details.includes(value));content=r.data.details.map(value=>labels[value]).join(' and ')+' added to the '+selected+' scene.';}
   if(r.kind==='light_edit'){extra.core.sceneDetails=r.data.keep?[r.data.keep]:(memory.sceneDetails??[]).filter(value=>value!==r.data.remove);extra.core.excludedDetails=[...new Set([...(memory.excludedDetails??[]),r.data.remove])].filter(value=>value!==r.data.keep);content=r.data.keep?'Only '+labels[r.data.keep]+', understood. I have updated the scene details.':'Removed '+labels[r.data.remove]+' from the scene.';}
-  if(r.kind==='light_recall')content='For the '+selected+' scene: '+((memory.sceneDetails??[]).map(value=>labels[value]).join(' and ')||'no specific details added yet')+'.'+(memory.crowdLimit==='none'?' No people.':memory.noCrowds?' Keep it uncrowded.':'');
+  if(r.kind==='light_accept'){
+   const pool=sceneSuggestions[selected]??sceneSuggestions.scene;
+   const suggestion=pool.find(row=>row.key===memory.suggestion);
+   if(suggestion&&!(memory.rejectedSuggestions??[]).includes(suggestion.key)){
+    extra.core.acceptedSuggestions=[...new Set([...(memory.acceptedSuggestions??[]),suggestion.key])];
+    content='Added '+suggestion.label+' to the scene.';
+   }else content='There is no pending suggestion to add. Which detail do you mean?';
+  }
+  if(r.kind==='light_decline'){
+   extra.core.rejectedSuggestions=[...new Set([...(memory.rejectedSuggestions??[]),r.data.reject])];
+   if(memory.suggestion===r.data.reject)extra.core.suggestion=null;
+   content='Understood. I will not add that suggestion.';
+  }
+  if(r.kind==='light_recall')content='For the '+selected+' scene: '+([...(memory.sceneDetails??[]).map(value=>labels[value]),...(sceneSuggestions[selected]??sceneSuggestions.scene).filter(row=>(memory.acceptedSuggestions??[]).includes(row.key)).map(row=>row.label)].join(' and ')||'no specific details added yet')+'.'+(memory.crowdLimit==='none'?' No people.':memory.noCrowds?' Keep it uncrowded.':'');
   if(r.kind==='light_crowd'){extra.core.crowdLimit=r.data.limit;extra.core.noCrowds=r.data.limit!=='allowed';content=r.data.limit==='few'?'A few people are fine, understood. We will still avoid a busy crowd.':r.data.limit==='none'?'No people in the scene, understood.':'A crowd is allowed now, understood. I will remove the earlier crowd restriction.';}
   if(r.kind==='light_limit'){extra.core.noCrowds=true;extra.core.crowdLimit='few';content='Not too crowded, understood. I will keep the scene quiet, with few people.';}
   if(r.kind==='light_suggest'){
    const rejected=[...new Set([...(memory.rejectedSuggestions??[]),...(r.data.reject?[r.data.reject]:[])])].slice(-9);extra.core.rejectedSuggestions=rejected;
    const pool=sceneSuggestions[selected]??sceneSuggestions.scene;
-   const candidates=pool.filter(row=>!rejected.includes(row.key));
+   const candidates=pool.filter(row=>!rejected.includes(row.key)&&!(memory.acceptedSuggestions??[]).includes(row.key));
    const suggestion=candidates.find(row=>row.key===memory.suggestion)??candidates[0];
    extra.core.suggestion=suggestion?.key??null;
    content=!suggestion?'We have ruled out those details. Tell me what kind of detail you would prefer.':r.data.short?suggestion.label+'.':'I would add '+suggestion.label+', keeping the scene calm'+(memory.crowdLimit==='none'?' and empty of people':memory.noCrowds?' and uncrowded':'')+'.';

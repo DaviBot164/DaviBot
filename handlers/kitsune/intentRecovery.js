@@ -50,6 +50,11 @@ function recoverIntent(frame,session,lookup){
   if(/^(?:what about you|how about you|and you)$/u.test(t))return out('light_reciprocal',{},true);
   const detailEdits={breeze:'breeze','a cool breeze':'breeze',waves:'waves',moonlight:'moonlight',silence:'silence',stars:'stars','a few stars':'stars'};
   const edit=text=>Object.hasOwn(detailEdits,text)?detailEdits[text]:null;
+  const restore=t.match(/^add (?:the )?(.+?) back$/u);
+  if(restore&&edit(restore[1]))return out('light_details',{details:[edit(restore[1])]},true);
+  if(/^(?:yes )?add that$/u.test(t))return out('light_accept',{},true);
+  const decline=t.match(/^(?:no )?do not add (?:a |the )?(lighthouse|boat|driftwood|path|lantern|bench|window|cloud)$/u);
+  if(decline)return out('light_decline',{reject:decline[1]},true);
   const removal=t.match(/^(?:no|not) (.+?)(?: (?:just|only) (.+))?$/u);
   if(removal&&edit(removal[1])&&(!removal[2]||edit(removal[2])&&edit(removal[1])!==edit(removal[2])))return out('light_edit',{remove:edit(removal[1]),keep:removal[2]?edit(removal[2]):null},true);
   if(/^what details do we have$/u.test(t))return out('light_recall',{},true);
