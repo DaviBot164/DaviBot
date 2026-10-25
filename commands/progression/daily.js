@@ -21,7 +21,6 @@ const {
 } = require('../../handlers/progressionUnlocks');
 
 const {
-    createEmbed,
     errorEmbed
 } = require('../../utils/embeds');
 
@@ -77,7 +76,15 @@ module.exports = {
             userId
         );
 
-        await interaction.editReply({ embeds: [dailyEmbed(result)] });
+        // The reward transaction has already completed. Receipt delivery must
+        // neither retry the award nor prevent progression side effects.
+        try {
+            await interaction.editReply({ embeds: [dailyEmbed(result)] });
+        } catch (error) {
+            console.error('Daily receipt delivery failed:', {
+                code: typeof error?.code === 'number' ? error.code : 'unknown'
+            });
+        }
         if (!result.claimed) return;
 
         if (result.levelsGained) {
