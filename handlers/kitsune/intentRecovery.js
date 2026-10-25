@@ -1,4 +1,5 @@
 // Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
+const lightQuestions=require('../../config/kitsuneLightQuestions');
 const negative='(?:stupid|dumb|useless|idiot|annoying|rude|dumbass|motherfucker|mf|worthless|trash)';
 function recoveryText(frame){
  let text=frame.plainSentence;
@@ -17,6 +18,22 @@ function recoverIntent(frame,session,lookup){
  // Person aliases stay local to semantic recognition, never to account authorization or learning keys.
  const personText=t.replace(/\bdaviti\b/gu,'davi');
  const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous$|davi_))/u.test(session?.category??'');
+ const memory=session?.core??{};
+ const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
+ const helpContext=memory.person==='davi'&&memory.topic==='help';
+ if(/^(?:no choices this time (?:but )?just an easy question|ask something without giving me options|ask (?:me )?(?:something|a question) without (?:giving me )?options)$/u.test(action))return out('nonpersonal_question',{open:true},true);
+ if(light){
+  const answer=light.answers.find(row=>row.forms.includes(t));
+  if(answer)return out('light_answer',{selected:answer.key},true);
+  if(/^(?:why that question|why did you ask that)$/u.test(t))return out('light_reason',{},true);
+  if(/^(?:what about you|how about you|and you)$/u.test(t))return out('light_reciprocal',{},true);
+  if(/^i like the sound of waves$/u.test(t)&&(memory.selected==='seaside'||memory.questionIndex===0))return out('light_waves',{},true);
+ }
+ if(helpContext&&/^with (?:the )?(?:server )?rules$/u.test(t))return out('help_detail',{helpTopic:'server_rules'});
+ if(helpContext&&/^i did not understand (?:them|the rules) at first$/u.test(t))return out('help_past_confusion');
+ if(daviContext&&/^he explained (?:the rules|(?:it|them) simply)$/u.test(t))return out('help_explained',{helpTopic:/rules/u.test(t)?'server_rules':memory.helpTopic??null});
+ if(helpContext&&/^(?:i (?:get|understand) (?:them|the rules) now|now (?:they|the rules) make sense)$/u.test(t))return out('help_understood');
+ if(helpContext&&/^(?:thats|that is|that's) why i am grateful$/u.test(t))return out('help_grateful');
  // Additional whole-clause meanings keep the answer target, speaker and pronoun scope explicit.
  if(/^your (?:answer|reply) (?:kind of )?missed the point$/u.test(t))return out('answer_missed');
  if(/^(?:i )?did not mean that as an insult$/u.test(t))return out('intent_clarify');

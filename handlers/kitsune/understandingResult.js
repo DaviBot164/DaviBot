@@ -55,6 +55,8 @@ function understandingResult(category, options={}){
  if(recovered?.kind==='intent_clarify'){intent='deny_insult';target='kitsune';polarity='negated';}
  if(recovered?.kind==='report_person'){intent='report_speech';reported=true;target=null;}
  if(recovered?.kind==='nonpersonal_question'){intent='request_question';topic='conversation';}
+ if(recovered?.kind?.startsWith('light_')){intent='light_conversation';topic='fictional_scene';target=recovered.kind==='light_reciprocal'?'kitsune':'self';}
+ if(['help_detail','help_past_confusion','help_explained','help_understood','help_grateful'].includes(recovered?.kind)){intent='discuss_help';topic='explanation';target='davi';}
  const unknown=!category||['fallback','reaction_question','clarify'].includes(category);
  return Object.freeze({version:1,category:category??null,status:unknown?(category?'needs_clarification':'unmatched'):'matched',intent,target,topic,mood,polarity,reported,listening:['decline_advice','music_curiosity'].includes(category)||Boolean(options.declineAdvice),source:options.source??'rules',rule:options.rule??(unknown?'unmatched':'category_contract')});
 }
