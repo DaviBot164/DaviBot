@@ -45,3 +45,9 @@ Set `KITSUNE_AI_LAB_ENABLED=false` or remove it and restart. Remove/revoke the G
 - https://console.groq.com/docs/your-data
 
 Offline verification covers authorization, opt-in, source/schema routing, empty/malformed/rate-limit/credential/network responses, no retries, timeouts, quota and reset behavior, bounded history, persona/channel isolation and redaction. No real Groq, Discord or database calls were made during implementation or installation validation.
+
+## Persona refinement after the first live trial
+
+The trusted prompt now separates forms of address from people, gives owner/member-specific tone, avoids service-style repeated endings, retains nonpersonal/no-options constraints, recognizes an already-defended quotation, and forbids invented game mechanics or PvP/PvE substitutions. Examples are style guidance, not exact response templates. Public built-in dialogue is unchanged.
+
+Mocked tests verify that the correct trusted prompt and raw dialogue/history reach the provider for every persona. They cannot prove model compliance or factual accuracy. Repeat the short live regression chains after deployment when provider and local quota permit. Existing limits, opt-in, model, authorization and history bounds are unchanged; no slash-command registration is needed for this refinement.
