@@ -104,6 +104,12 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  let content=lines[r.kind],category=request.category,extra={};
  const owner=message.author.id===ownerId;
  const draw=(key)=>{const pool=socialTone[key];const choices=pool.map((line,index)=>({line,index})).filter(row=>memory.socialKey!==key||memory.socialIndex!==row.index);const selected=choices[roll(choices.length)];extra.core={...memory,socialKey:key,socialIndex:selected.index,...(key==='protect'||r.kind==='jealous'?{person:'davi'}:{}),topic:'social'};return selected.line;};
+ if(r.kind==='game_update'){
+  const replies={playing:'Glad you are doing well. What are you playing?',lost:'Another loss, then. How did that match go?',not_angry:'Not angry, understood. A loss does not have to mean you are upset.',disappointed:'A bit disappointed, then. That is different from being angry.',company:'No tips. I can keep you company while we talk about the game.',reciprocal:'For my fox style, clever timing and a little tension fit. I can talk about games, though I cannot play myself.'};
+  content=replies[r.data.form];category=r.data.form==='reciprocal'?'game_preferences':'game_chat';extra.core={...memory,topic:'game',...(r.data.noAdvice?{noAdvice:true}:{}),...(r.data.form==='disappointed'?{feeling:'disappointed'}:{})};
+ }
+ if(r.kind==='help_understanding'){extra.core={...memory,understood:true,helpTopic:'server_rules'};content=(r.data.pronoun==='he'?'He':r.data.pronoun==='she'?'She':'They')+' helped you understand the server rules, then. What made them clearer?';}
+ if(r.kind==='light_exclusions'){extra.core={...memory,excludedTopics:['work','school']};content='Understood. We will keep the question away from work and school.';}
  if(r.kind==='tired_correction')content='Just tired, understood. We can keep this quiet.';
  if(r.kind==='progress_feedback')content=owner?'You noticed... I am glad the replies are making more sense.':'Glad it feels like progress. We can keep trying things together.';
  if(r.kind==='help_started'||r.kind==='help_corrected'){
@@ -184,6 +190,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  if(r.kind==='social_friends')content=owner?'I know. You can have your friends and still catch this fox off guard. We are fine.':'Just friends, understood. I will keep the teasing light; there is no quarrel with you.';
  if(r.kind==='social_grateful')content=r.data.form==='not_flirting'?'You are not flirting with him, understood. I will leave the jealousy there.':'Understood. Being kind or grateful does not mean you are flirting. I will leave the jealousy there.';
  if(r.kind==='davi_grateful')content='Grateful to Davi, understood. You can appreciate his help without me turning it into a quarrel.';
+ if(r.kind==='social_company'&&r.data.noAdvice){extra.core={topic:'social',noAdvice:true};}
  if(r.kind==='social_company')content=owner?'I am here... we can keep talking. What has been on your mind?':'We can stay with a normal conversation. What is on your mind?';
  if(r.kind==='answer_scope'){content='You mean my answer, not me. Understood. What part should I explain differently?';extra.core={topic:'answer_repair',answerKind:r.data.answerKind??(r.data.boundary?'boundary':'unknown')};}
  if(r.kind==='answer_repair'||r.kind==='answer_short'){

@@ -1,3 +1,4 @@
+const {casualPhrasing}=require('./casualPhrasing');
 const {recognizeSceneEdit}=require('./sceneEditing');
 // Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
 const {recognizeHelpActions}=require('./helpActions');
@@ -14,15 +15,25 @@ function recoveryText(frame){
 }
 function recoverIntent(frame,session,lookup){
  if(!frame?.valid)return null;
- const t=recoveryText(frame);
+ const originalText=recoveryText(frame);
+ const t=casualPhrasing(originalText,session?.core);
  const action=t.replace(/^(?:can|could|would) you (?:please )?/u,'');
- const out=(kind,data={},force=false,category='core_'+kind)=>({category,kind,data,force});
+ const out=(kind,data={},force=false,category='core_'+kind)=>({category,kind,data,force:force||t!==originalText});
  // Person aliases stay local to semantic recognition, never to account authorization or learning keys.
  const personText=t.replace(/\bdaviti\b/gu,'davi');
  const daviContext=session?.core?.person==='davi'||/^(?:reaction_davi|reported_davi|core_(?:protect|report_davi|defend_davi|jealous$|davi_))/u.test(session?.category??'');
  const memory=session?.core??{};
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
  const helpContext=memory.topic==='help'&&Boolean(memory.person);
+ const gameContext=memory.topic==='game'||/^game_/u.test(session?.topicCategory??session?.category??'');
+ if(/^good just gaming$/u.test(t))return out('game_update',{form:'playing'},true);
+ if(gameContext&&/^lost again$/u.test(t))return out('game_update',{form:'lost'},true);
+ if(gameContext&&/^not angry$/u.test(t))return out('game_update',{form:'not_angry'},true);
+ if(gameContext&&/^just a bit disappointed$/u.test(t))return out('game_update',{form:'disappointed'},true);
+ if(/^(?:i )?do not need tips just company$/u.test(t))return out(gameContext?'game_update':'social_company',{form:'company',noAdvice:true},true);
+ if(memory.topic==='game'&&/^(?:what about you|how about you|and you)$/u.test(t))return out('game_update',{form:'reciprocal'},true);
+ if(helpContext&&/^(?:he|she|they) helped me understand the rules$/u.test(t)){const person=memory.lastActor?.person??memory.person;const pronoun=t.split(' ')[0];if(!(pronoun==='she'&&['ash','davi'].includes(person))&&!(pronoun==='he'&&person==='mae'))return out('help_understanding',{pronoun},true);}
+ if(memory.nonPersonal&&/^nothing about work or school$/u.test(t))return out('light_exclusions',{},true);
  const actions=recognizeHelpActions(personText,memory);
  if(actions)return out('help_actions',actions,true);
  if(/^davi helped me out$/u.test(personText))return out('davi_helped');

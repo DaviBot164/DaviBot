@@ -68,7 +68,7 @@ function parseRequestInternal(message, now, learnedAliases = null) {
         ...(recovery?{recovery}:{}),
         ...(flow?{flow}:{}),
         context,
-        declineAdvice: Boolean(details.declineAdvice),
+        declineAdvice: Boolean(details.declineAdvice||recovery?.data?.noAdvice),
         mixedSocial,
         followup: Boolean(context),
         question: session?.question ?? false,

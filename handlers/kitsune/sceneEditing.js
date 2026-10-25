@@ -27,12 +27,12 @@ function sceneEditResponse(data,memory){
  if(data.mode==='clarify')return {core,content:'Which scene detail do you mean?'};
  if(data.mode==='switch'){
   const retained=data.keep&&active.includes(data.keep)?[data.keep]:[];
-  Object.assign(core,{selected:data.selected,sceneDetails:retained.filter(k=>Object.hasOwn(base,k)),acceptedSuggestions:retained.filter(k=>!Object.hasOwn(base,k)),excludedDetails:[],rejectedSuggestions:[],suggestion:null,lastSceneDetail:retained[0]??null,sceneReplacement:null,crowdLimit:null,noCrowds:false,reason:null});
+  Object.assign(core,{selected:data.selected,previousSceneDetails:active,sceneDetails:retained.filter(k=>Object.hasOwn(base,k)),acceptedSuggestions:retained.filter(k=>!Object.hasOwn(base,k)),excludedDetails:[],rejectedSuggestions:[],suggestion:null,lastSceneDetail:retained[0]??null,sceneReplacement:null,crowdLimit:null,noCrowds:false,reason:null});
   return {core,content:'A '+data.selected+' scene instead.'+(retained.length?' Keeping '+labels[retained[0]]+'.':' Starting with no carried-over details.')};
  }
  let next=active;
  const removed=[];
- if(data.mode==='only'){next=active.filter(k=>k===data.keep);removed.push(...active.filter(k=>k!==data.keep));}
+ if(data.mode==='only'){next=active.filter(k=>k===data.keep);if(!next.length&&(memory.previousSceneDetails??[]).includes(data.keep)){next=[data.keep];core.previousSceneDetails=[];}removed.push(...active.filter(k=>k!==data.keep));}
  if(data.mode==='remove'||data.mode==='replace'){next=active.filter(k=>k!==data.remove);removed.push(data.remove);core.lastSceneDetail=data.remove;}
  if(data.mode==='replace'||data.mode==='restore'||data.mode==='both'){
   next=[...new Set([...next,...(data.mode==='both'?[data.remove,data.add]:[data.add])])];core.lastSceneDetail=data.add;
