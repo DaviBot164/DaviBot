@@ -1,3 +1,4 @@
+const {recognizeContinuation}=require('./conversationContinuations');
 const {casualPhrasing}=require('./casualPhrasing');
 const {recognizeSceneEdit}=require('./sceneEditing');
 // Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
@@ -26,6 +27,10 @@ function recoverIntent(frame,session,lookup){
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
  const helpContext=memory.topic==='help'&&Boolean(memory.person);
  const gameContext=memory.topic==='game'||/^game_/u.test(session?.topicCategory??session?.category??'');
+ const continuation=recognizeContinuation(t,session);
+ if(continuation)return out(continuation.kind,continuation.data,true);
+ if(/^(?:lets|let us) leave games and talk about music$/u.test(t))return out('music_topic',{},true);
+ if(/^mostly calm stuff$/u.test(t)&&/music/u.test(session?.topicCategory??session?.category??''))return out('music_quiet',{},true);
  if(/^good just gaming$/u.test(t))return out('game_update',{form:'playing'},true);
  if(gameContext&&/^lost again$/u.test(t))return out('game_update',{form:'lost'},true);
  if(gameContext&&/^not angry$/u.test(t))return out('game_update',{form:'not_angry'},true);

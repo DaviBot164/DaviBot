@@ -1,3 +1,4 @@
+const {continuationResponse,soundResponse}=require('./conversationContinuations');
 const {sceneEditResponse}=require('./sceneEditing');
 const {helpActionsResponse}=require('./helpActions');
 const sceneSuggestions=require('../../config/kitsuneSceneSuggestions');
@@ -104,6 +105,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  let content=lines[r.kind],category=request.category,extra={};
  const owner=message.author.id===ownerId;
  const draw=(key)=>{const pool=socialTone[key];const choices=pool.map((line,index)=>({line,index})).filter(row=>memory.socialKey!==key||memory.socialIndex!==row.index);const selected=choices[roll(choices.length)];extra.core={...memory,socialKey:key,socialIndex:selected.index,...(key==='protect'||r.kind==='jealous'?{person:'davi'}:{}),topic:'social'};return selected.line;};
+ if(r.kind==='game_continuation'){const result=continuationResponse(r.data,memory);extra.core=result.core;content=result.content;category='game_chat';}
  if(r.kind==='game_update'){
   const replies={playing:'Glad you are doing well. What are you playing?',lost:'Another loss, then. How did that match go?',not_angry:'Not angry, understood. A loss does not have to mean you are upset.',disappointed:'A bit disappointed, then. That is different from being angry.',company:'No tips. I can keep you company while we talk about the game.',reciprocal:'For my fox style, clever timing and a little tension fit. I can talk about games, though I cannot play myself.'};
   content=replies[r.data.form];category=r.data.form==='reciprocal'?'game_preferences':'game_chat';extra.core={...memory,topic:'game',...(r.data.noAdvice?{noAdvice:true}:{}),...(r.data.form==='disappointed'?{feeling:'disappointed'}:{})};
@@ -133,6 +135,7 @@ function recoveryResponse(message,request,replies,roll=randomInt){
  }
  if(r.kind.startsWith('light_')){
   const question=lightQuestions[memory.questionIndex];extra.core={...memory};
+  if(r.kind==='light_sound'){const result=soundResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_change'){const result=sceneEditResponse(r.data,memory);extra.core=result.core;content=result.content;}
   if(r.kind==='light_answer'){extra.core.selected=r.data.selected;content=question.answers.find(row=>row.key===r.data.selected).reply;}
   if(r.kind==='light_reason')content='You asked for a light, nonpersonal question, so I chose a fictional scene rather than personal details.';

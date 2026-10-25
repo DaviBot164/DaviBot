@@ -3,6 +3,8 @@ const people=Object.freeze({davi:{person:'davi',name:'Davi'},ash:{person:'ash',n
 const names='(?:davi|ash|mae|my friend|a friend)';
 function recognizeHelpActions(text,memory){
  if(memory?.topic!=='help')return null;
+ const clarification=recognizeHelpClarification(text,memory);
+ if(clarification)return clarification;
  const answer=recognizeActionAnswer(text,memory);
  if(answer)return answer;
  const plain=new RegExp('^('+names+') (?:explained (?:them|the rules)|(?:just )?sent (?:me )?the link)$','u').test(text);
@@ -27,7 +29,8 @@ function helpActionsResponse(data,memory){
   const actor=group?.length?{name:group.map(row=>row.name).join(' and ')}:core.actions[data.role];
   return {core,content:actor?actor.name+(data.role==='explainedRules'?' explained the rules.':' sent you the link.'):'You have not said who '+(data.role==='explainedRules'?'explained the rules.':'sent the link.')};
  }
- core.pendingQuestion=null;core.answeredQuestion=null;
+ core.pendingQuestion=null;core.answeredQuestion=null;core.pendingPersonCorrection=null;
+ if(memory.pendingReport&&Object.hasOwn(data.facts,memory.pendingReport.role))core.pendingReport=null;
  core.actionGroups={...(memory.actionGroups??{})};
  for(const [role,actor]of Object.entries(data.facts)){core.actionGroups[role]=[actor];core.lastAction={role,actor};}
  const lines=[];
@@ -70,8 +73,9 @@ function recognizeRevision(text,memory){
 function revisionResponse(data,memory){
  const core={...memory,actions:{...(memory.actions??{})},actionGroups:{...(memory.actionGroups??{})}};
  const label=data.role==='explainedRules'?'explained the rules':'sent you the link';
+ if(['helper_correct','person_scope','report_confirm'].includes(data.mode))return helpClarificationResponse(data,memory);
  if(data.mode.startsWith('answer_'))return actionAnswerResponse(data,memory);
- if(data.mode==='uncertain')return {core,content:'That is an unconfirmed report. I will keep it separate from what you have already told me.'};
+ if(data.mode==='uncertain'){if(data.report)core.pendingReport=data.report;return {core,content:'That is an unconfirmed report. I will keep it separate from what you have already told me.'};}
  if(data.mode==='conditional')return {core,content:'That is a possible future action, not something that has happened. I will keep the existing facts.'};
  if(data.mode==='clarify_actor'){core.pendingAction={role:data.role};return {core,content:'Who do you mean? Please name the person for that action.'};}
  const existing=group(memory,data.role);
@@ -79,7 +83,8 @@ function revisionResponse(data,memory){
  const actors=data.mode==='remove'?existing.filter(row=>row.person!==data.actor.person):data.mode==='add'?[...existing.filter(row=>row.person!==data.actor.person),data.actor]:[data.actor];
  core.actionGroups[data.role]=actors;
  core.actions[data.role]=actors[0]??null;
- core.lastAction={role:data.role,actor:data.actor};core.pendingAction=null;core.pendingQuestion=null;core.answeredQuestion=null;
+ core.lastAction={role:data.role,actor:data.actor};core.pendingAction=null;core.pendingQuestion=null;core.answeredQuestion=null;core.pendingPersonCorrection=null;
+ if(memory.pendingReport?.role===data.role)core.pendingReport=null;
  if(data.mode!=='remove')core.lastActor=data.actor;
  if(data.role==='explainedRules'&&actors.length){core.helpStage='explained';core.helpTopic='server_rules';}
  return {core,content:data.mode==='remove'?data.actor.name+' is no longer recorded as the person who '+label+'.':actors.map(row=>row.name).join(' and ')+' '+label+'.'};
@@ -123,5 +128,33 @@ function actionAnswerResponse(data,memory){
  result.core.pendingQuestion=null;result.core.answeredQuestion={role:question.role,actor:question.actor,yes};
  if(data.future)result.content+=' A future plan is not a completed action.';
  return result;
+}
+
+function recognizeHelpClarification(text,memory){
+ let m=text.match(new RegExp('^i mean ('+names+') helped me not ('+names+')$','u'));
+ if(m)return {mode:'helper_correct',actor:people[m[1]]};
+ m=text.match(new RegExp('^i mean ('+names+') (sent (?:me )?the link|explained (?:them|the rules)) not ('+names+')$','u'));
+ if(m)return {mode:'replace',role:m[2].startsWith('sent')?'sentLink':'explainedRules',actor:people[m[1]]};
+ m=text.match(new RegExp('^it was not ('+names+') it was ('+names+')$','u'));
+ if(m)return {mode:'person_scope',from:people[m[1]],actor:people[m[2]]};
+ if(memory.pendingPersonCorrection&&['i mean who sent the link','i mean who explained the rules'].includes(text))return {mode:'replace',role:text.includes('sent')?'sentLink':'explainedRules',actor:memory.pendingPersonCorrection.actor};
+ if(text==='i mean who helped me'&&memory.pendingPersonCorrection)return {mode:'helper_correct',actor:memory.pendingPersonCorrection.actor};
+ m=text.match(new RegExp('^someone said ('+names+') explained (?:them|the rules) but i am not sure$','u'));
+ if(m)return {mode:'uncertain',report:{role:'explainedRules',actor:people[m[1]]}};
+ m=text.match(new RegExp('^i checked it was ('+names+')$','u'));
+ if(m&&memory.pendingReport)return {mode:'report_confirm',role:memory.pendingReport.role,actor:people[m[1]]};
+ return null;
+}
+function helpClarificationResponse(data,memory){
+ const core={...memory};
+ if(data.mode==='person_scope'){
+  core.pendingPersonCorrection={from:data.from,actor:data.actor};
+  return {core,content:'Do you mean who helped you, who explained the rules, or who sent the link? I will leave the current facts unchanged until that is clear.'};
+ }
+ if(data.mode==='helper_correct'){
+  core.person=data.actor.person;core.helperName=data.actor.name;core.lastActor=data.actor;core.pendingPersonCorrection=null;
+  return {core,content:data.actor.name+' helped you, understood. The explanation and link-sending records stay separate.'};
+ }
+ const result=revisionResponse({mode:'replace',role:data.role,actor:data.actor},memory);result.core.pendingReport=null;return result;
 }
 module.exports={recognizeHelpActions,helpActionsResponse};
