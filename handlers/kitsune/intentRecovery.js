@@ -1,4 +1,5 @@
 // Semantic recovery for bounded English forms. Canonical learning keys stay unchanged.
+const {recognizeHelpActions}=require('./helpActions');
 const lightQuestions=require('../../config/kitsuneLightQuestions');
 const negative='(?:stupid|dumb|useless|idiot|annoying|rude|dumbass|motherfucker|mf|worthless|trash)';
 function recoveryText(frame){
@@ -21,10 +22,13 @@ function recoverIntent(frame,session,lookup){
  const memory=session?.core??{};
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
  const helpContext=memory.topic==='help'&&Boolean(memory.person);
+ const actions=recognizeHelpActions(personText,memory);
+ if(actions)return out('help_actions',actions);
+ if(/^davi helped me out$/u.test(personText))return out('davi_helped');
  const helperNames={davi:'Davi',ash:'Ash',mae:'Mae',friend:'your friend'};
- const helperStart=personText.match(/^(ash|mae|(?:a|my) friend|someone) helped me$/u);
+ const helperStart=personText.match(/^(ash|mae|(?:a|my) friend|someone) helped me(?: out)?$/u);
  if(helperStart){const helperKey=/friend/u.test(helperStart[1])?'friend':helperStart[1]==='someone'?'helper':helperStart[1];return out('help_started',{helperKey,helperName:helperNames[helperKey]??'the person'});}
- const namedStart=frame.raw.trim().match(/^([A-Z][a-z]{1,23}) helped me[.!?]*$/u);
+ const namedStart=frame.raw.trim().match(/^([A-Z][a-z]{1,23}) helped me(?: out)?[.!?]*$/u);
  if(namedStart&&!/^(?:He|She|They|You|Nobody|Someone|Work|School|It)$/u.test(namedStart[1])&&!/^(?:Davi|Daviti|Ash|Mae)$/u.test(namedStart[1]))return out('help_started',{helperKey:'helper',helperName:namedStart[1]});
  if(helpContext){
   const correction=personText.match(/^it was (ash|davi|mae|(?:a|my) friend) not (?:ash|davi|mae|(?:a|my) friend)$/u);
@@ -44,6 +48,16 @@ function recoverIntent(frame,session,lookup){
   if(answer)return out('light_answer',{selected:answer.key},true);
   if(/^(?:why that question|why did you ask that)$/u.test(t))return out('light_reason',{},true);
   if(/^(?:what about you|how about you|and you)$/u.test(t))return out('light_reciprocal',{},true);
+  const detailEdits={breeze:'breeze','a cool breeze':'breeze',waves:'waves',moonlight:'moonlight',silence:'silence',stars:'stars','a few stars':'stars'};
+  const edit=text=>Object.hasOwn(detailEdits,text)?detailEdits[text]:null;
+  const removal=t.match(/^(?:no|not) (.+?)(?: (?:just|only) (.+))?$/u);
+  if(removal&&edit(removal[1])&&(!removal[2]||edit(removal[2])&&edit(removal[1])!==edit(removal[2])))return out('light_edit',{remove:edit(removal[1]),keep:removal[2]?edit(removal[2]):null},true);
+  if(/^what details do we have$/u.test(t))return out('light_recall',{},true);
+  if(/^a few people are fine$/u.test(t))return out('light_crowd',{limit:'few'},true);
+  if(/^no people at all$/u.test(t))return out('light_crowd',{limit:'none'},true);
+  if(/^crowded is fine$/u.test(t))return out('light_crowd',{limit:'allowed'},true);
+  const reject=t.match(/^not (?:a |the )?(lighthouse|boat|driftwood|path|lantern|bench|window|cloud) (?:something else|try something else)$/u);
+  if(reject)return out('light_suggest',{reject:reject[1]},true);
   const sceneWords={moonlight:'moonlight',silence:'silence',waves:'waves','a cool breeze':'breeze','cool breeze':'breeze','a few stars':'stars',stars:'stars'};
   const details=t.replace(/^maybe /u,'').replace(/ too$/u,'').split(/ and /u);
   if(details.length<=3&&details.every(value=>Object.hasOwn(sceneWords,value)))return out('light_details',{details:details.map(value=>sceneWords[value])},true);
@@ -52,9 +66,10 @@ function recoverIntent(frame,session,lookup){
   if(/^(?:just one detail|keep it simple)$/u.test(t))return out('light_suggest',{short:true},true);
   if(/^i like the sound of waves$/u.test(t)&&(memory.selected==='seaside'||memory.questionIndex===0))return out('light_waves',{},true);
  }
- if(helpContext&&/^with (?:the )?(?:server )?rules$/u.test(t))return out('help_detail',{helpTopic:'server_rules'});
+ if(helpContext&&/^with (?:understanding )?(?:the )?(?:server )?rules$/u.test(t))return out('help_detail',{helpTopic:'server_rules'});
+ if(helpContext&&/^i was confused before but now i get it$/u.test(t))return out('help_understood',{wasConfused:true});
  if(helpContext&&/^i did not understand (?:them|the rules) at first$/u.test(t))return out('help_past_confusion');
- if((helpContext||daviContext)&&/^(?:he|she|they) explained (?:the rules|(?:it|them) simply)$/u.test(t)&&!(t.startsWith('she ')&&['davi','ash'].includes(memory.person??'davi'))&&!(t.startsWith('he ')&&memory.person==='mae'))return out('help_explained',{helpTopic:/rules/u.test(t)?'server_rules':memory.helpTopic??null,pronoun:t.split(' ')[0]});
+ if((helpContext||daviContext)&&/^(?:he|she|they) explained (?:the rules|(?:it|them) simply)$/u.test(t)&&!(t.startsWith('she ')&&['davi','ash'].includes(memory.lastActor?.person??memory.person??'davi'))&&!(t.startsWith('he ')&&(memory.lastActor?.person??memory.person)==='mae'))return out('help_explained',{helpTopic:/rules/u.test(t)?'server_rules':memory.helpTopic??null,pronoun:t.split(' ')[0]});
  if(helpContext&&/^(?:i (?:get|understand) (?:them|the rules) now|now (?:they|the rules) make sense)$/u.test(t))return out('help_understood');
  if(helpContext&&/^(?:thats|that is|that's) why i am grateful$/u.test(t))return out('help_grateful');
  // Additional whole-clause meanings keep the answer target, speaker and pronoun scope explicit.

@@ -1,3 +1,5 @@
+const {helpActionsResponse}=require('./helpActions');
+const sceneSuggestions=require('../../config/kitsuneSceneSuggestions');
 const lightQuestions=require('../../config/kitsuneLightQuestions');
 const socialTone=require('../../config/kitsuneSocialTone');
 const {randomInt}=require('node:crypto');
@@ -107,6 +109,8 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   content=r.kind==='help_started'?r.data.helperName+' helped you, then. What did they help with?':'It was '+r.data.helperName+', understood. I have corrected who helped you.';
   extra.core={...(r.kind==='help_corrected'?memory:{}),person:r.data.helperKey,helperName:r.data.helperName,topic:'help',helpStage:r.kind==='help_started'?'asked':memory.helpStage??'asked'};
  }
+ if(r.kind==='help_actions'){const result=helpActionsResponse(r.data,memory);content=result.content;extra.core=result.core;}
+ if(r.kind==='help_corrected')extra.core.lastActor={person:r.data.helperKey,name:r.data.helperName};
  if(r.kind==='help_recall'){content=(memory.helperName??(memory.person==='davi'?'Davi':memory.person==='ash'?'Ash':memory.person==='friend'?'your friend':'the person'))+' helped you'+(memory.helpTopic==='server_rules'?' with the server rules':'')+'.';extra.core={...memory};}
  if(r.kind==='answer_missed'){content='The answer missed your point, understood. What should it have addressed?';extra.core={topic:'answer_repair',answerKind:memory.answerKind??'unknown'};extra.templateRef=old.templateRef??null;}
  if(r.kind==='intent_clarify'){content='You did not mean it as an insult, understood. We can focus on the answer.';extra.core=memory;extra.templateRef=old.templateRef??null;}
@@ -127,12 +131,18 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   if(r.kind==='light_reciprocal')content=question.own;
   const selected=memory.selected??(memory.questionIndex===1?'night':'scene');
   const labels={moonlight:'moonlight',silence:'silence',waves:'waves',breeze:'a cool breeze',stars:'a few stars'};
-  if(r.kind==='light_details'){extra.core.sceneDetails=[...new Set([...(memory.sceneDetails??[]),...r.data.details])].slice(-6);content=r.data.details.map(value=>labels[value]).join(' and ')+' added to the '+selected+' scene.';}
-  if(r.kind==='light_limit'){extra.core.noCrowds=true;content='Not too crowded, understood. I will keep the scene quiet, with few people.';}
+  if(r.kind==='light_details'){extra.core.sceneDetails=[...new Set([...(memory.sceneDetails??[]),...r.data.details])].slice(-6);extra.core.excludedDetails=(memory.excludedDetails??[]).filter(value=>!r.data.details.includes(value));content=r.data.details.map(value=>labels[value]).join(' and ')+' added to the '+selected+' scene.';}
+  if(r.kind==='light_edit'){extra.core.sceneDetails=r.data.keep?[r.data.keep]:(memory.sceneDetails??[]).filter(value=>value!==r.data.remove);extra.core.excludedDetails=[...new Set([...(memory.excludedDetails??[]),r.data.remove])].filter(value=>value!==r.data.keep);content=r.data.keep?'Only '+labels[r.data.keep]+', understood. I have updated the scene details.':'Removed '+labels[r.data.remove]+' from the scene.';}
+  if(r.kind==='light_recall')content='For the '+selected+' scene: '+((memory.sceneDetails??[]).map(value=>labels[value]).join(' and ')||'no specific details added yet')+'.'+(memory.crowdLimit==='none'?' No people.':memory.noCrowds?' Keep it uncrowded.':'');
+  if(r.kind==='light_crowd'){extra.core.crowdLimit=r.data.limit;extra.core.noCrowds=r.data.limit!=='allowed';content=r.data.limit==='few'?'A few people are fine, understood. We will still avoid a busy crowd.':r.data.limit==='none'?'No people in the scene, understood.':'A crowd is allowed now, understood. I will remove the earlier crowd restriction.';}
+  if(r.kind==='light_limit'){extra.core.noCrowds=true;extra.core.crowdLimit='few';content='Not too crowded, understood. I will keep the scene quiet, with few people.';}
   if(r.kind==='light_suggest'){
-   const suggestion=memory.suggestion??(selected==='seaside'?'lighthouse':selected==='forest'?'path':'window');extra.core.suggestion=suggestion;
-   const detail={lighthouse:'a distant lighthouse',path:'a narrow, softly lit path',window:'one softly lit window'}[suggestion];
-   content=r.data.short?detail+'.':'I would add '+detail+', keeping the scene calm'+(memory.noCrowds?' and uncrowded':'')+'.';
+   const rejected=[...new Set([...(memory.rejectedSuggestions??[]),...(r.data.reject?[r.data.reject]:[])])].slice(-9);extra.core.rejectedSuggestions=rejected;
+   const pool=sceneSuggestions[selected]??sceneSuggestions.scene;
+   const candidates=pool.filter(row=>!rejected.includes(row.key));
+   const suggestion=candidates.find(row=>row.key===memory.suggestion)??candidates[0];
+   extra.core.suggestion=suggestion?.key??null;
+   content=!suggestion?'We have ruled out those details. Tell me what kind of detail you would prefer.':r.data.short?suggestion.label+'.':'I would add '+suggestion.label+', keeping the scene calm'+(memory.crowdLimit==='none'?' and empty of people':memory.noCrowds?' and uncrowded':'')+'.';
   }
   if(r.kind==='light_waves'){extra.core.selected='seaside';extra.core.reason='waves';content='The sound of waves is what you enjoy about the seaside scene. A gentle rhythm can give it a calm atmosphere.';}
  }
@@ -140,11 +150,11 @@ function recoveryResponse(message,request,replies,roll=randomInt){
   const helpTopic=r.data.helpTopic??memory.helpTopic??null;
   extra.core={...memory,person:memory.person??'davi',topic:'help',helpTopic};
   const subject=helpTopic==='server_rules'?'the server rules':'that part';
-  if(r.kind==='help_detail'){extra.core.helpStage='explained';content='The server rules, then. Having them explained helped you follow them.';}
-  if(r.kind==='help_past_confusion'){extra.core.helpStage='initial_confusion';content='They were unclear at first, understood. A simpler explanation can make them easier to follow.';}
-  if(r.kind==='help_explained'){extra.core.helpStage='explained';content=(r.data.pronoun==='they'?'They':r.data.pronoun==='she'?'She':'He')+' explained '+subject+' simply. That can make a confusing part easier to understand.';}
-  if(r.kind==='help_understood'){extra.core.helpStage='understood';content='You understand '+subject+' now, then. Glad the explanation helped.';}
-  if(r.kind==='help_grateful'){extra.core.helpStage='grateful';content='You appreciate '+(memory.helperName??(memory.person==='davi'?'Davi':memory.person==='friend'?'your friend':'the person'))+' making '+subject+' clearer. That makes sense.';}
+  if(r.kind==='help_detail'){extra.core.helpStage='subject';content='The server rules, then. What did the help involve?';}
+  if(r.kind==='help_past_confusion'){extra.core.wasConfused=true;extra.core.helpStage='initial_confusion';content='They were unclear at first, understood. A simpler explanation can make them easier to follow.';}
+  if(r.kind==='help_explained'){const actor=memory.lastActor??{person:memory.person??'davi',name:memory.helperName??'Davi'};extra.core.actions={...(memory.actions??{}),explainedRules:actor};extra.core.helpStage='explained';content=(r.data.pronoun==='they'?'They':r.data.pronoun==='she'?'She':'He')+' explained '+subject+' simply. That can make a confusing part easier to understand.';}
+  if(r.kind==='help_understood'){extra.core.understood=true;if(r.data.wasConfused)extra.core.wasConfused=true;extra.core.helpStage='understood';content='You understand '+subject+' now, then.'+(memory.actions?.explainedRules?' Glad the explanation helped.':'');}
+  if(r.kind==='help_grateful'){extra.core.helpStage='grateful';content='You appreciate '+(memory.helperName??(memory.person==='davi'?'Davi':memory.person==='friend'?'your friend':'the person'))+"'s help with "+subject+'. That makes sense.';if(memory.actions?.explainedRules&&memory.actions.explainedRules.person!==memory.person)content='You appreciate the help with '+subject+'. That makes sense.';}
  }
  if(r.kind==='help_jealous'){content='Davi helped you, understood. I will keep the teasing light; appreciating his help is not flirting.';extra.core={topic:'social',person:'davi'};}
  if(r.kind==='report_person'){content='You are reporting an insult and saying you asked them to stop. Who was the insult about?';extra.core={topic:'speech_report',reported:true};}
