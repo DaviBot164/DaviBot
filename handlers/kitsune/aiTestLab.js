@@ -3,6 +3,7 @@ const config=require('../../config/kitsuneAiLab');
 const {OWNER_ID}=require('./settings');
 const endpoint='https://api.groq.com/openai/v1/chat/completions';
 const {buildPrompt:prompt}=require('./aiPersona');
+const {prepareDialogue}=require('./aiDialogue');
 function createAiLab({fetchFn=(...args)=>globalThis.fetch(...args),env=process.env,clock=Date.now,limits=config}={}){
  const labs=new Map();let busy=false,day='',requests=0;
  function authorize(input){if(input.userId!==OWNER_ID||!input.guildId||!input.channelId)throw Error('Only Davi can use this private AI lab in a server channel.');}
@@ -45,10 +46,11 @@ function createAiLab({fetchFn=(...args)=>globalThis.fetch(...args),env=process.e
    for(const text of lines){
     if(requests>=limits.dailyRequests){turns.push({input:text,status:'stopped',error:'Local trial cap reached ('+limits.dailyRequests+' requests per UTC day per running bot process).'});break;}
     requests++;
-    const messages=[{role:'system',content:prompt(persona)},...lab.history,{role:'user',content:text}];
+    const prepared=prepareDialogue(text);
+    const messages=[{role:'system',content:prompt(persona)},...lab.history,{role:'user',content:prepared}];
     const result=await completion(messages,apiKey);
     if(result.error){turns.push({input:text,status:'error',error:result.error});break;}
-    lab.history=[...lab.history,{role:'user',content:text},{role:'assistant',content:result.reply}];
+    lab.history=[...lab.history,{role:'user',content:prepared},{role:'assistant',content:result.reply}];
     while(lab.history.length>limits.historyMessages||lab.history.reduce((sum,m)=>sum+m.content.length,0)>limits.historyChars)lab.history.splice(0,2);
     lab.usedAt=clock();turns.push({input:text,status:'generated',reply:result.reply,truncated:result.truncated});
    }

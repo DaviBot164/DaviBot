@@ -51,3 +51,11 @@ Offline verification covers authorization, opt-in, source/schema routing, empty/
 The trusted prompt now separates forms of address from people, gives owner/member-specific tone, avoids service-style repeated endings, retains nonpersonal/no-options constraints, recognizes an already-defended quotation, and forbids invented game mechanics or PvP/PvE substitutions. Examples are style guidance, not exact response templates. Public built-in dialogue is unchanged.
 
 Mocked tests verify that the correct trusted prompt and raw dialogue/history reach the provider for every persona. They cannot prove model compliance or factual accuracy. Repeat the short live regression chains after deployment when provider and local quota permit. Existing limits, opt-in, model, authorization and history bounds are unchanged; no slash-command registration is needed for this refinement.
+
+## Address and speaker separation
+
+AI turns now use the existing quote-aware address parser before inference. The provider receives a JSON user envelope with addressee and dialogue; reports retain the original submitted line. Stored private user turns use the same prepared envelope so removed forms of address do not return through history. Quoted names, links and reports follow the existing address protection rules.
+
+A trusted system speaker record comes only from the selected simulation persona: ordinary members have no known name; owner and Mae have the configured direct address Davi but distinct roles. Mentioned names cannot grant owner identity. These structured cues improve grounding but do not enforce generated wording or prove model compliance. No output renaming filter is applied, so a quoted or third-person name is not blindly rewritten.
+
+This update changes private AI input preparation and guidance only. It does not add factual game knowledge, public AI, persistent role memory, extra requests or retries. Live regression is still required, including member-name leakage, Ash/Daviti address separation, advice uncertainty and protected quotes.
