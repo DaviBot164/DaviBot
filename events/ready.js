@@ -14,10 +14,11 @@ function safeDetail(value){
         .replace(/(?:Bot|Bearer)\s+\S+|(?:gsk_|sk-)[A-Za-z0-9_-]+/g,'[redacted credential]').slice(0,300);
 }
 async function syncName(client){
-    if(client.user.username===brand.name)return;
+    const target=brand.accountName??brand.name;
+    if(client.user.username===target)return;
     try{
-        await client.user.setUsername(brand.name);
-        console.log('Bot name synced:',brand.name);
+        await client.user.setUsername(target);
+        console.log('Bot name synced:',target);
     }catch(error){
         const code=typeof error?.code==='number'?error.code:'unknown';
         const status=typeof error?.status==='number'?error.status:'unknown';
@@ -25,6 +26,22 @@ async function syncName(client){
         const details=Array.isArray(rows)?rows.slice(0,3).map(row=>({code:safeDetail(row?.code),message:safeDetail(row?.message)})):[];
         console.error('Bot name sync failed:',JSON.stringify({code,status,username:details}));
         console.error('Bot remains online with its current account name. No automatic retry in this process.');
+    }
+}
+
+async function syncNickname(client){
+    // Only the configured primary server; never rename the bot in every joined guild.
+    const guildId=process.env.GUILD_ID;
+    if(!guildId||!brand.nickname)return;
+    const guild=client.guilds?.cache?.get(guildId);
+    if(!guild){console.error('Bot nickname sync skipped: primary server is not cached.');return;}
+    try{
+        const member=guild.members.me??await guild.members.fetchMe();
+        if(member.nickname===brand.nickname)return;
+        await member.setNickname(brand.nickname,'Blood Moon bot branding');
+        console.log('Bot server nickname synced:',brand.nickname);
+    }catch(error){
+        console.error('Bot nickname sync failed:',JSON.stringify({code:typeof error?.code==='number'?error.code:'unknown',status:typeof error?.status==='number'?error.status:'unknown'}));
     }
 }
 
@@ -37,6 +54,7 @@ module.exports = {
         console.log(`Online as ${client.user.tag}`);
         console.log(`Commands: ${client.commands.size}`);
         void syncName(client);
+        void syncNickname(client);
 
         if (process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI) {
             startMatchExpiryScheduler(client);

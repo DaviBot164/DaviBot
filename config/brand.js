@@ -1,5 +1,7 @@
 module.exports = Object.freeze({
     name: 'Kitsune',
+    accountName: 'KitsuneBM',
+    nickname: 'Kitsune 🦊',
     server: 'Blood Moon',
     title: 'Keeper of the Blood Moon',
 
