@@ -14,6 +14,7 @@ const data=new SlashCommandBuilder().setName('kitsune').setDescription('Test dia
         .addStringOption(option=>option.setName('text').setDescription('Exact chat text. Start with kitsune hi; continue with || follow-ups.').setRequired(true).setMaxLength(1500))
         .addStringOption(option=>option.setName('persona').setDescription('Simulated speaker; live accounts are unaffected.').addChoices(...['member','owner','mae','ash'].map(value=>({name:value,value}))))
         .addIntegerOption(option=>option.setName('seed').setDescription('Restart this scenario with a repeatable seed.').setMinValue(0).setMaxValue(2147483647))
+        .addStringOption(option=>option.setName('engine').setDescription('Built-in rules, or private external Groq trial.').addChoices({name:'built-in',value:'builtin'},{name:'Groq (private external trial)',value:'groq'}))
         .addStringOption(option=>option.setName('expected').setDescription('Optional expected category for a single turn.').setMaxLength(80)))
     .addSubcommand(sub=>sub.setName('testreset').setDescription('Clear your private test scenarios in this channel.'))
     .addSubcommand(sub=>sub.setName('unknown').setDescription('Review unfamiliar phrases, grouped by normalized wording.').addIntegerOption(pageOption))
@@ -35,9 +36,13 @@ async function execute(interaction) {
         try{
             const lab=require('../../handlers/kitsune/testLab');
             const input={userId:interaction.user.id,guildId:interaction.guildId,channelId:interaction.channelId,botId:interaction.client?.user?.id,botAvatar:interaction.client?.user?.displayAvatarURL?.({size:256})};
-            if(sub==='testreset')return reply('🦊 Cleared '+lab.resetLab(input)+' private test scenarios. Live conversation memory was not changed.');
-            const result=lab.runLab({...input,text:interaction.options.getString('text',true),persona:interaction.options.getString('persona')??'member',seed:interaction.options.getInteger('seed')??undefined,expected:interaction.options.getString('expected')??undefined});
-            const report=lab.formatReport(result);
+            if(sub==='testreset'){const ai=require('../../handlers/kitsune/aiTestLab');const aiCount=ai.resetAiLab(input);return reply('🦊 Cleared '+lab.resetLab(input)+' private test scenarios and '+aiCount+' private AI scenarios. Live conversation memory was not changed.');}
+            const engine=interaction.options.getString('engine')??'builtin';
+            if(!['builtin','groq'].includes(engine))throw Error('Choose builtin or groq.');
+            const runner=engine==='groq'?require('../../handlers/kitsune/aiTestLab'):lab;
+            const options={...input,text:interaction.options.getString('text',true),persona:interaction.options.getString('persona')??'member',seed:interaction.options.getInteger('seed')??undefined,expected:interaction.options.getString('expected')??undefined};
+            const result=engine==='groq'?await runner.runAiLab(options):runner.runLab(options);
+            const report=engine==='groq'?runner.formatAiReport(result):runner.formatReport(result);
             return interaction.editReply({content:report.length<=1850?report:'🦊 Private test completed: '+result.turns.length+' turns. Full results are in the attached report.\n'+result.limitations,files:[{attachment:Buffer.from(report,'utf8'),name:'kitsune-test-report.txt'}],allowedMentions:{parse:[]}});
         }catch(error){return reply('Test could not complete: '+error.message+' No live conversation or learning data was changed.');}
     }
@@ -53,7 +58,7 @@ async function execute(interaction) {
             const page=interaction.options.getInteger('page')??1;
             const rows=await (sub==='unknown'?repo.listUnknownPhrases:repo.listLearnedPhrases)(interaction.guildId,page);
             const lines=rows.map(row=>`• ${escapeMarkdown(row.phrase)} — ${sub==='unknown'?row.seen_count+' sightings':row.intent.replace(/_/g,' ')}`);
-            return reply(`🦊 ${sub==='unknown'?'Unknown':'Learned'} phrases • Page ${page}\n${lines.join('\n')||'No phrases on this page.'}\n\nTeach: /kitsune teach • Review: /kitsune learned • Remove learned: /kitsune forget • Clear unknown: /kitsune clearunknown\nOnly approved meanings are used. No automatic training or external AI API.`);
+            return reply(`🦊 ${sub==='unknown'?'Unknown':'Learned'} phrases • Page ${page}\n${lines.join('\n')||'No phrases on this page.'}\n\nTeach: /kitsune teach • Review: /kitsune learned • Remove learned: /kitsune forget • Clear unknown: /kitsune clearunknown\nOnly approved meanings are used. No automatic training. External AI is available only through the owner’s explicit private test engine.`);
         }
         const raw=interaction.options.getString('phrase',true),phrase=learningPhrase(raw);
         if(!phrase)return reply('Use a short English phrase without the Kitsune prefix, links, mentions, long numbers or private tokens.');

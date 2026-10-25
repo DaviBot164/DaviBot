@@ -5,6 +5,7 @@ let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
 class Builder{constructor(){this.json={options:[]};}setName(v){this.json.name=v;return this;}setDescription(){return this;}setDefaultMemberPermissions(){return this;}setDMPermission(){return this;}setRequired(){return this;}setMinLength(){return this;}setMaxLength(){return this;}setMinValue(){return this;}setMaxValue(){return this;}addChoices(){return this;}addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}}
 const cmdPath=path.join(root,'commands/information/kitsune.js');let database=0,runs=0,resets=0,long=false;
 Module._load=function(request,parent){if(parent?.filename===cmdPath){
+ if(request==='../../handlers/kitsune/aiTestLab')return{resetAiLab:()=>0};
  if(request==='discord.js')return{SlashCommandBuilder:Builder,PermissionFlagsBits:{Administrator:8n},MessageFlags:{Ephemeral:64},escapeMarkdown:x=>x};
  if(request==='../../handlers/kitsune/settings')return{OWNER_ID:'owner'};
  if(request==='../../handlers/kitsune/learningRuntime')return{enabled(){database++;throw Error('Do not call learning runtime in test mode');}};
@@ -17,7 +18,7 @@ function interaction(user='owner',sub='test',guildId='g'){const sent=[];return{u
 // Keep the lazy lab import intercepted during execution.
 (async()=>{
  const prior=Module._load;
- Module._load=function(request,parent){if(parent?.filename===cmdPath&&request==='../../handlers/kitsune/testLab')return{runLab(input){runs++;eq(input.userId,'owner');return{turns:[{}],limitations:'Built-in rules only.'};},resetLab(){resets++;return 2;},formatReport(){return long?'x'.repeat(3000):'Private result';}};return prior.apply(this,arguments);};
+ Module._load=function(request,parent){if(parent?.filename===cmdPath&&request==='../../handlers/kitsune/aiTestLab')return{resetAiLab:()=>0};if(parent?.filename===cmdPath&&request==='../../handlers/kitsune/testLab')return{runLab(input){runs++;eq(input.userId,'owner');return{turns:[{}],limitations:'Built-in rules only.'};},resetLab(){resets++;return 2;},formatReport(){return long?'x'.repeat(3000):'Private result';}};return prior.apply(this,arguments);};
  try{
   let i=interaction('admin');await command.execute(i);eq(runs,0);eq(i.sent[0].flags,64);
   i=interaction('owner','test',null);await command.execute(i);eq(runs,0);eq(i.sent[0].flags,64);
