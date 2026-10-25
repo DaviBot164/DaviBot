@@ -77,6 +77,7 @@ const statePath=path.join(root,'handlers/kitsune/state.js');
 const mainPath=path.join(root,'handlers/kitsuneReplyHandler.js');
 const discord={escapeMarkdown:x=>x.replace(/\*/g,'\\*'),PermissionFlagsBits:{ViewChannel:1,ReadMessageHistory:2,SendMessages:4,SendMessagesInThreads:8,EmbedLinks:16}};
 Module._load=function(request,parent){
+ if(parent?.filename===mainPath&&request==='./kitsune/knowledgeRuntime')return{findKnowledge:async()=>null};
  if([responsePath,statePath,parserPath].includes(parent?.filename)&&request==='./settings')return fakeSettings;
  if(parent?.filename===mainPath&&request==='./kitsune/settings')return fakeSettings;
  if([mainPath,responsePath].includes(parent?.filename)&&request==='discord.js')return discord;

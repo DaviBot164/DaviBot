@@ -126,7 +126,7 @@ async function main() {
   setRequired(v){this.json.required=v;return this;}setMinLength(){return this;}setMaxLength(){return this;}setAutocomplete(){return this;}setMinValue(){return this;}setMaxValue(){return this;}
   addChoices(...v){this.json.choices=v;return this;}
   addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}
-  addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}
+  addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}addUserOption(fn){return this.addSubcommand(fn);}addRoleOption(fn){return this.addSubcommand(fn);}addChannelOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}
  }
  const commandPath=path.join(root,'commands/information/kitsune.js');let taught=0,forgot=0,invalidated=0;
  const commandRepo={teachPhrase:async()=>{taught++;},forgetPhrase:async()=>{forgot++;return true;},listUnknownPhrases:async()=>[{phrase:'moonfox greeting',seen_count:2}],listLearnedPhrases:async()=>[],dismissUnknownPhrase:async()=>true};
@@ -140,7 +140,7 @@ async function main() {
   return baseLoad.apply(this,arguments);
  };
  let command;try{command=require(commandPath);}finally{Module._load=baseLoad;}
- const json=command.data.toJSON();eq(json.name,'kitsune');eq(json.options.length,8);assert.ok(json.options.find(x=>x.name==='teach').options[1].choices.length<=25);count++;
+ const json=command.data.toJSON();eq(json.name,'kitsune');eq(json.options.length,11);assert.ok(json.options.find(x=>x.name==='teach').options[1].choices.length<=25);count++;
  const interaction=(id,sub,phrase='moonfox greeting',meaning='hello')=>{
   const replies=[];return{user:{id},guildId:'g',options:{getSubcommand:()=>sub,getInteger:()=>1,getString:name=>name==='meaning'?meaning:phrase},
    reply:async p=>{replies.push(p);},deferReply:async()=>{},editReply:async p=>{replies.push(p);},replies};
@@ -171,6 +171,7 @@ async function main() {
    if(request==='discord.js')return{PermissionFlagsBits:{ViewChannel:1,ReadMessageHistory:2,SendMessages:4,SendMessagesInThreads:8,EmbedLinks:16}};
    if(request==='./kitsune/settings')return{...settings,USER_COOLDOWN:3000,CHANNEL_COOLDOWN:2000,SESSION_TTL:120000};
    if(request==='./kitsune/learningRuntime')return hook;
+   if(request==='./kitsune/knowledgeRuntime')return{findKnowledge:async()=>null};
    if(request==='./kitsune/help')return{plainHelp:()=> 'Help'};
   }
   return baseLoad.apply(this,arguments);

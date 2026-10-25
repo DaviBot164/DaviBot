@@ -16,6 +16,13 @@ async function initializeKitsuneLearningSchema() {
             expires_at TIMESTAMPTZ NOT NULL,
             PRIMARY KEY (guild_id, phrase)
         );
+        CREATE TABLE IF NOT EXISTS kitsune_knowledge (
+            guild_id TEXT NOT NULL, name VARCHAR(80) NOT NULL,
+            kind VARCHAR(20) NOT NULL CHECK(kind IN ('member','term','phrase','role','channel','command','fact','reply')),
+            explanation VARCHAR(500) NOT NULL DEFAULT '', target_id TEXT,
+            taught_by TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(guild_id,name)
+        );
         CREATE INDEX IF NOT EXISTS kitsune_unknown_expiry
             ON kitsune_unknown_phrases (expires_at);
         DELETE FROM kitsune_unknown_phrases WHERE expires_at<=NOW();

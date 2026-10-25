@@ -1,3 +1,4 @@
+const knowledge=require('./kitsune/knowledgeRuntime');
 const learning = require('./kitsune/learningRuntime');
 const { PermissionFlagsBits } = require('discord.js');
 
@@ -43,7 +44,13 @@ async function handleKitsuneReply(message) {
             if (learningInput && learning.enabled()) {
                 const aliases = await learning.getAliases(message.guildId);
                 if(aliases.size)request = parseRequest(message, now, aliases);
+
             }
+        }
+
+        if((!request||['fallback','reaction_question'].includes(request.category))&&learning.enabled()){
+            const text=knowledge.inputForKnowledge?.(message,getSession(message,now),now);
+            if(text){const row=await knowledge.findKnowledge(message.guildId,text);if(row)request={category:'learned_knowledge',knowledge:row};}
         }
 
         if (!request) return false;

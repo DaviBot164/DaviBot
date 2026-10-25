@@ -25,6 +25,7 @@ const data=new SlashCommandBuilder().setName('kitsune').setDescription('Test dia
             .addChoices(...Object.keys(config.intents).map(name=>({name:({continue:'continue — carry on the current topic',stop:'stop — end the conversation',restart:'restart — start a fresh conversation',change_topic:'change topic — leave the current subject'})[name]??name.replace(/_/g,' '),value:name})))))
     .addSubcommand(sub=>sub.setName('forget').setDescription('Remove a learned connection. Built-in rules stay intact.').addStringOption(phraseOption))
     .addSubcommand(sub=>sub.setName('dismiss').setDescription('Remove an unknown phrase from the review list.').addStringOption(phraseOption));
+require('../../handlers/kitsune/knowledgeCommand').addCommands(data);
 async function execute(interaction) {
     if(interaction.user.id!==OWNER_ID || !interaction.guildId) {
         return interaction.reply({content:'Only Davi can manage Kitsune learning in a server.',flags:MessageFlags.Ephemeral,allowedMentions:{parse:[]}});
@@ -48,6 +49,7 @@ async function execute(interaction) {
     }
     if(!runtime.enabled())return reply('Learning needs the existing PostgreSQL connection to be enabled.');
     try {
+        if(['remember','knowledge','unremember'].includes(sub))return await require('../../handlers/kitsune/knowledgeCommand').execute(interaction,reply);
         if(sub==='clearunknown') {
             const removed=await repo.clearUnknownPhrases(interaction.guildId);
             return reply(removed
@@ -78,7 +80,7 @@ async function execute(interaction) {
         if(sub==='dismiss')return reply(await repo.dismissUnknownPhrase(interaction.guildId,phrase)?'Unknown phrase removed from the list.':'That phrase is not in the unknown list.');
         return reply('Choose unknown, clearunknown, learned, teach, forget or dismiss.');
     } catch(error) {
-        if(/^Learned phrase limit reached\./u.test(error.message))return reply(error.message);
+        if(/^(?:Learned phrase limit reached\.|Knowledge limit reached\.)/u.test(error.message))return reply(error.message);
         console.error('Kitsune learning command failed:',error.code??'database error');
         return reply('Learning is temporarily unavailable. Your normal Kitsune conversation can continue.');
     }

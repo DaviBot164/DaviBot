@@ -33,7 +33,7 @@ async function main(){
   setDefaultMemberPermissions(v){this.json.default_member_permissions=String(v);return this;}setDMPermission(v){this.json.dm_permission=v;return this;}
   setRequired(v){this.json.required=v;return this;}setMinLength(){return this;}setMaxLength(){return this;}setAutocomplete(){return this;}setMinValue(){return this;}setMaxValue(){return this;}
   addChoices(...v){this.json.choices=v;return this;}addSubcommand(fn){const b=new Builder();fn(b);this.json.options.push(b.json);return this;}
-  addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}
+  addStringOption(fn){return this.addSubcommand(fn);}addIntegerOption(fn){return this.addSubcommand(fn);}addUserOption(fn){return this.addSubcommand(fn);}addRoleOption(fn){return this.addSubcommand(fn);}addChannelOption(fn){return this.addSubcommand(fn);}toJSON(){return this.json;}
  }
  const cmdPath=path.join(root,'commands/information/kitsune.js');let cleared=0,enabled=true,broken=false,removed=27;
  Module._load=function(request,parent){
@@ -46,7 +46,7 @@ async function main(){
   return original.apply(this,arguments);
  };
  let command;try{command=require(cmdPath);}finally{Module._load=original;}
- const schema=command.data.toJSON();eq(schema.options.length,8);eq(schema.dm_permission,false);
+ const schema=command.data.toJSON();eq(schema.options.length,11);eq(schema.dm_permission,false);
  const option=schema.options.find(x=>x.name==='clearunknown');assert.ok(option);count++;eq(option.options,[]);
  const interaction=(id='owner',guildId='g')=>{
   const replies=[];return{user:{id},guildId,replies,

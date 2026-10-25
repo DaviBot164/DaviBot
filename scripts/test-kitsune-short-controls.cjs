@@ -66,6 +66,7 @@ for(const [id,tone]of [[settings.OWNER_ID,'owner'],[settings.dialogue.maeId,'mae
 const mainPath=path.join(root,'handlers/kitsuneReplyHandler.js');
 const transportSettings={...settings,USER_COOLDOWN:3000,CHANNEL_COOLDOWN:2000,SESSION_TTL:120000};
 Module._load=function(request,parent){
+ if(parent?.filename===mainPath&&request==='./kitsune/knowledgeRuntime')return{findKnowledge:async()=>null};
  if(parent?.filename===mainPath&&request==='./kitsune/learningRuntime')return{inputForLearning:()=>null,enabled:()=>false};
  if(parent?.filename===mainPath&&request==='discord.js')return{PermissionFlagsBits:{SendMessagesInThreads:1,SendMessages:2,ViewChannel:4,ReadMessageHistory:8,EmbedLinks:16}};
  if(parent?.filename===mainPath&&request==='./kitsune/settings')return transportSettings;

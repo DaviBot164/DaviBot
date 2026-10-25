@@ -190,6 +190,7 @@ function buildBaseResponse(message, request) {
         return { payload: { content }, category: context, question, session };
     }
 
+    if(category==='learned_knowledge')return response(require('./knowledge').render(request.knowledge),'learned_knowledge',false,false);
     if (category === 'learned_continue') {
         const prior=request.conversation;
         if(!prior)return response('What would you like to continue? Tell me the topic.', 'general');
