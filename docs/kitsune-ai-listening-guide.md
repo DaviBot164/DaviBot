@@ -1,0 +1,9 @@
+# Advice boundaries after the live PvP regression
+
+The exact live chain showed that the previous narrow cue matcher missed “no advice please”. It now handles no advice/tips, without advice, do not want/need advice, listening/company cues, and negated advice requests. Explicit cues are evaluated in text order; a later separate request can allow advice, while the positive words inside “do not want advice” cannot accidentally enable it. Quoted text and reported whole commands remain excluded from these preference flags.
+
+“Based only on what I told you” and “without adding/inventing game mechanics” set an explicit grounding preference. A later advice request gets its own system reminder. Guidance specifically excludes unsupported opponent guard drops, stance changes, cooldowns, movement abilities and vulnerability windows, including in simplified examples. These flags remain scoped to the same private scenario and are committed only after a successful model response. Seed/reset/expiry still clear scenario state.
+
+This update fixes application cue recognition and changes model guidance, not a deterministic filter on generated advice. The model may still ignore guidance; repeat the live regression to evaluate it. It does not overwrite bad replies with canned text, retry the provider, add tokens to the local cap, alter the Groq wait handling, change public built-in chat or load server knowledge into AI tests.
+
+After deploy, run the original three-turn listening batch with seed 17; continue the three-turn advice/example/recall batch without a seed, in the same channel and persona. Check no unsolicited advice, no newly invented opponent conditions, and correct recall separately. All offline transport calls are mocked. Passing tests establish the outgoing guidance, not the quality of a future model response. No slash registration or database changes.
