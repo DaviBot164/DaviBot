@@ -4,8 +4,10 @@ const {OWNER_ID}=require('./settings');
 const endpoint='https://api.groq.com/openai/v1/chat/completions';
 const {buildPrompt:prompt}=require('./aiPersona');
 const {prepareDialogue}=require('./aiDialogue');
+const {rateWait,rateMessage}=require('./aiRateLimit');
+const {nextPreferences,guidance}=require('./aiTurnGuidance');
 function createAiLab({fetchFn=(...args)=>globalThis.fetch(...args),env=process.env,clock=Date.now,limits=config}={}){
- const labs=new Map();let busy=false,day='',requests=0;
+ const labs=new Map();let busy=false,day='',requests=0,providerUntil=0;
  function authorize(input){if(input.userId!==OWNER_ID||!input.guildId||!input.channelId)throw Error('Only Davi can use this private AI lab in a server channel.');}
  function cleanup(now){for(const[key,lab]of labs)if(now-lab.usedAt>=limits.ttlMs)labs.delete(key);}
  function resetAiLab(input){authorize(input);if(busy)throw Error('An AI test is running. Wait for it to finish before resetting.');let count=0;for(const[key,lab]of labs)if(lab.guildId===input.guildId&&lab.channelId===input.channelId&&lab.userId===input.userId){labs.delete(key);count++;}return count;}
@@ -15,7 +17,7 @@ function createAiLab({fetchFn=(...args)=>globalThis.fetch(...args),env=process.e
    return await Promise.race([
     (async()=>{
      const response=await fetchFn(endpoint,{method:'POST',redirect:'error',signal:controller.signal,headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({model:limits.model,messages,temperature:0.6,max_completion_tokens:limits.maxCompletionTokens,reasoning_effort:'low',include_reasoning:false,stream:false})});
-     if(!response.ok){const status=response.status;return {error:status===429?'Groq rate limit reached. Wait before testing again.':status===401||status===403?'Groq rejected the key or model access. Check the secret and Free Plan account.':status===400||status===404?'Groq rejected the configured model or request. Check current model availability.':'Groq is temporarily unavailable. No automatic retry was made.'};}
+     if(!response.ok){const status=response.status;if(status===429){const wait=rateWait(response.headers);return{error:rateMessage(wait),wait};}return {error:status===401||status===403?'Groq rejected the key or model access. Check the secret and Free Plan account.':status===400||status===404?'Groq rejected the configured model or request. Check current model availability.':'Groq is temporarily unavailable. No automatic retry was made.'};}
      const body=await response.json();const choice=body?.choices?.[0],reply=choice?.message?.content;
      if(typeof reply!=='string'||!reply.trim()||reply.length>10_000||/<(?:think|analysis)>/iu.test(reply))return {error:'Groq returned no usable final reply. No history was committed for this turn.'};
      return {reply:reply.trim().slice(0,limits.maxReply),truncated:choice.finish_reason==='length'||reply.trim().length>limits.maxReply};
@@ -41,15 +43,17 @@ function createAiLab({fetchFn=(...args)=>globalThis.fetch(...args),env=process.e
   try{
    const now=clock();cleanup(now);const today=new Date(now).toISOString().slice(0,10);if(day!==today){day=today;requests=0;}
    const key=JSON.stringify([input.guildId,input.channelId,input.userId,persona]);let lab=labs.get(key);
-   if(!lab||input.seed!==undefined){lab={guildId:input.guildId,channelId:input.channelId,userId:input.userId,history:[],usedAt:now};if(!labs.has(key)&&labs.size>=limits.maxSessions)labs.delete(labs.keys().next().value);labs.set(key,lab);}
+   if(!lab||input.seed!==undefined){lab={guildId:input.guildId,channelId:input.channelId,userId:input.userId,history:[],preferences:{},usedAt:now};if(!labs.has(key)&&labs.size>=limits.maxSessions)labs.delete(labs.keys().next().value);labs.set(key,lab);}
    const turns=[];
    for(const text of lines){
+    if(clock()<providerUntil){turns.push({input:text,status:'stopped',error:rateMessage(Math.ceil((providerUntil-clock())/1000))});break;}
     if(requests>=limits.dailyRequests){turns.push({input:text,status:'stopped',error:'Local trial cap reached ('+limits.dailyRequests+' requests per UTC day per running bot process).'});break;}
     requests++;
-    const prepared=prepareDialogue(text);
-    const messages=[{role:'system',content:prompt(persona)},...lab.history,{role:'user',content:prepared}];
+    const prepared=prepareDialogue(text),preferences=nextPreferences(lab.preferences,text);
+    const messages=[{role:'system',content:prompt(persona)+guidance(preferences)},...lab.history,{role:'user',content:prepared}];
     const result=await completion(messages,apiKey);
-    if(result.error){turns.push({input:text,status:'error',error:result.error});break;}
+    if(result.error){if(result.wait)providerUntil=clock()+result.wait*1000;turns.push({input:text,status:'error',error:result.error});break;}
+    lab.preferences=preferences;
     lab.history=[...lab.history,{role:'user',content:prepared},{role:'assistant',content:result.reply}];
     while(lab.history.length>limits.historyMessages||lab.history.reduce((sum,m)=>sum+m.content.length,0)>limits.historyChars)lab.history.splice(0,2);
     lab.usedAt=clock();turns.push({input:text,status:'generated',reply:result.reply,truncated:result.truncated});
