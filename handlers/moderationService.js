@@ -112,9 +112,10 @@ async function sendModerationLog({
     moderationCase,
     target = null
 }) {
+    if(!require('../utils/guildContext').enabled('logging')||!channels.moderation)return null;
     const channel = await guild.channels.fetch(channels.moderation);
 
-    if (!channel?.isTextBased() || typeof channel.send !== 'function') {
+    if (!channel?.isTextBased?.() || typeof channel.send !== 'function') {
         throw new Error('Moderation log channel is unavailable.');
     }
 

@@ -74,7 +74,7 @@ function isolated(relative, dependencies) {
 
     let cases = 0;
     const service = isolated('handlers/moderationService.js', {
-        'discord.js': discord, '../config/channels': channels,
+        'discord.js': discord, '../config/channels': channels, '../utils/guildContext':require('../utils/guildContext'),
         '../utils/embeds': { createEmbed: () => new discord.EmbedBuilder().setDescription('test') },
         '../database/moderationCases': { createCase: async data => ({ ...data, id: ++cases }) },
         '../utils/logTracking': tracking

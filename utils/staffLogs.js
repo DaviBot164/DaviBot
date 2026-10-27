@@ -35,11 +35,11 @@ function isLogChannel(channelId) {
 }
 
 async function sendLog(guild, embed, channelId = channels.staffLogs, files = []) {
-    if(!require('./guildContext').enabled('logging'))return null;
+    if(!require('./guildContext').enabled('logging')||!channelId)return null;
     try {
         const channel = await guild.channels.fetch(channelId);
 
-        if (!channel?.isTextBased() || typeof channel.send !== 'function') {
+        if (!(typeof channel?.isTextBased==='function' && channel.isTextBased()) || typeof channel.send !== 'function') {
             throw new Error(`Log channel unavailable: ${channelId}`);
         }
 
@@ -312,8 +312,9 @@ async function logAuditEntry(entry, guild) {
 }
 
 async function logAvatarChange(guild, user, oldURL, newURL, server = false) {
+    if(!require('./guildContext').enabled('logging')||!channels.staffLogs)return null;
     const channel = await guild.channels.fetch(channels.staffLogs);
-    if (!channel?.isTextBased() || typeof channel.send !== 'function') throw new Error('Avatar log channel unavailable.');
+    if (!(typeof channel?.isTextBased==='function' && channel.isTextBased()) || typeof channel.send !== 'function') throw new Error('Avatar log channel unavailable.');
     const images = await avatarSnapshots(channel, oldURL, newURL);
     const embed = new EmbedBuilder()
         .setColor('#C8A45D')

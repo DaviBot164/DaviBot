@@ -47,15 +47,14 @@ function timeoutStatus(result) {
 }
 
 async function sendGuardianLog(message, result) {
-    if(!require('./guildContext').enabled('logging'))return null;
-    if(!require('./guildContext').enabled('logging'))return null;
+    if(!require('./guildContext').enabled('logging')||!channels.moderation)return null;
     if (!message.guild || !result?.blocked) return;
 
     const channel = await message.guild.channels.fetch(
         channels.moderation
     );
 
-    if (!channel?.isTextBased() || typeof channel.send !== 'function') {
+    if (!channel?.isTextBased?.() || typeof channel.send !== 'function') {
         throw new Error('Guardian log channel is unavailable.');
     }
 

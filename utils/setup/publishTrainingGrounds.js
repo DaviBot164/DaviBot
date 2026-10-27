@@ -65,12 +65,13 @@ function buildTrainingPanel(guild = null) {
 }
 
 async function publishTrainingGrounds(guild) {
+    if(!channels.training)throw new Error('Choose a training channel in Studio first.');
     const channel = await guild.channels.fetch(
         channels.training
     );
 
     if (
-        !channel?.isTextBased() ||
+        !channel?.isTextBased?.() ||
         typeof channel.send !== 'function' ||
         !channel.messages?.fetch
     ) {
