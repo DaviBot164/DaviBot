@@ -1,11 +1,14 @@
 const {serverText}=require("../../utils/guildContext");
 const { SlashCommandBuilder, PermissionFlagsBits, PermissionsBitField, MessageFlags, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const {enabled}=require('../../utils/guildContext');
+const {moduleFor}=require('../../handlers/guildModules');
+const brand=require('../../config/brand');
 const { createEmbed } = require('../../utils/embeds');
 const HELP_MENU_ID = 'kitsune:help:section';
 const SECTIONS = [
     {
         id: 'progression',
-        name: '⚔️ PROGRESSION',
+        name: '⚔️ Progression',
         description: 'Levels, rewards and achievements',
         emoji: '⚔️',
         commands: {
@@ -15,23 +18,21 @@ const SECTIONS = [
             titles: 'Explore and equip titles.',
             leaderboard: 'View XP and level rankings.',
             corps: 'Browse faction members and ranks.',
-            legacy: serverText('Explore Blood Moon accomplishments.')
+            legacy: 'View a member’s community milestones.'
         }
     },
     {
         id: 'battles',
-        name: '🩸 PvP & TRAINING',
-        description: 'Matches, quests and training',
-        emoji: '🩸',
+        name: '🎮 Matches',
+        description: 'Organize and manage friendly matches',
+        emoji: '🎮',
         commands: {
-            match: 'Create a 1v1–5v5 match for any game.',
-            training: 'Access training activities.',
-            quests: 'View daily quests.'
+            match: 'Create a 1v1–5v5 match for any game.'
         }
     },
     {
         id: 'ranks',
-        name: '🏯 RANKS & TRIALS',
+        name: '🏯 Trials',
         description: 'Rank trials and advancement',
         emoji: '🏯',
         commands: {
@@ -40,7 +41,7 @@ const SECTIONS = [
     },
     {
         id: 'utility',
-        name: '⚙️ UTILITY',
+        name: '⚙️ Essentials',
         description: 'General bot commands',
         emoji: '⚙️',
         commands: {
@@ -51,7 +52,7 @@ const SECTIONS = [
     },
     {
         id: 'management',
-        name: '👑 RANK MANAGEMENT',
+        name: '👑 Rank management',
         description: 'Faction and rank administration',
         emoji: '👑',
         staff: true,
@@ -64,7 +65,7 @@ const SECTIONS = [
     },
     {
         id: 'moderation',
-        name: '🛡️ MODERATION',
+        name: '🛡️ Moderation',
         description: 'Moderation and member safety',
         emoji: '🛡️',
         staff: true,
@@ -87,7 +88,7 @@ const SECTIONS = [
     },
     {
         id: 'administration',
-        name: '🌑 ADMINISTRATION',
+        name: '🌑 Server management',
         description: 'Server setup and management',
         emoji: '🌑',
         staff: true,
@@ -101,7 +102,7 @@ const SECTIONS = [
     },
     {
         id: 'testing',
-        name: '🧪 TESTING',
+        name: '🧪 Preview tools',
         description: 'Staff testing tools',
         emoji: '🧪',
         staff: true,
@@ -112,6 +113,8 @@ const SECTIONS = [
     }
 ];
 function canViewCommand(interaction, command, staff = false) {
+    const feature=moduleFor(command.data.name);
+    if(feature&&!enabled(feature))return false;
     const permissions = interaction.memberPermissions;
     if (!permissions)
         return !staff &&
@@ -154,12 +157,13 @@ function getOtherCommands(interaction) {
 function buildHelpEmbed(interaction, selected = 'overview') {
     const sections = getVisibleSections(interaction);
     const other = getOtherCommands(interaction);
-    const embed = createEmbed('🌙 KITSUNE • COMMAND CENTER', selected === 'overview'
+    const sectionTitle=sections.find(s=>s.id===selected)?.name??(selected==='other'?'Other commands':'Help');
+    const embed = createEmbed(selected==='overview'?`${brand.name} · Help`:sectionTitle, selected === 'overview'
         ? [
-            serverText('**Welcome to the Blood Moon command center.**'),
-            'Select a category below to explore its commands.',
+            `Commands for **${brand.server}**.`,
+            'Choose a category below for descriptions.',
             '',
-            'Commands are filtered by default member permissions. Server command overrides may affect access.'
+            'Only enabled systems and commands available to your permissions are listed.'
         ].join('\n')
         : 'Explore your available commands.');
     let count = 0;
@@ -175,7 +179,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
         }
         if (other.length) {
             embed.addFields({
-                name: '📚 OTHER COMMANDS',
+                name: '📚 More commands',
                 value: other.map(([name]) => `\`/${name}\``).join(' • ')
             });
             count += other.length;
@@ -188,7 +192,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
             : section?.visible ?? [];
         if (commands.length) {
             embed.addFields({
-                name: section?.name ?? '📚 OTHER COMMANDS',
+                name: section?.name ?? '📚 More commands',
                 value: commands.map(([name, description]) => `\`/${name}\` — ${description}`).join('\n')
             });
         }
@@ -197,8 +201,12 @@ function buildHelpEmbed(interaction, selected = 'overview') {
         }
         count = commands.length;
     }
+    if(selected==='overview'){
+        const quick=[['profile','Your progress'],['daily','Daily reward'],['match','Find a match'],['ping','Check connection']].filter(([name])=>{const command=interaction.client.commands.get(name);return command&&canViewCommand(interaction,command);});
+        if(quick.length)embed.setDescription([`Commands for **${brand.server}**.`,quick.map(([name,label])=>`\`/${name}\` · ${label}`).join('\n'),'','Choose a category below for details.'].join('\n'));
+    }
     embed.setFooter({
-        text: serverText(`KITSUNE • BLOOD MOON • ${count} Commands`)
+        text: `${brand.footer} · ${count} command${count===1?'':'s'}`
     });
     const icon = interaction.guild?.iconURL({ size: 256 });
     if (icon) {

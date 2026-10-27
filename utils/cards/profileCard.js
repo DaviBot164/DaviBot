@@ -4,6 +4,7 @@ const { getProgress } = require('../leveling');
 const { getRank } = require('../../handlers/factionHandler');
 const { FACTIONS } = require('../../config/progression');
 const brand = require('../../config/brand');
+const theme=require('./theme');
 const WIDTH = 1100;
 const HEIGHT = 700;
 const COLORS = Object.freeze({
@@ -12,7 +13,8 @@ const COLORS = Object.freeze({
     white: '#F2F0F2',
     muted: '#AAA6B1',
     gold: '#D5B779',
-    crimson: '#B42D48',
+    crimson:'#B42D48',
+    get accent(){return theme.accent();},
     blue: '#70A9EF',
     green: '#7CC9A0',
     border: 'rgba(255,255,255,0.08)'
@@ -133,12 +135,12 @@ async function createProfileCard(member, user, { title = null, achievementCount 
     const ctx = canvas.getContext('2d');
     const background = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
     background.addColorStop(0, COLORS.background);
-    background.addColorStop(1, '#211019');
+    background.addColorStop(1,theme.shade(theme.accent(),.18));
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     const glow = ctx.createRadialGradient(1040, 0, 0, 1040, 0, 430);
-    glow.addColorStop(0, 'rgba(180,45,72,0.17)');
-    glow.addColorStop(1, 'rgba(180,45,72,0)');
+    glow.addColorStop(0,theme.accent()+'2b');
+    glow.addColorStop(1,theme.accent()+'00');
     ctx.fillStyle = glow;
     ctx.fillRect(600, 0, 500, 430);
     const faction = getFaction(user);
@@ -179,7 +181,7 @@ async function createProfileCard(member, user, { title = null, achievementCount 
     rounded(ctx, barX, barY, barWidth, barHeight, 6, '#292631');
     if (percentage > 0) {
         const fill = ctx.createLinearGradient(barX, barY, barX + barWidth, barY);
-        fill.addColorStop(0, COLORS.crimson);
+        fill.addColorStop(0, COLORS.accent);
         fill.addColorStop(1, COLORS.gold);
         // Clip the fill so very small values keep the rounded bar shape.
         ctx.save();
