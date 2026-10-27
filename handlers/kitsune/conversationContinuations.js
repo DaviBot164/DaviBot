@@ -3,18 +3,21 @@ function recognizeContinuation(text,session){
  const core=session?.core??{};
  const game=core.topic==='game'||/^game_/u.test(session?.topicCategory??session?.category??'');
  if(game){
+  if(/^(?:i am )?not asking you to fix (?:it|this)$/u.test(text))return {kind:'game_continuation',data:{form:'telling',noAdvice:true}};
+  if(/^(?:one|a) (?:short|small) suggestion would help$/u.test(text))return {kind:'game_continuation',data:{form:'grounded_advice',advice:true}};
+  if(core.noAdvice&&text==='what do you mean')return {kind:'game_continuation',data:{form:'listen_explanation',noAdvice:true}};
   if(/^(?:just )?listen(?: and keep it short)?$/u.test(text))return {kind:'game_continuation',data:{form:'listen',noAdvice:true,brief:/keep it short/u.test(text)}};
   if(/^(?:now )?(?:give me )?one (?:small |short )?tip based only on what i told you$/u.test(text))return {kind:'game_continuation',data:{form:'grounded_advice',advice:true}};
   if(/^(?:no more tips|not asking for advice yet)$/u.test(text))return {kind:'game_continuation',data:{form:'stop',noAdvice:true}};
   if(text==='just telling you')return {kind:'game_continuation',data:{form:'telling',noAdvice:true}};
   if(text==='project slayers')return {kind:'game_continuation',data:{form:'game_name'}};
-  if(text==='i keep attacking too early')return {kind:'game_continuation',data:{form:'early'}};
+  if(/^(?:i keep attacking too early|i rushed my attacks(?: again)?|i keep rushing my attacks)$/u.test(text))return {kind:'game_continuation',data:{form:'early'}};
   if(/^(?:thats|that is) why i lose$/u.test(text))return {kind:'game_continuation',data:{form:'reason'}};
   if(core.gameAdvice&&!core.noAdvice){
-   if(text==='explain what you mean')return {kind:'game_continuation',data:{form:'explain_advice',advice:true}};
+   if(/^(?:explain what you mean|what do you mean)$/u.test(text))return {kind:'game_continuation',data:{form:'explain_advice',advice:true}};
    if(text==='what do you mean by an exchange')return {kind:'game_continuation',data:{form:'exchange',advice:true}};
    if(text==='give me an example')return {kind:'game_continuation',data:{form:'example',advice:true}};
-   if(text==='simpler')return {kind:'game_continuation',data:{form:'simpler',advice:true}};
+   if(/^(?:simpler|say it (?:more )?simply|simplify that)$/u.test(text))return {kind:'game_continuation',data:{form:'simpler',advice:true}};
   }
 
   if(/^(?:got any advice|any small tip|any advice)$/u.test(text))return {kind:'game_continuation',data:{form:'advice',advice:true}};
@@ -60,6 +63,7 @@ function continuationResponse(data,memory){
  const detailReplies={
   lost_listen:'Another loss. I am listening; no advice.',
   listen:'I am listening. No tips.',
+  listen_explanation:'I mean I can listen without offering advice.',
   grounded_advice:grounded,
   explain_advice:memory.gameAdvice==='early_attack'?'You said you attack too early. Give yourself a moment before attacking.':memory.gameAdvice==='grounded_observation'?'Notice one thing you did before losing. We have not identified a specific mistake yet.':'Focus on one mistake you noticed in the last match.',
   exchange:'An exchange is one brief back-and-forth in a fight: one player attacks, and the other responds.',

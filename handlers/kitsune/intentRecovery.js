@@ -31,8 +31,9 @@ function recoverIntent(frame,session,lookup){
  if(/^(?:i )?lost (?:another |a |the )?(?:pvp )?match (?:no advice|no tips|do not give me (?:advice|tips))(?: please)?$/u.test(t))return out('game_continuation',{form:'lost_listen',noAdvice:true},true);
  const continuation=recognizeContinuation(t,session);
  if(continuation)return out(continuation.kind,continuation.data,true);
+ if(gameContext&&/^(?:thats|that is) enough (?:lets|let us) talk about music$/u.test(t))return out('music_topic',{},true);
  if(/^(?:lets|let us) leave games and talk about music$/u.test(t))return out('music_topic',{},true);
- if(/^mostly calm stuff$/u.test(t)&&/music/u.test(session?.topicCategory??session?.category??''))return out('music_quiet',{},true);
+ if(/^(?:mostly calm stuff|something calm|something quiet)$/u.test(t)&&/music/u.test(session?.topicCategory??session?.category??''))return out('music_quiet',{},true);
  if(/^good just gaming$/u.test(t))return out('game_update',{form:'playing'},true);
  if(gameContext&&/^lost again$/u.test(t))return out('game_update',{form:'lost'},true);
  if(gameContext&&/^not angry$/u.test(t))return out('game_update',{form:'not_angry'},true);
