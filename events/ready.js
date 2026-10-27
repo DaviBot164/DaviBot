@@ -53,6 +53,7 @@ module.exports = {
         console.log(`${brand.name} • ${brand.server}`);
         console.log(`Online as ${client.user.tag}`);
         console.log(`Commands: ${client.commands.size}`);
+        if(process.env.KITSUNE_CONTROL_ENABLED==='true')require('../handlers/control/server').startControlServer(client);
         void syncName(client);
         void syncNickname(client);
 
