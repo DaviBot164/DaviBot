@@ -27,6 +27,8 @@ function recoverIntent(frame,session,lookup){
  const light=memory.nonPersonal?lightQuestions[memory.questionIndex]:null;
  const helpContext=memory.topic==='help'&&Boolean(memory.person);
  const gameContext=memory.topic==='game'||/^game_/u.test(session?.topicCategory??session?.category??'');
+ // A narrated game loss can open a conversation while explicitly declining advice.
+ if(/^(?:i )?lost (?:another |a |the )?(?:pvp )?match (?:no advice|no tips|do not give me (?:advice|tips))(?: please)?$/u.test(t))return out('game_continuation',{form:'lost_listen',noAdvice:true},true);
  const continuation=recognizeContinuation(t,session);
  if(continuation)return out(continuation.kind,continuation.data,true);
  if(/^(?:lets|let us) leave games and talk about music$/u.test(t))return out('music_topic',{},true);

@@ -3,12 +3,15 @@ function recognizeContinuation(text,session){
  const core=session?.core??{};
  const game=core.topic==='game'||/^game_/u.test(session?.topicCategory??session?.category??'');
  if(game){
+  if(/^(?:just )?listen(?: and keep it short)?$/u.test(text))return {kind:'game_continuation',data:{form:'listen',noAdvice:true,brief:/keep it short/u.test(text)}};
+  if(/^(?:now )?(?:give me )?one (?:small |short )?tip based only on what i told you$/u.test(text))return {kind:'game_continuation',data:{form:'grounded_advice',advice:true}};
   if(/^(?:no more tips|not asking for advice yet)$/u.test(text))return {kind:'game_continuation',data:{form:'stop',noAdvice:true}};
   if(text==='just telling you')return {kind:'game_continuation',data:{form:'telling',noAdvice:true}};
   if(text==='project slayers')return {kind:'game_continuation',data:{form:'game_name'}};
   if(text==='i keep attacking too early')return {kind:'game_continuation',data:{form:'early'}};
   if(/^(?:thats|that is) why i lose$/u.test(text))return {kind:'game_continuation',data:{form:'reason'}};
   if(core.gameAdvice&&!core.noAdvice){
+   if(text==='explain what you mean')return {kind:'game_continuation',data:{form:'explain_advice',advice:true}};
    if(text==='what do you mean by an exchange')return {kind:'game_continuation',data:{form:'exchange',advice:true}};
    if(text==='give me an example')return {kind:'game_continuation',data:{form:'example',advice:true}};
    if(text==='simpler')return {kind:'game_continuation',data:{form:'simpler',advice:true}};
@@ -52,16 +55,23 @@ function recognizeContinuation(text,session){
 function continuationResponse(data,memory){
  const core={...memory,topic:'game'};
  const replies={platform:'Roblox, then. What kind of game are you playing there?',opponent:'They played better that time, from what you saw. What stood out about the match?',no_blame:'You are not blaming anyone, understood. We can talk about the match without turning it into an argument.',improve:'You want to improve, then. What part would you like to get better at?',advice:'Try focusing on one thing next match: notice what happens just before you lose an exchange, then practise responding to that.',short:'Focus on one mistake from the last match.',stop:'Enough advice, understood. We can just chat.'};
+ const earlyAdvice=memory.matchIssue==='early_attack';
+ const grounded=earlyAdvice?'Wait a little longer before your next attack.':'You have only mentioned losing; notice one mistake next match.';
  const detailReplies={
+  lost_listen:'Another loss. I am listening; no advice.',
+  listen:'I am listening. No tips.',
+  grounded_advice:grounded,
+  explain_advice:memory.gameAdvice==='early_attack'?'You said you attack too early. Give yourself a moment before attacking.':memory.gameAdvice==='grounded_observation'?'Notice one thing you did before losing. We have not identified a specific mistake yet.':'Focus on one mistake you noticed in the last match.',
   exchange:'An exchange is one brief back-and-forth in a fight: one player attacks, and the other responds.',
   example:'For example, you attack, your opponent blocks, and then they counterattack. That short back-and-forth is an exchange.',
-  simpler:memory.gameAdvicePhase==='example'||memory.gameAdvicePhase==='exchange'?'An exchange is a short back-and-forth in a fight.':'Look at one mistake from the last match.',
+  simpler:memory.gameAdvice==='early_attack'?'Pause before attacking.':memory.gameAdvice==='grounded_observation'?'Notice one mistake.':memory.gameAdvicePhase==='example'||memory.gameAdvicePhase==='exchange'?'An exchange is a short back-and-forth in a fight.':'Look at one mistake from the last match.',
   game_name:'Project Slayers, then. What has your recent match been like?',
-  early:'You keep attacking too early, from what you noticed. I am following; you can tell me more.',
+  early:memory.briefGameReplies?'You keep attacking too early. I am listening.':'You keep attacking too early, from what you noticed. I am following; you can tell me more.',
   reason:memory.matchIssue==='early_attack'?'You think attacking too early is part of why you lose. That is your observation; we do not have to turn it into advice.':'What part of the match do you think led to the loss?',
   telling:'You are just telling me, understood. I will listen without adding tips.'
  };
- if(data.advice){core.noAdvice=false;core.gameAdvice='one_mistake';core.gameAdvicePhase=data.form;}
+ if(data.advice){core.noAdvice=false;core.gameAdvice=data.form==='grounded_advice'?(earlyAdvice?'early_attack':'grounded_observation'):(data.form==='advice'?'one_mistake':memory.gameAdvice??'one_mistake');core.gameAdvicePhase=data.form;}
+ if(data.brief)core.briefGameReplies=true;
  if(data.form==='game_name')core.gameName='project_slayers';
  if(data.form==='early')core.matchIssue='early_attack';
  if(data.noAdvice){core.noAdvice=true;core.gameAdvice=null;}
