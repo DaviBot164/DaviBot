@@ -14,6 +14,7 @@ async function sendTicketLog(
         description
     }
 ) {
+    if(!require('./guildContext').enabled('logging'))return null;
     const channel =
         guild.channels.cache.get(
             channels.staffLogs

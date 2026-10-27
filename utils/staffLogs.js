@@ -35,6 +35,7 @@ function isLogChannel(channelId) {
 }
 
 async function sendLog(guild, embed, channelId = channels.staffLogs, files = []) {
+    if(!require('./guildContext').enabled('logging'))return null;
     try {
         const channel = await guild.channels.fetch(channelId);
 

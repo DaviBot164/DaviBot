@@ -12,13 +12,13 @@ const {
 
 const roles = require('../config/roles');
 
-const ACHIEVEMENT_ROLE_IDS = Object.freeze([
+function achievementRoleIds(){return [
     roles.moonbound,
     roles.crimsonBloom,
     roles.bloodbound,
     roles.nightAscendant,
     roles.eternalMoon
-]);
+];}
 
 function calculateAchievementPoints(
     unlockedAchievements
@@ -52,7 +52,7 @@ async function syncAchievementRole(
         rank?.roleId ?? null;
 
     const rolesToRemove =
-        ACHIEVEMENT_ROLE_IDS.filter(
+        achievementRoleIds().filter(
             roleId =>
                 roleId !== targetRoleId &&
                 member.roles.cache.has(roleId)

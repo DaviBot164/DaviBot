@@ -6,7 +6,7 @@ const {contextualCategory}=require('../kitsune/context');
 const {validate,nameKey}=require('../kitsune/knowledge');
 const learningConfig=require('../../config/kitsuneLearning');
 const {OWNER_ID}=require('../kitsune/settings');
-function createHandler({client,key,repos,runTest,invalidate=()=>{},clock=Date.now}){
+function createHandler({client,key,repos,runTest,invalidate=()=>{},clock=Date.now,management=null,inGuild=(_guild,callback)=>callback()}){
  let windowStart=0,count=0;
  const reply=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));};
  const authenticate=req=>{const incoming=String(req.headers.authorization??'');const expected='Bearer '+key;return Buffer.byteLength(incoming)===Buffer.byteLength(expected)&&crypto.timingSafeEqual(Buffer.from(incoming),Buffer.from(expected));};
@@ -21,11 +21,15 @@ function createHandler({client,key,repos,runTest,invalidate=()=>{},clock=Date.no
    if(req.method==='GET'&&url.pathname==='/v1/guilds')return reply(res,200,{guilds:[...client.guilds.cache.values()].map(g=>({id:g.id,name:g.name})).slice(0,200)});
    let body={};if(req.method==='POST'){
     if(!String(req.headers['content-type']??'').startsWith('application/json'))return reply(res,415,{error:'JSON required'});
-    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>16000)return reply(res,413,{error:'Body too large'});chunks.push(chunk);}body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>96000)return reply(res,413,{error:'Body too large'});chunks.push(chunk);}body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    }
    const guildId=req.method==='GET'?url.searchParams.get('guildId'):body.guildId;
    if(typeof guildId!=='string'||!/^\d{16,22}$/u.test(guildId))return reply(res,400,{error:'Invalid guild'});
    const guild=client.guilds.cache.get(guildId);if(!guild)return reply(res,404,{error:'Guild unavailable'});
+   if(['/v1/settings','/v1/setup/preview','/v1/setup/publish','/v1/welcome/preview'].includes(url.pathname)){
+    if(!management)return reply(res,503,{error:'Management unavailable'});
+    try{return reply(res,200,await management.handle(url.pathname,req.method,guild,body));}catch(error){return reply(res,error.code==='SETTINGS_CONFLICT'?409:400,{error:'Management request failed. Reload settings, check selected resources and permissions.'});}
+   }
    if(req.method==='POST'&&url.pathname==='/v1/test'){
     if(typeof body.text!=='string'||!body.text.trim()||body.text.length>1500)return reply(res,400,{error:'Invalid test'});
     if(!['member','owner'].includes(body.persona))return reply(res,400,{error:'Invalid persona'});
@@ -45,7 +49,7 @@ function createHandler({client,key,repos,runTest,invalidate=()=>{},clock=Date.no
    }else if(url.pathname==='/v1/remove'){
     const name=nameKey(record.name);if(!name)return reply(res,400,{error:'Invalid name'});await repos.knowledge.removeKnowledge(guildId,name);
    }else{
-    const valid=validate(record);
+    const valid=await inGuild(guild,()=>validate(record));
     if(recognize(valid.key)||contextualCategory(valid.key,null)||extractChoice(valid.key))return reply(res,409,{error:'Built-in name protected'});
     if(['member','role','channel'].includes(valid.kind)){
      if(!/^\d{16,22}$/u.test(record.targetId??''))return reply(res,400,{error:'Invalid target'});
@@ -64,7 +68,7 @@ function startControlServer(client,env=process.env){
  const key=env.KITSUNE_CONTROL_KEY??'',port=Number(env.KITSUNE_CONTROL_PORT??8080);
  if(!/^[a-f0-9]{64}$/iu.test(key)||!Number.isSafeInteger(port)||port<1024||port>65535){console.error('Control API disabled: check key and port configuration.');return null;}
  const lab=require('../kitsune/testLab');
- const server=http.createServer(createHandler({client,key,repos:{learning:require('../../database/kitsuneLearning'),knowledge:require('../../database/kitsuneKnowledge')},runTest:input=>lab.formatReport(lab.runLab(input)),invalidate(guild){require('../kitsune/learningRuntime').invalidateAliases(guild);require('../kitsune/knowledgeRuntime').invalidate(guild);}}));
+ const server=http.createServer(createHandler({client,key,inGuild:(guild,callback)=>require('../../utils/guildContext').withGuild(guild,callback),management:require('./management').createManagement({client}),repos:{learning:require('../../database/kitsuneLearning'),knowledge:require('../../database/kitsuneKnowledge')},runTest:input=>require('../../utils/guildContext').withGuild(client.guilds.cache.get(input.guildId),()=>lab.formatReport(lab.runLab(input))),invalidate(guild){require('../kitsune/learningRuntime').invalidateAliases(guild);require('../kitsune/knowledgeRuntime').invalidate(guild);}}));
  server.requestTimeout=15_000;server.headersTimeout=10_000;server.keepAliveTimeout=3000;
  server.on('error',()=>console.error('Control API could not listen. Bot remains online.'));
  server.listen(port,'0.0.0.0',()=>console.log('Control API listening on configured port.'));

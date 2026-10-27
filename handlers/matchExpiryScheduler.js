@@ -28,11 +28,7 @@ async function runExpiryCheck(client) {
 
             for (const match of expired) {
                 try {
-                    const updated = await refreshMatchPanel(
-                        client,
-                        match.guildId,
-                        match.matchId
-                    );
+                    const updated = await require('../utils/guildContext').withGuild(client.guilds?.cache?.get(match.guildId)??match.guildId,()=>refreshMatchPanel(client,match.guildId,match.matchId));
 
                     if (!updated) {
                         refreshFailures++;

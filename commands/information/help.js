@@ -1,16 +1,7 @@
-const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    PermissionsBitField,
-    MessageFlags,
-    ActionRowBuilder,
-    StringSelectMenuBuilder
-} = require('discord.js');
-
+const {serverText}=require("../../utils/guildContext");
+const { SlashCommandBuilder, PermissionFlagsBits, PermissionsBitField, MessageFlags, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { createEmbed } = require('../../utils/embeds');
-
 const HELP_MENU_ID = 'kitsune:help:section';
-
 const SECTIONS = [
     {
         id: 'progression',
@@ -24,7 +15,7 @@ const SECTIONS = [
             titles: 'Explore and equip titles.',
             leaderboard: 'View XP and level rankings.',
             corps: 'Browse faction members and ranks.',
-            legacy: 'Explore Blood Moon accomplishments.'
+            legacy: serverText('Explore Blood Moon accomplishments.')
         }
     },
     {
@@ -120,28 +111,22 @@ const SECTIONS = [
         }
     }
 ];
-
 function canViewCommand(interaction, command, staff = false) {
     const permissions = interaction.memberPermissions;
-
-    if (!permissions) return !staff &&
-        command.data.toJSON().default_member_permissions == null;
-
+    if (!permissions)
+        return !staff &&
+            command.data.toJSON().default_member_permissions == null;
     if (permissions.has(PermissionFlagsBits.Administrator)) {
         return true;
     }
-
     const required = command.data.toJSON()
         .default_member_permissions;
-
     if (required != null) {
         const bits = BigInt(required);
-
-        if (bits === 0n) return false;
-
+        if (bits === 0n)
+            return false;
         return permissions.has(new PermissionsBitField(bits));
     }
-
     return !staff ||
         permissions.has(PermissionFlagsBits.ManageMessages);
 }
@@ -150,56 +135,34 @@ function getVisibleSections(interaction) {
         ...section,
         visible: Object.entries(section.commands)
             .filter(([name]) => {
-                const command = interaction.client.commands.get(name);
-
-                return command && canViewCommand(
-                    interaction,
-                    command,
-                    section.staff
-                );
-            })
+            const command = interaction.client.commands.get(name);
+            return command && canViewCommand(interaction, command, section.staff);
+        })
     })).filter(section => section.visible.length);
 }
-
 function getOtherCommands(interaction) {
-    const listed = new Set(
-        SECTIONS.flatMap(section =>
-            Object.keys(section.commands)
-        )
-    );
-
+    const listed = new Set(SECTIONS.flatMap(section => Object.keys(section.commands)));
     return [...interaction.client.commands.values()]
-        .filter(command =>
-            !listed.has(command.data.name) &&
-            canViewCommand(interaction, command)
-        )
-        .sort((a, b) =>
-            a.data.name.localeCompare(b.data.name)
-        )
+        .filter(command => !listed.has(command.data.name) &&
+        canViewCommand(interaction, command))
+        .sort((a, b) => a.data.name.localeCompare(b.data.name))
         .map(command => [
-            command.data.name,
-            command.data.description
-        ]);
+        command.data.name,
+        command.data.description
+    ]);
 }
-
 function buildHelpEmbed(interaction, selected = 'overview') {
     const sections = getVisibleSections(interaction);
     const other = getOtherCommands(interaction);
-
-    const embed = createEmbed(
-        '🌙 KITSUNE • COMMAND CENTER',
-        selected === 'overview'
-            ? [
-                '**Welcome to the Blood Moon command center.**',
-                'Select a category below to explore its commands.',
-                '',
-                'Commands are filtered by default member permissions. Server command overrides may affect access.'
-            ].join('\n')
-            : 'Explore your available commands.'
-    );
-
+    const embed = createEmbed('🌙 KITSUNE • COMMAND CENTER', selected === 'overview'
+        ? [
+            serverText('**Welcome to the Blood Moon command center.**'),
+            'Select a category below to explore its commands.',
+            '',
+            'Commands are filtered by default member permissions. Server command overrides may affect access.'
+        ].join('\n')
+        : 'Explore your available commands.');
     let count = 0;
-
     if (selected === 'overview') {
         for (const section of sections) {
             embed.addFields({
@@ -208,62 +171,44 @@ function buildHelpEmbed(interaction, selected = 'overview') {
                     .map(([name]) => `\`/${name}\``)
                     .join(' • ')
             });
-
             count += section.visible.length;
         }
-
         if (other.length) {
             embed.addFields({
                 name: '📚 OTHER COMMANDS',
-                value: other.map(([name]) =>
-                    `\`/${name}\``
-                ).join(' • ')
+                value: other.map(([name]) => `\`/${name}\``).join(' • ')
             });
-
             count += other.length;
         }
-    } else {
-        const section = sections.find(item =>
-            item.id === selected
-        );
-
+    }
+    else {
+        const section = sections.find(item => item.id === selected);
         const commands = selected === 'other'
             ? other
             : section?.visible ?? [];
-
         if (commands.length) {
             embed.addFields({
                 name: section?.name ?? '📚 OTHER COMMANDS',
-                value: commands.map(([name, description]) =>
-                    `\`/${name}\` — ${description}`
-                ).join('\n')
+                value: commands.map(([name, description]) => `\`/${name}\` — ${description}`).join('\n')
             });
-        } else {
-            embed.setDescription(
-                'No commands are available in this category.'
-            );
         }
-
+        else {
+            embed.setDescription('No commands are available in this category.');
+        }
         count = commands.length;
     }
-
     embed.setFooter({
-        text: `KITSUNE • BLOOD MOON • ${count} Commands`
+        text: serverText(`KITSUNE • BLOOD MOON • ${count} Commands`)
     });
-
     const icon = interaction.guild?.iconURL({ size: 256 });
-
     if (icon) {
         embed.setThumbnail(icon);
     }
-
     return embed;
 }
-
 function buildHelpMenu(interaction, selected = 'overview') {
     const sections = getVisibleSections(interaction);
     const other = getOtherCommands(interaction);
-
     const options = [
         {
             label: 'Overview',
@@ -272,16 +217,12 @@ function buildHelpMenu(interaction, selected = 'overview') {
             emoji: '🌙'
         },
         ...sections.map(section => ({
-            label: section.name.replace(
-                /^[^\p{L}\p{N}]+/u,
-                ''
-            ),
+            label: section.name.replace(/^[^\p{L}\p{N}]+/u, ''),
             value: section.id,
             description: section.description,
             emoji: section.emoji
         }))
     ];
-
     if (other.length) {
         options.push({
             label: 'Other Commands',
@@ -290,49 +231,35 @@ function buildHelpMenu(interaction, selected = 'overview') {
             emoji: '📚'
         });
     }
-
     const menu = new StringSelectMenuBuilder()
         .setCustomId(HELP_MENU_ID)
         .setPlaceholder('Explore Kitsune commands')
-        .addOptions(
-            options.map(option => ({
-                ...option,
-                default: option.value === selected
-            }))
-        );
-
+        .addOptions(options.map(option => ({
+        ...option,
+        default: option.value === selected
+    })));
     return [
         new ActionRowBuilder().addComponents(menu)
     ];
 }
-
 module.exports = {
     HELP_MENU_ID,
     buildHelpEmbed,
     buildHelpMenu,
-
     data: new SlashCommandBuilder()
         .setName('help')
-        .setDescription(
-            'Explore Blood Moon commands and systems.'
-        )
-        .addStringOption(option =>
-            option
-                .setName('section')
-                .setDescription('Choose a command category.')
-                .setRequired(false)
-                .addChoices(
-                    ...SECTIONS.map(section => ({
-                        name: section.name,
-                        value: section.id
-                    }))
-                )
-        ),
-
+        .setDescription(serverText('Explore Blood Moon commands and systems.'))
+        .addStringOption(option => option
+        .setName('section')
+        .setDescription('Choose a command category.')
+        .setRequired(false)
+        .addChoices(...SECTIONS.map(section => ({
+        name: section.name,
+        value: section.id
+    })))),
     async execute(interaction) {
         const section = interaction.options.getString('section')
             ?? 'overview';
-
         await interaction.reply({
             embeds: [
                 buildHelpEmbed(interaction, section)

@@ -47,6 +47,8 @@ function timeoutStatus(result) {
 }
 
 async function sendGuardianLog(message, result) {
+    if(!require('./guildContext').enabled('logging'))return null;
+    if(!require('./guildContext').enabled('logging'))return null;
     if (!message.guild || !result?.blocked) return;
 
     const channel = await message.guild.channels.fetch(

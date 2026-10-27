@@ -156,13 +156,13 @@ async function main() {
  Module._load=function(request,parent){
   if(parent?.filename===dbIndex) {
    if(request==='./connection')return{testConnection:async()=>startup.push('connection'),closeConnection:async()=>{}};
-   const names={'./migrateKitsuneStorage':'migrateKitsuneStorage','./schema':'initializeSchema','./playerSchema':'initializePlayerSchema','./trainingPanels':'initializeTrainingPanels','./questSchema':'initializeQuestSchema','./matchSchema':'initializeMatchSchema','./kitsuneLearningSchema':'initializeKitsuneLearningSchema'};
+   const names={'./migrateKitsuneStorage':'migrateKitsuneStorage','./schema':'initializeSchema','./playerSchema':'initializePlayerSchema','./trainingPanels':'initializeTrainingPanels','./questSchema':'initializeQuestSchema','./matchSchema':'initializeMatchSchema','./kitsuneLearningSchema':'initializeKitsuneLearningSchema','./guildSettings':'initializeGuildSettings'};
    if(names[request])return{[names[request]]:async()=>startup.push(names[request])};
   }
   return baseLoad.apply(this,arguments);
  };
  try{await require(dbIndex).initializeDatabase();}finally{Module._load=baseLoad;}
- eq(startup.at(-1),'initializeKitsuneLearningSchema');eq(startup.length,8);eq(startup[1],'migrateKitsuneStorage');
+ eq(startup.at(-1),'initializeGuildSettings');eq(startup.length,9);eq(startup[1],'migrateKitsuneStorage');
  // Full send path still uses the normal parser, response renderer and successful-send commit.
  const mainPath=path.join(root,'handlers/kitsuneReplyHandler.js');let lookups=0,collected=0;
  const hook={enabled:()=>true,inputForLearning:runtime.inputForLearning,getAliases:async()=>{lookups++;return new Map([['moonfox greeting','hi']]);},collectUnknown:async()=>{collected++;}};

@@ -12,6 +12,7 @@ function inputForKnowledge(message,session,now){
 }
 function invalidate(guildId){cache.delete(guildId);}
 async function findKnowledge(guildId,text){
+ if(!require('../../utils/guildContext').enabled('learning'))return null;
  const key=lookupKey(text);if(!key||!process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI||Date.now()<backoff)return null;
  const now=Date.now();let entry=cache.get(guildId);
  if(!entry||now>=entry.until){

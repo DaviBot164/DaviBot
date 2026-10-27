@@ -5,7 +5,7 @@ const {
     getAllProgressionRoles
 } = require('./factionHandler');
 
-const RANK_ROLES = Object.freeze({
+function rankRoles(){return {
     slayer: roles.slayer,
     mizunoe: roles.mizunoe,
     kinoe: roles.kinoe,
@@ -13,7 +13,7 @@ const RANK_ROLES = Object.freeze({
     demon: roles.demon,
     lower_moon: roles.lowerMoon,
     upper_moon: roles.upperMoon
-});
+};}
 
 async function syncProgressionRole(member, faction, rankId) {
     const rank = getRank(faction, rankId);
@@ -22,10 +22,10 @@ async function syncProgressionRole(member, faction, rankId) {
         throw new Error('Invalid progression rank.');
     }
 
-    const targetRoleId = RANK_ROLES[rank.id];
+    const targetRoleId = rankRoles()[rank.id];
 
     if (!targetRoleId) {
-        throw new Error(`Role is not configured for rank: ${rank.id}`);
+        return false; // Rank/XP can work without optional Discord role assignments.
     }
 
     const current = await member.guild.members.fetch({

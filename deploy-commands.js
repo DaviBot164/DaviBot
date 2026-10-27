@@ -1,44 +1,7 @@
-require('dotenv').config({ quiet: true });
-
-const fs = require('fs');
-const path = require('path');
-const { REST, Routes } = require('discord.js');
-
-const commands = [];
-const root = path.join(__dirname, 'commands');
-
-for (const folder of fs.readdirSync(root)) {
-    const folderPath = path.join(root, folder);
-
-    if (!fs.statSync(folderPath).isDirectory()) {
-        continue;
-    }
-
-    for (const file of fs.readdirSync(folderPath)) {
-        if (!file.endsWith('.js')) {
-            continue;
-        }
-
-        const command = require(path.join(folderPath, file));
-
-        if (command.data) {
-            commands.push(command.data.toJSON());
-        }
-    }
-}
-
-const rest = new REST().setToken(process.env.TOKEN);
-
-async function deploy() {
-    await rest.put(
-        Routes.applicationGuildCommands(
-            process.env.CLIENT_ID,
-            process.env.GUILD_ID
-        ),
-        { body: commands }
-    );
-
-    console.log(`Deployed ${commands.length} command(s).`);
-}
-
-deploy().catch(console.error);
+require('dotenv').config({quiet:true});
+const fs=require('node:fs'),path=require('node:path');
+const {REST,Routes}=require('discord.js');
+const commands=[];for(const folder of fs.readdirSync(path.join(__dirname,'commands'))){const dir=path.join(__dirname,'commands',folder);if(!fs.statSync(dir).isDirectory())continue;for(const name of fs.readdirSync(dir)){if(name.endsWith('.js')){const command=require(path.join(dir,name));if(command.data)commands.push({...command.data.toJSON(),contexts:[0],integration_types:[0]});}}}
+async function deploy(){const app=process.env.CLIENT_ID;if(!/^\d{16,22}$/u.test(app??'')||!process.env.TOKEN)throw Error('CLIENT_ID and TOKEN are required.');const rest=new REST().setToken(process.env.TOKEN);if(process.argv.includes('--guild')){const guild=process.env.GUILD_ID;if(!/^\d{16,22}$/u.test(guild??''))throw Error('GUILD_ID required for --guild');await rest.put(Routes.applicationGuildCommands(app,guild),{body:commands});console.log('Guild commands deployed:',commands.length);return;}await rest.put(Routes.applicationCommands(app),{body:commands});console.log('Global commands deployed:',commands.length);if(process.argv.includes('--clear-primary')){const guild=process.env.GUILD_ID;if(!/^\d{16,22}$/u.test(guild??''))throw Error('GUILD_ID required to clear primary guild duplicates.');await rest.put(Routes.applicationGuildCommands(app,guild),{body:[]});console.log('Primary guild command duplicates cleared. Global commands remain available.');}}
+if(require.main===module)deploy().catch(error=>{console.error('Command deployment failed:',typeof error.code==='number'?error.code:'configuration or request error');process.exitCode=1;});
+module.exports={deploy};

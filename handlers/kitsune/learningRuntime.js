@@ -3,7 +3,7 @@ const config=require('../../config/kitsuneLearning');
 const {learningPhrase}=require('./learningPhrases');
 const cache=new Map(),rates=new Map();
 let unavailableUntil=0;
-const enabled=()=>config.enabled && Boolean(process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI);
+const enabled=()=>require('../../utils/guildContext').enabled('learning') && config.enabled && Boolean(process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI);
 const repository=()=>require('../../database/kitsuneLearning');
 function inputForLearning(message,session,now) {
     const content=String(message.content??'').trim();

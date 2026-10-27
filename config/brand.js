@@ -1,11 +1,2 @@
-module.exports = Object.freeze({
-    name: 'Kitsune',
-    accountName: 'KitsuneBM',
-    nickname: 'Kitsune 🦊',
-    server: 'Blood Moon',
-    title: 'Keeper of the Blood Moon',
-
-    color: 0x9B1C31,
-
-    footer: 'Blood Moon • Kitsune'
-});
+const {current}=require('../utils/guildContext');
+module.exports=new Proxy({}, {get(_target,key){const brand=current().brand;return key==='color'?parseInt(brand.color.slice(1),16):key==='accountName'?'KitsuneBM':key==='nickname'?'Kitsune 🦊':key==='title'?'Your community companion':brand[key];},ownKeys(){return ['name','server','color','footer','accountName','nickname','title'];},getOwnPropertyDescriptor(){return {enumerable:true,configurable:true};}});

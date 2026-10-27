@@ -6,6 +6,7 @@ async function run(options={}){
  const calls=[],logs=[];let command,ensures=0;
  const member={id:'u',joinedAt:new Date(0),user:{bot:!!options.bot}};
  const deps={
+  '../../utils/guildContext':{serverText:value=>value},
   'discord.js':{SlashCommandBuilder:Builder,MessageFlags:{Ephemeral:64}},
   '../../utils/dailyPresentation':{dailyEmbed(result){calls.push('embed');if(options.embedFail)throw Error('secret raw');return result;}},
   '../../utils/embeds':{errorEmbed:()=>({error:true})},

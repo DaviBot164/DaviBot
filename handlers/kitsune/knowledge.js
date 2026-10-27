@@ -3,7 +3,7 @@ const kinds=Object.freeze({member:'Member / nickname',term:'Word / term',phrase:
 const reserved=new Set(['kitsune','kit','kits','kitsu','davi','daviti','mae','ash']);
 function nameKey(value){const key=String(value??'').normalize('NFKC').toLowerCase().replace(/^\//u,'').replace(/\s+/gu,' ').trim();return key.length>=2&&key.length<=80&&/^[\p{L}\p{N} '\-]+$/u.test(key)&&!/^\d+$/u.test(key)?key:null;}
 function validate({name,kind,explanation=''}){
- const key=nameKey(name);if(!key||reserved.has(key))throw Error('Use a distinct 2–80 character name or term. Built-in names cannot be replaced.');
+ const key=nameKey(name);if(!key||(reserved.has(key)&&(!['davi','daviti','mae','ash'].includes(key)||!require('../../utils/guildContext').guildId()||require('../../utils/guildContext').guildId()===process.env.GUILD_ID)))throw Error('Use a distinct 2–80 character name or term. Built-in names cannot be replaced.');
  if(!Object.hasOwn(kinds,kind))throw Error('Choose a supported knowledge type.');
  const detail=String(explanation).trim();
  if(detail.length>500||/[<>`]|https?:\/\/|(?:gsk_|sk-)[\w-]{12,}|(?:token|password|api[_ ]?key)\s*[:=]/iu.test(detail))throw Error('Use a short explanation without mentions, code, links or credentials.');

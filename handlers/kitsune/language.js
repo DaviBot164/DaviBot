@@ -151,7 +151,7 @@ function recognizeCore(value, suppliedFrame=null, onMatch=null) {
     const normalized=frame.normalized;
     const select=(rule,category)=>{if(onMatch)onMatch(rule,category);return category;};
     const personQuestion=frame.plainSentence.match(/^(?:who is|who's|do you know) (mae|ash|davi|daviti)$/u);
-    if(personQuestion)return select('identity.known_person','known_person_'+(personQuestion[1]==='daviti'?'davi':personQuestion[1]));
+    if(personQuestion&&(!require('../../utils/guildContext').guildId()||require('../../utils/guildContext').guildId()===process.env.GUILD_ID))return select('identity.known_person','known_person_'+(personQuestion[1]==='daviti'?'davi':personQuestion[1]));
     for(const [rule,run]of recognitionRules(frame)) {const category=run();if(category)return select(rule,category);}
     const text=requestEnglish(frame.sentence);
     // Negation and directed reactions take precedence over shallow keyword matches.

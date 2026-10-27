@@ -1,0 +1,26 @@
+module.exports = Object.freeze({
+    welcome: '1528401903438925906',
+    verification: '1528402259699044352',
+    sacredLaws: '1534648886566584341',
+    moonGuide: '1532053701718708296',
+    roles: '1552654801953886218',
+    announcements: '1528401988272914463',
+
+    general: '1528399925866532906',
+    soulProgression: '1534145341430038558',
+
+    slayers2: '1530901464413769779',
+    factionProgression: '1560731489933594664',
+    rankPromotions: '1533116816782524426',
+
+    pvp: '1551667516458147941',
+    training: '1551667580412887090',
+
+    supportGuide: '1530989678553989261',
+    openTicket: '1530989713081630904',
+
+    staffChat: '1530901890190151730',
+    staffLogs: '1531694604150116524',
+    moderation: '1530901922855256104',
+    botControl: '1530901956342710302'
+});

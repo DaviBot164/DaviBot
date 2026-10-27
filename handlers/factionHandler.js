@@ -5,7 +5,7 @@ const {
 
 const roles = require('../config/roles');
 
-const FACTION_ROLES = Object.freeze({
+function factionRoles(){return {
     [FACTIONS.SLAYER]: [
         roles.slayer,
         roles.mizunoe,
@@ -18,7 +18,7 @@ const FACTION_ROLES = Object.freeze({
         roles.lowerMoon,
         roles.upperMoon
     ]
-});
+};}
 
 function getStartingRank(faction) {
     return getRanks(faction)[0] ?? null;
@@ -41,13 +41,13 @@ function isRank(faction, rankId) {
 }
 
 function getFactionRoles(faction) {
-    return FACTION_ROLES[faction] ?? [];
+    return factionRoles()[faction] ?? [];
 }
 
 function getAllProgressionRoles() {
     return [
         ...new Set(
-            Object.values(FACTION_ROLES).flat()
+            Object.values(factionRoles()).flat()
         )
     ];
 }

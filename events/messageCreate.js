@@ -29,11 +29,13 @@ module.exports = {
             return;
         }
 
-        const guardianResult = await runGuardian(message);
+        const enabled=require('../utils/guildContext').enabled;
+        const guardianResult = enabled('moderation')?await runGuardian(message):{blocked:false};
 
         if (guardianResult.blocked) return;
 
-        await handleKitsuneReply(message);
+        if(enabled('conversation'))await handleKitsuneReply(message);
+        if(!enabled('progression'))return;
 
         const guildId = message.guild.id;
         const userId = message.author.id;

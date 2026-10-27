@@ -18,6 +18,7 @@ module.exports = {
     async execute(
         member
     ) {
+        if(!require('../utils/guildContext').enabled('welcome'))return;
         try {
             const welcomeChannel =
                 member.guild.channels.cache.get(
@@ -58,7 +59,7 @@ module.exports = {
             }
 
             const banner =
-                createWelcomeBanner();
+                createWelcomeBanner(member);
 
             const embed =
                 createWelcomeEmbed(
@@ -75,6 +76,7 @@ module.exports = {
                     banner
                 ],
                 allowedMentions: {
+                    parse: [],
                     users: [
                         member.id
                     ]
