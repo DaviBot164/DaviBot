@@ -1,9 +1,10 @@
 const {query}=require('./connection');
 const model=require('../config/serverSettings');
-const cache=new Map();const TTL=30000,MAX=200;
+const cache=new Map();const TTL=30000,MAX=200,MAX_BYTES=12*1024*1024;let cacheBytes=0;
 async function initializeGuildSettings(){await query(`CREATE TABLE IF NOT EXISTS kitsune_guild_settings (guild_id TEXT PRIMARY KEY, value JSONB NOT NULL, revision INTEGER NOT NULL DEFAULT 1, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);await query(`CREATE TABLE IF NOT EXISTS kitsune_setup_posts (guild_id TEXT NOT NULL, page_key TEXT NOT NULL, channel_id TEXT NOT NULL, message_id TEXT NOT NULL, PRIMARY KEY(guild_id,page_key))`);}
 function freeze(value){if(value&&typeof value==='object'){for(const v of Object.values(value))freeze(v);Object.freeze(value);}return value;}
-function remember(guildId,row){freeze(row);if(!cache.has(guildId)&&cache.size>=MAX)cache.delete(cache.keys().next().value);cache.set(guildId,{row,until:Date.now()+TTL});return row;}
+function remember(guildId,row){freeze(row);const size=Buffer.byteLength(JSON.stringify(row.value),'utf8');const prior=cache.get(guildId);if(prior){cacheBytes-=prior.size;cache.delete(guildId);}cache.set(guildId,{row,size,until:Date.now()+TTL});cacheBytes+=size;while(cache.size>MAX||cacheBytes>MAX_BYTES){const oldest=cache.keys().next().value;cacheBytes-=cache.get(oldest).size;cache.delete(oldest);}return row;}
+
 async function getSettings(guild){const guildId=typeof guild==='string'?guild:guild.id,name=typeof guild==='string'?'Community':guild.name;const prior=cache.get(guildId);if(prior&&prior.until>Date.now())return prior.row;
  const rows=await query('SELECT value,revision FROM kitsune_guild_settings WHERE guild_id=$1',[guildId]);if(rows.rows[0])return remember(guildId,{value:model.validate(rows.rows[0].value,name),revision:rows.rows[0].revision});
  const value=guildId===process.env.GUILD_ID?model.legacy():model.defaults(name);await query('INSERT INTO kitsune_guild_settings(guild_id,value) VALUES($1,$2) ON CONFLICT(guild_id) DO NOTHING',[guildId,JSON.stringify(value)]);const inserted=await query('SELECT value,revision FROM kitsune_guild_settings WHERE guild_id=$1',[guildId]);return remember(guildId,{value:model.validate(inserted.rows[0].value,name),revision:inserted.rows[0].revision});}

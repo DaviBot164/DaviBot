@@ -1,31 +1,18 @@
 const {
     FACTIONS,
-    getRanks
+    getRanks,getAllRanks,RANK_ROLE_KEYS
 } = require('../config/progression');
 
 const roles = require('../config/roles');
 
-function factionRoles(){return {
-    [FACTIONS.SLAYER]: [
-        roles.slayer,
-        roles.mizunoe,
-        roles.kinoe,
-        roles.hashira
-    ],
-
-    [FACTIONS.DEMON]: [
-        roles.demon,
-        roles.lowerMoon,
-        roles.upperMoon
-    ]
-};}
+function factionRoles(){return Object.fromEntries(Object.values(FACTIONS).map(faction=>[faction,getAllRanks(faction).map(rank=>roles[RANK_ROLE_KEYS[rank.id]]).filter(Boolean)]));}
 
 function getStartingRank(faction) {
     return getRanks(faction)[0] ?? null;
 }
 
 function getRank(faction, rankId) {
-    return getRanks(faction).find(
+    return getAllRanks(faction).find(
         rank => rank.id === rankId
     ) ?? null;
 }

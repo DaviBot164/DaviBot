@@ -59,6 +59,7 @@ module.exports = {
 
         if (process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI) {
             startMatchExpiryScheduler(client);
+            require('../handlers/rankReconciliation').startRankReconciliation(client);
         }
     }
 };

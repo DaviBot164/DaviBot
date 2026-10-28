@@ -17,7 +17,7 @@ assert.equal(typeof captured,'object');
 async function readyCase(failure,matched=false){
  const logs=[];let calls=0,scheduler=0,event;
  const env={NF_DAVIBOT_DATABASE_POSTGRES_URI:'postgres://secret:password@host/db',TOKEN:'fake-discord-secret',GROQ_API_KEY:'fake-groq-secret'};
- vm.runInNewContext(fs.readFileSync(path.join(root,'events/ready.js'),'utf8'),{require(name){if(name==='discord.js')return{Events:{ClientReady:'ready'}};if(name==='../config/brand')return{name:'Kitsune',server:'Blood Moon'};return{startMatchExpiryScheduler(){scheduler++;}};},process:{env},module:{set exports(v){event=v;}},console:{log(...v){logs.push(v.join(' '));},error(...v){logs.push(v.join(' '));}}});
+ vm.runInNewContext(fs.readFileSync(path.join(root,'events/ready.js'),'utf8'),{require(name){if(name==='../handlers/rankReconciliation')return{startRankReconciliation(){}};if(name==='discord.js')return{Events:{ClientReady:'ready'}};if(name==='../config/brand')return{name:'Kitsune',server:'Blood Moon'};return{startMatchExpiryScheduler(){scheduler++;}};},process:{env},module:{set exports(v){event=v;}},console:{log(...v){logs.push(v.join(' '));},error(...v){logs.push(v.join(' '));}}});
  event.execute({user:{username:matched?'Kitsune':'Previous',tag:'Previous#9453',setUsername(){calls++;if(failure==='sync')throw Error('sync failure');if(failure)return Promise.reject(failure);return Promise.resolve();}},commands:new Map()});
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(calls,matched?0:1);assert.equal(scheduler,1,'rename failure never blocks scheduler');

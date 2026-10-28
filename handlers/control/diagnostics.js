@@ -27,7 +27,7 @@ function buildDiagnostics(guildId,settings,resources,revision,now=Date.now()){
   if(key==='moderation'){globalPermissions(c,['ManageMessages','ModerateMembers','KickMembers','BanMembers','ManageChannels']);if(settings.modules.logging!==false)channel(c,'moderation',false,[],false);c.note='კონკრეტული მოქმედებისთვის წევრების როლების იერარქიაც მოქმედებს; ეს ანგარიში კონკრეტულ წევრზე მოქმედებას არ ცდის.';}
   if(key==='progression'){
    for(const k of['training','soulProgression','rankPromotions','factionProgression','slayers2'])channel(c,k);
-   const rankKeys=['slayer','mizunoe','kinoe','hashira','demon','lowerMoon','upperMoon','moonbound','crimsonBloom','bloodbound','nightAscendant','eternalMoon'];const mapped=rankKeys.filter(k=>settings.roles[k]);for(const k of mapped)role(c,k);if(mapped.length)globalPermissions(c,['ManageRoles']);
+   const rankKeys=['slayer','mizunoe','kinoe','hashira','demon','lowerMoon','upperMoon','moonbound','crimsonBloom','bloodbound','nightAscendant','eternalMoon'];if(settings.progression?.extended)rankKeys.push('kanoto','tsuchinoe','rogue','tsuyoi');const mapped=rankKeys.filter(k=>settings.roles[k]);for(const k of mapped)role(c,k);if(mapped.length)globalPermissions(c,['ManageRoles']);
    if(!mapped.length)issue(c,'roles_optional','info','ავტომატური როლები','პროგრესიისა და მიღწევების როლები არ არის არჩეული.','XP და დონეები მაინც ინახება. როლები მხოლოდ მათი ავტომატური მინიჭების სურვილის შემთხვევაში აირჩიე.');
    if(!settings.channels.training)issue(c,'training_optional','info','ვარჯიშის პანელი','საერთო Training პანელის არხი არ არის არჩეული.','/daily და /profile მაინც გამოიყენება; საერთო პანელისთვის აირჩიე ვარჯიშის არხი.',{type:'channel',key:'training'});
   }

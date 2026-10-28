@@ -5,15 +5,7 @@ const {
     getAllProgressionRoles
 } = require('./factionHandler');
 
-function rankRoles(){return {
-    slayer: roles.slayer,
-    mizunoe: roles.mizunoe,
-    kinoe: roles.kinoe,
-    hashira: roles.hashira,
-    demon: roles.demon,
-    lower_moon: roles.lowerMoon,
-    upper_moon: roles.upperMoon
-};}
+function rankRoles(){return Object.fromEntries(Object.entries(require('../config/progression').RANK_ROLE_KEYS).map(([id,key])=>[id,roles[key]]));}
 
 async function syncProgressionRole(member, faction, rankId) {
     const rank = getRank(faction, rankId);

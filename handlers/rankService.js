@@ -28,7 +28,8 @@ async function applyRankChange(
         changedBy = null,
         reason = null,
         announce = true,
-        automatic = false
+        automatic = false,
+        refreshUnlocks = true
     } = {}
 ) {
     const guildId = member.guild.id;
@@ -56,6 +57,8 @@ async function applyRankChange(
         const target = getRankForLevel(user.faction, level);
         const ranks = getRanks(user.faction);
 
+        const heldRank=getRank(user.faction,user.rank);
+        if(heldRank&&target&&target.level<heldRank.level)return{changed:false,user,rank:heldRank};
         const currentIndex = ranks.findIndex(
             rank => rank.id === user.rank
         );
@@ -154,7 +157,7 @@ async function applyRankChange(
     }
 
     try {
-        await refreshProgressionUnlocks(member);
+        if(refreshUnlocks) await refreshProgressionUnlocks(member);
     } catch (error) {
         console.error('Progression unlock refresh failed:', error);
     }

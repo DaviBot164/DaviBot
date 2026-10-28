@@ -58,7 +58,7 @@ const XP = Object.freeze({
         return 100 + level * 50;
     }
 });
-function getRanks(faction) {
+function getBaseRanks(faction) {
     if (faction === FACTIONS.SLAYER) {
         return SLAYER_RANKS.map(r => ({ ...r, name: current().ranks[r.id] }));
     }
@@ -67,6 +67,9 @@ function getRanks(faction) {
     }
     return [];
 }
+const RANK_ROLE_KEYS=Object.freeze({slayer:'slayer',mizunoe:'mizunoe',kanoto:'kanoto',tsuchinoe:'tsuchinoe',kinoe:'kinoe',hashira:'hashira',demon:'demon',rogue:'rogue',tsuyoi:'tsuyoi',lower_moon:'lowerMoon',upper_moon:'upperMoon'});
+function getAllRanks(faction){const base=getBaseRanks(faction),extra=faction===FACTIONS.SLAYER?[{id:'kanoto',level:15,automatic:true},{id:'tsuchinoe',level:20,automatic:true}]:faction===FACTIONS.DEMON?[{id:'rogue',level:5,automatic:true},{id:'tsuyoi',level:10,automatic:true}]:[];return [...base,...extra.map(r=>({...r,name:current().ranks[r.id]}))].sort((a,b)=>a.level-b.level);}
+function getRanks(faction){return current().progression?.extended?getAllRanks(faction):getBaseRanks(faction);}
 function getRankForLevel(faction, level) {
     return getRanks(faction)
         .filter(rank => rank.automatic &&
@@ -78,6 +81,6 @@ module.exports = {
     SLAYER_RANKS,
     DEMON_RANKS,
     XP,
-    getRanks,
+    getRanks, getAllRanks, RANK_ROLE_KEYS,
     getRankForLevel
 };

@@ -21,7 +21,7 @@ function createHandler({client,key,repos,runTest,invalidate=()=>{},clock=Date.no
    if(req.method==='GET'&&url.pathname==='/v1/guilds')return reply(res,200,{guilds:[...client.guilds.cache.values()].map(g=>({id:g.id,name:g.name})).slice(0,200)});
    let body={};if(req.method==='POST'){
     if(!String(req.headers['content-type']??'').startsWith('application/json'))return reply(res,415,{error:'JSON required'});
-    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>96000)return reply(res,413,{error:'Body too large'});chunks.push(chunk);}body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>(['/v1/settings','/v1/welcome/preview'].includes(url.pathname)?3000000:96000))return reply(res,413,{error:'Body too large'});chunks.push(chunk);}body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    }
    const guildId=req.method==='GET'?url.searchParams.get('guildId'):body.guildId;
    if(typeof guildId!=='string'||!/^\d{16,22}$/u.test(guildId))return reply(res,400,{error:'Invalid guild'});
