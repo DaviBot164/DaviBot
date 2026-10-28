@@ -1,3 +1,4 @@
+const {getTicketCategory}=require('../config/tickets');
 const channels =
     require('../config/channels');
 
@@ -47,7 +48,7 @@ async function sendTicketLog(
     if (ticket.category) {
         fields.push({
             name: 'Category',
-            value: ticket.category,
+            value: getTicketCategory(ticket.category)?.name??ticket.category,
             inline: true
         });
     }
@@ -60,7 +61,8 @@ async function sendTicketLog(
             .addFields(fields);
 
     await channel.send({
-        embeds: [embed]
+        embeds: [embed],
+        allowedMentions:{parse:[]}
     });
 }
 

@@ -1,4 +1,3 @@
-const {serverText}=require("../utils/guildContext");
 const TICKET_STATUS = Object.freeze({
     OPEN: 'open',
     CLOSED: 'closed'
@@ -14,25 +13,25 @@ const TICKET_CATEGORIES = Object.freeze({
         id: 'support',
         name: 'Support',
         emoji: '🛟',
-        description: serverText('Get help from the Blood Moon staff.')
+        description: 'Questions, verification or technical help.'
     },
     report: {
         id: 'report',
         name: 'Report',
         emoji: '🚨',
-        description: 'Report a member or server-related problem.'
+        description: 'Report a member, message or safety concern.'
     },
     appeal: {
         id: 'appeal',
         name: 'Appeal',
         emoji: '⚖️',
-        description: 'Appeal a moderation action.'
+        description: 'Ask staff to review a moderation action.'
     },
     other: {
         id: 'other',
         name: 'Other',
         emoji: '📜',
-        description: 'Open a ticket for another reason.'
+        description: 'A request that does not fit the other categories.'
     }
 });
 const STAFF_ROLE_KEYS = Object.freeze([
