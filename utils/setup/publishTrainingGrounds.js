@@ -19,13 +19,13 @@ const TRAINING_IDS = Object.freeze({
 
 function buildTrainingPanel(guild = null) {
     const embed = buildGuide(guild ?? {iconURL:()=>null},{
-        title:'🦊 KITSUNE • MISSION CONTROL',
-        intro:'**Your next little victory starts here.**\nCollect a drop, clear a mission, and make your progress visible.',
+        title:`🦊 ${brand.name} · Mission Control`,
+        intro:'Your daily rewards, missions and progress — one place to start.',
         fields:[
-            {name:'🌙 Daily Drop',value:'Claim XP every 24 hours. Keep a 24–48 hour rhythm to continue your streak. Bonus drops at 3 / 7 / 14 / 30 days; the track repeats every 30 claims.',inline:false},
-            {name:'📜 Mission Board',value:'Three missions per cycle: 15 and 30 XP-eligible messages, plus your daily drop. Collect all three rewards for an extra **+50 XP**.',inline:false},
-            {name:'🎴 Profile & achievements',value:'Check your level, faction, battle statistics and milestones with the buttons below.',inline:false}
-        ],quote:'Small steps count. Empty spam does not.'
+            {name:'🌙 Daily Drop',value:'Collect your XP every **24 hours**. Return within **48 hours** to keep the streak. Bonus milestones: **3 · 7 · 14 · 30**; the track repeats after day 30.',inline:false},
+            {name:'📜 Mission Board',value:'Complete **15** and **30** XP-eligible messages and collect your daily drop. Claim each mission reward, then receive an extra **+50 XP** for clearing the board.',inline:false},
+            {name:'🎴 Profile & achievements',value:'**Profile** shows your level, path and statistics. **Achievements** shows earned milestones and what you can unlock next.',inline:false}
+        ],quote:'Make steady progress. Extra spam does not earn extra rewards.'
     });
 
     const firstRow = new ActionRowBuilder()
@@ -38,7 +38,7 @@ function buildTrainingPanel(guild = null) {
 
             new ButtonBuilder()
                 .setCustomId(TRAINING_IDS.profile)
-                .setLabel('Soul Profile')
+                .setLabel('Profile')
                 .setEmoji('🎴')
                 .setStyle(ButtonStyle.Primary)
         );
