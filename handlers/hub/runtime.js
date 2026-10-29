@@ -1,7 +1,7 @@
 'use strict';
 const {MessageFlags,ModalBuilder,TextInputBuilder,TextInputStyle,ActionRowBuilder}=require('discord.js');
 const {buildPanel,custom,available}=require('./panel');
-async function data(guildId,userId,page){return {guildId,userId,page,knowledge:page==='knowledge'?await require('../../database/kitsuneKnowledge').getKnowledge(guildId):[],user:page==='progress'?await require('../../database/users').getUser(guildId,userId):null};}
+async function data(guildId,userId,page){return {guildId,userId,page,knowledge:page==='knowledge'?await require('../../database/kitsuneKnowledge').getKnowledge(guildId):[],user:['progress','rolehelp'].includes(page)?await require('../../database/users').getUser(guildId,userId):null};}
 async function open(interaction){if(!require('../../utils/guildContext').enabled('conversation'))return interaction.reply({content:'Kitsune hub is disabled on this server.',flags:MessageFlags.Ephemeral});await interaction.deferReply({flags:MessageFlags.Ephemeral});return interaction.editReply(buildPanel(await data(interaction.guildId,interaction.user.id,'home')));}
 async function handle(interaction){const match=String(interaction.customId??'').match(/^kitsune:hub:(\d{16,22}):(public|\d{16,22}):([a-z]+):(\d{1,2})$/u);if(!String(interaction.customId??'').startsWith('kitsune:hub:'))return false;
  const deny=content=>interaction.reply({content,flags:MessageFlags.Ephemeral,allowedMentions:{parse:[]}});
