@@ -1,5 +1,5 @@
 // Guild-independent schema. Legacy values are imported only for the primary-guild seed.
-const channelKeys=Object.freeze(['welcome','verification','sacredLaws','moonGuide','roles','announcements','general','soulProgression','slayers2','factionProgression','rankPromotions','pvp','training','supportGuide','openTicket','staffChat','staffLogs','moderation','botControl']);
+const channelKeys=Object.freeze(['kitsuneHub','welcome','verification','sacredLaws','moonGuide','roles','announcements','general','soulProgression','slayers2','factionProgression','rankPromotions','pvp','training','supportGuide','openTicket','staffChat','staffLogs','moderation','botControl']);
 const roleKeys=Object.freeze(['shogun','daimyo','hatamoto','samurai','hashira','kinoe','mizunoe','slayer','upperMoon','lowerMoon','demon','eternalMoon','nightAscendant','bloodbound','crimsonBloom','moonbound','kanoto','tsuchinoe','rogue','tsuyoi']);
 const moduleKeys=Object.freeze(['welcome','moderation','progression','learning','conversation','tickets','matches','trials','logging']);
 const rankKeys=Object.freeze(['slayer','mizunoe','kinoe','hashira','demon','lower_moon','upper_moon','kanoto','tsuchinoe','rogue','tsuyoi']);

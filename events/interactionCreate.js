@@ -44,6 +44,7 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            if (await require('../handlers/hub/runtime').handle(interaction)) return;
             if(!require('../handlers/guildModules').allowed(interaction)){if(interaction.isAutocomplete?.()){await interaction.respond([]);return;}if(interaction.isRepliable?.())await interaction.reply({content:'This system is disabled on this server.',flags:MessageFlags.Ephemeral});return;}
 
             if (interaction.isButton()) {

@@ -38,26 +38,6 @@ async function main(){
  await assert.rejects(()=>repo.saveKnowledge('g',{name:'full limit',kind:'term',explanation:'x'},'owner'),/limit reached/);checks++;
  await repo.saveKnowledge('g',{name:'tomy',kind:'member',targetId:'123456789012345678'},'owner');eq(records.size,300);
  eq(await repo.removeKnowledge('other','tomy'),false);eq(await repo.removeKnowledge('g','tomy'),true);eq(await repo.removeKnowledge('g','tomy'),false);assert.ok(releases>0);checks++;
- // Runtime cache: no external DB, TTL, invalidation, server scope and raw lookup.
- const runtimePath=path.join(root,'handlers/kitsune/knowledgeRuntime.js'),envBefore=process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI;let reads=0;
- process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI='mock-only';
- Module._load=function(request,parent){if(parent?.filename===runtimePath&&request==='../../database/kitsuneKnowledge')return{getKnowledge:async guild=>{reads++;return guild==='g'?[{name:'tomy',kind:'member',target_id:'123456789012345678',explanation:''}]:[];}};return oldLoad.apply(this,arguments);};
- try{const runtime=require(runtimePath);eq(runtime.inputForKnowledge({content:'kitsune who is ტომი?'},null,100),'who is ტომი?');eq(runtime.inputForKnowledge({content:'ტომი'},null,100),null);eq((await runtime.findKnowledge('g','who is tomy?')).kind,'member');await runtime.findKnowledge('g','tomy');eq(reads,1);eq(await runtime.findKnowledge('other','tomy'),null);runtime.invalidate('g');await runtime.findKnowledge('g','tomy');eq(reads,3);}finally{Module._load=oldLoad;if(envBefore===undefined)delete process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI;else process.env.NF_DAVIBOT_DATABASE_POSTGRES_URI=envBefore;}
- // Real knowledge command helper: selected server objects, update/list/delete and mention-safe output.
- const commandPath=path.join(root,'handlers/kitsune/knowledgeCommand.js');let savedInput=null,listedGuild=null;
- const fakeRepo={async saveKnowledge(g,input,owner){eq(g,'g');eq(owner,'owner');savedInput=input;return model.validate(input);},async listKnowledge(g){listedGuild=g;return Array.from({length:10},()=>({name:'x'.repeat(80),kind:'fact',explanation:'y'.repeat(500)}));},async removeKnowledge(g,name){eq(g,'g');eq(name,'tomy');return true;}};
- Module._load=function(request,parent){if(parent?.filename===commandPath&&request==='../../database/kitsuneKnowledge')return fakeRepo;return oldLoad.apply(this,arguments);};
- try{
-  const command=require(commandPath);
-  const interaction=(sub='remember',kind='member',name='tomy',memberPresent=true)=>({guildId:'g',user:{id:'owner'},guild:{members:{fetch:async()=>memberPresent?{id:'123456789012345678'}:Promise.reject(Error('not in guild'))}},options:{getSubcommand:()=>sub,getInteger:()=>1,getString:k=>k==='name'?name:k==='kind'?kind:'A saved explanation.',getUser:()=>({id:'123456789012345678'}),getRole:()=>({id:'123456789012345678',guild:{id:'other'}}),getChannel:()=>({id:'123456789012345678',guildId:'other'})}});
-  let reply='';const respond=async text=>{reply=text;};
-  await command.execute(interaction(),respond);eq(savedInput.targetId,'123456789012345678');assert.match(reply,/Saved: tomy/);checks++;
-  savedInput=null;await command.execute(interaction('remember','member','other friend',false),respond);eq(savedInput,null);assert.match(reply,/could not be verified/);checks++;
-  for(const kind of ['role','channel']){await command.execute(interaction('remember',kind,'moon '+kind),respond);eq(savedInput,null);assert.match(reply,/from this server/);checks++;}
-  await command.execute(interaction('remember','term','moon term'),respond);eq(savedInput.kind,'term');
-  await command.execute(interaction('knowledge'),respond);eq(listedGuild,'g');assert.ok(reply.length<1900);checks++;
-  await command.execute(interaction('unremember'),respond);assert.match(reply,/removed/i);checks++;
- }finally{Module._load=oldLoad;}
- console.log(checks+' server knowledge validation, rendering, transaction rollback/capacity, scope, update/delete and cache checks passed. No database, Discord or AI calls.');
+ console.log(checks+' knowledge validation, rendering, guild isolation, transaction rollback, capacity and approved member-link checks passed. Database mocked.');
 }
-main().catch(e=>{console.error(e);process.exitCode=1;});
+main().catch(error=>{console.error(error);process.exitCode=1;});

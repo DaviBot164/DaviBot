@@ -1,7 +1,5 @@
 const {kinds,nameKey,validate}=require('./knowledge');
 const runtime=require('./knowledgeRuntime');
-const {recognize,extractChoice}=require('./language');
-const {contextualCategory}=require('./context');
 const repo=()=>require('../../database/kitsuneKnowledge');
 const clean=text=>String(text).replace(/[\\`*_~|<>]/gu,'\\$&');
 function addCommands(data){
@@ -32,7 +30,6 @@ async function execute(interaction,reply){
  }
  const input={name:raw,kind:interaction.options.getString('kind',true),explanation:interaction.options.getString('explanation')??''};
  try{validate(input);}catch(e){return reply(e.message);}
- if(recognize(key)||contextualCategory(key,null)||extractChoice(key))return reply('That name or term already has a built-in meaning. Choose a more specific label.');
  if(input.kind==='member'){
   const user=interaction.options.getUser('member');if(!user)return reply('Select a server member for this name.');
   const member=await interaction.guild.members.fetch(user.id).catch(()=>null);

@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { randomInt } = require('node:crypto');
 
 const { createEmbed } = require('../../utils/embeds');
-const { ownerId } = require('../../config/kitsunePersonality');
+const { OWNER_ID: ownerId } = require('../../handlers/kitsune/settings');
 
 const REPLIES = Object.freeze([
     'Yes, I’m awake. Unfortunately for you.',

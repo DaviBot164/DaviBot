@@ -11,13 +11,13 @@ async function call(url,body,auth=true){const req=Readable.from(body?[Buffer.fro
  assert.equal((await call('/v1/status')).data.service,'kitsune-control');assert.equal((await call('/v1/guilds')).data.guilds[0].id,guildId);
  assert.equal((await call('/v1/state?guildId=333333333333333333')).status,404);assert.equal(reads,0);
  assert.equal((await call('/v1/state?guildId='+guildId)).status,200);assert.equal(reads,1);
- assert.equal((await call('/v1/save',{guildId,record:{kind:'meaning',name:'go ahead',meaning:'continue'}})).status,200);assert.equal(saves.length,1);assert.equal(invalidations,1);
- assert.equal((await call('/v1/save',{guildId,record:{kind:'meaning',name:'hello',meaning:'stop'}})).status,409);assert.equal(saves.length,1);
- assert.equal((await call('/v1/save',{guildId,record:{kind:'member',name:'tomy',targetId:memberId}})).status,200);assert.equal(saves.length,2);
- assert.equal((await call('/v1/save',{guildId,record:{kind:'member',name:'missing member',targetId:'444444444444444444'}})).status,400);assert.equal(saves.length,2);
+ assert.equal((await call('/v1/save',{guildId,record:{kind:'meaning',name:'go ahead',meaning:'continue'}})).status,410);assert.equal(saves.length,0);assert.equal(invalidations,0);
+ assert.equal((await call('/v1/save',{guildId,record:{kind:'meaning',name:'hello',meaning:'stop'}})).status,410);assert.equal(saves.length,0);
+ assert.equal((await call('/v1/save',{guildId,record:{kind:'member',name:'tomy',targetId:memberId}})).status,200);assert.equal(saves.length,1);
+ assert.equal((await call('/v1/save',{guildId,record:{kind:'member',name:'missing member',targetId:'444444444444444444'}})).status,400);assert.equal(saves.length,1);
  assert.equal((await call('/v1/save',{guildId,record:{kind:'role',name:'staff role',targetId:memberId}})).status,400);
- assert.equal((await call('/v1/test',{guildId,text:'kitsune hi',persona:'member'})).data.report,'Offline test report');assert.equal(tests,1);
- assert.equal((await call('/v1/test',{guildId,text:'x'.repeat(1501),persona:'member'})).status,400);assert.equal(tests,1);
+ assert.equal((await call('/v1/test',{guildId,text:'kitsune hi',persona:'member'})).status,410);assert.equal(tests,0);
+ assert.equal((await call('/v1/test',{guildId,text:'x'.repeat(1501),persona:'member'})).status,410);assert.equal(tests,0);
  assert.equal(startControlServer(client,{}),null);
  const prior=console.error;console.error=()=>{};try{assert.equal(startControlServer(client,{KITSUNE_CONTROL_ENABLED:'true',KITSUNE_CONTROL_KEY:'bad'}),null);}finally{console.error=prior;}
  for(let i=0;i<30;i++)await call('/v1/status');assert.equal((await call('/v1/status')).status,429);now+=60000;assert.equal((await call('/v1/status')).status,200);

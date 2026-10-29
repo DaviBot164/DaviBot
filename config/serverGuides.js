@@ -15,4 +15,4 @@ function guide(kind,s=current()){
 }
 function rankLines(faction){return getRanks(faction).map(r=>`**${r.name}** · Level ${r.level}${r.automatic?'':' + trial / staff promotion'}`).join('\n');}
 function pathGuide(faction){return {key:'progression_'+faction,title:factionName(faction)+' Progression',intro:'Progress at your own pace. Server ranks are separate from your in-game character.',fields:[{name:'Rank path',value:rankLines(faction)},{name:'Make progress',value:'Chat naturally, claim /daily and complete missions. Spam does not speed up your progress.'},{name:'Prestige ranks',value:'The final rank requires a trial or staff promotion. Reaching the required level alone is not enough.'}]};}
-module.exports={guide,pathGuide};
+module.exports={guide,pathGuide,rankLines};

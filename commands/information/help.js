@@ -46,6 +46,7 @@ const SECTIONS = [
         emoji: '⚙️',
         commands: {
             help: 'Open the command center.',
+            kitsune: 'Open the private server guide with /kitsune open.',
             avatar: 'View a user avatar.',
             ping: 'Check bot latency.'
         }
