@@ -37,6 +37,7 @@ async function initializeDatabase() {
     await initializeMatchSchema();
     await initializeKitsuneLearningSchema();
     await require('./guildSettings').initializeGuildSettings();
+    await require('./kitsunePlay').initializePlay();
 }
 
 module.exports = {

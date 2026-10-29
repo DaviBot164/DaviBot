@@ -1,0 +1,753 @@
+{
+  "stories": {
+    "lanterns": {
+      "title": {
+        "en": "The Night of Lost Lanterns",
+        "ka": "დაკარგული ფარნების ღამე"
+      },
+      "nodes": {
+        "gate": {
+          "text": {
+            "en": "At the village gate, every lantern burns except one. An empty coat hangs beneath it. Nobody admits owning the coat.",
+            "ka": "სოფლის კარიბჭესთან ყველა ფარანი ანთია, ერთის გარდა. მის ქვეშ ცარიელი ქურთუკი კიდია. არავინ აღიარებს, ვის ეკუთვნის ის."
+          },
+          "say": {
+            "en": "Stay beside me. If someone calls your name, let me answer first.",
+            "ka": "ჩემთან დარჩი. თუ ვინმე შენს სახელს დაიძახებს, ჯერ მე ვუპასუხებ."
+          },
+          "hint": {
+            "en": "Look for something that remembers its owner.",
+            "ka": "მოძებნე რამე, რასაც პატრონი ჯერ კიდევ ახსოვს."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Inspect the coat",
+                "ka": "ქურთუკი შეამოწმე"
+              },
+              "to": "house",
+              "flag": "careful",
+              "item": "name",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Follow the whisper",
+                "ka": "ჩურჩულს გაჰყევი"
+              },
+              "to": "well",
+              "flag": "bold",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The coat drips rain, though the road has been dry for days.",
+            "ka": "ქურთუკიდან წვიმის წყალი წვეთავს, თუმცა გზა დღეებია მშრალია."
+          }
+        },
+        "house": {
+          "text": {
+            "en": "The coat contains a stitched name: Neri. In the abandoned house, a mirror shows a chair occupied by someone you cannot see behind you.",
+            "ka": "ქურთუკზე სახელი ამოუქარგავთ: ნერი. მიტოვებული სახლის სარკეში სკამზე ვიღაც ზის, თუმცა უკან მოხედვისას ვერავის ხედავ."
+          },
+          "say": {
+            "en": "I dislike that mirror. It is being far too polite.",
+            "ka": "ეს სარკე არ მომწონს. ზედმეტად თავაზიანია."
+          },
+          "hint": {
+            "en": "A written record may survive when memory does not.",
+            "ka": "შეიძლება ჩანაწერი გადარჩეს, როცა მოგონება ქრება."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Read the folded letter",
+                "ka": "დაკეცილი წერილი წაიკითხე"
+              },
+              "to": "well",
+              "flag": "evidence",
+              "item": "letter",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Cover the mirror",
+                "ka": "სარკეს გადააფარე"
+              },
+              "to": "well",
+              "flag": "cautious",
+              "item": "cloth",
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "In the mirror, the person on the chair slowly turns to face you. You still cannot see a face.",
+            "ka": "სარკეში სკამზე მჯდომი ნელა შენკენ ბრუნდება. სახე მაინც არ უჩანს."
+          }
+        },
+        "well": {
+          "text": {
+            "en": "A voice inside the well repeats Kitsune’s next sentence before she speaks it. At its rim lies a brass key. A bell rings below the water.",
+            "ka": "ჭიდან ხმა კიცუნეს შემდეგ წინადადებას მანამდე იმეორებს, სანამ თავად იტყვის. კიდეზე სპილენძის გასაღები დევს. წყლის ქვეშ ზარი რეკავს."
+          },
+          "say": {
+            "en": "Do not ask it a question you cannot bear to hear answered.",
+            "ka": "ისეთი კითხვა არ დაუსვა, რომლის პასუხსაც ვერ გაუძლებ."
+          },
+          "hint": {
+            "en": "You can take a useful object without trusting the voice.",
+            "ka": "შეგიძლია ნივთი აიღო ისე, რომ ხმას არ ენდო."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Take the key without speaking",
+                "ka": "გასაღები უხმოდ აიღე"
+              },
+              "to": "seller",
+              "flag": "quiet",
+              "item": "key",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Ask about Neri",
+                "ka": "ნერის შესახებ ჰკითხე"
+              },
+              "to": "seller",
+              "flag": "name",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The voice below asks Kitsune why she left it here last time.",
+            "ka": "ქვემოდან ხმა კიცუნეს ეკითხება, წინა ჯერზე აქ რატომ დატოვა."
+          }
+        },
+        "seller": {
+          "text": {
+            "en": "The lantern seller insists that nobody has ever vanished. His ledger has a fresh line carefully scratched away. He offers you a lantern if you promise to return it.",
+            "ka": "ფარნების გამყიდველი ამტკიცებს, რომ არავინ გამქრალა. მის დავთარში ახალი ჩანაწერია გულმოდგინედ გადაშლილი. ფარანს გთავაზობს, თუ დაბრუნებას დაჰპირდები."
+          },
+          "say": {
+            "en": "His words fit perfectly. That is what bothers me.",
+            "ka": "მისი სიტყვები ზედმეტად კარგად ეწყობა ერთმანეთს. სწორედ ეს მაწუხებს."
+          },
+          "hint": {
+            "en": "Checking the ledger costs time, but may expose the bargain.",
+            "ka": "დავთრის შემოწმება დროს წაიღებს, მაგრამ გარიგების არსს გაგაგებინებს."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Examine the erased line",
+                "ka": "გადაშლილ ხაზს დააკვირდი"
+              },
+              "to": "bridge",
+              "flag": "truth",
+              "item": "ledger",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Promise to return the lantern",
+                "ka": "ფარნის დაბრუნებას დაჰპირდი"
+              },
+              "to": "bridge",
+              "flag": "promise",
+              "item": "lantern",
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "Behind the seller, every painted face in the shop has its eyes covered.",
+            "ka": "გამყიდველის უკან ყველა დახატულ სახეს თვალები დაფარული აქვს."
+          }
+        },
+        "bridge": {
+          "text": {
+            "en": "On the bridge, Neri clings to a broken railing. Your only light is fading. Kitsune ties her sleeve around your wrist and waits for your decision.",
+            "ka": "ხიდზე ნერი ჩამტვრეულ მოაჯირს ეჭიდება. ერთადერთი შუქი ქრება. კიცუნე სახელოს შენს მაჯაზე იკრავს და შენს გადაწყვეტილებას ელოდება."
+          },
+          "say": {
+            "en": "I can hold you. I cannot choose for you.",
+            "ka": "შეგაკავებ. შენ მაგივრად არჩევანს ვერ გავაკეთებ."
+          },
+          "hint": {
+            "en": "Saving someone may matter more than keeping a useful object.",
+            "ka": "ვინმეს გადარჩენა შეიძლება სასარგებლო ნივთის შენარჩუნებაზე მნიშვნელოვანი იყოს."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Pull Neri to safety",
+                "ka": "ნერი ამოიყვანე"
+              },
+              "to": "memory",
+              "flag": "rescued",
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Guard the light and retreat",
+                "ka": "შუქი დაიცავი და უკან დაიხიე"
+              },
+              "to": "memory",
+              "flag": "retreated",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "Under the bridge, someone keeps counting your footsteps after you stop.",
+            "ka": "ხიდის ქვეშ ვიღაც შენს ნაბიჯებს მას შემდეგაც ითვლის, რაც ჩერდები."
+          }
+        },
+        "memory": {
+          "text": {
+            "en": "Kitsune stops. She remembers this bridge, but not why she came here before. The bell sounds exactly like her laugh. She asks what you discovered.",
+            "ka": "კიცუნე ჩერდება. ხიდი ახსოვს, მაგრამ ვერ იხსენებს, ადრე აქ რატომ მოვიდა. ზარი ზუსტად მისი სიცილის ხმას გამოსცემს. გეკითხება, რა აღმოაჩინე."
+          },
+          "say": {
+            "en": "Tell me the truth. Even the part you think will hurt.",
+            "ka": "სიმართლე მითხარი. ის ნაწილიც, რომელიც გგონია, რომ მატკენს."
+          },
+          "hint": {
+            "en": "Trust opens cooperation; it does not guarantee an easy ending.",
+            "ka": "ნდობა თანამშრომლობას გაგიადვილებთ, მაგრამ მარტივ დასასრულს არ გპირდება."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Share everything you know",
+                "ka": "ყველაფერი მოუყევი"
+              },
+              "to": "archive",
+              "flag": "trust",
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Hide the disturbing details",
+                "ka": "შემაშფოთებელი დეტალები დაუმალე"
+              },
+              "to": "archive",
+              "flag": "hidden",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "For a moment, you remember arriving alone. Kitsune notices your hesitation.",
+            "ka": "წამით გახსენდება, რომ აქ მარტო მოხვედი. კიცუნე შენს ყოყმანს ამჩნევს."
+          }
+        },
+        "archive": {
+          "text": {
+            "en": "Beneath the shrine is a locked archive. A warning reads: “A name kept by two people cannot be swallowed.” Blank pages turn without wind.",
+            "ka": "ტაძრის ქვეშ ჩაკეტილი არქივია. წარწერა გაფრთხილებს: „სახელს, რომელიც ორს ახსოვს, ვერ გადაყლაპავენ.“ ცარიელი გვერდები უქაროდ იფურცლება."
+          },
+          "say": {
+            "en": "Two witnesses. Not one hero. We have been thinking about this wrong.",
+            "ka": "ორი მოწმე. არა ერთი გმირი. თავიდანვე არასწორად ვფიქრობდით."
+          },
+          "hint": {
+            "en": "The key opens an additional route. The name and a trusted companion matter later.",
+            "ka": "გასაღები დამატებით გზას ხსნის. სახელი და სანდო თანამგზავრი მოგვიანებით დაგჭირდება."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Unlock the archive",
+                "ka": "არქივი გასაღებით გახსენი"
+              },
+              "to": "shrine",
+              "flag": "archive",
+              "item": "record",
+              "need": "key"
+            },
+            {
+              "label": {
+                "en": "Study the warning outside",
+                "ka": "გარეთ დარჩი და წარწერა შეისწავლე"
+              },
+              "to": "shrine",
+              "flag": "warning",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "Fresh ink writes your name on the last blank page.",
+            "ka": "ბოლო ცარიელ გვერდზე ახალი მელნით შენი სახელი ჩნდება."
+          }
+        },
+        "shrine": {
+          "text": {
+            "en": "The last lantern hangs above the bell. The seller arrives without a shadow. He says the village traded its grief away, one person at a time.",
+            "ka": "ბოლო ფარანი ზარის თავზე კიდია. გამყიდველი მოდის, მაგრამ ჩრდილი არ აქვს. ამბობს, რომ სოფელმა ტკივილი ადამიანების დავიწყებაში გაცვალა."
+          },
+          "say": {
+            "en": "A memory can hurt and still belong to you.",
+            "ka": "მოგონება შეიძლება გტკენდეს და მაინც შენი იყოს."
+          },
+          "hint": {
+            "en": "A rescued witness and honest cooperation can change the bargain.",
+            "ka": "გადარჩენილ მოწმესა და გულწრფელ თანამშრომლობას გარიგების შეცვლა შეუძლიათ."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Ask Neri to testify",
+                "ka": "ნერის სთხოვე, რაც იცის, თქვას"
+              },
+              "to": "bargain",
+              "flag": "witness",
+              "item": null,
+              "need": "rescued"
+            },
+            {
+              "label": {
+                "en": "Challenge the seller yourself",
+                "ka": "გამყიდველს თავად დაუპირისპირდი"
+              },
+              "to": "bargain",
+              "flag": "challenge",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The bell moves without sounding. The sound comes from the doorway behind you.",
+            "ka": "ზარი უხმოდ მოძრაობს. მისი ხმა შენ უკან, კარიდან ისმის."
+          }
+        },
+        "bargain": {
+          "text": {
+            "en": "The seller offers a choice: break the lantern and release every buried memory, or leave before dawn. Kitsune stays beside you.",
+            "ka": "გამყიდველი არჩევანს გთავაზობს: დაამსხვრიო ფარანი და ყველა დამარხული მოგონება გაათავისუფლო, ან გათენებამდე წახვიდე. კიცუნე შენ გვერდით რჩება."
+          },
+          "say": {
+            "en": "Whatever you choose, make it your choice. Not his fear speaking through you.",
+            "ka": "რაც უნდა აირჩიო, შენი არჩევანი იყოს. არა მისი შიში, რომელიც შენით ლაპარაკობს."
+          },
+          "hint": {
+            "en": "The hidden answer needs a remembered name, trust and a living witness.",
+            "ka": "დამალულ პასუხს გახსენებული სახელი, ნდობა და ცოცხალი მოწმე სჭირდება."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Speak the forgotten name together",
+                "ka": "დავიწყებული სახელი ერთად წარმოთქვით"
+              },
+              "to": "end:remembered",
+              "flag": null,
+              "item": null,
+              "need": "secret"
+            },
+            {
+              "label": {
+                "en": "Break the lantern",
+                "ka": "ფარანი დაამსხვრიე"
+              },
+              "to": "end:freed",
+              "flag": null,
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Take its place as keeper",
+                "ka": "მცველის ადგილი დაიკავე"
+              },
+              "to": "end:keeper",
+              "flag": null,
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Leave with Kitsune",
+                "ka": "კიცუნესთან ერთად წადი"
+              },
+              "to": "end:escape",
+              "flag": null,
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "Every dark window in the village reflects you holding the lantern. None reflects Kitsune.",
+            "ka": "სოფლის ყველა ბნელი ფანჯარა ფარნით ხელში შენს ანარეკლს აჩვენებს. კიცუნე არცერთში არ ჩანს."
+          }
+        }
+      },
+      "endings": [
+        "remembered",
+        "freed",
+        "keeper",
+        "escape"
+      ],
+      "horror": true
+    },
+    "tea": {
+      "title": {
+        "en": "Kitsune’s Perfect Plan",
+        "ka": "კიცუნეს იდეალური გეგმა"
+      },
+      "nodes": {
+        "gate": {
+          "text": {
+            "en": "Kitsune has one job: deliver a pot of tea to the festival. “A flawless plan,” she declares. A goose immediately steals the map.",
+            "ka": "კიცუნეს ერთი დავალება აქვს: ფესტივალზე ჩაი მიიტანოს. „იდეალური გეგმაა,“ აცხადებს ის. ბატი იმწამსვე რუკას იტაცებს."
+          },
+          "say": {
+            "en": "Nobody panic. Especially the goose.",
+            "ka": "პანიკა არ გვინდა. განსაკუთრებით ბატს ვეუბნები."
+          },
+          "hint": {
+            "en": "You can chase the map or improvise a different route.",
+            "ka": "შეგიძლია რუკას გაეკიდო ან სხვა გზა მოიფიქრო."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Negotiate with the goose",
+                "ka": "ბატთან მოლაპარაკება დაიწყე"
+              },
+              "to": "market",
+              "flag": "goose",
+              "item": "feather",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Take Kitsune’s shortcut",
+                "ka": "კიცუნეს მოკლე გზას გაჰყევი"
+              },
+              "to": "market",
+              "flag": "shortcut",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "market": {
+          "text": {
+            "en": "At the market, a guard mistakes Kitsune for the festival inspector. She has already nodded before you can interrupt.",
+            "ka": "ბაზარში მცველი კიცუნეს ფესტივალის შემმოწმებლად იღებს. სანამ შეაწყვეტინებ, მან უკვე თავი დაუქნია."
+          },
+          "say": {
+            "en": "Technically, I am inspecting how badly this is going.",
+            "ka": "ტექნიკურად ვამოწმებ, რამდენად ცუდად მიდის ყველაფერი."
+          },
+          "hint": {
+            "en": "A disguise helps now but may complicate the ceremony.",
+            "ka": "შენიღბვა ახლა დაგეხმარება, ცერემონიაზე კი შეიძლება საქმე აგირიოს."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Play along with the disguise",
+                "ka": "შენიღბვას აჰყევი"
+              },
+              "to": "cup",
+              "flag": "disguise",
+              "item": "badge",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Explain the tea delivery",
+                "ka": "ჩაის მიტანის ამბავი აუხსენი"
+              },
+              "to": "cup",
+              "flag": "honest",
+              "item": "receipt",
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "cup": {
+          "text": {
+            "en": "The ceremonial cup is missing. A cat sits in its place wearing a ribbon. The tea seller refuses to admit this is unusual.",
+            "ka": "საზეიმო ფინჯანი დაკარგულია. მის ადგილას ბაფთიანი კატა ზის. ჩაის გამყიდველი უჩვეულოს ვერაფერს ხედავს."
+          },
+          "say": {
+            "en": "That cat has more authority than either of us.",
+            "ka": "ამ კატას ორივე ჩვენგანზე მეტი გავლენა აქვს."
+          },
+          "hint": {
+            "en": "Look for a replacement or evidence of where the cup went.",
+            "ka": "შემცვლელი მოძებნე ან გაარკვიე, სად წავიდა ფინჯანი."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Follow the cat",
+                "ka": "კატას გაჰყევი"
+              },
+              "to": "kitchen",
+              "flag": "cat",
+              "item": "cup",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Borrow an enormous soup bowl",
+                "ka": "უზარმაზარი წვნიანის ჯამი ითხოვე"
+              },
+              "to": "kitchen",
+              "flag": "bowl",
+              "item": "bowl",
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "kitchen": {
+          "text": {
+            "en": "Your shortcut ends on a cooking-contest stage. Someone hands you an apron. Kitsune whispers that she has watched cooking before, which is practically experience.",
+            "ka": "მოკლე გზა კულინარიული შეჯიბრის სცენაზე მთავრდება. წინსაფარს გაწვდიან. კიცუნე ჩურჩულებს, რომ საჭმლის მომზადება ნანახი აქვს — თითქმის გამოცდილებაა."
+          },
+          "say": {
+            "en": "Confidence is an ingredient. Measurements are apparently another.",
+            "ka": "თავდაჯერება ინგრედიენტია. როგორც ჩანს, ზომებიც საჭიროა."
+          },
+          "hint": {
+            "en": "A recipe is safer than improvising. But safe is not always funny.",
+            "ka": "რეცეპტი იმპროვიზაციაზე საიმედოა. თუმცა საიმედო ყოველთვის სასაცილო არ არის."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Follow the recipe",
+                "ka": "რეცეპტს მიჰყევი"
+              },
+              "to": "spill",
+              "flag": "recipe",
+              "item": "biscuit",
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Let Kitsune improvise",
+                "ka": "კიცუნეს იმპროვიზაცია ანდე"
+              },
+              "to": "spill",
+              "flag": "chaos",
+              "item": "foam",
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "spill": {
+          "text": {
+            "en": "A trolley shakes. The pot tips. You can save the tea, the trophy, or Kitsune’s impressive explanation of why none of this is her fault.",
+            "ka": "ურიკა ირყევა. ჩაიდანი ყირავდება. შეგიძლია ჩაი გადაარჩინო, თასი ან კიცუნეს შთამბეჭდავი ახსნა, რატომ არ არის ეს მისი ბრალი."
+          },
+          "say": {
+            "en": "The explanation took longer to prepare than the tea.",
+            "ka": "ამ ახსნის მომზადებას ჩაიზე მეტი დრო დავუთმე."
+          },
+          "hint": {
+            "en": "Your priority determines what remains for the final delivery.",
+            "ka": "რაც ახლა შენთვის მთავარია, ბოლოს სწორედ ის შეგრჩება."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Save the tea",
+                "ka": "ჩაი გადაარჩინე"
+              },
+              "to": "goose",
+              "flag": "tea",
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Save the trophy",
+                "ka": "თასი გადაარჩინე"
+              },
+              "to": "goose",
+              "flag": "trophy",
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Catch Kitsune first",
+                "ka": "ჯერ კიცუნე შეაკავე"
+              },
+              "to": "goose",
+              "flag": "friend",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "goose": {
+          "text": {
+            "en": "The goose returns with your map and six followers. It blocks the final bridge. Kitsune proposes a very dignified retreat.",
+            "ka": "ბატი რუკითა და ექვსი მიმდევრით ბრუნდება. ბოლო ხიდს კეტავს. კიცუნე ძალიან ღირსეულ უკან დახევას გთავაზობს."
+          },
+          "say": {
+            "en": "We do not need to win. We need to stop losing to poultry.",
+            "ka": "გამარჯვება აუცილებელი არ არის. უბრალოდ ფრინველებთან წაგებას უნდა მოვეშვათ."
+          },
+          "hint": {
+            "en": "A biscuit may settle this without a chase.",
+            "ka": "ბისკვიტმა შეიძლება დევნის გარეშე მოაგვაროს საქმე."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Offer the biscuit",
+                "ka": "ბისკვიტი შესთავაზე"
+              },
+              "to": "ceremony",
+              "flag": "peace",
+              "item": null,
+              "need": "biscuit"
+            },
+            {
+              "label": {
+                "en": "Distract it with a grand speech",
+                "ka": "გრანდიოზული სიტყვით ყურადღება გადაატანინე"
+              },
+              "to": "ceremony",
+              "flag": "speech",
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Take the scenic route",
+                "ka": "გრძელი გზა აირჩიე"
+              },
+              "to": "ceremony",
+              "flag": "late",
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        },
+        "ceremony": {
+          "text": {
+            "en": "You reach the ceremony. The host asks for the tea and a report. Kitsune smiles the smile of someone revising history in real time.",
+            "ka": "ცერემონიამდე აღწევთ. მასპინძელი ჩაისა და ანგარიშს ითხოვს. კიცუნე ისე იღიმის, როგორც ადამიანი, რომელიც ისტორიას ამ წამს ცვლის."
+          },
+          "say": {
+            "en": "We could call it an interactive delivery experience.",
+            "ka": "შეგვიძლია ამას ინტერაქტიული მიტანის გამოცდილება ვუწოდოთ."
+          },
+          "hint": {
+            "en": "You can deliver what survived, confess, or embrace the chaos.",
+            "ka": "შეგიძლია გადარჩენილი ჩაი მიიტანო, სიმართლე თქვა ან ქაოსს აჰყვე."
+          },
+          "choices": [
+            {
+              "label": {
+                "en": "Serve the surviving tea",
+                "ka": "გადარჩენილი ჩაი მიართვი"
+              },
+              "to": "end:tea",
+              "flag": null,
+              "item": null,
+              "need": "tea"
+            },
+            {
+              "label": {
+                "en": "Tell the whole ridiculous story",
+                "ka": "მთელი სასაცილო ამბავი მოყევი"
+              },
+              "to": "end:laughter",
+              "flag": null,
+              "item": null,
+              "need": null
+            },
+            {
+              "label": {
+                "en": "Appoint the goose festival inspector",
+                "ka": "ბატი ფესტივალის შემმოწმებლად დანიშნე"
+              },
+              "to": "end:goose",
+              "flag": null,
+              "item": null,
+              "need": null
+            }
+          ],
+          "extra": {
+            "en": "The silence answers one breath too late.",
+            "ka": "სიჩუმე ერთი ჩასუნთქვით გვიან გპასუხობს."
+          }
+        }
+      },
+      "endings": [
+        "tea",
+        "laughter",
+        "goose"
+      ],
+      "horror": false
+    }
+  },
+  "endings": {
+    "remembered": {
+      "en": "The bell falls silent when you and Kitsune speak Neri’s name. Neri answers. Every lantern lights at once. The village keeps its painful memories—and its people. Kitsune squeezes your hand. “Two witnesses. I told you we needed better company.”",
+      "ka": "შენ და კიცუნე ნერის სახელს ამბობთ. ნერი პასუხობს და ზარი ჩუმდება. ყველა ფარანი ერთად ინთება. სოფელი მტკივნეულ მოგონებებსაც ინარჩუნებს და ადამიანებსაც. კიცუნე ხელს გიჭერს: „ორი მოწმე. ხომ ვამბობდი, კარგი თანამგზავრი გვჭირდებოდა.“"
+    },
+    "freed": {
+      "en": "You break the lantern. Memories return like a storm. Some doors remain empty, but nobody can be erased again. Kitsune helps the village write every missing name.",
+      "ka": "ფარანს ამსხვრევ. მოგონებები ქარიშხალივით ბრუნდება. ზოგი სახლი ცარიელი რჩება, მაგრამ ვეღარავის წაშლიან. კიცუნესთან ერთად ყველა დაკარგულის სახელს იწერთ."
+    },
+    "keeper": {
+      "en": "You become the keeper. Kitsune refuses to let the village forget you; she returns each season with a new story. The lantern stays lit, but the bargain has not ended.",
+      "ka": "მცველის ადგილს იკავებ. კიცუნე სოფელს შენს დავიწყებას არ აცდის და ყოველ სეზონზე ახალი ამბით ბრუნდება. ფარანი ანთია, მაგრამ გარიგება ჯერ არ დასრულებულა."
+    },
+    "escape": {
+      "en": "At dawn you leave together. Behind you, one lantern goes dark. Kitsune keeps the map. “We can come back prepared.” The mystery remains.",
+      "ka": "გამთენიისას ერთად მიდიხართ. უკან ერთი ფარანი ქრება. კიცუნე რუკას ინახავს: „მომზადებულები დავბრუნდებით.“ საიდუმლო ამოუხსნელია."
+    },
+    "tea": {
+      "en": "The tea arrives, slightly shaken. Kitsune calls the journey flawless. A goose receives the invoice. You decide not to correct the paperwork.",
+      "ka": "ჩაი მიდის, ოდნავ შენჯღრეული. კიცუნე მიტანის პროცესს იდეალურს უწოდებს. ანგარიშს ბატს უგზავნიან. საბუთების შესწორებას აღარ ცდილობ."
+    },
+    "laughter": {
+      "en": "You confess everything. The crowd laughs, the cat gets the ribbon, and Kitsune is invited back—as entertainment, never as a courier.",
+      "ka": "ყველაფერს აღიარებ. ხალხი იცინის, ბაფთა კატას რჩება, კიცუნეს კი ისევ ეპატიჟებიან — გასართობად, ოღონდ კურიერად აღარასდროს."
+    },
+    "goose": {
+      "en": "The goose is appointed inspector. It immediately closes the kitchen. Kitsune bows. “Finally, someone with standards.” Your delivery becomes a local legend.",
+      "ka": "ბატს შემმოწმებლად ნიშნავენ. ის მაშინვე კეტავს სამზარეულოს. კიცუნე თავს უკრავს: „როგორც იქნა, ვინმეს სტანდარტები აქვს.“ თქვენი მიტანის ამბავი ადგილობრივ ლეგენდად იქცევა."
+    }
+  }
+}
