@@ -7,14 +7,15 @@ const data=new SlashCommandBuilder().setName('announce').setDescription('Preview
  .addStringOption(o=>o.setName('text').setDescription('Announcement text. Use \\n for a new line.').setMaxLength(4000).setRequired(true))
  .addStringOption(o=>o.setName('color').setDescription('Optional HEX color, e.g. #B18CFF. Defaults to the server color.').setMinLength(6).setMaxLength(7))
  .addAttachmentOption(o=>o.setName('image').setDescription('Optional PNG, JPG or WebP image, up to 8 MB.'))
- .addUserOption(o=>o.setName('member').setDescription('Optional first member. You can select more in the preview.').setRequired(false))
+ .addUserOption(o=>o.setName('member').setDescription('Optional member to notify. Add member2–member10 for more.').setRequired(false))
  .addBooleanOption(o=>o.setName('everyone').setDescription('Optional @everyone ping; requires Mention Everyone.').setRequired(false));
+for(let n=2;n<=10;n++)data.addUserOption(o=>o.setName('member'+n).setDescription('Optional additional member to notify ('+n+' of 10).').setRequired(false));
 async function execute(interaction){
  const silent={parse:[]};if(!interaction.inGuild()||!interaction.memberPermissions?.has(P.ManageGuild))return interaction.reply({content:'You need Manage Server to use this command.',flags:MessageFlags.Ephemeral,allowedMentions:silent});
  await interaction.deferReply({flags:MessageFlags.Ephemeral});
  const fail=(title,description)=>interaction.editReply({content:null,embeds:[errorEmbed(title,description)],components:[],allowedMentions:silent});
  const picked=interaction.options.getChannel('channel',true),title=interaction.options.getString('title',true).trim(),text=interaction.options.getString('text',true).replace(/\\n/g,'\n').trim();
- const first=interaction.options.getUser('member'),everyone=interaction.options.getBoolean('everyone')??false;let ids=first?[first.id]:[];
+ const everyone=interaction.options.getBoolean('everyone')??false;let ids=[...new Set(['member',...Array.from({length:9},(_,i)=>'member'+(i+2))].map(name=>interaction.options.getUser(name)?.id).filter(Boolean))];
  const required=[P.ViewChannel,P.SendMessages,P.EmbedLinks],authorRequired=[P.ViewChannel,P.SendMessages];
  async function check(){const channel=await interaction.guild.channels.fetch(picked.id);if(!channel||channel.guildId!==interaction.guildId||![ChannelType.GuildText,ChannelType.GuildAnnouncement].includes(channel.type))throw Error('The announcement channel is unavailable in this server.');
   const author=await interaction.guild.members.fetch({user:interaction.user.id,force:true}),bot=await interaction.guild.members.fetchMe({force:true});
