@@ -3,19 +3,26 @@ const {ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,EmbedB
 const {current,enabled,factionName}=require('../../utils/guildContext');
 const {helpTopics,helpAvailable,supportSummary}=require('./support');
 const {pages:chatPages,response:chatResponse}=require('./conversation');
-const topics=Object.freeze({...Object.fromEntries(Object.entries(chatPages).map(([key,p])=>[key,[p.emoji,p.label]])),...helpTopics,play:['🎭','Stories & games'],home:['🦊','Home'],guide:['📖','Server guide'],rules:['📜','Rules'],verify:['✅','Verification'],paths:['⚔️','Choose a path'],progress:['🏆','My progress'],knowledge:['📚','Server knowledge'],support:['🎫','Support'],about:['🦊','About Kitsune']});
+const topics=Object.freeze({...Object.fromEntries(Object.entries(chatPages).map(([key,p])=>[key,[p.emoji,p.label]])),...helpTopics,lounge:['🦊','Kitsune'],stories:['📖','Stories'],games:['🎮','Games'],play:['🎭','Stories & games'],home:['🦊','Home'],guide:['📖','Server guide'],rules:['📜','Rules'],verify:['✅','Verification'],paths:['⚔️','Choose a path'],progress:['🏆','My progress'],knowledge:['📚','Server knowledge'],support:['🎫','Support'],about:['🦊','About Kitsune']});
 function available(page){if(Object.hasOwn(helpTopics,page))return helpAvailable(page);return !!topics[page]&&(!['paths','progress'].includes(page)||enabled('progression'))&&(page!=='knowledge'||enabled('learning'));}
 function custom(guild,user,page,offset=0){return `kitsune:hub:${guild}:${user||'public'}:${page}:${offset}`;}
 function button(guild,user,page,label,offset=0){return new ButtonBuilder().setCustomId(custom(guild,user,page,offset)).setLabel(label).setStyle(ButtonStyle.Secondary);}
 function channelButton(key,label,guild){const id=current().channels[key];return id?new ButtonBuilder().setLabel(label).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${guild}/${id}`):null;}
 function buildPanel({guildId,userId=null,page='home',offset=0,knowledge=[],selected=null,user=null}={}){
  if(!available(page))page='home';const s=current(),embed=new EmbedBuilder().setColor(s.brand.color).setTitle(topics[page][0]+' '+(page==='home'?s.brand.name:topics[page][1])).setFooter({text:s.brand.footer});const components=[];let actions=[];
+ if(page==='lounge'){
+  embed.setTitle('🦊 '+s.brand.name).setDescription('A little company? Pick what you’re in the mood for.');
+  components.push(new ActionRowBuilder().addComponents(button(guildId,userId,'talk','Let’s chat').setEmoji('💬'),button(guildId,userId,'stories','Stories').setEmoji('📖'),button(guildId,userId,'games','Games').setEmoji('🎮')));
+  if(userId)components.push(new ActionRowBuilder().addComponents(button(guildId,userId,'close','Goodbye / Close')));
+  return {embeds:[embed],components,allowedMentions:{parse:[]}};
+ }
  if(chatPages[page]){
   const variant=Math.min(99,Math.max(0,Math.trunc(Number(offset)||0)));
   embed.setTitle('🦊 '+s.brand.name).setDescription(chatResponse(page,variant));
-  const choices=chatPages[page].choices.filter(available).map(key=>button(guildId,userId,key,key===page?'Another one':topics[key][1],key===page?(variant+1)%99:0).setEmoji(topics[key][0]));
-  components.push(new ActionRowBuilder().addComponents(...choices));
-  const navigation=page==='talk'?[button(guildId,userId,'play','Stories & games').setEmoji('🎭'),button(guildId,userId,'goodbye','Goodnight')]:[button(guildId,userId,'talk','Back to chat'),button(guildId,userId,'play','Stories & games').setEmoji('🎭')];
+  const choices=chatPages[page].choices.filter(key=>!['play','talk'].includes(key)&&available(key)).map(key=>button(guildId,userId,key,key===page?'Another one':topics[key][1],key===page?(variant+1)%99:0).setEmoji(topics[key][0]));
+  for(let i=0;i<choices.length;i+=2)components.push(new ActionRowBuilder().addComponents(...choices.slice(i,i+2)));
+  const navigation=page==='talk'?[button(guildId,userId,'lounge','Back')]:[button(guildId,userId,'talk','Back'),button(guildId,userId,'lounge','Main menu')];
+  if(userId)navigation.push(button(guildId,userId,'close','Goodbye / Close'));
   components.push(new ActionRowBuilder().addComponents(...navigation));
   return {embeds:[embed],components,allowedMentions:{parse:[]}};
  }
@@ -31,7 +38,7 @@ function buildPanel({guildId,userId=null,page='home',offset=0,knowledge=[],selec
  if(Object.hasOwn(helpTopics,page)){const help=supportSummary(page,user);embed.setDescription(help.description);if(help.fields?.length)embed.addFields(help.fields.map(f=>({name:f.name.slice(0,256),value:f.value.slice(0,1024)})));const buttons=[button(guildId,userId,'support','Back to support')];if(page==='rolehelp')buttons.push(button(guildId,userId,help.choosePath?'paths':'progress',help.choosePath?'Choose a path':'My progress'));if(page==='xphelp')buttons.push(button(guildId,userId,'progress','Refresh my progress'));actions=[new ActionRowBuilder().addComponents(...buttons)];}
  if(page==='knowledge'){const total=knowledge.length,max=Math.max(0,Math.ceil(total/10)-1);offset=Math.max(0,Math.min(offset,max));const rows=knowledge.slice(offset*10,offset*10+10);embed.setDescription(selected?require('../kitsune/knowledge').render(selected):total?`Approved server explanations · ${total} entries\nChoose an entry or search by name. Page ${offset+1}/${max+1}.`:'No approved explanations yet. Staff can add them in Kitsune Studio.');if(rows.length)components.push(new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(custom(guildId,userId,'entry',offset)).setPlaceholder('Choose a name or term').addOptions(rows.map(row=>({label:row.name.slice(0,100),value:row.name,description:require('../kitsune/knowledge').kinds[row.kind]?.slice(0,100)??'Server knowledge'})))));actions=[new ActionRowBuilder().addComponents(button(guildId,userId,'search','Search'),button(guildId,userId,'knowledge','Previous',Math.max(0,offset-1)).setDisabled(offset===0),button(guildId,userId,'knowledge','Next',offset+1).setDisabled(offset>=max))];}
  const links=[];for(const [key,label]of(['support',...Object.keys(helpTopics)].includes(page)&&enabled('tickets')?[['openTicket','Open tickets']]:page==='verify'?[['verification','Verification channel']]:page==='guide'?[['sacredLaws','Rules channel'],['general','Community chat']]:[])){const b=channelButton(key,label,guildId);if(b)links.push(b);}if(page==='verifyhelp'){const verification=channelButton('verification','Verification channel',guildId);if(verification)links.unshift(verification);}if(links.length)actions.push(new ActionRowBuilder().addComponents(...links));
- components.push(new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(custom(guildId,userId,'nav')).setPlaceholder('Explore Kitsune').addOptions(Object.entries(topics).filter(([key])=>available(key)&&!Object.hasOwn(helpTopics,key)&&(!chatPages[key]||key==='talk')).map(([value,[emoji,label]])=>({value,label,emoji,default:value===page})))));
+ components.push(new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(custom(guildId,userId,'nav')).setPlaceholder('Explore Kitsune').addOptions(Object.entries(topics).filter(([key])=>available(key)&&!Object.hasOwn(helpTopics,key)&&(!chatPages[key]||key==='talk')&&!['lounge','stories','games'].includes(key)).map(([value,[emoji,label]])=>({value,label,emoji,default:value===page})))));
  components.push(...actions);return {embeds:[embed],components,allowedMentions:{parse:[]}};
 }
 module.exports={buildPanel,custom,available,topics};

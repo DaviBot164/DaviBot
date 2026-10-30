@@ -5,6 +5,7 @@ function allowed(s,c){if(!c.need)return true;if(c.need==='secret')return ['name'
 function choices(s){return content.stories[s.story]?.nodes[s.node]?.choices.map((c,index)=>({...c,index})).filter(c=>allowed(s,c))??[];}
 function transition(s,action){
  if(action==='en'||action==='ka'){s.lang=action;return s;}
+ if(action==='stories'||action==='games'){s.mode=action;return s;}
  if(action==='library'){s.mode='library';return s;}
  if(action==='resume'){if(s.story&&s.node)s.mode=s.node.startsWith('end:')?'ending':'story';return s;}
  if(action==='restart'){if(s.story)s.mode='confirm';return s;}

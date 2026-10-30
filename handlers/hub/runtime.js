@@ -8,6 +8,10 @@ async function handle(interaction){const match=String(interaction.customId??'').
  if(!require('../../utils/guildContext').enabled('conversation')){await deny('Kitsune hub is disabled on this server.');return true;}
  if(!match||match[1]!==interaction.guildId||match[2]!=='public'&&match[2]!==interaction.user.id){await deny('Open your own menu with /kitsune open.');return true;}
  const [,guildId,owner,action,rawOffset]=match;let page=action,selected=null;const offset=Number(rawOffset);
+ if(action==='close'){
+  if(owner==='public'){await deny('Open your private menu first.');return true;}
+  await interaction.deferUpdate();try{await interaction.deleteReply();}catch{await interaction.editReply({content:'Closed. You can dismiss this private message.',embeds:[],components:[],allowedMentions:{parse:[]}});}return true;
+ }
  if(action==='search'){if(!require('../../utils/guildContext').enabled('learning')){await deny('Server knowledge is disabled.');return true;}await interaction.showModal(new ModalBuilder().setCustomId(custom(guildId,interaction.user.id,'query')).setTitle('Search server knowledge').addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('query').setLabel('Name, word or topic').setStyle(TextInputStyle.Short).setMinLength(2).setMaxLength(80).setRequired(true))));return true;}
  if(action==='nav')page=interaction.values?.[0];if(['entry','query'].includes(action))page='knowledge';if(!available(page)){await deny('That section is unavailable on this server.');return true;}
  const privateUpdate=owner!=='public'&&!interaction.isModalSubmit?.();if(privateUpdate)await interaction.deferUpdate();else await interaction.deferReply({flags:MessageFlags.Ephemeral});
