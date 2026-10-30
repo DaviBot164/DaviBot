@@ -10,8 +10,8 @@ async function handle(message){
  if((cooldowns.get(key)??0)>now)return true;
  if(cooldowns.size>=MAX){for(const[k,until]of cooldowns)if(until<=now)cooldowns.delete(k);if(cooldowns.size>=MAX)cooldowns.delete(cooldowns.keys().next().value);}
  cooldowns.set(key,now+COOLDOWN);
- const payload=require('./panel').buildPanel({guildId:message.guild.id});
- payload.embeds[0].setDescription('I’m here. Pick a topic below; your next menu opens privately.');
+ const payload=require('./panel').buildPanel({guildId:message.guild.id,page:'talk'});
+ payload.embeds[0].setDescription('I’m here. A little chat, a story, or a game? Choose below; we’ll continue privately.');
  await message.reply({...payload,allowedMentions:{parse:[],repliedUser:false}});
  return true;
 }

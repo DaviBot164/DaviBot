@@ -1,12 +1,20 @@
 'use strict';
 const pages=Object.freeze({
+ quiet:{label:'Something peaceful',emoji:'🌧️',lines:['Rain taps against the window. Somewhere nearby, a kettle clicks off. For a moment, nothing needs an answer.','A small lamp, a comfortable chair, and the sound of rain. That is enough of a plan for tonight.'],choices:['rain','night','company','play']},
+ rain:{label:'Stay with the rain',emoji:'☔',lines:['The rain gets a little louder. Someone has left a book open beside the window, with a train ticket between its pages.','One drop races another down the glass. Neither seems to know where the finish line is.'],choices:['ticket','joke','night','play']},
+ ticket:{label:'Look at the ticket',emoji:'🎟️',lines:['The destination is smudged, but the departure time says midnight. A note on the back reads: “Bring an umbrella. Trust me.”'],choices:['curious','night','play','company']},
+ night:{label:'A night scene',emoji:'🌌',lines:['The streetlights reflect in little puddles. One upstairs window is still glowing. It feels like the world has lowered its voice.','A late train passes in the distance. Then the night settles back into its quiet rhythm.'],choices:['rain','quiet','curious','play']},
+ curious:{label:'Tell me something odd',emoji:'🔍',lines:['Imagine a lost-and-found office for dreams. Someone has just come to collect a staircase that never ends.','A tiny dragon has taken a job warming teacups. It insists that this is a temporary position.','There is a library where books choose their readers. One keeps following a very confused delivery driver.'],choices:['dragon','library','joke','play']},
+ dragon:{label:'Meet the tiny dragon',emoji:'🐉',lines:['It offers you tea with the seriousness of a royal ceremony. The cup says “Employee of the Month.” It is the only employee.','The dragon has requested a larger desk. When asked why, it points at a biscuit twice its size.'],choices:['dragon','joke','curious','play']},
+ library:{label:'Visit that library',emoji:'📚',lines:['The book slides across the desk and opens itself. The first line reads: “You are late.” The librarian checks the clock and nods.','A sign asks visitors not to feed the dictionaries. Beneath it, someone has left a bowl of alphabet soup.'],choices:['library','joke','curious','play']},
+
  talk:{label:'A little chat',emoji:'💬',lines:['I’m here. What kind of company would you like?'],choices:['good','tired','company','joke','encourage']},
- good:{label:'Doing well',emoji:'☀️',lines:['Good to hear. Let’s give that good mood somewhere to go.','Then we have a good starting point. A little fun sounds fitting.'],choices:['joke','play','company']},
+ good:{label:'Doing well',emoji:'☀️',lines:['Good to hear. Let’s give that good mood somewhere to go.','Then we have a good starting point. A little fun sounds fitting.'],choices:['curious','joke','play','company']},
  tired:{label:'I’m tired',emoji:'🌙',lines:['We can keep things quiet. You don’t have to carry the conversation.','A slower pace, then. There’s no rush here.'],choices:['company','encourage','joke']},
- company:{label:'Just company',emoji:'☕',lines:['A quiet corner, a warm drink, and no need to fill every silence. We can stay here a moment.','No grand plans needed. A small story or a silly joke will do nicely.'],choices:['joke','encourage','play','talk']},
+ company:{label:'Just company',emoji:'☕',lines:['A quiet corner, a warm drink, and no need to fill every silence. We can stay here a moment.','No grand plans needed. A small story or a silly joke will do nicely.'],choices:['quiet','curious','joke','play']},
  joke:{label:'Make me laugh',emoji:'😄',lines:['The ghost joined voice chat. Somehow, it still had a better microphone than everyone else.','I opened a ticket about my missing motivation. Staff marked it “still investigating.”','The moon asked for a promotion. Apparently, being full once a month counts as experience.'],choices:['joke','company','play']},
  encourage:{label:'A little encouragement',emoji:'✨',lines:['You don’t have to finish everything today. One small step still counts.','A rough round doesn’t erase the things you’ve already learned.','Rest can be part of the plan, too. You can pick things up again.'],choices:['encourage','company','joke']},
- goodbye:{label:'Goodnight',emoji:'👋',lines:['Goodnight. Rest well; the next story can wait.','See you around. Take a little quiet with you.'],choices:['talk','home']}
+ goodbye:{label:'Goodnight',emoji:'👋',lines:['Goodnight. Rest well; the next story can wait.','See you around. Take a little quiet with you.'],choices:['talk','play']}
 });
 function response(page,variant=0){const entry=pages[page];return entry?entry.lines[variant%entry.lines.length]:null;}
 module.exports={pages,response};
