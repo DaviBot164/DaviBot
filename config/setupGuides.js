@@ -10,7 +10,7 @@ function guide(kind) {
     if(custom)return {key:kind,title:custom.title,intro:custom.description,fields:[]};
     if(current.theme!=='blood-moon')return require('./serverGuides').guide(kind,current);
     const training = channel('training', 'the training channel');
-    const path = channel('slayers2', serverText('the Slayers 2 channel'));
+    const path = channel('slayers2', 'the path selection channel');
     const support = channel('supportGuide', 'the support guide');
     const tickets = channel('openTicket', 'the ticket channel');
     const specs = {
@@ -20,10 +20,10 @@ function guide(kind) {
                 field('03 · Keep it community-friendly', 'No sexual or NSFW content, graphic gore or shock material. Dark fantasy is a theme, not permission to ignore boundaries.'),
                 field('04 · Keep accounts safe', 'No scams, phishing, harmful links or malicious downloads. Do not request or expose passwords, account tokens, verification codes or other private information.'),
                 field('05 · Handle disagreements properly', 'Follow staff instructions. Do not evade restrictions. If a moderation decision needs review, explain it calmly through a ticket.'),
-                field('Need help?', `Read ${support} or open a ticket in ${tickets}. Include relevant message links or screenshots.`)
+                field('Need help?', `Before verification, contact a server moderator directly if you cannot access support. After verification, read ${support} or open a ticket in ${tickets}. Include relevant message links or screenshots.`)
             ] },
         moon_guide: { title: serverText('📖 Blood Moon Guide'), intro: serverText('**Your first night under the Blood Moon.**\nA Slayers 2 community, a server progression journey, and matches for any game. Start here.'), quote: 'You do not need to memorize the server. Just take the next step.', fields: [
-                field('01 · Arrive & choose', serverText(`Complete Bloxlink verification in ${channel('verification', 'the verification channel')}, then choose **Slayer** or **Demon** in ${path}. Verification and faction selection are separate steps.`)),
+                field('01 · Arrive & choose', serverText(`Read the rules, use the Bloxlink button in ${channel('verification', 'the verification channel')} to verify your Roblox account, and choose **Slayer** or **Demon** in ${path}. Verification and faction selection are separate: choosing a path does not verify your account or unlock verified-only channels.`)),
                 field('02 · Collect your Daily Drop', [
                     `Use **/daily** or the Daily Drop button in ${training}.`,
                     `Streak bonus drops: ${Object.entries(STREAK_BONUSES).map(([day, xp]) => `**${day} days: +${xp} XP**`).join(' · ')}.`,
@@ -37,13 +37,13 @@ function guide(kind) {
                 field('04 · Make your progress visible', '**/profile** — Level, faction and statistics\n**/achievements** — Milestones and Achievement Points\n**/titles** — Equip an unlocked title\n**/leaderboard** — Community rankings'),
                 field('05 · Rise through your path', serverText(`Regular faction ranks follow your server level. **Hashira / Upper Moon** require Level **50+** and a Trial or staff promotion. Level 50 alone does not award them.\nGuides: ${channel('factionProgression', 'the faction progression channel')} · **/corps** · **/trial**`)),
                 field('06 · Pick your team', 'Use **/match** for **1v1–5v5** in any game. Join **🔴 Vortex** or **🔵 Nova**. Both captains confirm the start; the opposing captain confirms or disputes the reported result. Confirmed results update profile wins and losses.'),
-                field('07 · Meet Kitsune', `Try **\`kitsune help\`** for conversation examples, or **/help** for bot commands. Need a hand? ${support}.\n*Server XP and ranks are separate from your in-game progress.*`)
+                field('07 · Meet Kitsune', `Use **/kitsune open** for the server guide, approved knowledge, support, and stories & games. Use **/help** for available commands. After verification, see ${support} for help.\n*Server XP and ranks are separate from your in-game progress.*`)
             ] },
         verification_guide: { title: serverText('⛩️ Blood Moon Verification'), intro: serverText('**One account linked. Your next chapter unlocked.**\nBlood Moon uses Bloxlink for Roblox account verification.'), quote: 'Make an entrance. Preferably with the right account.', fields: [
                 field('01 · Start here', 'Use the Bloxlink verification option provided in this channel. Follow the instructions shown by Bloxlink.'),
                 field('02 · Check the account', 'Make sure you are linking the Roblox account you intend to use. Complete Bloxlink’s steps, then return to Discord and check your access.'),
-                field('03 · Choose your side', serverText(`Once verified, visit ${path} and choose **Slayer** or **Demon**. Linking your account does not select a faction.`)),
-                field('Something did not work?', `Read ${support} or ask staff. Include the error and a screenshot if useful. **Never send passwords, account tokens or verification codes to another member.**`)
+                field('03 · Choose your side', serverText(`Choose **Slayer** or **Demon** in ${path}. This is separate from Bloxlink verification: neither step completes the other. Choosing a path does not unlock verified-only channels.`)),
+                field('Something did not work?', `If verification fails, contact a server moderator directly through Discord. Support channels may remain hidden until you are verified. Share the error text or a screenshot if useful. **Never send passwords, account tokens or verification codes to another member.**`)
             ] },
         role_guide: { title: serverText('🎭 Blood Moon Roles'), intro: '**Your path. Your milestones. Your place in the community.**\nFaction ranks, Achievement Ranks and staff responsibilities are separate.', quote: 'An impressive title is lovely. Knowing what it means is even better.', fields: [
                 field(serverText('⚔️ Slayer path'), rankLines('slayer'), true), field(serverText('🩸 Demon path'), rankLines('demon'), true),
@@ -80,7 +80,7 @@ function pathGuide(faction) {
         title: slayer ? serverText('⚔️ Slayer Path') : serverText('🩸 Demon Path'),
         intro: slayer ? '**Steady hands. A sharper blade. Your place in the Corps.**' : '**A quiet entrance. A rising presence. Your place in the night.**',
         quote: slayer ? 'Discipline looks good on you. Put it to use.' : 'Make the progress more impressive than the entrance.',
-        fields: [field('Your rank path', rankLines(faction)), field('Build the habit', `Talk naturally to earn XP, collect your **Daily Drop**, and open **Missions** in ${channel('training', 'the training channel')}. XP has a cooldown; spam does not help.`), field(`The final step · ${elite}`, `Reach server Level **50+**, then qualify through Trials or staff promotion. Level 50 alone does not grant **${elite}**. Use **/trial** for trial information.`), field('Track your path', serverText(`**/profile** · **/corps** · **/leaderboard**\nChoose your faction: ${channel('slayers2', serverText('the Slayers 2 channel'))}\n*These are Discord server levels and ranks, not in-game progression.*`))]
+        fields: [field('Your rank path', rankLines(faction)), field('Build the habit', `Talk naturally to earn XP, collect your **Daily Drop**, and open **Missions** in ${channel('training', 'the training channel')}. XP has a cooldown; spam does not help.`), field(`The final step · ${elite}`, `Reach server Level **50+**, then qualify through Trials or staff promotion. Level 50 alone does not grant **${elite}**. Use **/trial** for trial information.`), field('Track your path', serverText(`**/profile** · **/corps** · **/leaderboard**\nChoose your faction: ${channel('slayers2', 'the path selection channel')}\n*These are Discord server levels and ranks, not in-game progression.*`))]
     };
 }
-module.exports = { guide, pathGuide };
+module.exports = { guide, pathGuide, rankLines };

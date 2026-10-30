@@ -26,9 +26,9 @@ function pathSpec() {
         key:'path_selection', title: 'Choose Your Path',
         intro: serverText('**Two paths. One Blood Moon. Your next chapter.**'),
         fields: [
-            { name: serverText('⚔️ Slayer'), value: serverText('Join the Corps. Advance through Slayer, Mizunoe and Kinoe; aim for Hashira through Trials or staff promotion.'), inline: true },
-            { name: serverText('🩸 Demon'), value: serverText('Step into the night. Advance through Demon and Lower Moon; aim for Upper Moon through Trials or staff promotion.'), inline: true },
-            { name: 'Before you choose', value: serverText('This selects your Blood Moon server faction. It does not change your Roblox character or in-game progression.') }
+            { name: serverText('⚔️ Slayer'), value: require('../../config/setupGuides').rankLines('slayer'), inline: true },
+            { name: serverText('🩸 Demon'), value: require('../../config/setupGuides').rankLines('demon'), inline: true },
+            { name: 'Before you choose', value: serverText('This selects your Blood Moon server faction. It does not verify your account, unlock verified-only channels, or change your Roblox character. Final ranks require a trial or staff promotion.') }
         ], quote: 'Choose the path you want to build. Then give it a little effort.'
     };
 }
