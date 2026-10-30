@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict'),path=require('node:path');
+const root=process.argv[2]||path.resolve(__dirname,'..'),context=require(path.join(root,'utils/guildContext')),model=require(path.join(root,'config/serverSettings')),welcome=require(path.join(root,'utils/welcomeEmbed'));
+const G='1528399924218298368',ids=['111111111111111111','222222222222222222','333333333333333333'];
+const channels=new Map(ids.map(id=>[id,{id,guild:{id:G},isTextBased:()=>true}]));
+const member={id:'444444444444444444',guild:{id:G,channels:{cache:channels}},user:{displayAvatarURL:()=> 'https://example.com/avatar.png'},client:{user:{displayAvatarURL:()=> 'https://example.com/bot.png'}},toString:()=>'<@444444444444444444>'};
+const s=model.legacy();Object.assign(s.channels,{sacredLaws:ids[0],verification:ids[1],slayers2:ids[2]});
+context.run(G,s,()=>{
+ const rows=welcome.createWelcomeComponents(member);assert.equal(rows.length,1);
+ const buttons=rows[0].toJSON().components;assert.equal(buttons.length,3);
+ buttons.forEach((b,i)=>{assert.equal(b.style,5);assert.equal(b.url,'https://discord.com/channels/'+G+'/'+ids[i]);assert.ok(!b.custom_id);});
+ const embed=welcome.createWelcomeEmbed(member).toJSON();assert.equal(embed.image.url,'attachment://welcome-banner.png');assert.match(embed.fields[0].value,/separate step/);
+ assert.ok(!JSON.stringify(embed).includes('support'));assert.ok(embed.fields[0].value.length<1024);
+ s.modules.progression=false;assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,2);s.modules.progression=true;
+ channels.set(ids[2],{guild:{id:'999999999999999999'},isTextBased:()=>true});assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,2);
+ channels.set(ids[1],{guild:{id:G},isTextBased:'invalid'});assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,1);
+ channels.clear();assert.deepEqual(welcome.createWelcomeComponents(member),[]);assert.match(welcome.createWelcomeEmbed(member).toJSON().fields[0].value,/moderator/);
+});
+const neutral=model.defaults('Another Community');neutral.welcome.message='Hello {user}, welcome to {server}!';
+context.run(G,neutral,()=>{const embed=welcome.createWelcomeEmbed(member).toJSON();assert.match(embed.description,/Another Community/);assert.ok(!JSON.stringify(embed).includes('Blood Moon'));});
+for(const file of ['events/guildMemberAdd.js','commands/moderation/testwelcome.js'])assert.match(require('node:fs').readFileSync(path.join(root,file),'utf8'),/components: createWelcomeComponents/);
+console.log('Welcome links: guild-scoped destinations, missing/invalid channels, module gates, custom message, legacy banner reference and both delivery paths passed. No external calls.');

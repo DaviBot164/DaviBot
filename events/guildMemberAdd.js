@@ -8,7 +8,8 @@ const channels =
 
 const {
     createWelcomeBanner,
-    createWelcomeEmbed
+    createWelcomeEmbed,
+    createWelcomeComponents
 } = require('../utils/welcomeEmbed');
 
 module.exports = {
@@ -72,6 +73,7 @@ module.exports = {
                 embeds: [
                     embed
                 ],
+                components: createWelcomeComponents(member),
                 files: [
                     banner
                 ],

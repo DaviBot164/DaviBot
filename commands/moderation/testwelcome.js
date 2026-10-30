@@ -1,7 +1,7 @@
 const {serverText}=require("../../utils/guildContext");
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const channels = require('../../config/channels');
-const { createWelcomeBanner, createWelcomeEmbed } = require('../../utils/welcomeEmbed');
+const { createWelcomeBanner, createWelcomeEmbed, createWelcomeComponents } = require('../../utils/welcomeEmbed');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('testwelcome')
@@ -27,6 +27,7 @@ module.exports = {
                 embeds: [
                     embed
                 ],
+                components: createWelcomeComponents(interaction.member),
                 files: [
                     banner
                 ]
