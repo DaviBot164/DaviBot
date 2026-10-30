@@ -30,6 +30,8 @@ module.exports = {
 
         if (guardianResult.blocked) return;
 
+        if(enabled('conversation')){try{await require('../handlers/hub/summon').handle(message);}catch{console.warn('Kitsune menu could not be sent.');}}
+
         if(!enabled('progression'))return;
 
         const guildId = message.guild.id;
