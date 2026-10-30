@@ -16,18 +16,11 @@ function createWelcomeComponents(member){
  const {ActionRowBuilder,ButtonBuilder,ButtonStyle}=require('discord.js'),destinations=welcomeDestinations(member);
  return destinations.length?[new ActionRowBuilder().addComponents(...destinations.map(({label,emoji,id})=>new ButtonBuilder().setLabel(label).setEmoji(emoji).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${member.guild.id}/${id}`)))]:[];
 }
-function welcomeSteps(member){
- const settings=current(),destinations=welcomeDestinations(member),lines=destinations.map(({key,id})=>key==='sacredLaws'?`📜 Read the rules in <#${id}>.`:key==='verification'?`✅ Follow the verification instructions in <#${id}>.`:`⚔️ Choose your progression path in <#${id}>.`);
- if(destinations.some(d=>d.key==='verification'))lines.push(settings.theme==='blood-moon'?'Verification unlocks the community. Choosing Slayer or Demon is a separate step.':'Verification and path selection are separate steps. Follow this server’s access instructions.');
- if(!lines.length)lines.push('Read the server’s entry instructions. Contact a moderator if you need help.');
- return lines.join('\n');
-}
 function createWelcomeEmbed(member){
  const settings=current(),legacy=settings.welcome.mode==='legacy';
  return new EmbedBuilder().setColor(brand.color).setAuthor({name:`${brand.name} • ${brand.server}`,iconURL:member.client.user.displayAvatarURL({size:256})})
  .setTitle(legacy?'🌙 A New Soul Has Arrived':text(settings.welcome.title,member))
- .setDescription(legacy?`Welcome, ${member}.\nMake yourself at home.`:text(settings.welcome.message.replace(/\{user\}/g,`<@${member.id}>`),member))
- .addFields({name:'Start here',value:welcomeSteps(member)})
+ .setDescription(legacy?`Welcome, ${member}.`:text(settings.welcome.message.replace(/\{user\}/g,`<@${member.id}>`),member))
  .setThumbnail(member.user.displayAvatarURL({size:256})).setImage(`attachment://${BANNER_NAME}`).setFooter({text:brand.footer});
 }
 module.exports={createWelcomeBanner,createWelcomeEmbed,bannerPng,createWelcomeComponents};

@@ -9,12 +9,12 @@ context.run(G,s,()=>{
  const rows=welcome.createWelcomeComponents(member);assert.equal(rows.length,1);
  const buttons=rows[0].toJSON().components;assert.equal(buttons.length,3);
  buttons.forEach((b,i)=>{assert.equal(b.style,5);assert.equal(b.url,'https://discord.com/channels/'+G+'/'+ids[i]);assert.ok(!b.custom_id);});
- const embed=welcome.createWelcomeEmbed(member).toJSON();assert.equal(embed.image.url,'attachment://welcome-banner.png');assert.match(embed.fields[0].value,/separate step/);
- assert.ok(!JSON.stringify(embed).includes('support'));assert.ok(embed.fields[0].value.length<1024);
+ const embed=welcome.createWelcomeEmbed(member).toJSON();assert.equal(embed.image.url,'attachment://welcome-banner.png');assert.equal(embed.fields,undefined);assert.equal(embed.description,'Welcome, '+member+'.');
+ assert.ok(!JSON.stringify(embed).includes('support'));assert.ok(embed.description.length<100);
  s.modules.progression=false;assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,2);s.modules.progression=true;
  channels.set(ids[2],{guild:{id:'999999999999999999'},isTextBased:()=>true});assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,2);
  channels.set(ids[1],{guild:{id:G},isTextBased:'invalid'});assert.equal(welcome.createWelcomeComponents(member)[0].toJSON().components.length,1);
- channels.clear();assert.deepEqual(welcome.createWelcomeComponents(member),[]);assert.match(welcome.createWelcomeEmbed(member).toJSON().fields[0].value,/moderator/);
+ channels.clear();assert.deepEqual(welcome.createWelcomeComponents(member),[]);assert.equal(welcome.createWelcomeEmbed(member).toJSON().fields,undefined);
 });
 const neutral=model.defaults('Another Community');neutral.welcome.message='Hello {user}, welcome to {server}!';
 context.run(G,neutral,()=>{const embed=welcome.createWelcomeEmbed(member).toJSON();assert.match(embed.description,/Another Community/);assert.ok(!JSON.stringify(embed).includes('Blood Moon'));});
