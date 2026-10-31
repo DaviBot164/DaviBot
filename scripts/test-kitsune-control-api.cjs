@@ -18,6 +18,11 @@ async function call(url,body,auth=true){const req=Readable.from(body?[Buffer.fro
  assert.equal((await call('/v1/save',{guildId,record:{kind:'role',name:'staff role',targetId:memberId}})).status,400);
  assert.equal((await call('/v1/test',{guildId,text:'kitsune hi',persona:'member'})).status,410);assert.equal(tests,0);
  assert.equal((await call('/v1/test',{guildId,text:'x'.repeat(1501),persona:'member'})).status,410);assert.equal(tests,0);
+ assert.equal((await call('/v1/talk/test',{guildId,language:'ka',actions:['company','quiet','rain','ticket']})).data.state.node,'ticket');
+ assert.equal((await call('/v1/talk/test',{guildId,language:'en',actions:['board']})).status,400);
+ assert.equal((await call('/v1/talk/test',{guildId,language:'en',actions:[]},false)).status,401);
+ assert.equal((await call('/v1/talk/test',{guildId:'333333333333333333',language:'en',actions:[]})).status,404);
+ assert.equal((await call('/v1/talk/test',{guildId,language:'en',actions:[]})).status,200);assert.equal(saves.length,1);assert.equal(reads,1);
  assert.equal(startControlServer(client,{}),null);
  const prior=console.error;console.error=()=>{};try{assert.equal(startControlServer(client,{KITSUNE_CONTROL_ENABLED:'true',KITSUNE_CONTROL_KEY:'bad'}),null);}finally{console.error=prior;}
  for(let i=0;i<30;i++)await call('/v1/status');assert.equal((await call('/v1/status')).status,429);now+=60000;assert.equal((await call('/v1/status')).status,200);

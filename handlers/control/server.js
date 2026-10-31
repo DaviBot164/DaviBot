@@ -26,6 +26,12 @@ function createHandler({client,key,repos,invalidate=()=>{},clock=Date.now,manage
     if(!management)return reply(res,503,{error:'Management unavailable'});
     try{return reply(res,200,await management.handle(url.pathname,req.method,guild,body));}catch(error){return reply(res,error.code==='SETTINGS_CONFLICT'?409:400,{error:'Management request failed. Reload settings, check selected resources and permissions.'});}
    }
+   if(req.method==='POST'&&url.pathname==='/v1/talk/test'){
+    return await inGuild(guild,async()=>{
+     if(!require('../../utils/guildContext').enabled('conversation'))return reply(res,400,{error:'Chat is disabled on this server.'});
+     try{return reply(res,200,require('../hub/talk-engine').replay({language:body.language,actions:body.actions}));}catch{return reply(res,400,{error:'Invalid dialogue path. Restart the test.'});}
+    });
+   }
    if(url.pathname==='/v1/test')return reply(res,410,{error:'Dialogue lab retired. Use the Kitsune hub.'});
    if(req.method==='GET'&&url.pathname==='/v1/state'){const [learned,knowledge,unknown]=await Promise.all([repos.learning.getLearnedPhrases(guildId),repos.knowledge.getKnowledge(guildId),Promise.resolve([])]);return reply(res,200,{learned,knowledge,unknown,capabilities:{hub:true,dialogue:false,meaningsReadOnly:true}});}
    if(req.method!=='POST'||!['/v1/save','/v1/remove'].includes(url.pathname))return reply(res,404,{error:'Not found'});
