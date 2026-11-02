@@ -4,7 +4,6 @@ const { createEmbed } = require('../../utils/embeds');
 const { paginate, openRecordBrowser } = require('../../utils/recordBrowser');
 const { getCorpsMembers } = require('../../database/directory');
 const { getRanks } = require('../../config/progression');
-const { getTitle } = require('../../config/titles');
 const RANK_FILTERS = {
     hashira: { faction: 'slayer', rank: 'hashira' },
     kinoe: { faction: 'slayer', rank: 'kinoe' },
@@ -73,8 +72,7 @@ function render(members, state) {
     const lines = page.records.map((member, index) => [
         `**${page.start + index + 1}.** <@${member.userId}>`,
         serverText(`${member.faction === 'slayer' ? serverText('⚔️ Slayer') : serverText('🩸 Demon')} • **${rankName(member)}**`),
-        `Level **${member.level}** • XP **${member.xp}** • Messages **${member.messages}**`,
-        `Title: **${getTitle(member.titleId)?.name ?? member.titleId ?? 'None'}**`
+        `Level **${member.level}** • XP **${member.xp}** • Messages **${member.messages}**`
     ].join('\n'));
     const label = SECTIONS.find(section => section.value === state.section)?.label ?? 'Members';
     return {

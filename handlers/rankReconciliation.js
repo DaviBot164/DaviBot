@@ -12,7 +12,7 @@ function createReconciler({settings,query,changeRank,context,progression,faction
      const role=await guild.roles.fetch(roleId);if(!role||role.managed||!role.editable){counts.skipped++;return;}
      const member=await guild.members.fetch(entry.user_id);if(!member||member.user?.bot){counts.skipped++;return;}
      const higherRole=progression.getAllRanks(user.faction).some(rank=>rank.level>target.level&&member.roles?.cache?.has(latest.value.roles[progression.RANK_ROLE_KEYS[rank.id]]));if(higherRole){counts.skipped++;return;}
-     const result=await changeRank(member,null,{automatic:true,announce:false,refreshUnlocks:false});if(result.changed)counts.promoted++;else counts.skipped++;await pause();
+     const result=await changeRank(member,null,{automatic:true,announce:false});if(result.changed)counts.promoted++;else counts.skipped++;await pause();
     });
    }catch(error){if(error?.code===10007)counts.skipped++;else counts.failed++;}}
   }

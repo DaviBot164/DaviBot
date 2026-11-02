@@ -7,10 +7,6 @@ const { canEarnXP } = require('../handlers/xpCooldown');
 const { runGuardian } = require('../handlers/guardian');
 const { checkAutoPromotion } = require('../handlers/autoPromotion');
 
-const {
-    refreshProgressionUnlocks
-} = require('../handlers/progressionUnlocks');
-
 const { sendLevelUp } = require('../utils/levelNotifications');
 
 module.exports = {
@@ -30,7 +26,6 @@ module.exports = {
 
         if (guardianResult.blocked) return;
 
-        if(enabled('conversation')){try{await require('../handlers/hub/summon').handle(message);}catch{console.warn('Kitsune menu could not be sent.');}}
 
         if(!enabled('progression'))return;
 
@@ -52,8 +47,7 @@ module.exports = {
             userId,
             randomXP(),
             {
-                message: true,
-                questProgress: true
+                message: true
             }
         );
 
@@ -69,8 +63,5 @@ module.exports = {
             }
         }
 
-        if (member) {
-            await refreshProgressionUnlocks(member);
-        }
     }
 };

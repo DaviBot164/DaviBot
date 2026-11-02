@@ -1,44 +1,5 @@
 const { query } = require('./connection');
 
-async function getLegacyRecords(guildId, userId = null) {
-    const [achievements, titles] = await Promise.all([
-        query(
-            `
-                SELECT user_id, achievement_id
-                FROM kitsune_achievements
-                WHERE guild_id = $1
-                  AND ($2::TEXT IS NULL OR user_id = $2)
-                ORDER BY achievement_id, user_id
-            `,
-            [guildId, userId]
-        ),
-        query(
-            `
-                SELECT user_id, title_id, equipped
-                FROM kitsune_titles
-                WHERE guild_id = $1
-                  AND ($2::TEXT IS NULL OR user_id = $2)
-                ORDER BY title_id, user_id
-            `,
-            [guildId, userId]
-        )
-    ]);
-
-    return {
-        achievements: achievements.rows.map(row => ({
-            userId: row.user_id,
-            id: row.achievement_id,
-            achievementId: row.achievement_id
-        })),
-        titles: titles.rows.map(row => ({
-            userId: row.user_id,
-            id: row.title_id,
-            titleId: row.title_id,
-            equipped: row.equipped
-        }))
-    };
-}
-
 async function getLeaderboard(guildId, faction = null) {
     const { rows } = await query(
         `
@@ -63,6 +24,5 @@ async function getLeaderboard(guildId, faction = null) {
 }
 
 module.exports = {
-    getLegacyRecords,
     getLeaderboard
 };

@@ -28,7 +28,7 @@ function pathSpec() {
         fields: [
             { name: serverText('⚔️ Slayer'), value: require('../../config/setupGuides').rankLines('slayer'), inline: true },
             { name: serverText('🩸 Demon'), value: require('../../config/setupGuides').rankLines('demon'), inline: true },
-            { name: 'Before you choose', value: serverText('This selects your Blood Moon server faction. It does not verify your account, unlock verified-only channels, or change your Roblox character. Final ranks require a trial or staff promotion.') }
+            { name: 'Before you choose', value: serverText('This selects your Blood Moon server faction. It does not verify your account, unlock verified-only channels, or change your Roblox character. Final ranks require staff promotion.') }
         ], quote: 'Choose the path you want to build. Then give it a little effort.'
     };
 }

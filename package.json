@@ -1,11 +1,14 @@
 {
   "name": "kitsune-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Core Discord community bot: moderation, tickets, welcome, XP and ranks.",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/run-kitsune-dialogue-tests.cjs",
-    "audit": "node scripts/audit-kitsune-source.cjs"
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "deploy:guild": "node deploy-commands.js --guild",
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check-source.cjs"
   },
   "repository": {
     "type": "git",
@@ -27,5 +30,8 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

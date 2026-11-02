@@ -1,86 +1,46 @@
-const {serverText}=require("../utils/guildContext");
-const channels = require('./channels');
+const { current, factionName } = require('../utils/guildContext');
 const { getRanks } = require('./progression');
-const { STREAK_BONUSES, BOARD_BONUS } = require('./missions');
-const channel = (key, fallback) => channels[key] ? `<#${channels[key]}>` : fallback;
-const field = (name, value, inline = false) => ({ name, value: Array.isArray(value) ? value.join('\n') : value, inline });
-function guide(kind) {
-    const current=require('../utils/guildContext').current();
-    const custom=current.pages[kind];
-    if(custom)return {key:kind,title:custom.title,intro:custom.description,fields:[]};
-    if(current.theme!=='blood-moon')return require('./serverGuides').guide(kind,current);
-    const training = channel('training', 'the training channel');
-    const path = channel('slayers2', 'the path selection channel');
-    const support = channel('supportGuide', 'the support guide');
-    const tickets = channel('openTicket', 'the ticket channel');
-    const specs = {
-        sacred_laws: { title: '📜 Sacred Laws', intro: serverText('**Good rivalry. Clear boundaries. One community.**\nSlayer or Demon, these rules apply to everyone.'), quote: 'Keep the sharp edges in the jokes. Respect the person behind the screen.', fields: [
-                field('01 · Respect the person', 'Friendly rivalry is welcome. Harassment, slurs, discrimination, threats and personal attacks are not. Stop when someone asks.'),
-                field('02 · Give the chat room to breathe', 'No message floods, repeated posts, mention spam or disruption in voice channels. Use the right channel and read its topic.'),
-                field('03 · Keep it community-friendly', 'No sexual or NSFW content, graphic gore or shock material. Dark fantasy is a theme, not permission to ignore boundaries.'),
-                field('04 · Keep accounts safe', 'No scams, phishing, harmful links or malicious downloads. Do not request or expose passwords, account tokens, verification codes or other private information.'),
-                field('05 · Handle disagreements properly', 'Follow staff instructions. Do not evade restrictions. If a moderation decision needs review, explain it calmly through a ticket.'),
-                field('Need help?', `Before verification, contact a server moderator directly if you cannot access support. After verification, read ${support} or open a ticket in ${tickets}. Include relevant message links or screenshots.`)
-            ] },
-        moon_guide: { title: serverText('📖 Blood Moon Guide'), intro: serverText('**Your first night under the Blood Moon.**\nA Slayers 2 community, a server progression journey, and matches for any game. Start here.'), quote: 'You do not need to memorize the server. Just take the next step.', fields: [
-                field('01 · Arrive & choose', serverText(`Read the rules, use the Bloxlink button in ${channel('verification', 'the verification channel')} to verify your Roblox account, and choose **Slayer** or **Demon** in ${path}. Verification and faction selection are separate: choosing a path does not verify your account or unlock verified-only channels.`)),
-                field('02 · Collect your Daily Drop', [
-                    `Use **/daily** or the Daily Drop button in ${training}.`,
-                    `Streak bonus drops: ${Object.entries(STREAK_BONUSES).map(([day, xp]) => `**${day} days: +${xp} XP**`).join(' · ')}.`,
-                    'The bonus track repeats every 30 claims. Claim 24–48 hours after your last drop to keep the streak.'
-                ]),
-                field('03 · Clear the Mission Board', [
-                    `Open **Missions** from ${training}. Send **15 / 30 XP-eligible messages** and collect your daily drop.`,
-                    `Collect all three mission rewards for a **+${BOARD_BONUS} XP** clear bonus. Themes change between cycles; mission goals stay the same.`,
-                    'XP has a cooldown. Spam will not speed up your progress.'
-                ]),
-                field('04 · Make your progress visible', '**/profile** — Level, faction and statistics\n**/achievements** — Milestones and Achievement Points\n**/titles** — Equip an unlocked title\n**/leaderboard** — Community rankings'),
-                field('05 · Rise through your path', serverText(`Regular faction ranks follow your server level. **Hashira / Upper Moon** require Level **50+** and a Trial or staff promotion. Level 50 alone does not award them.\nGuides: ${channel('factionProgression', 'the faction progression channel')} · **/corps** · **/trial**`)),
-                field('06 · Pick your team', 'Use **/match** for **1v1–5v5** in any game. Join **🔴 Vortex** or **🔵 Nova**. Both captains confirm the start; the opposing captain confirms or disputes the reported result. Confirmed results update profile wins and losses.'),
-                field('07 · Meet Kitsune', `Use **/kitsune open** for the server guide, approved knowledge, support, and stories & games. Use **/help** for available commands. After verification, see ${support} for help.\n*Server XP and ranks are separate from your in-game progress.*`)
-            ] },
-        verification_guide: { title: serverText('⛩️ Blood Moon Verification'), intro: serverText('**One account linked. Your next chapter unlocked.**\nBlood Moon uses Bloxlink for Roblox account verification.'), quote: 'Make an entrance. Preferably with the right account.', fields: [
-                field('01 · Start here', 'Use the Bloxlink verification option provided in this channel. Follow the instructions shown by Bloxlink.'),
-                field('02 · Check the account', 'Make sure you are linking the Roblox account you intend to use. Complete Bloxlink’s steps, then return to Discord and check your access.'),
-                field('03 · Choose your side', serverText(`Choose **Slayer** or **Demon** in ${path}. This is separate from Bloxlink verification: neither step completes the other. Choosing a path does not unlock verified-only channels.`)),
-                field('Something did not work?', `If verification fails, contact a server moderator directly through Discord. Support channels may remain hidden until you are verified. Share the error text or a screenshot if useful. **Never send passwords, account tokens or verification codes to another member.**`)
-            ] },
-        role_guide: { title: serverText('🎭 Blood Moon Roles'), intro: '**Your path. Your milestones. Your place in the community.**\nFaction ranks, Achievement Ranks and staff responsibilities are separate.', quote: 'An impressive title is lovely. Knowing what it means is even better.', fields: [
-                field(serverText('⚔️ Slayer path'), rankLines('slayer'), true), field(serverText('🩸 Demon path'), rankLines('demon'), true),
-                field('🌕 Achievement ladder', serverText('Moonbound → Crimson Bloom → Bloodbound → Night Ascendant → Eternal Moon\nEarn Achievement Points through milestones. Track them with **/achievements**.')),
-                field(serverText('👑 The Shogunate'), serverText('**Shogun** — Owner\n**Daimyo** — Administrator\n**Hatamoto** — Moderator\n**Samurai** — Staff\nStaff responsibilities are assigned; XP does not award authority.')),
-                field('✨ Wear your progress', 'Use **/titles** to equip an unlocked title. Titles do not change your faction rank or grant staff permissions.'),
-                field('Find your next step', serverText(`**/profile** · **/corps**\nFaction guides: ${channel('factionProgression', 'the progression channel')}\n*All ranks here belong to Blood Moon, not your in-game character.*`))
-            ] },
-        game_guide: { title: serverText('🗺️ Slayers 2 Guide Directory'), intro: serverText('**Find a route. Share a build. Bring someone along.**\nThis is the community space for Slayers 2 questions, guides and discoveries.'), quote: 'A clear question gets further than a mysterious cry for help.', fields: [
-                field('⚔️ Build your fighter', serverText('Share breathing styles, Demon Arts, weapons and equipment combinations. Mention whether your build is for PvE or PvP.')),
-                field('👹 Learn the fight', 'Discuss boss patterns, combat timing and team tactics. Explain what worked, what did not, and when you tested it.'),
-                field('📈 Share a useful route', 'Post legitimate leveling or resource routes. Keep guides current when the game changes. No exploits, malicious scripts or suspicious downloads.'),
-                field('🤝 Find a party', 'Tell people your goal, faction, relevant in-game level and when you can play. Give your future teammates something to work with.'),
-                field('📖 Make a guide people can use', 'Keep the steps short. Add screenshots when useful. Distinguish your own experience from confirmed mechanics.'),
-                field('Looking for server progression?', serverText(`Blood Moon XP is separate from Slayers 2. See ${channel('factionProgression', 'the faction guides')} or use **/profile**.`))
-            ] },
-        support_guide: { title: '📜 Support Guide', intro: `**A clear question. The right ticket. A calmer conversation.**\nOpen a ticket in ${tickets} and choose the category that fits.`, quote: 'Bring the details. Leave the dramatic ping marathon outside.', fields: [
-                field('🛟 Support', 'Verification, missing roles, server questions or Kitsune issues. Tell staff what you expected, what happened, and what you already tried.'),
-                field('🚨 Report', 'Rule violations, harassment or suspicious activity. Include relevant message links, screenshots and a short explanation. Keep private details out of public chat.'),
-                field('⚖️ Appeal', 'Ask staff to review a moderation action. Include its date or case ID when available and explain what needs reconsideration. A review does not guarantee a reversal.'),
-                field('📜 Other', 'Not sure where it fits? State what you need in the first message so staff can direct you.'),
-                field('A useful first message', '**What happened?** A short description.\n**Where?** Channel and message link.\n**Evidence?** Relevant screenshots.\n**Already tried?** Your troubleshooting steps.'),
-                field('While you wait', 'Keep related information in one ticket. Avoid duplicate tickets or repeated staff mentions. Never include passwords, tokens or verification codes. Follow staff instructions when the issue is resolved.')
-            ] }
-    };
-    return specs[kind]?{...specs[kind],key:kind}:null;
+function rankLines(faction) {
+    return getRanks(faction).map(r => `**${r.name}** · Level ${r.level}${r.automatic ? '' : ' + staff promotion'}`).join('\n');
 }
-function rankLines(faction) { return getRanks(faction).map(rank => `**${rank.name}** · Level ${rank.level}${rank.automatic ? '' : ' + Trial / staff promotion'}`).join('\n'); }
-function pathGuide(faction) {
-    if(require('../utils/guildContext').current().theme!=='blood-moon')return require('./serverGuides').pathGuide(faction);
-    const slayer = faction === 'slayer';
-    const elite = slayer ? serverText('Hashira') : serverText('Upper Moon');
-    return {
-        title: slayer ? serverText('⚔️ Slayer Path') : serverText('🩸 Demon Path'),
-        intro: slayer ? '**Steady hands. A sharper blade. Your place in the Corps.**' : '**A quiet entrance. A rising presence. Your place in the night.**',
-        quote: slayer ? 'Discipline looks good on you. Put it to use.' : 'Make the progress more impressive than the entrance.',
-        fields: [field('Your rank path', rankLines(faction)), field('Build the habit', `Talk naturally to earn XP, collect your **Daily Drop**, and open **Missions** in ${channel('training', 'the training channel')}. XP has a cooldown; spam does not help.`), field(`The final step · ${elite}`, `Reach server Level **50+**, then qualify through Trials or staff promotion. Level 50 alone does not grant **${elite}**. Use **/trial** for trial information.`), field('Track your path', serverText(`**/profile** · **/corps** · **/leaderboard**\nChoose your faction: ${channel('slayers2', 'the path selection channel')}\n*These are Discord server levels and ranks, not in-game progression.*`))]
+function guide(kind) {
+    const s = current();
+    const channel = (key, fallback) => s.channels[key] ? `<#${s.channels[key]}>` : fallback;
+    const specs = {
+        sacred_laws: { title: '📜 Sacred Laws', intro: 'Respect others and keep this community welcoming.', fields: [
+            { name: 'Respect', value: 'No harassment, threats, discrimination or personal attacks. Follow staff instructions.' },
+            { name: 'Chat responsibly', value: 'No spam, disruptive mentions, scams, harmful links or inappropriate content. Use the right channels.' },
+            { name: 'Get help', value: `Report issues privately through ${channel('openTicket', 'a support ticket')}. Never share passwords or tokens.` }
+        ] },
+        moon_guide: { title: `📖 ${s.brand.server} Guide`, intro: 'Your first steps in the community.', fields: [
+            { name: 'Start here', value: `Read the rules and follow Bloxlink in ${channel('verification', 'the verification channel')}. Then choose a faction in ${channel('slayers2', 'the path channel')}. Faction selection does not verify your account.` },
+            { name: 'Progress', value: 'Chat naturally to earn XP. Use /profile, /leaderboard and /corps to follow levels and ranks. XP has a cooldown; spam does not help.' },
+            { name: 'Need help?', value: `Use /help or open a ticket in ${channel('openTicket', 'the ticket channel')}.` }
+        ] },
+        verification_guide: { title: '✅ Verification', intro: 'Use the Bloxlink verification option provided in this channel.', fields: [
+            { name: 'Link your account', value: 'Follow Bloxlink’s instructions with the Roblox account you intend to use. Faction selection is a separate step.' },
+            { name: 'Problems?', value: 'Contact a moderator directly if verification blocks access to support. Never share passwords or verification codes.' }
+        ] },
+        role_guide: { title: '🎭 Roles and Ranks', intro: 'Faction progression and staff responsibilities are separate.', fields: [
+            { name: factionName('slayer'), value: rankLines('slayer'), inline: true },
+            { name: factionName('demon'), value: rankLines('demon'), inline: true },
+            { name: 'Staff', value: 'Staff roles are assigned by server leadership. XP never grants moderation permissions. Final faction ranks require staff promotion.' }
+        ] },
+        game_guide: { title: '🗺️ Game Guide', intro: 'Share builds, legitimate strategies and questions in the game channels.', fields: [
+            { name: 'Server progression', value: 'Discord levels and faction ranks are separate from your in-game character. No exploits or suspicious downloads.' }
+        ] },
+        support_guide: { title: '🎫 Support Guide', intro: `Open a ticket in ${channel('openTicket', 'the ticket channel')}.`, fields: [
+            { name: 'Choose a category', value: 'Support, report, appeal or other. Explain what happened and include relevant evidence.' },
+            { name: 'While waiting', value: 'Keep related details in one ticket. Avoid duplicate tickets, repeated pings and sharing credentials.' }
+        ] }
     };
+    return specs[kind] ? { ...specs[kind], key: kind } : null;
+}
+function pathGuide(faction) {
+    return { key: 'progression_' + faction, title: factionName(faction) + ' Progression', intro: 'Levels and ranks belong to this Discord server.', fields: [
+        { name: 'Rank path', value: rankLines(faction) },
+        { name: 'Earn XP', value: 'Chat naturally. Eligible messages award XP with a cooldown. Use /profile to see progress.' },
+        { name: 'Final ranks', value: 'Reach the required level and ask staff about promotion. Level alone does not automatically award the final rank.' }
+    ] };
 }
 module.exports = { guide, pathGuide, rankLines };

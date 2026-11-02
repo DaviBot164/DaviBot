@@ -46,12 +46,6 @@ const SETUP_ITEMS = [
         emoji: '📜'
     },
     {
-        label: 'Mission Control',
-        description: 'Update Daily Drop, Missions and profile buttons.',
-        value: 'training_grounds',
-        emoji: '🥋'
-    },
-    {
         label: 'Full Setup',
         description: serverText('Publish all core Blood Moon setup content.'),
         value: 'full_setup',
@@ -68,7 +62,7 @@ module.exports = {
             await interaction.reply({ content: 'Manage Server permission is required.', flags: MessageFlags.Ephemeral });
             return;
         }
-        const embed = createEmbed(serverText('🌙 Blood Moon • Setup Studio'), '**Give every entrance a little atmosphere.**\nChoose a section below to publish or refresh its content.').setColor(brand.color).addFields({ name: '01 · First impressions', value: '📜 **Sacred Laws** — Short, clear community rules\n📖 **Moon Guide** — A member’s first steps\n⛩️ **Verification** — Verification and account access' }, { name: '02 · Build the journey', value: serverText('🎭 **Roles** — Ranks, milestones and staff\n⚔️ **Progression** — Slayer and Demon paths\n🦊 **Mission Control** — Daily Drop, Missions and profile') }, { name: '03 · Find your way', value: '🗺️ **Game Guide** — Community guides and parties\n🎫 **Support** — Questions, reports and appeals' }, { name: '🌙 Full Setup', value: 'Refresh the guides, path selection, ticket panel and Mission Control together. Sections publish one after another; a failure may leave earlier sections updated.' }).setFooter({ text: brand.footer });
+        const embed = createEmbed(serverText('🌙 Blood Moon • Setup Studio'), '**Give every entrance a little atmosphere.**\nChoose a section below to publish or refresh its content.').setColor(brand.color).addFields({ name: '01 · First impressions', value: '📜 **Sacred Laws** — Short, clear community rules\n📖 **Moon Guide** — A member’s first steps\n⛩️ **Verification** — Verification and account access' }, { name: '02 · Build the journey', value: serverText('🎭 **Roles** — Faction ranks and staff\n⚔️ **Progression** — Slayer and Demon paths') }, { name: '03 · Find your way', value: '🗺️ **Game Guide** — Community guides and parties\n🎫 **Support** — Questions, reports and appeals' }, { name: '🌙 Full Setup', value: 'Refresh the guides, path selection, ticket panel together. Sections publish one after another; a failure may leave earlier sections updated.' }).setFooter({ text: brand.footer });
         const icon = interaction.guild.iconURL({ size: 256 });
         if (icon)
             embed.setThumbnail(icon);

@@ -7,7 +7,6 @@ const { publishRoleGuide } = require('../utils/setup/publishRoleGuide');
 const { publishProgressionGuides } = require('../utils/setup/publishProgressionGuides');
 const { publishGameGuide } = require('../utils/setup/publishGameGuide');
 const { publishSupportGuide } = require('../utils/setup/publishSupportGuide');
-const { publishTrainingGrounds } = require('../utils/setup/publishTrainingGrounds');
 const { publishFullSetup } = require('../utils/setup/publishFullSetup');
 const { successEmbed, errorEmbed } = require('../utils/embeds');
 const SETUP_OPTIONS = Object.freeze({
@@ -18,7 +17,6 @@ const SETUP_OPTIONS = Object.freeze({
     PROGRESSION_GUIDES: 'progression_guides',
     GAME_GUIDE: 'game_guide',
     SUPPORT_GUIDE: 'support_guide',
-    TRAINING_GROUNDS: 'training_grounds',
     FULL_SETUP: 'full_setup'
 });
 async function handleSetupSelect(interaction) {
@@ -102,15 +100,6 @@ async function handleSetupSelect(interaction) {
                 });
                 break;
             }
-            case SETUP_OPTIONS.TRAINING_GROUNDS: {
-                const message = await publishTrainingGrounds(interaction.guild);
-                await interaction.editReply({
-                    embeds: [
-                        successEmbed('Training Grounds Ready', `The training panel was published or updated in ${message.channel}.`)
-                    ]
-                });
-                break;
-            }
             case SETUP_OPTIONS.FULL_SETUP: {
                 await publishFullSetup(interaction.guild);
                 await interaction.editReply({
@@ -127,8 +116,7 @@ async function handleSetupSelect(interaction) {
                             '🗺️ Game Guide',
                             '⚔️ Path Selection',
                             '📜 Support Guide',
-                            '🎫 Ticket Panel',
-                            '🦊 Mission Control'
+                            '🎫 Ticket Panel'
                         ].join('\n'))
                     ]
                 });

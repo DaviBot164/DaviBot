@@ -8,32 +8,12 @@ const {
 } = require('../handlers/pathHandler');
 
 const {
-    handleTrialButton
-} = require('../handlers/trialInteractionHandler');
-
-const {
-    handleTitleSelect
-} = require('../handlers/titleHandler');
-
-const {
     handleTicketInteraction
 } = require('../handlers/ticketInteractionHandler');
 
 const {
     handleSetupSelect
 } = require('../handlers/setupHandler');
-
-const {
-    handleTrainingButton
-} = require('../handlers/trainingInteractionHandler');
-
-const {
-    handleQuestInteraction
-} = require('../handlers/questInteractionHandler');
-
-const {
-    handleMatchInteraction
-} = require('../handlers/matchInteractionHandler');
 
 const {
     handleHelpSelect
@@ -44,36 +24,18 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            if (await require('../handlers/hub/talk-runtime').handle(interaction)) return;
-            if (await require('../handlers/play/runtime').handle(interaction)) return;
-            if (await require('../handlers/hub/runtime').handle(interaction)) return;
             if(!require('../handlers/guildModules').allowed(interaction)){if(interaction.isAutocomplete?.()){await interaction.respond([]);return;}if(interaction.isRepliable?.())await interaction.reply({content:'This system is disabled on this server.',flags:MessageFlags.Ephemeral});return;}
 
             if (interaction.isButton()) {
-                if (await handleMatchInteraction(interaction)) {
+if (await handlePathButton(interaction)) {
                     return;
                 }
 
-                if (await handleQuestInteraction(interaction)) {
+if (await handleTicketInteraction(interaction)) {
                     return;
                 }
 
-                if (await handleTrainingButton(interaction)) {
-                    return;
-                }
-
-                if (await handlePathButton(interaction)) {
-                    return;
-                }
-
-                if (await handleTrialButton(interaction)) {
-                    return;
-                }
-
-                if (await handleTicketInteraction(interaction)) {
-                    return;
-                }
-
+                await interaction.reply({ content: 'This older panel is no longer active. Use /help for current commands.', flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -82,11 +44,7 @@ module.exports = {
                     return;
                 }
 
-                if (await handleTitleSelect(interaction)) {
-                    return;
-                }
-
-                if (await handleTicketInteraction(interaction)) {
+if (await handleTicketInteraction(interaction)) {
                     return;
                 }
 
@@ -94,6 +52,7 @@ module.exports = {
                     return;
                 }
 
+                await interaction.reply({ content: 'This older menu is no longer active. Use /help for current commands.', flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -118,6 +77,7 @@ module.exports = {
             );
 
             if (!command) {
+                await interaction.reply({ content: 'This command has been retired. Use /help for current commands.', flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -133,7 +93,7 @@ module.exports = {
             }
 
             const payload = {
-                content: 'Kitsune could not complete that action.'
+                content: 'The bot could not complete that action.'
             };
 
             if (interaction.deferred) {

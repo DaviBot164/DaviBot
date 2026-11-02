@@ -24,7 +24,6 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
@@ -35,6 +34,9 @@ const client = new Client({
 });
 
 async function start() {
+    for (const key of ['TOKEN', 'NF_DAVIBOT_DATABASE_POSTGRES_URI']) {
+        if (!process.env[key]?.trim()) throw new Error(`Missing required environment variable: ${key}`);
+    }
     loadCommands(client);
     loadEvents(client);
 

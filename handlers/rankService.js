@@ -13,10 +13,6 @@ const {
     clearProgressionRoles
 } = require('./progressionRoles');
 
-const {
-    refreshProgressionUnlocks
-} = require('./progressionUnlocks');
-
 const { sendRankPromotion } = require('../utils/rankNotifications');
 
 const pending = new Map();
@@ -28,8 +24,7 @@ async function applyRankChange(
         changedBy = null,
         reason = null,
         announce = true,
-        automatic = false,
-        refreshUnlocks = true
+        automatic = false
     } = {}
 ) {
     const guildId = member.guild.id;
@@ -154,12 +149,6 @@ async function applyRankChange(
         } catch (error) {
             console.error('Rank announcement failed:', error);
         }
-    }
-
-    try {
-        if(refreshUnlocks) await refreshProgressionUnlocks(member);
-    } catch (error) {
-        console.error('Progression unlock refresh failed:', error);
     }
 
     return {

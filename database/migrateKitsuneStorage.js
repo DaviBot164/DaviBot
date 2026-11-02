@@ -21,9 +21,11 @@ async function migrateKitsuneStorage(){
    const tables=(await query(
     "SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1 AND c.relkind IN ('r','p') AND left(c.relname,length($2))=$2 ORDER BY c.relname",
     [schema,OLD+'_'])).rows;
+   const retained=new Set(['users','rank_history','tickets','ticket_actions','moderation_cases','channel_locks','emergency_states','emergency_snapshots','guild_settings','setup_posts']);
+   const retainedTables=tables.filter(row=>retained.has(row.name.slice(OLD.length+1)));
    // Fail before renaming anything if both namespaces already contain the same table.
-   for(const row of tables)if(await available(renamed(row.name)))throw new Error('Storage rename conflict: '+renamed(row.name)+'. Existing tables were not merged or overwritten.');
-   for(const row of tables){
+   for(const row of retainedTables)if(await available(renamed(row.name)))throw new Error('Storage rename conflict: '+renamed(row.name)+'. Existing tables were not merged or overwritten.');
+   for(const row of retainedTables){
     await query('ALTER TABLE '+qualified(schema,row.name)+' RENAME TO '+quote(renamed(row.name)));
     stats.tables++;
    }

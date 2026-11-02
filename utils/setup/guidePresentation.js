@@ -9,7 +9,7 @@ function buildGuide(guild,spec){
     return embed;
 }
 async function publishGuide(guild,channelId,spec,components=[]){
-    if(!channelId)throw new Error('Choose a destination channel in Studio first.');
+    if(!channelId)throw new Error('Configure the destination channel in the server settings first.');
     const channel=await guild.channels.fetch(channelId);
     if(!channel?.isTextBased?.()||typeof channel.send!=='function')throw new Error(`Guide channel unavailable: ${spec.title}`);
     return publishSetupMessage(channel,{embeds:[buildGuide(guild,spec)],components,allowedMentions:{parse:[]}},spec.title,spec.key??spec.title);

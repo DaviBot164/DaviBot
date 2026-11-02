@@ -9,34 +9,12 @@ const SECTIONS = [
     {
         id: 'progression',
         name: '⚔️ Progression',
-        description: 'Levels, rewards and achievements',
+        description: 'Levels, XP and faction ranks',
         emoji: '⚔️',
         commands: {
-            profile: 'View your profile and battle statistics.',
-            daily: 'Claim your daily XP reward.',
-            achievements: 'View your achievements.',
-            titles: 'Explore and equip titles.',
+            profile: 'View your level, XP, faction and rank.',
             leaderboard: 'View XP and level rankings.',
             corps: 'Browse faction members and ranks.',
-            legacy: 'View a member’s community milestones.'
-        }
-    },
-    {
-        id: 'battles',
-        name: '🎮 Matches',
-        description: 'Organize and manage friendly matches',
-        emoji: '🎮',
-        commands: {
-            match: 'Create a 1v1–5v5 match for any game.'
-        }
-    },
-    {
-        id: 'ranks',
-        name: '🏯 Trials',
-        description: 'Rank trials and advancement',
-        emoji: '🏯',
-        commands: {
-            trial: 'View rank trials.'
         }
     },
     {
@@ -46,7 +24,6 @@ const SECTIONS = [
         emoji: '⚙️',
         commands: {
             help: 'Open the command center.',
-            kitsune: 'Open the private server guide with /kitsune open.',
             avatar: 'View a user avatar.',
             ping: 'Check bot latency.'
         }
@@ -98,7 +75,6 @@ const SECTIONS = [
             setup: 'Publish server guides.',
             ticketpanel: 'Publish the support panel.',
             emergency: 'Manage emergency protection.',
-            matchmanage: 'Cancel matches or resolve disputes.'
         }
     },
     {
@@ -203,7 +179,7 @@ function buildHelpEmbed(interaction, selected = 'overview') {
         count = commands.length;
     }
     if(selected==='overview'){
-        const quick=[['profile','Your progress'],['daily','Daily reward'],['match','Find a match'],['ping','Check connection']].filter(([name])=>{const command=interaction.client.commands.get(name);return command&&canViewCommand(interaction,command);});
+        const quick=[['profile','Your progress'],['ping','Check connection']].filter(([name])=>{const command=interaction.client.commands.get(name);return command&&canViewCommand(interaction,command);});
         if(quick.length)embed.setDescription([`Commands for **${brand.server}**.`,quick.map(([name,label])=>`\`/${name}\` · ${label}`).join('\n'),'','Choose a category below for details.'].join('\n'));
     }
     embed.setFooter({

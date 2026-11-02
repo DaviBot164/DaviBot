@@ -1,46 +1,11 @@
-const {
-    testConnection,
-    closeConnection
-} = require('./connection');
-
-const {
-    initializeSchema
-} = require('./schema');
-
-const {
-    initializePlayerSchema
-} = require('./playerSchema');
-
-const {
-    initializeTrainingPanels
-} = require('./trainingPanels');
-
-const {
-    initializeQuestSchema
-} = require('./questSchema');
-
-const {
-    initializeMatchSchema
-} = require('./matchSchema');
-
+const { testConnection, closeConnection } = require('./connection');
+const { initializeSchema } = require('./schema');
 const { migrateKitsuneStorage } = require('./migrateKitsuneStorage');
-
-const { initializeKitsuneLearningSchema } = require('./kitsuneLearningSchema');
-
+const { initializeGuildSettings } = require('./guildSettings');
 async function initializeDatabase() {
     await testConnection();
     await migrateKitsuneStorage();
     await initializeSchema();
-    await initializePlayerSchema();
-    await initializeTrainingPanels();
-    await initializeQuestSchema();
-    await initializeMatchSchema();
-    await initializeKitsuneLearningSchema();
-    await require('./guildSettings').initializeGuildSettings();
-    await require('./kitsunePlay').initializePlay();
+    await initializeGuildSettings();
 }
-
-module.exports = {
-    initializeDatabase,
-    closeConnection
-};
+module.exports = { initializeDatabase, closeConnection };

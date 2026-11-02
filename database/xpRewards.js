@@ -1,26 +1,19 @@
 const { pool } = require('./connection');
 const { calculateLevel } = require('../utils/leveling');
 
-const DAY = 24 * 60 * 60 * 1000;
 
 async function awardXP(
     guildId,
     userId,
     amount,
     {
-        message = false,
-        questProgress = false
+        message = false
     } = {}
 ) {
     if (!Number.isSafeInteger(amount) || amount <= 0) {
         throw new Error('XP reward must be a positive integer.');
     }
 
-    if (questProgress && !message) {
-        throw new Error(
-            'Quest progress requires message activity.'
-        );
-    }
 
     const client = await pool.connect();
 
@@ -88,73 +81,6 @@ async function awardXP(
                 message ? 1 : 0
             ]
         );
-
-        if (questProgress) {
-            await client.query(
-                `
-                    INSERT INTO kitsune_daily_quests (
-                        guild_id,
-                        user_id
-                    )
-                    VALUES ($1, $2)
-                    ON CONFLICT (guild_id, user_id)
-                    DO NOTHING
-                `,
-                [guildId, userId]
-            );
-
-            const { rows: questRows } = await client.query(
-                `
-                    SELECT cycle_started_at
-                    FROM kitsune_daily_quests
-                    WHERE guild_id = $1
-                      AND user_id = $2
-                    FOR UPDATE
-                `,
-                [guildId, userId]
-            );
-
-            const { rows: timeRows } = await client.query(
-                'SELECT NOW() AS current_time'
-            );
-
-            const now = timeRows[0].current_time;
-
-            const expired =
-                now.getTime() -
-                questRows[0].cycle_started_at.getTime() >= DAY;
-
-            if (expired) {
-                await client.query(
-                    `
-                        UPDATE kitsune_daily_quests
-                        SET
-                            cycle_id = gen_random_uuid(),
-                            cycle_started_at = NOW(),
-                            eligible_messages = 1,
-                            daily_claimed = FALSE,
-                            claimed_rewards = '{}'::text[],
-                            updated_at = NOW()
-                        WHERE guild_id = $1
-                          AND user_id = $2
-                    `,
-                    [guildId, userId]
-                );
-            } else {
-                await client.query(
-                    `
-                        UPDATE kitsune_daily_quests
-                        SET
-                            eligible_messages =
-                                eligible_messages + 1,
-                            updated_at = NOW()
-                        WHERE guild_id = $1
-                          AND user_id = $2
-                    `,
-                    [guildId, userId]
-                );
-            }
-        }
 
         await client.query('COMMIT');
 
